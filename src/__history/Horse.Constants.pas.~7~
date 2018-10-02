@@ -1,0 +1,11 @@
+unit Horse.Constants;
+
+interface
+
+const
+
+  DEFAULT_PORT = 9000;
+
+implementation
+
+end.

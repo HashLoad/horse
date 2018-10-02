@@ -1,0 +1,16 @@
+unit Horse.Constants;
+
+interface
+
+const
+
+  DEFAULT_PORT = 9000;
+
+var
+  HORSE_ENV: string;
+
+implementation
+
+
+
+end.

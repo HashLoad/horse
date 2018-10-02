@@ -1,0 +1,11 @@
+unit Horse.Request;
+
+interface
+
+type
+
+  THorseRequest
+
+implementation
+
+end.

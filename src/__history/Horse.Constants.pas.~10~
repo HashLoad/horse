@@ -1,0 +1,15 @@
+unit Horse.Constants;
+
+interface
+
+const
+
+  DEFAULT_PORT = 9000;
+  HORSE_ENV = 'HORSE_DEV';
+  ENV_D = 'D';
+  ENV_DEV = 'DEV';
+  ENV_DEVELOPMENT = 'DEVELOPMENT';
+
+implementation
+
+end.
