@@ -14,10 +14,12 @@ type
     FWebRequest: TWebRequest;
     FQuery: THorseParams;
     FParams: THorseParams;
+    FBody: TObject;
     procedure InitializeQuery;
     procedure InitializeParams;
   public
-    function Body: string;
+    function Body: string; overload;
+    function Body<T: class>: T; overload;
     function Query: THorseParams;
     function Params: THorseParams;
     constructor Create(AWebRequest: TWebRequest);
@@ -26,24 +28,28 @@ type
 
   THorseHackRequest = class(THorseRequest)
   public
+    function GetWebRequest: TWebRequest;
     function GetParams: THorseParams;
+    procedure SetBody(ABody: TObject);
   end;
 
   THorseResponse = class
   private
     FWebResponse: TWebResponse;
+    FContent: TObject;
   public
-    function Send(AContent: string): THorseResponse;
+    function Send(AContent: string): THorseResponse; overload;
+    function Send<T: class>(AContent: T): THorseResponse; overload;
     function Status(AStatus: Integer): THorseResponse;
     constructor Create(AWebResponse: TWebResponse);
     destructor Destroy; override;
   end;
 
   THorseHackResponse = class(THorseResponse)
+  public
+    function GetWebResponse: TWebResponse;
+    function GetContent: TObject;
   end;
-
-  THorseCallback = reference to procedure(ARequest: THorseRequest;
-    AResponse: THorseResponse);
 
 implementation
 
@@ -52,6 +58,11 @@ implementation
 function THorseRequest.Body: string;
 begin
   Result := FWebRequest.Content;
+end;
+
+function THorseRequest.Body<T>: T;
+begin
+  Result := T(FBody);
 end;
 
 constructor THorseRequest.Create(AWebRequest: TWebRequest);
@@ -118,6 +129,13 @@ begin
   Result := Self;
 end;
 
+function THorseResponse.Send<T>(AContent: T): THorseResponse;
+begin
+  FWebResponse.StatusCode := 200;
+  FContent := AContent;
+  Result := Self;
+end;
+
 function THorseResponse.Status(AStatus: Integer): THorseResponse;
 begin
   FWebResponse.StatusCode := AStatus;
@@ -126,9 +144,31 @@ end;
 
 { THorseHackRequest }
 
+function THorseHackResponse.GetContent: TObject;
+begin
+  Result := FContent;
+end;
+
 function THorseHackRequest.GetParams: THorseParams;
 begin
   Result := FParams;
+end;
+
+function THorseHackRequest.GetWebRequest: TWebRequest;
+begin
+  Result := FWebRequest;
+end;
+
+procedure THorseHackRequest.SetBody(ABody: TObject);
+begin
+  FBody := ABody;
+end;
+
+{ THorseHackResponse }
+
+function THorseHackResponse.GetWebResponse: TWebResponse;
+begin
+  Result := FWebResponse;
 end;
 
 end.

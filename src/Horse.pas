@@ -18,15 +18,18 @@ type
 
   THorseHackResponse = Horse.HTTP.THorseHackResponse;
 
-  THorseCallback = Horse.HTTP.THorseCallback;
+  THorseCallback = reference to procedure(ARequest: THorseRequest;
+    AResponse: THorseResponse; ANext: TProc);
 
   THorseMiddleware = record
     MethodType: TMethodType;
     Callback: THorseCallback;
+    procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse;
+      ANext: TProc);
     constructor Create(AMethodType: TMethodType; ACallback: THorseCallback);
   end;
 
-  THorseMiddlewares = TList<THorseMiddleware>;
+  THorseMiddlewares = TQueue<THorseMiddleware>;
 
   THorseRoutes = TDictionary<string, THorseMiddlewares>;
 
@@ -47,7 +50,8 @@ type
     constructor Create; overload;
     property Port: Integer read FPort write FPort;
     property Routes: THorseRoutes read FRoutes write FRoutes;
-    procedure Use(APath: string; ACallback: THorseCallback);
+    procedure Use(APath: string; ACallback: THorseCallback); overload;
+    procedure Use(ACallback: THorseCallback); overload;
     procedure Get(APath: string; ACallback: THorseCallback);
     procedure Put(APath: string; ACallback: THorseCallback);
     procedure Post(APath: string; ACallback: THorseCallback);
@@ -127,8 +131,8 @@ var
   LMiddlewares: THorseMiddlewares;
   LMiddleware: THorseMiddleware;
 begin
-  if APath.StartsWith('/') then
-    APath := APath.Remove(0, 1);
+  if not APath.StartsWith('/') then
+    APath := '/' + APath;
 
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
@@ -140,7 +144,7 @@ begin
   end;
 
   LMiddleware := THorseMiddleware.Create(AHTTPType, ACallback);
-  LMiddlewares.Add(LMiddleware);
+  LMiddlewares.Enqueue(LMiddleware);
 end;
 
 procedure THorse.Start;
@@ -175,6 +179,11 @@ begin
   Application.Run;
 end;
 
+procedure THorse.Use(ACallback: THorseCallback);
+begin
+  RegisterRoute(mtAny, EmptyStr, ACallback);
+end;
+
 procedure THorse.Use(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtAny, APath, ACallback);
@@ -187,6 +196,22 @@ constructor THorseMiddleware.Create(AMethodType: TMethodType;
 begin
   MethodType := AMethodType;
   Callback := ACallback;
+end;
+
+procedure THorseMiddleware.Execute(ARequest: THorseRequest;
+  AResponse: THorseResponse; ANext: TProc);
+var
+  LCalledNext: Boolean;
+begin
+  LCalledNext := False;
+  Callback(ARequest, AResponse,
+    procedure
+    begin
+      LCalledNext := True;
+      ANext;
+    end);
+  if not LCalledNext then
+    ANext;
 end;
 
 end.

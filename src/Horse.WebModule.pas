@@ -12,13 +12,24 @@ type
     constructor Create(APath: string; ASucess: Boolean);
   end;
 
+  THorseQueueMiddlewares = class
+  private
+    FMiddlewares: THorseMiddlewares;
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+    procedure Next;
+    constructor Create(AMiddlewares: THorseMiddlewares; ARequest: THorseRequest;
+      AResponse: THorseResponse);
+  end;
+
   THorseWebModule = class(TWebModule)
     procedure HandlerAction(Sender: TObject; Request: TWebRequest;
       Response: TWebResponse; var Handled: Boolean);
   private
     FHorse: THorse;
     function ValidateRegex(APath: string; ARequest: THorseRequest;
-  AResponse: THorseResponse): THorseResultRegex;
+      AResponse: THorseResponse): THorseResultRegex;
     function GenerateExpression(APath: string): string;
   public
     property Horse: THorse read FHorse write FHorse;
@@ -65,7 +76,8 @@ var
   LIdentifiers: TArray<string>;
   LIdentifier, LPath: string;
   LMiddleware: THorseMiddleware;
-  LMiddlewares: THorseMiddlewares;
+  LMiddlewares, LPreparedMiddlewares: THorseMiddlewares;
+  LQueueMiddlewares: THorseQueueMiddlewares;
   LRequest: THorseRequest;
   LResponse: THorseResponse;
   LResultRegex: THorseResultRegex;
@@ -76,25 +88,38 @@ begin
   LResultRegex := ValidateRegex(Request.PathInfo, LRequest, LResponse);
   if LResultRegex.Sucess then
   begin
-    LIdentifiers := LResultRegex.Path.Split(['/'], ExcludeEmpty);
+    LPreparedMiddlewares := THorseMiddlewares.Create;
+    try
+      LIdentifiers := LResultRegex.Path.Split(['/']);
 
-    for LIdentifier in LIdentifiers do
-    begin
-      if not LPath.IsEmpty then
-        LPath := LPath + '/';
-      LPath := LPath + LIdentifier;
-
-      if FHorse.Routes.TryGetValue(LPath, LMiddlewares) then
+      for LIdentifier in LIdentifiers do
       begin
-        for LMiddleware in LMiddlewares do
+        LPath := LPath + LIdentifier;
+
+        if FHorse.Routes.TryGetValue(LPath, LMiddlewares) then
         begin
-          if (LMiddleware.MethodType = mtAny) or
-            (LMiddleware.MethodType = Request.MethodType) then
+
+          for LMiddleware in LMiddlewares do
           begin
-            LMiddleware.Callback(LRequest, LResponse);
+            if (LMiddleware.MethodType = mtAny) or
+              (LMiddleware.MethodType = Request.MethodType) then
+              LPreparedMiddlewares.Enqueue(LMiddleware);
           end;
         end;
+
+        LPath := LPath + '/';
       end;
+
+      LQueueMiddlewares := THorseQueueMiddlewares.Create(LPreparedMiddlewares,
+        LRequest, LResponse);
+      try
+        LQueueMiddlewares.Next;
+      finally
+        LQueueMiddlewares.Free;
+      end;
+
+    finally
+      LPreparedMiddlewares.Free;
     end;
   end
   else
@@ -116,8 +141,8 @@ var
 begin
   LCount := 1;
 
-  if APath.StartsWith('/') then
-    APath := APath.Remove(0, 1);
+  if not APath.StartsWith('/') then
+    APath := '/' + APath;
 
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
@@ -152,6 +177,22 @@ constructor THorseResultRegex.Create(APath: string; ASucess: Boolean);
 begin
   Path := APath;
   Sucess := ASucess;
+end;
+
+{ THorseQueueMidleware }
+
+constructor THorseQueueMiddlewares.Create(AMiddlewares: THorseMiddlewares;
+  ARequest: THorseRequest; AResponse: THorseResponse);
+begin
+  FMiddlewares := AMiddlewares;
+  FRequest := ARequest;
+  FResponse := AResponse;
+end;
+
+procedure THorseQueueMiddlewares.Next;
+begin
+  if FMiddlewares.Count > 0 then
+    FMiddlewares.Dequeue.Execute(FRequest, FResponse, Next);
 end;
 
 end.
