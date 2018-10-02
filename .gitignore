@@ -1,3 +1,4 @@
+modules/
 dist/
 static/
 **/Win32/
