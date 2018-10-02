@@ -1,0 +1,10 @@
+{
+	"name": "horse",
+	"description": "",
+	"version": "1.0.0",
+	"private": false,
+	"homepage": "",
+	"mainsrc": "src/",
+	"supported": "xe+",
+	"dprojFile": ""
+}
