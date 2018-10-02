@@ -91,7 +91,7 @@ begin
           if (LMiddleware.MethodType = mtAny) or
             (LMiddleware.MethodType = Request.MethodType) then
           begin
-            LMiddleware.Callback(LRequest, LResponse, nil);
+            LMiddleware.Callback(LRequest, LResponse);
           end;
         end;
       end;

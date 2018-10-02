@@ -43,7 +43,7 @@ type
   end;
 
   THorseCallback = reference to procedure(ARequest: THorseRequest;
-    AResponse: THorseResponse; ANext: TProc);
+    AResponse: THorseResponse);
 
 implementation
 

@@ -10,7 +10,7 @@ var
 begin
   App := THorse.Create(9000);
   App.Get('/ping',
-    procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TProc)
+    procedure(AReq: THorseRequest; ARes: THorseResponse)
     begin
       ARes.Send('pong');
     end);
