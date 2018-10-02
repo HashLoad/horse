@@ -129,12 +129,12 @@ begin
     Result.Sucess := LMatch.Success;
     if Result.Sucess then
     begin
+      Result.Path := LPath;
       LIdentifiers := LPath.Split(['/']);
       for LIdentifier in LIdentifiers do
       begin
         if LIdentifier.StartsWith(':') then
         begin
-          Result.Path := LPath;
           THorseHackRequest(ARequest)
             .GetParams.Add(LIdentifier.Replace(':', ''),
             LMatch.Groups.Item[LCount].Value);
