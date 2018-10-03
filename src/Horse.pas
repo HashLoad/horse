@@ -70,7 +70,7 @@ end;
 
 destructor THorse.Destroy;
 begin
-  FRoutes.Free;
+  FreeAndNil(FRoutes);
   inherited;
 end;
 
@@ -100,8 +100,8 @@ var
   LHorseDev: string;
 begin
   LHorseDev := GetEnvironmentVariable(HORSE_ENV);
-  Result := LHorseDev.IsEmpty or (LowerCase(LHorseDev) = ENV_D) or (LowerCase(LHorseDev) = ENV_DEV) or
-    (LowerCase(LHorseDev) = ENV_DEVELOPMENT);
+  Result := LHorseDev.IsEmpty or (LowerCase(LHorseDev) = ENV_D) or (LowerCase(LHorseDev) = ENV_DEV)
+    or (LowerCase(LHorseDev) = ENV_DEVELOPMENT);
 end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
@@ -122,11 +122,11 @@ end;
 
 procedure THorse.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 begin
-  if not APath.StartsWith('/') then
-    APath := '/' + APath;
-
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
+
+  if not APath.StartsWith('/') then
+    APath := '/' + APath;
 
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;

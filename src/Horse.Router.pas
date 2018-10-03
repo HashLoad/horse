@@ -44,6 +44,8 @@ type
 
 implementation
 
+
+
 { THorseRouterTree }
 
 procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
@@ -95,7 +97,7 @@ end;
 constructor THorseRouterTree.Create;
 begin
   FMiddleware := TList<THorseCallback>.Create;
-  FRoute := TObjectDictionary<string, THorseRouterTree>.Create;
+  FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<String>.Create;
   FCallBack := TDictionary<TMethodType, THorseCallback>.Create;
 end;
@@ -103,7 +105,7 @@ end;
 destructor THorseRouterTree.Destroy;
 begin
   FMiddleware.Free;
-  FRoute.Free;
+  FreeAndNil(FRoute);
   FRegexedKeys.Free;
   FCallBack.Free;
   inherited;
