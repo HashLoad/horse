@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Generics.Collections, System.Types, CGIApp,
   IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq,
-  Web.WebBroker, Horse.HTTP, System.Hash;
+  Web.WebBroker, Horse.HTTP, System.Hash, Horse.Router;
 
 type
   THorseParams = Horse.HTTP.THorseParams;
@@ -18,14 +18,12 @@ type
 
   THorseHackResponse = Horse.HTTP.THorseHackResponse;
 
-  THorseCallback = reference to procedure(ARequest: THorseRequest;
-    AResponse: THorseResponse; ANext: TProc);
+  THorseCallback = Horse.Router.THorseCallback;
 
   THorseMiddleware = record
     MethodType: TMethodType;
     Callback: THorseCallback;
-    procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse;
-      ANext: TProc);
+    procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TProc);
     constructor Create(AMethodType: TMethodType; ACallback: THorseCallback);
   end;
 
@@ -36,20 +34,19 @@ type
   THorse = class
   private
     FPort: Integer;
-    FRoutes: THorseRoutes;
+    FRoutes: THorseRouterTree;
     function IsDev: Boolean;
     procedure StartDev;
     procedure StartProd;
     procedure Initialize;
-    procedure RegisterRoute(AHTTPType: TMethodType; APath: string;
-      ACallback: THorseCallback);
+    procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     class var FInstance: THorse;
   public
     destructor Destroy; override;
     constructor Create(APort: Integer); overload;
     constructor Create; overload;
     property Port: Integer read FPort write FPort;
-    property Routes: THorseRoutes read FRoutes write FRoutes;
+    property Routes: THorseRouterTree read FRoutes write FRoutes;
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
     procedure Get(APath: string; ACallback: THorseCallback);
@@ -92,7 +89,7 @@ end;
 procedure THorse.Initialize;
 begin
   FInstance := Self;
-  FRoutes := THorseRoutes.Create;
+  FRoutes := THorseRouterTree.Create;
 end;
 
 procedure THorse.Get(APath: string; ACallback: THorseCallback);
@@ -110,8 +107,7 @@ var
   LHorseDev: string;
 begin
   LHorseDev := GetEnvironmentVariable(HORSE_ENV);
-  Result := LHorseDev.IsEmpty or (LowerCase(LHorseDev) = ENV_D) or
-    (LowerCase(LHorseDev) = ENV_DEV) or
+  Result := LHorseDev.IsEmpty or (LowerCase(LHorseDev) = ENV_D) or (LowerCase(LHorseDev) = ENV_DEV) or
     (LowerCase(LHorseDev) = ENV_DEVELOPMENT);
 end;
 
@@ -125,11 +121,7 @@ begin
   RegisterRoute(mtPut, APath, ACallback);
 end;
 
-procedure THorse.RegisterRoute(AHTTPType: TMethodType; APath: string;
-  ACallback: THorseCallback);
-var
-  LMiddlewares: THorseMiddlewares;
-  LMiddleware: THorseMiddleware;
+procedure THorse.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 begin
   if not APath.StartsWith('/') then
     APath := '/' + APath;
@@ -137,14 +129,7 @@ begin
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
 
-  if not FRoutes.TryGetValue(APath, LMiddlewares) then
-  begin
-    LMiddlewares := THorseMiddlewares.Create;
-    FRoutes.Add(APath, LMiddlewares);
-  end;
-
-  LMiddleware := THorseMiddleware.Create(AHTTPType, ACallback);
-  LMiddlewares.Enqueue(LMiddleware);
+  FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;
 
 procedure THorse.Start;
@@ -181,25 +166,23 @@ end;
 
 procedure THorse.Use(ACallback: THorseCallback);
 begin
-  RegisterRoute(mtAny, EmptyStr, ACallback);
+  FRoutes.RegisterMiddleware('/', ACallback);
 end;
 
 procedure THorse.Use(APath: string; ACallback: THorseCallback);
 begin
-  RegisterRoute(mtAny, APath, ACallback);
+  FRoutes.RegisterMiddleware(APath, ACallback);
 end;
 
 { THorseMiddleware }
 
-constructor THorseMiddleware.Create(AMethodType: TMethodType;
-  ACallback: THorseCallback);
+constructor THorseMiddleware.Create(AMethodType: TMethodType; ACallback: THorseCallback);
 begin
   MethodType := AMethodType;
   Callback := ACallback;
 end;
 
-procedure THorseMiddleware.Execute(ARequest: THorseRequest;
-  AResponse: THorseResponse; ANext: TProc);
+procedure THorseMiddleware.Execute(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TProc);
 var
   LCalledNext: Boolean;
 begin
