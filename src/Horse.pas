@@ -5,10 +5,10 @@ interface
 uses
   System.SysUtils, System.Generics.Collections, System.Types, CGIApp,
   IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq,
-  Web.WebBroker, Horse.HTTP, System.Hash;
+  Web.WebBroker, Horse.HTTP, System.Hash, IdContext;
 
 type
-  THorseParams = Horse.HTTP.THorseParams;
+  THorseList = Horse.HTTP.THorseList;
 
   THorseRequest = Horse.HTTP.THorseRequest;
 
@@ -37,6 +37,9 @@ type
   private
     FPort: Integer;
     FRoutes: THorseRoutes;
+    procedure OnAuthentication(AContext: TIdContext;
+      const AAuthType, AAuthData: String; var VUsername, VPassword: String;
+      var VHandled: Boolean);
     function IsDev: Boolean;
     procedure StartDev;
     procedure StartProd;
@@ -115,6 +118,13 @@ begin
     (LowerCase(LHorseDev) = ENV_DEVELOPMENT);
 end;
 
+procedure THorse.OnAuthentication(AContext: TIdContext;
+  const AAuthType, AAuthData: String; var VUsername, VPassword: String;
+  var VHandled: Boolean);
+begin
+  VHandled := True;
+end;
+
 procedure THorse.Post(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtPost, APath, ACallback);
@@ -162,6 +172,7 @@ begin
   WebRequestHandler.WebModuleClass := WebModuleClass;
   LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   try
+    LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
     LHTTPWebBroker.DefaultPort := FPort;
     Writeln(Format(START_RUNNING, [FPort]));
     while True do

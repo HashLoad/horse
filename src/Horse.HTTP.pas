@@ -3,25 +3,31 @@ unit Horse.HTTP;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp;
+  System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp,
+  IdHTTPWebBrokerBridge, IdHTTPHeaderInfo;
 
 type
 
-  THorseParams = TDictionary<string, string>;
+  THorseList = TDictionary<string, string>;
 
   THorseRequest = class
   private
     FWebRequest: TWebRequest;
-    FQuery: THorseParams;
-    FParams: THorseParams;
+    FQuery: THorseList;
+    FParams: THorseList;
+    FHeaders: THorseList;
     FBody: TObject;
+    FSession: TObject;
     procedure InitializeQuery;
     procedure InitializeParams;
+    procedure InitializeHeaders;
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
-    function Query: THorseParams;
-    function Params: THorseParams;
+    function Session<T: class>: T;
+    function Query: THorseList;
+    function Params: THorseList;
+    function Headers: THorseList;
     constructor Create(AWebRequest: TWebRequest);
     destructor Destroy; override;
   end;
@@ -29,8 +35,9 @@ type
   THorseHackRequest = class(THorseRequest)
   public
     function GetWebRequest: TWebRequest;
-    function GetParams: THorseParams;
+    function GetParams: THorseList;
     procedure SetBody(ABody: TObject);
+    procedure SetSession(ASession: TObject);
   end;
 
   THorseResponse = class
@@ -49,6 +56,11 @@ type
   public
     function GetWebResponse: TWebResponse;
     function GetContent: TObject;
+  end;
+
+  TIdHTTPAppRequestHelper = class helper for TIdHTTPAppRequest
+  public
+    function GetRequestInfo: TIdEntityHeaderInfo;
   end;
 
 implementation
@@ -70,18 +82,40 @@ begin
   FWebRequest := AWebRequest;
   InitializeQuery;
   InitializeParams;
+  InitializeHeaders;
 end;
 
 destructor THorseRequest.Destroy;
 begin
   FQuery.Free;
   FParams.Free;
+  FHeaders.Free;
   inherited;
+end;
+
+function THorseRequest.Headers: THorseList;
+begin
+  Result := FHeaders;
+end;
+
+procedure THorseRequest.InitializeHeaders;
+var
+  LKey, LValue, LHeader: string;
+  LPosSeparator: Integer;
+begin
+  FHeaders := THorseList.Create;
+  for LHeader in TIdHTTPAppRequest(FWebRequest).GetRequestInfo.RawHeaders do
+  begin
+    LPosSeparator := Pos(':', LHeader);
+    LKey := Copy(LHeader, 0, LPosSeparator - 1);
+    LValue := Copy(LHeader, LPosSeparator + 1, LHeader.Length - LPosSeparator);
+    FHeaders.Add(LowerCase(LKey), Trim(LValue));
+  end;
 end;
 
 procedure THorseRequest.InitializeParams;
 begin
-  FParams := THorseParams.Create;
+  FParams := THorseList.Create;
 end;
 
 procedure THorseRequest.InitializeQuery;
@@ -92,7 +126,7 @@ var
   LParam: TArray<string>;
   LItem: string;
 begin
-  FQuery := THorseParams.Create;
+  FQuery := THorseList.Create;
   for LItem in FWebRequest.QueryFields do
   begin
     LParam := LItem.Split(['=']);
@@ -100,14 +134,19 @@ begin
   end;
 end;
 
-function THorseRequest.Params: THorseParams;
+function THorseRequest.Params: THorseList;
 begin
   Result := FParams;
 end;
 
-function THorseRequest.Query: THorseParams;
+function THorseRequest.Query: THorseList;
 begin
   Result := FQuery;
+end;
+
+function THorseRequest.Session<T>: T;
+begin
+  Result := T(FSession);
 end;
 
 { THorseResponse }
@@ -149,7 +188,7 @@ begin
   Result := FContent;
 end;
 
-function THorseHackRequest.GetParams: THorseParams;
+function THorseHackRequest.GetParams: THorseList;
 begin
   Result := FParams;
 end;
@@ -164,11 +203,23 @@ begin
   FBody := ABody;
 end;
 
+procedure THorseHackRequest.SetSession(ASession: TObject);
+begin
+  FSession := ASession;
+end;
+
 { THorseHackResponse }
 
 function THorseHackResponse.GetWebResponse: TWebResponse;
 begin
   Result := FWebResponse;
+end;
+
+{ TIdHTTPAppRequestHelper }
+
+function TIdHTTPAppRequestHelper.GetRequestInfo: TIdEntityHeaderInfo;
+begin
+  Result := FRequestInfo;
 end;
 
 end.
