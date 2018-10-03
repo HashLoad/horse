@@ -40,7 +40,13 @@ begin
 
   if FHorse.Routes.CanExecute(LRequest) then
   begin
-    FHorse.Routes.Execute(LRequest, LResponse);
+    try
+      FHorse.Routes.Execute(LRequest, LResponse);
+    except
+      on e: EHorseCallbackInterrupted do
+      else
+        raise;
+    end;
   end
   else
   begin
@@ -48,6 +54,5 @@ begin
     Response.StatusCode := 404;
   end;
 end;
-
 
 end.

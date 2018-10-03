@@ -138,24 +138,18 @@ begin
 
   LNext := procedure
     begin
-      try
-        inc(LIndex);
+      inc(LIndex);
+      if (FMiddleware.Count > LIndex) then
+      begin
+        Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
         if (FMiddleware.Count > LIndex) then
-        begin
-          Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
-          if (FMiddleware.Count > LIndex) then
 
-            LNext;
-        end
-        else if (LHack.Count = 0) and assigned(FCallBack) then
-          FCallBack.Items[AHTTPType](ARequest, AResponse, LNext)
-        else
-          CallNextPath(LHack, AHTTPType, ARequest, AResponse);
-      except
-        on e: Horse.EHorseCallbackInterrupted do
-        else
-          raise;
-      end;
+          LNext;
+      end
+      else if (LHack.Count = 0) and assigned(FCallBack) then
+        FCallBack.Items[AHTTPType](ARequest, AResponse, LNext)
+      else
+        CallNextPath(LHack, AHTTPType, ARequest, AResponse);
     end;
   LNext;
 end;
