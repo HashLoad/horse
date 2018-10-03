@@ -8,6 +8,10 @@ uses
 
 type
 
+  EHorseCallbackInterrupted = class(Exception)
+    constructor Create; reintroduce;
+  end;
+
   THorseList = TDictionary<string, string>;
 
   THorseRequest = class
@@ -220,6 +224,13 @@ end;
 function TIdHTTPAppRequestHelper.GetRequestInfo: TIdEntityHeaderInfo;
 begin
   Result := FRequestInfo;
+end;
+
+{ EHorseCallbackInterrupted }
+
+constructor EHorseCallbackInterrupted.Create;
+begin
+  inherited Create('');
 end;
 
 end.
