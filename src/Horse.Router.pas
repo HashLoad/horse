@@ -131,7 +131,7 @@ var
 begin
   LCurrent := APath.Dequeue;
   LHack := APath;
-  
+
   LIndex := -1;
   if Self.FIsRegex then
     ARequest.Params.Add(FTag, LCurrent);
@@ -140,7 +140,11 @@ begin
     begin
       inc(LIndex);
       if (FMiddleware.Count > LIndex) then
-        self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext)
+      begin
+        Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
+        if (FMiddleware.Count > LIndex) then
+          LNext;
+      end
       else if (LHack.Count = 0) and assigned(FCallBack) then
         FCallBack.Items[AHTTPType](ARequest, AResponse, LNext)
       else

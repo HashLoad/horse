@@ -6,22 +6,6 @@ uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse,
   System.RegularExpressions;
 
 type
-  THorseResultRegex = record
-    Path: string;
-    Sucess: Boolean;
-    constructor Create(APath: string; ASucess: Boolean);
-  end;
-
-  THorseQueueMiddlewares = class
-  private
-    FMiddlewares: THorseMiddlewares;
-    FRequest: THorseRequest;
-    FResponse: THorseResponse;
-  public
-    procedure Next;
-    constructor Create(AMiddlewares: THorseMiddlewares; ARequest: THorseRequest; AResponse: THorseResponse);
-  end;
-
   THorseWebModule = class(TWebModule)
     procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
   private
@@ -65,28 +49,5 @@ begin
   end;
 end;
 
-{ THorseResultRegex }
-
-constructor THorseResultRegex.Create(APath: string; ASucess: Boolean);
-begin
-  Path := APath;
-  Sucess := ASucess;
-end;
-
-{ THorseQueueMidleware }
-
-constructor THorseQueueMiddlewares.Create(AMiddlewares: THorseMiddlewares; ARequest: THorseRequest;
-  AResponse: THorseResponse);
-begin
-  FMiddlewares := AMiddlewares;
-  FRequest := ARequest;
-  FResponse := AResponse;
-end;
-
-procedure THorseQueueMiddlewares.Next;
-begin
-  if FMiddlewares.Count > 0 then
-    FMiddlewares.Dequeue.Execute(FRequest, FResponse, Next);
-end;
 
 end.

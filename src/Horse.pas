@@ -20,16 +20,6 @@ type
 
   THorseCallback = Horse.Router.THorseCallback;
 
-  THorseMiddleware = record
-    MethodType: TMethodType;
-    Callback: THorseCallback;
-    procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TProc);
-    constructor Create(AMethodType: TMethodType; ACallback: THorseCallback);
-  end;
-
-  THorseMiddlewares = TQueue<THorseMiddleware>;
-
-  THorseRoutes = TDictionary<string, THorseMiddlewares>;
 
   THorse = class
   private
@@ -172,29 +162,6 @@ end;
 procedure THorse.Use(APath: string; ACallback: THorseCallback);
 begin
   FRoutes.RegisterMiddleware(APath, ACallback);
-end;
-
-{ THorseMiddleware }
-
-constructor THorseMiddleware.Create(AMethodType: TMethodType; ACallback: THorseCallback);
-begin
-  MethodType := AMethodType;
-  Callback := ACallback;
-end;
-
-procedure THorseMiddleware.Execute(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TProc);
-var
-  LCalledNext: Boolean;
-begin
-  LCalledNext := False;
-  Callback(ARequest, AResponse,
-    procedure
-    begin
-      LCalledNext := True;
-      ANext;
-    end);
-  if not LCalledNext then
-    ANext;
 end;
 
 end.
