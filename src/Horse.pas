@@ -8,6 +8,10 @@ uses
   Web.WebBroker, Horse.HTTP, System.Hash, IdContext;
 
 type
+  EHorseCallbackInterrupted = class(Exception)
+    constructor Create; reintroduce;
+  end;
+
   THorseList = Horse.HTTP.THorseList;
 
   THorseRequest = Horse.HTTP.THorseRequest;
@@ -223,6 +227,13 @@ begin
     end);
   if not LCalledNext then
     ANext;
+end;
+
+{ EHorseCallbackInterrupted }
+
+constructor EHorseCallbackInterrupted.Create;
+begin
+  inherited Create('');
 end;
 
 end.

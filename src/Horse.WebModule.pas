@@ -191,8 +191,14 @@ end;
 
 procedure THorseQueueMiddlewares.Next;
 begin
-  if FMiddlewares.Count > 0 then
-    FMiddlewares.Dequeue.Execute(FRequest, FResponse, Next);
+  try
+    if FMiddlewares.Count > 0 then
+      FMiddlewares.Dequeue.Execute(FRequest, FResponse, Next);
+  except
+    on E: EHorseCallbackInterrupted do
+    else
+      raise;
+  end;
 end;
 
 end.
