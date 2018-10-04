@@ -40,7 +40,7 @@ begin
   LResponse := THorseResponse.Create(Response);
   try
     Response.Content := 'Not Found';
-    Response.StatusCode := 201;
+    Response.StatusCode := 404;
     if FHorse.Routes.CanExecute(LRequest) then
     begin
       try

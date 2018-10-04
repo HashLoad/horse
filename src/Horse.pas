@@ -3,9 +3,9 @@ unit Horse;
 interface
 
 uses
-  System.SysUtils, System.Generics.Collections, System.Types, CGIApp,
-  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq,
-  Web.WebBroker, Horse.HTTP, System.Hash, Horse.Router, IdContext;
+  System.SysUtils, System.Generics.Collections, System.Types,
+  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq, Horse.HTTP,
+  Horse.Router, IdContext;
 
 type
   EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
