@@ -1,5 +1,5 @@
 unit Horse;
-
+
 interface
 
 uses
@@ -54,7 +54,7 @@ implementation
 
 { THorse }
 
-uses Horse.Constants, Horse.WebModule, System.IOUtils;
+uses Horse.Constants, Horse.WebModule, System.IOUtils, IdSchedulerOfThreadPool;
 
 constructor THorse.Create(APort: Integer);
 begin
@@ -140,17 +140,23 @@ begin
 end;
 
 procedure THorse.StartDev;
+
 var
+  ThreadPool: TIdSchedulerOfThreadPool;
   LHTTPWebBroker: TIdHTTPWebBrokerBridge;
+  LTmp: string;
 begin
   WebRequestHandler.WebModuleClass := WebModuleClass;
   LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   try
+
     LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
+
     LHTTPWebBroker.DefaultPort := FPort;
     Writeln(Format(START_RUNNING, [FPort]));
-    while True do
-      LHTTPWebBroker.Active := True;
+    LHTTPWebBroker.Active := True;
+    LHTTPWebBroker.StartListening;
+    Read(LTmp);
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
@@ -175,3 +181,4 @@ begin
 end;
 
 end.
+

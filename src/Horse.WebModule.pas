@@ -7,7 +7,8 @@ uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse,
 
 type
   THorseWebModule = class(TWebModule)
-    procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
+    procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
+      var Handled: Boolean);
   private
     FHorse: THorse;
   public
@@ -29,29 +30,30 @@ begin
   FHorse := THorse.GetInstance;
 end;
 
-procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
-  var Handled: Boolean);
+procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
+  Response: TWebResponse; var Handled: Boolean);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
 begin
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
-
-  if FHorse.Routes.CanExecute(LRequest) then
-  begin
-    try
-      FHorse.Routes.Execute(LRequest, LResponse);
-    except
-      on e: EHorseCallbackInterrupted do
-      else
-        raise;
-    end;
-  end
-  else
-  begin
+  try
     Response.Content := 'Not Found';
     Response.StatusCode := 404;
+    if FHorse.Routes.CanExecute(LRequest) then
+    begin
+      try
+        FHorse.Routes.Execute(LRequest, LResponse);
+      except
+        on e: EHorseCallbackInterrupted do
+        else
+          raise;
+      end;
+    end;
+  finally
+    LRequest.Free;
+    LResponse.Free;
   end;
 end;
 
