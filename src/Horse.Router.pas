@@ -1,5 +1,5 @@
 unit Horse.Router;
-
+
 interface
 
 uses
@@ -7,7 +7,8 @@ uses
 
 type
 
-  THorseCallback = reference to procedure(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TProc);
+  THorseCallback = reference to procedure(ARequest: THorseRequest; AResponse: THorseResponse;
+    ANext: TProc);
 
   THorseRouterTree = class
   strict private
@@ -22,13 +23,14 @@ type
     FRegexedKeys: TList<String>;
     FCallBack: TDictionary<TMethodType, THorseCallback>;
     FRoute: TDictionary<string, THorseRouterTree>;
-    procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
+    procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>;
+      ACallback: THorseCallback);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
-    procedure ExecuteInternal(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-      AResponse: THorseResponse);
+    procedure ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType;
+      ARequest: THorseRequest; AResponse: THorseResponse);
 
-    Procedure CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-      AResponse: THorseResponse);
+    Procedure CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType;
+      ARequest: THorseRequest; AResponse: THorseResponse);
 
     function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
   public
@@ -44,11 +46,10 @@ type
 
 implementation
 
-
-
 { THorseRouterTree }
 
-procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string;
+  ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
 begin
@@ -60,8 +61,8 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse);
+procedure THorseRouterTree.CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType;
+  ARequest: THorseRequest; AResponse: THorseResponse);
 var
   LCurrent: string;
   LAcceptable: THorseRouterTree;
@@ -117,22 +118,21 @@ var
 begin
   LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo);
   try
-    ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest, AResponse);
+    ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
+      AResponse);
   finally
     LQueue.Free;
   end;
 end;
 
-procedure THorseRouterTree.ExecuteInternal(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse);
+procedure THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType;
+  ARequest: THorseRequest; AResponse: THorseResponse);
 var
   LCurrent: string;
   LIndex: Integer;
   LNext: TProc;
-  LHack: TQueue<string>;
 begin
   LCurrent := APath.Dequeue;
-  LHack := APath;
 
   LIndex := -1;
   if Self.FIsRegex then
@@ -145,15 +145,15 @@ begin
       begin
         Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
         if (FMiddleware.Count > LIndex) then
-
           LNext;
       end
-      else if (LHack.Count = 0) and assigned(FCallBack) then
+      else if (APath.Count = 0) and assigned(FCallBack) then
         FCallBack.Items[AHTTPType](ARequest, AResponse, LNext)
       else
-        CallNextPath(LHack, AHTTPType, ARequest, AResponse);
+        CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;
   LNext;
+  LNext := nil;
 end;
 
 function THorseRouterTree.ForcePath(APath: String): THorseRouterTree;
@@ -176,7 +176,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
+function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<String>;
+  AIndex: Integer = 0): Boolean;
 var
   LNext: string;
   LNextRoute: THorseRouterTree;
@@ -249,7 +250,8 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
+procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>;
+  AMiddleware: THorseCallback);
 var
   FCurrent: string;
 begin
@@ -261,3 +263,4 @@ begin
 end;
 
 end.
+

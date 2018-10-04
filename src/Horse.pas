@@ -28,9 +28,6 @@ type
     FRoutes: THorseRouterTree;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
       var VUsername, VPassword: String; var VHandled: Boolean);
-    function IsDev: Boolean;
-    procedure StartDev;
-    procedure StartProd;
     procedure Initialize;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     class var FInstance: THorse;
@@ -70,7 +67,7 @@ end;
 
 destructor THorse.Destroy;
 begin
-  FreeAndNil(FRoutes);
+  FRoutes.free;
   inherited;
 end;
 
@@ -93,15 +90,6 @@ end;
 class function THorse.GetInstance: THorse;
 begin
   Result := FInstance;
-end;
-
-function THorse.IsDev: Boolean;
-var
-  LHorseDev: string;
-begin
-  LHorseDev := GetEnvironmentVariable(HORSE_ENV);
-  Result := LHorseDev.IsEmpty or (LowerCase(LHorseDev) = ENV_D) or (LowerCase(LHorseDev) = ENV_DEV)
-    or (LowerCase(LHorseDev) = ENV_DEVELOPMENT);
 end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
@@ -132,42 +120,34 @@ begin
 end;
 
 procedure THorse.Start;
-begin
-  if IsDev then
-    StartDev
-  else
-    StartProd;
-end;
-
-procedure THorse.StartDev;
-
 var
-  ThreadPool: TIdSchedulerOfThreadPool;
   LHTTPWebBroker: TIdHTTPWebBrokerBridge;
-  LTmp: string;
+  LAttach: string;
 begin
   WebRequestHandler.WebModuleClass := WebModuleClass;
   LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   try
+    try
 
-    LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
+      LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
 
-    LHTTPWebBroker.DefaultPort := FPort;
-    Writeln(Format(START_RUNNING, [FPort]));
-    LHTTPWebBroker.Active := True;
-    LHTTPWebBroker.StartListening;
-    Read(LTmp);
-  except
-    on E: Exception do
-      Writeln(E.ClassName, ': ', E.Message);
-  end
-end;
+      LHTTPWebBroker.DefaultPort := FPort;
+      Writeln(Format(START_RUNNING, [FPort]));
+      LHTTPWebBroker.Active := True;
+      LHTTPWebBroker.StartListening;
+      Write('Press return to stop ...');
 
-procedure THorse.StartProd;
-begin
-  Application.Initialize;
-  Application.WebModuleClass := WebModuleClass;
-  Application.Run;
+      Read(LAttach);
+
+      LHTTPWebBroker.Active := False;
+      LHTTPWebBroker.Bindings.Clear;
+    except
+      on E: Exception do
+        Writeln(E.ClassName, ': ', E.Message);
+    end;
+  finally
+    LHTTPWebBroker.free;
+  end;
 end;
 
 procedure THorse.Use(ACallback: THorseCallback);
