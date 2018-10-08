@@ -17,7 +17,7 @@ begin
   App.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
-      ARes.Send('pong');
+      Res.Send('pong');
     end);
   App.Start;
 ```
