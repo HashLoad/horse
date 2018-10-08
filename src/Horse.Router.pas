@@ -216,14 +216,14 @@ begin
     FPart := APath.Dequeue;
     FIsRegex := FPart.StartsWith(':');
     FTag := FPart.Substring(1, Length(FPart) - 1);
-    if APath.Count = 0 then
-    begin
-      FCallBack.Add(AHTTPType, ACallback);
-    end;
     FIsInitialized := true;
   end
   else
     APath.Dequeue;
+
+  if APath.Count = 0 then
+    FCallBack.Add(AHTTPType, ACallback);
+
   if APath.Count > 0 then
   begin
     ANextPart := APath.Peek;
@@ -263,4 +263,3 @@ begin
 end;
 
 end.
-
