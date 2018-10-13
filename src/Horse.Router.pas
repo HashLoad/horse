@@ -39,7 +39,6 @@ type
     procedure RegisterMiddleware(AMiddleware: THorseCallback); overload;
     procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse);
 
-    function CanExecute(ARequest: THorseRequest): Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -83,18 +82,6 @@ begin
   LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
 end;
 
-function THorseRouterTree.CanExecute(ARequest: THorseRequest): Boolean;
-var
-  LQueue: TQueue<string>;
-begin
-  LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo);
-  try
-    Result := Self.HasNext(THorseHackRequest(ARequest).GetWebRequest.MethodType, LQueue.ToArray);
-  finally
-    LQueue.Free;
-  end;
-end;
-
 constructor THorseRouterTree.Create;
 begin
   FMiddleware := TList<THorseCallback>.Create;
@@ -131,6 +118,7 @@ var
   LCurrent: string;
   LIndex: Integer;
   LNext: TProc;
+  LCallback: THorseCallback;
 begin
   LCurrent := APath.Dequeue;
 
@@ -148,7 +136,8 @@ begin
           LNext;
       end
       else if (APath.Count = 0) and assigned(FCallBack) then
-        FCallBack.Items[AHTTPType](ARequest, AResponse, LNext)
+        if FCallBack.TryGetValue(AHTTPType, LCallback) then
+          LCallback(ARequest, AResponse, LNext)
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;
@@ -188,7 +177,7 @@ begin
     Exit(False);
 
   if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsRegex)) then
-    Exit(FCallBack.ContainsKey(AMethod));
+    Exit(FCallBack.ContainsKey(AMethod) or (Amethod = mtAny));
 
   LNext := APaths[AIndex + 1];
 

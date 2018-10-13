@@ -41,15 +41,12 @@ begin
   try
     Response.Content := 'Not Found';
     Response.StatusCode := 404;
-    if FHorse.Routes.CanExecute(LRequest) then
-    begin
-      try
-        FHorse.Routes.Execute(LRequest, LResponse);
-      except
-        on e: EHorseCallbackInterrupted do
-        else
-          raise;
-      end;
+    try
+      FHorse.Routes.Execute(LRequest, LResponse);
+    except
+      on E: Exception do
+      if not e.InheritsFrom(EHorseCallbackInterrupted) then
+        raise;
     end;
   finally
     LRequest.Free;
