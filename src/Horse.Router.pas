@@ -136,8 +136,10 @@ begin
           LNext;
       end
       else if (APath.Count = 0) and assigned(FCallBack) then
+      begin
         if FCallBack.TryGetValue(AHTTPType, LCallback) then
-          LCallback(ARequest, AResponse, LNext)
+          LCallback(ARequest, AResponse, LNext);
+      end
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;

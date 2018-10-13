@@ -45,8 +45,8 @@ begin
       FHorse.Routes.Execute(LRequest, LResponse);
     except
       on E: Exception do
-      if not e.InheritsFrom(EHorseCallbackInterrupted) then
-        raise;
+        if not E.InheritsFrom(EHorseCallbackInterrupted) then
+          raise;
     end;
   finally
     LRequest.Free;
