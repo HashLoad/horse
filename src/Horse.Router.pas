@@ -21,7 +21,7 @@ type
     FIsRegex: Boolean;
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<String>;
-    FCallBack: TDictionary<TMethodType, THorseCallback>;
+    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
     FRoute: TDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>;
       ACallback: THorseCallback);
@@ -78,8 +78,9 @@ begin
       if LAcceptable.HasNext(AHTTPType, APath.ToArray) then
         Break;
     end;
-  end;
-  LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
+  end
+  else if LFound then
+    LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
 end;
 
 constructor THorseRouterTree.Create;
@@ -87,7 +88,7 @@ begin
   FMiddleware := TList<THorseCallback>.Create;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<String>.Create;
-  FCallBack := TDictionary<TMethodType, THorseCallback>.Create;
+  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create;
 end;
 
 destructor THorseRouterTree.Destroy;
@@ -116,13 +117,14 @@ procedure THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMe
   ARequest: THorseRequest; AResponse: THorseResponse);
 var
   LCurrent: string;
-  LIndex: Integer;
+  LIndex, LIndexCallback: Integer;
   LNext: TProc;
-  LCallback: THorseCallback;
+  LCallback: TList<THorseCallback>;
 begin
   LCurrent := APath.Dequeue;
 
   LIndex := -1;
+  LIndexCallback := -1;
   if Self.FIsRegex then
     ARequest.Params.Add(FTag, LCurrent);
 
@@ -137,8 +139,19 @@ begin
       end
       else if (APath.Count = 0) and assigned(FCallBack) then
       begin
+        inc(LIndexCallback);
         if FCallBack.TryGetValue(AHTTPType, LCallback) then
-          LCallback(ARequest, AResponse, LNext);
+        begin
+          if (LCallback.Count > LIndexCallback) then
+          begin
+            LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+            if (LCallback.Count > LIndexCallback) then
+              LNext;
+          end;
+        end
+        else
+          AResponse.Send('Method Not Allowed').Status(405)
+
       end
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
@@ -200,7 +213,8 @@ end;
 procedure THorseRouterTree.RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>;
   ACallback: THorseCallback);
 var
-  ANextPart: String;
+  LNextPart: String;
+  LCallbacks: TList<THorseCallback>;
 begin
   if not FIsInitialized then
   begin
@@ -213,14 +227,21 @@ begin
     APath.Dequeue;
 
   if APath.Count = 0 then
-    FCallBack.Add(AHTTPType, ACallback);
+  begin
+    if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
+    begin
+      LCallbacks := TList<THorseCallback>.Create;
+      FCallBack.Add(AHTTPType, LCallbacks);
+    end;
+    LCallbacks.Add(ACallback)
+  end;
 
   if APath.Count > 0 then
   begin
-    ANextPart := APath.Peek;
-    ForcePath(ANextPart).RegisterInternal(AHTTPType, APath, ACallback);
-    if ForcePath(ANextPart).FIsRegex then
-      FRegexedKeys.Add(ANextPart);
+    LNextPart := APath.Peek;
+    ForcePath(LNextPart).RegisterInternal(AHTTPType, APath, ACallback);
+    if ForcePath(LNextPart).FIsRegex then
+      FRegexedKeys.Add(LNextPart);
   end;
 end;
 

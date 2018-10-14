@@ -1,5 +1,5 @@
 unit Horse;
-
+
 interface
 
 uses
@@ -39,10 +39,18 @@ type
     property Routes: THorseRouterTree read FRoutes write FRoutes;
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
-    procedure Get(APath: string; ACallback: THorseCallback);
-    procedure Put(APath: string; ACallback: THorseCallback);
-    procedure Post(APath: string; ACallback: THorseCallback);
-    procedure Delete(APath: string; ACallback: THorseCallback);
+    procedure Use(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Use(ACallbacks: array of THorseCallback); overload;
+
+    procedure Get(APath: string; ACallback: THorseCallback); overload;
+    procedure Get(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Put(APath: string; ACallback: THorseCallback); overload;
+    procedure Put(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Post(APath: string; ACallback: THorseCallback); overload;
+    procedure Post(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Delete(APath: string; ACallback: THorseCallback); overload;
+    procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
+
     procedure Start;
     class function GetInstance: THorse;
   end;
@@ -71,6 +79,16 @@ begin
   inherited;
 end;
 
+procedure THorse.Delete(APath: string; ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+  begin
+    Delete(APath, LCallback); 
+  end; 
+end;
+
 procedure THorse.Delete(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtDelete, APath, ACallback);
@@ -85,6 +103,16 @@ end;
 procedure THorse.Get(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtGet, APath, ACallback);
+end;
+
+procedure THorse.Get(APath: string; ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+  begin
+    Get(APath, LCallback); 
+  end; 
 end;
 
 class function THorse.GetInstance: THorse;
@@ -150,6 +178,22 @@ begin
   end;
 end;
 
+procedure THorse.Use(ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Use(LCallback); 
+end;
+
+procedure THorse.Use(APath: string; ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Use(APath, LCallback); 
+end;
+
 procedure THorse.Use(ACallback: THorseCallback);
 begin
   FRoutes.RegisterMiddleware('/', ACallback);
@@ -158,6 +202,22 @@ end;
 procedure THorse.Use(APath: string; ACallback: THorseCallback);
 begin
   FRoutes.RegisterMiddleware(APath, ACallback);
+end;
+
+procedure THorse.Post(APath: string; ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Post(APath, LCallback); 
+end;
+
+procedure THorse.Put(APath: string; ACallbacks: array of THorseCallback);
+var 
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Put(APath, LCallback); 
 end;
 
 end.
