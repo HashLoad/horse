@@ -76,7 +76,10 @@ begin
     begin
       FRoute.TryGetValue(LKey, LAcceptable);
       if LAcceptable.HasNext(AHTTPType, APath.ToArray) then
+      begin
+        LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
         Break;
+      end;
     end;
   end
   else if LFound then
