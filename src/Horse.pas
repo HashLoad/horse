@@ -10,6 +10,8 @@ uses
 type
   EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
 
+  TProc = System.SysUtils.TProc;
+
   THorseList = Horse.HTTP.THorseList;
 
   THorseRequest = Horse.HTTP.THorseRequest;
