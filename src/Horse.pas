@@ -1,14 +1,16 @@
 unit Horse;
-
+
 interface
 
 uses
   System.SysUtils, System.Generics.Collections, System.Types,
-  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq, Horse.HTTP,
-  Horse.Router, IdContext;
+  IPPeerServer, IPPeerAPI, IdHTTPServer, Web.HTTPApp, Horse.HTTP,
+  Horse.Router, IdContext, IdCustomHTTPServer;
 
 type
   EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
+
+  TProc = System.SysUtils.TProc;
 
   THorseList = Horse.HTTP.THorseList;
 
@@ -26,11 +28,15 @@ type
   private
     FPort: Integer;
     FRoutes: THorseRouterTree;
+    FHTTPServer: TIdHTTPServer;
+
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
       var VUsername, VPassword: String; var VHandled: Boolean);
     procedure Initialize;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     class var FInstance: THorse;
+    procedure IdHTTPServerHandler(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
+      AResponseInfo: TIdHTTPResponseInfo);
   public
     destructor Destroy; override;
     constructor Create(APort: Integer); overload;
@@ -52,14 +58,13 @@ type
     procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
 
     procedure Start;
+    procedure Stop;
     class function GetInstance: THorse;
   end;
 
 implementation
 
-{ THorse }
-
-uses Horse.Constants, Horse.WebModule, System.IOUtils, IdSchedulerOfThreadPool;
+uses Horse.Constants, System.IOUtils, IdSchedulerOfThreadPool;
 
 constructor THorse.Create(APort: Integer);
 begin
@@ -76,17 +81,18 @@ end;
 destructor THorse.Destroy;
 begin
   FRoutes.free;
+  FHTTPServer.Free;
   inherited;
 end;
 
 procedure THorse.Delete(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
   begin
-    Delete(APath, LCallback); 
-  end; 
+    Delete(APath, LCallback);
+  end;
 end;
 
 procedure THorse.Delete(APath: string; ACallback: THorseCallback);
@@ -98,6 +104,13 @@ procedure THorse.Initialize;
 begin
   FInstance := Self;
   FRoutes := THorseRouterTree.Create;
+
+  FHTTPServer := TIdHTTPServer.Create(nil);
+
+  FHTTPServer.OnCommandGet := IdHTTPServerHandler;
+  FHTTPServer.OnCommandOther := IdHTTPServerHandler;
+  FHTTPServer.OnParseAuthentication := OnAuthentication;
+  FHTTPServer.DefaultPort := FPort;
 end;
 
 procedure THorse.Get(APath: string; ACallback: THorseCallback);
@@ -106,13 +119,13 @@ begin
 end;
 
 procedure THorse.Get(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
   begin
-    Get(APath, LCallback); 
-  end; 
+    Get(APath, LCallback);
+  end;
 end;
 
 class function THorse.GetInstance: THorse;
@@ -147,51 +160,71 @@ begin
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;
 
-procedure THorse.Start;
+procedure THorse.IdHTTPServerHandler(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
+  AResponseInfo: TIdHTTPResponseInfo);
 var
-  LHTTPWebBroker: TIdHTTPWebBrokerBridge;
-  LAttach: string;
+  LRequest: THorseRequest;
+  LResponse: THorseResponse;
 begin
-  WebRequestHandler.WebModuleClass := WebModuleClass;
-  LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
+  LRequest := THorseRequest.Create(ARequestInfo);
+  LResponse := THorseResponse.Create(AResponseInfo);
   try
+    AResponseInfo.ContentText := 'Not Found';
+    AResponseInfo.ResponseNo := 404;
     try
-
-      LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-
-      LHTTPWebBroker.DefaultPort := FPort;
-      Writeln(Format(START_RUNNING, [FPort]));
-      LHTTPWebBroker.Active := True;
-      LHTTPWebBroker.StartListening;
-      Write('Press return to stop ...');
-
-      Read(LAttach);
-
-      LHTTPWebBroker.Active := False;
-      LHTTPWebBroker.Bindings.Clear;
+      Routes.Execute(LRequest, LResponse);
     except
       on E: Exception do
-        Writeln(E.ClassName, ': ', E.Message);
+        if not E.InheritsFrom(EHorseCallbackInterrupted) then
+          raise;
     end;
   finally
-    LHTTPWebBroker.free;
+    LRequest.Free;
+    LResponse.Free;
   end;
 end;
 
+procedure THorse.Start;
+var
+  LAttach: string;
+begin
+  try
+    FHTTPServer.Active := True;
+    FHTTPServer.StartListening;
+    if IsConsole then
+    begin
+      Writeln(Format(START_RUNNING, [FPort]));
+      Write('Press return to stop ...');
+      Read(LAttach);
+      Stop;
+    end;
+  except
+    on E: Exception do
+      Writeln(E.ClassName, ': ', E.Message);
+  end;
+end;
+
+procedure THorse.Stop;
+begin
+  FHTTPServer.StopListening;
+  FHTTPServer.Active := False;
+  FHTTPServer.Bindings.Clear;
+end;
+
 procedure THorse.Use(ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Use(LCallback); 
+    Use(LCallback);
 end;
 
 procedure THorse.Use(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Use(APath, LCallback); 
+    Use(APath, LCallback);
 end;
 
 procedure THorse.Use(ACallback: THorseCallback);
@@ -205,19 +238,19 @@ begin
 end;
 
 procedure THorse.Post(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Post(APath, LCallback); 
+    Post(APath, LCallback);
 end;
 
 procedure THorse.Put(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Put(APath, LCallback); 
+    Put(APath, LCallback);
 end;
 
 end.

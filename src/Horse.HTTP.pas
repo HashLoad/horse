@@ -3,8 +3,7 @@ unit Horse.HTTP;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp,
-  IdHTTPWebBrokerBridge, IdHTTPHeaderInfo;
+  System.SysUtils, System.Classes, System.Generics.Collections, IdHTTPHeaderInfo, IdCustomHTTPServer;
 
 type
 
@@ -16,7 +15,7 @@ type
 
   THorseRequest = class
   private
-    FWebRequest: TWebRequest;
+    FWebRequest: TIdHTTPRequestInfo;
     FQuery: THorseList;
     FParams: THorseList;
     FHeaders: THorseList;
@@ -32,13 +31,13 @@ type
     function Query: THorseList;
     function Params: THorseList;
     function Headers: THorseList;
-    constructor Create(AWebRequest: TWebRequest);
+    constructor Create(AWebRequest: TIdHTTPRequestInfo);
     destructor Destroy; override;
   end;
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: TWebRequest;
+    function GetWebRequest: TIdHTTPRequestInfo;
     function GetParams: THorseList;
     procedure SetBody(ABody: TObject);
     procedure SetSession(ASession: TObject);
@@ -46,23 +45,24 @@ type
 
   THorseResponse = class
   private
-    FWebResponse: TWebResponse;
+    FWebResponse: TIdHTTPResponseInfo;
     FContent: TObject;
   public
     function Send(AContent: string): THorseResponse; overload;
     function Send<T: class>(AContent: T): THorseResponse; overload;
-    function Status(AStatus: Integer): THorseResponse;
-    constructor Create(AWebResponse: TWebResponse);
+    function Status(AStatus: Integer): THorseResponse; overload;
+    function Status: Integer; overload;
+    constructor Create(AWebResponse: TIdHTTPResponseInfo);
     destructor Destroy; override;
   end;
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: TWebResponse;
+    function GetWebResponse: TIdHTTPResponseInfo;
     function GetContent: TObject;
   end;
 
-  TIdHTTPAppRequestHelper = class helper for TIdHTTPAppRequest
+  TIdHTTPAppRequestHelper = class helper for TIdHTTPRequestInfo
   public
     function GetRequestInfo: TIdEntityHeaderInfo;
   end;
@@ -73,7 +73,7 @@ implementation
 
 function THorseRequest.Body: string;
 begin
-  Result := FWebRequest.Content;
+  Result := FWebRequest.Document;
 end;
 
 function THorseRequest.Body<T>: T;
@@ -81,7 +81,7 @@ begin
   Result := T(FBody);
 end;
 
-constructor THorseRequest.Create(AWebRequest: TWebRequest);
+constructor THorseRequest.Create(AWebRequest: TIdHTTPRequestInfo);
 begin
   FWebRequest := AWebRequest;
   InitializeQuery;
@@ -108,7 +108,7 @@ var
   LPosSeparator: Integer;
 begin
   FHeaders := THorseList.Create;
-  for LHeader in TIdHTTPAppRequest(FWebRequest).GetRequestInfo.RawHeaders do
+  for LHeader in TIdHTTPRequestInfo(FWebRequest).GetRequestInfo.RawHeaders do
   begin
     LPosSeparator := Pos(':', LHeader);
     LKey := Copy(LHeader, 0, LPosSeparator - 1);
@@ -131,7 +131,7 @@ var
   LItem: string;
 begin
   FQuery := THorseList.Create;
-  for LItem in FWebRequest.QueryFields do
+  for LItem in FWebRequest.QueryParams.Split([';']) do
   begin
     LParam := LItem.Split(['=']);
     FQuery.Add(LParam[KEY], LParam[VALUE]);
@@ -155,7 +155,7 @@ end;
 
 { THorseResponse }
 
-constructor THorseResponse.Create(AWebResponse: TWebResponse);
+constructor THorseResponse.Create(AWebResponse: TIdHTTPResponseInfo);
 begin
   FWebResponse := AWebResponse;
 end;
@@ -167,21 +167,26 @@ end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
-  FWebResponse.StatusCode := 200;
-  FWebResponse.Content := AContent;
+  FWebResponse.ResponseNo := 200;
+  FWebResponse.ContentText := AContent;
   Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
-  FWebResponse.StatusCode := 200;
+  FWebResponse.ResponseNo := 200;
   FContent := AContent;
   Result := Self;
 end;
 
+function THorseResponse.Status: Integer;
+begin
+  Result := FWebResponse.ResponseNo;
+end;
+
 function THorseResponse.Status(AStatus: Integer): THorseResponse;
 begin
-  FWebResponse.StatusCode := AStatus;
+  FWebResponse.ResponseNo := AStatus;
   Result := Self;
 end;
 
@@ -197,7 +202,7 @@ begin
   Result := FParams;
 end;
 
-function THorseHackRequest.GetWebRequest: TWebRequest;
+function THorseHackRequest.GetWebRequest: TIdHTTPRequestInfo;
 begin
   Result := FWebRequest;
 end;
@@ -214,7 +219,7 @@ end;
 
 { THorseHackResponse }
 
-function THorseHackResponse.GetWebResponse: TWebResponse;
+function THorseHackResponse.GetWebResponse: TIdHTTPResponseInfo;
 begin
   Result := FWebResponse;
 end;
@@ -223,7 +228,7 @@ end;
 
 function TIdHTTPAppRequestHelper.GetRequestInfo: TIdEntityHeaderInfo;
 begin
-  Result := FRequestInfo;
+  Result := Self;
 end;
 
 { EHorseCallbackInterrupted }

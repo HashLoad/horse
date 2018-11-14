@@ -106,10 +106,27 @@ end;
 procedure THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse);
 var
   LQueue: TQueue<string>;
+
+  function GetMethodType(Method: string): TMethodType;
+  begin
+    if Method = 'GET' then { do not localize }
+      Result := mtGet
+    else if Method = 'PUT' then { do not localize }
+      Result := mtPut
+    else if Method = 'POST' then { do not localize }
+      Result := mtPost
+    else if Method = 'HEAD' then { do not localize }
+      Result := mtHead
+    else if Method = 'DELETE' then { do not localize }
+      Result := mtDelete
+    else if Method = 'PATCH' then { do not localize }
+      Result := mtPatch;
+  end;
+
 begin
-  LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo);
+  LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.URI);
   try
-    ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
+    ExecuteInternal(LQueue, GetMethodType(THorseHackRequest(ARequest).GetWebRequest.Command), ARequest,
       AResponse);
   finally
     LQueue.Free;
@@ -147,6 +164,9 @@ begin
         begin
           if (LCallback.Count > LIndexCallback) then
           begin
+            if AResponse.Status = 404 then
+              AResponse.Send('');
+
             LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
             if (LCallback.Count > LIndexCallback) then
               LNext;
