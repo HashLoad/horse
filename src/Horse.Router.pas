@@ -147,6 +147,9 @@ begin
         begin
           if (LCallback.Count > LIndexCallback) then
           begin
+            if AResponse.Status = 404 then
+              AResponse.Send('');
+
             LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
             if (LCallback.Count > LIndexCallback) then
               LNext;

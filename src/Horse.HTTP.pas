@@ -51,7 +51,8 @@ type
   public
     function Send(AContent: string): THorseResponse; overload;
     function Send<T: class>(AContent: T): THorseResponse; overload;
-    function Status(AStatus: Integer): THorseResponse;
+    function Status(AStatus: Integer): THorseResponse; overload;
+    function Status: Integer; overload;
     constructor Create(AWebResponse: TWebResponse);
     destructor Destroy; override;
   end;
@@ -177,6 +178,11 @@ begin
   FWebResponse.StatusCode := 200;
   FContent := AContent;
   Result := Self;
+end;
+
+function THorseResponse.Status: Integer;
+begin
+  Result := FWebResponse.StatusCode;
 end;
 
 function THorseResponse.Status(AStatus: Integer): THorseResponse;
