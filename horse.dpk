@@ -35,7 +35,6 @@ contains
   Horse in 'src\Horse.pas',
   Horse.Constants in 'src\Horse.Constants.pas',
   Horse.HTTP in 'src\Horse.HTTP.pas',
-  Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   Horse.Router in 'src\Horse.Router.pas';
 
 end.

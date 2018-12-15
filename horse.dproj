@@ -84,11 +84,6 @@
         <DCCReference Include="src\Horse.pas"/>
         <DCCReference Include="src\Horse.Constants.pas"/>
         <DCCReference Include="src\Horse.HTTP.pas"/>
-        <DCCReference Include="src\Horse.WebModule.pas">
-            <Form>HorseWebModule</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TWebModule</DesignClass>
-        </DCCReference>
         <DCCReference Include="src\Horse.Router.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
