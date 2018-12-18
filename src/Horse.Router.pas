@@ -180,7 +180,7 @@ var
   LPart: String;
 begin
   Result := TQueue<string>.Create;
-  for LPart in APath.Split(['/']) do
+  for LPart in APath.Split(['/'], TStringSplitOptions.ExcludeLastEmpty) do
   begin
     Result.Enqueue(LPart);
   end;
