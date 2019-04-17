@@ -95,6 +95,8 @@ begin
   FQuery.Free;
   FParams.Free;
   FHeaders.Free;
+  if Assigned(FBody) then
+    FBody.Free;
   inherited;
 end;
 
@@ -163,6 +165,8 @@ end;
 
 destructor THorseResponse.Destroy;
 begin
+  if Assigned(FContent) then
+    FContent.Free;
   inherited;
 end;
 
