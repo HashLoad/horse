@@ -91,13 +91,14 @@ begin
   FMiddleware := TList<THorseCallback>.Create;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<String>.Create;
-  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create;
+  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
 end;
 
 destructor THorseRouterTree.Destroy;
 begin
   FMiddleware.Free;
   FreeAndNil(FRoute);
+  FRegexedKeys.Clear;
   FRegexedKeys.Free;
   FCallBack.Free;
   inherited;
@@ -180,7 +181,7 @@ var
   LPart: String;
 begin
   Result := TQueue<string>.Create;
-  for LPart in APath.Split(['/']) do
+  for LPart in APath.Split(['/'], TStringSplitOptions.ExcludeLastEmpty) do
   begin
     Result.Enqueue(LPart);
   end;
