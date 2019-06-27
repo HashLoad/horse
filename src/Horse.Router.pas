@@ -181,9 +181,10 @@ var
   LPart: String;
 begin
   Result := TQueue<string>.Create;
-  for LPart in APath.Split(['/'], TStringSplitOptions.ExcludeLastEmpty) do
+  for LPart in APath.Split(['/']) do
   begin
-    Result.Enqueue(LPart);
+    if not LPart.IsEmpty then
+      Result.Enqueue(LPart);
   end;
 end;
 
