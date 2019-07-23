@@ -32,10 +32,13 @@ requires
   rtl;
 
 contains
-  Horse in 'src\Horse.pas',
+  Horse.API in 'src\Horse.API.pas',
   Horse.Constants in 'src\Horse.Constants.pas',
   Horse.HTTP in 'src\Horse.HTTP.pas',
   Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
-  Horse.Router in 'src\Horse.Router.pas';
+  Horse.Router in 'src\Horse.Router.pas',
+  Horse.CGI in 'src\Horse.CGI.pas',
+  Horse.ISAPI in 'src\Horse.ISAPI.pas';
 
 end.
+

@@ -2,12 +2,9 @@ unit Horse.HTTP;
 
 interface
 
-uses
-  System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp,
-  IdHTTPWebBrokerBridge, IdHTTPHeaderInfo;
+uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPWebBrokerBridge, IdHTTPHeaderInfo;
 
 type
-
   EHorseCallbackInterrupted = class(Exception)
     constructor Create; reintroduce;
   end;

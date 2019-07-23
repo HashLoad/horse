@@ -81,7 +81,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="src\Horse.pas"/>
+        <DCCReference Include="src\Horse.API.pas"/>
         <DCCReference Include="src\Horse.Constants.pas"/>
         <DCCReference Include="src\Horse.HTTP.pas"/>
         <DCCReference Include="src\Horse.WebModule.pas">
@@ -90,6 +90,8 @@
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
         <DCCReference Include="src\Horse.Router.pas"/>
+        <DCCReference Include="src\Horse.CGI.pas"/>
+        <DCCReference Include="src\Horse.ISAPI.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -122,9 +124,14 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\..\..\Public\Documents\Embarcadero\Studio\19.0\Bpl\horse.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\horse.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>horse.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
+                    <Platform Name="OSX64">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
