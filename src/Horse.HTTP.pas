@@ -89,7 +89,7 @@ begin
   inherited;
 end;
 
-function THorseRequest.GetHeaders(const AIndex: string): string;
+function THorseRequest.GetHeaders(AIndex: string): string;
 begin
   Result := FWebRequest.GetFieldByName(AIndex);
 end;
