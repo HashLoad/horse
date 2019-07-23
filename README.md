@@ -9,9 +9,11 @@ $ boss install github.com/HashLoad/horse
 Sample Horse Server
 ```delphi
 uses
-  Horse;
+  Horse.API, Horse.CGI;
+  
 var
   App: THorse;
+  
 begin
   App := THorse.Create(9000);
 
