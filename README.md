@@ -33,6 +33,6 @@ end.
 * [**horse-octet-stream**](https://github.com/HashLoad/horse-octet-stream) - Middleware for work with application/octet-stream in HORSE
 * [**horse-jwt**](https://github.com/HashLoad/horse-jwt) - Middleware for JWT in HORSE
 * [**horse-basic-auth**](https://github.com/viniciussanchez/horse-basic-auth) - Middleware for Basic Authentication in HORSE
-
+* [**horse-compression**](https://github.com/viniciussanchez/horse-compression) - Middleware for compression in HORSE
 
 ### [Documentation](https://horse.hashload.com/pt-br)
