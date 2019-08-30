@@ -63,6 +63,8 @@ implementation
 
 { THorseRequest }
 
+uses Horse.Commons;
+
 function THorseRequest.Body: string;
 begin
   Result := FWebRequest.Content;
@@ -146,14 +148,14 @@ end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
-  FWebResponse.StatusCode := 200;
+  FWebResponse.StatusCode := HTTP_Status.OK;
   FWebResponse.Content := AContent;
   Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
-  FWebResponse.StatusCode := 200;
+  FWebResponse.StatusCode := HTTP_Status.OK;
   FContent := AContent;
   Result := Self;
 end;

@@ -92,6 +92,7 @@
         <DCCReference Include="src\Horse.Router.pas"/>
         <DCCReference Include="src\Horse.CGI.pas"/>
         <DCCReference Include="src\Horse.ISAPI.pas"/>
+        <DCCReference Include="src\Horse.Commons.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

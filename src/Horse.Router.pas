@@ -38,6 +38,8 @@ implementation
 
 { THorseRouterTree }
 
+uses Horse.Commons;
+
 procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
@@ -138,7 +140,7 @@ begin
         begin
           if (LCallback.Count > LIndexCallback) then
           begin
-            if AResponse.Status = 404 then
+            if AResponse.Status = HTTP_Status.NotFound then
               AResponse.Send('');
 
             LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
@@ -147,7 +149,7 @@ begin
           end;
         end
         else
-          AResponse.Send('Method Not Allowed').Status(405)
+          AResponse.Send('Method Not Allowed').Status(HTTP_Status.MethodNotAllowed)
       end
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
