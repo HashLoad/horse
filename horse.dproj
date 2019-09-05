@@ -90,7 +90,7 @@
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
         <DCCReference Include="src\Horse.Router.pas"/>
-        <DCCReference Include="src\Horse.CGI.pas"/>
+        <DCCReference Include="src\Horse.pas"/>
         <DCCReference Include="src\Horse.ISAPI.pas"/>
         <DCCReference Include="src\Horse.Commons.pas"/>
         <BuildConfiguration Include="Release">

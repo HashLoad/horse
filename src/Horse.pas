@@ -1,4 +1,4 @@
-unit Horse.CGI;
+unit Horse;
 
 interface
 
