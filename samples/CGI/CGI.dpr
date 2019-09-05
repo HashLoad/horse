@@ -4,7 +4,7 @@ program CGI;
 
 {$R *.res}
 
-uses System.SysUtils, Horse.API, Horse.CGI;
+uses Horse;
 
 var
   App: THorse;

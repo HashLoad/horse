@@ -1,6 +1,6 @@
 library ISAPI;
 
-uses Web.Win.ISAPIApp, Horse.ISAPI, Horse.API;
+uses Horse.ISAPI, Web.Win.ISAPIApp;
 
 {$R *.res}
 

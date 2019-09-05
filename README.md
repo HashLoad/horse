@@ -9,7 +9,7 @@ $ boss install github.com/HashLoad/horse
 Sample Horse Server
 ```delphi
 uses
-  Horse.API, Horse.CGI;
+  Horse;
   
 var
   App: THorse;
