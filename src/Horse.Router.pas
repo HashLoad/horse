@@ -140,7 +140,7 @@ begin
         begin
           if (LCallback.Count > LIndexCallback) then
           begin
-            if AResponse.Status = HTTP_Status.NotFound then
+            if AResponse.Status = HTTPStatus.NotFound then
               AResponse.Send('');
 
             LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
@@ -149,7 +149,7 @@ begin
           end;
         end
         else
-          AResponse.Send('Method Not Allowed').Status(HTTP_Status.MethodNotAllowed)
+          AResponse.Send('Method Not Allowed').Status(HTTPStatus.MethodNotAllowed)
       end
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);

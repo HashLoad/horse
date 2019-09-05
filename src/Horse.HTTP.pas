@@ -148,14 +148,14 @@ end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
-  FWebResponse.StatusCode := HTTP_Status.OK;
+  FWebResponse.StatusCode := HTTPStatus.OK;
   FWebResponse.Content := AContent;
   Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
-  FWebResponse.StatusCode := HTTP_Status.OK;
+  FWebResponse.StatusCode := HTTPStatus.OK;
   FContent := AContent;
   Result := Self;
 end;

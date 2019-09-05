@@ -10,7 +10,7 @@ type
   ///   Visit an individual status code via httpstatuses.com/code or browse the
   ///   list below.
   /// </summary>
-  HTTP_STATUS = record
+  HTTPStatus = record
   const
     /// <summary>
     ///   The initial part of a request has been received and has not yet been
