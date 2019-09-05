@@ -2,7 +2,7 @@ unit Horse.HTTP;
 
 interface
 
-uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo;
+uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo, Horse.Commons;
 
 type
   EHorseCallbackInterrupted = class(Exception)
@@ -48,6 +48,7 @@ type
     function Send(AContent: string): THorseResponse; overload;
     function Send<T: class>(AContent: T): THorseResponse; overload;
     function Status(AStatus: Integer): THorseResponse; overload;
+    function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
     constructor Create(AWebResponse: TWebResponse);
     destructor Destroy; override;
@@ -60,10 +61,6 @@ type
   end;
 
 implementation
-
-{ THorseRequest }
-
-uses Horse.Commons;
 
 function THorseRequest.Body: string;
 begin
@@ -148,15 +145,21 @@ end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
-  FWebResponse.StatusCode := HTTPStatus.OK;
+  FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
   FWebResponse.Content := AContent;
   Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
-  FWebResponse.StatusCode := HTTPStatus.OK;
+  FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
   FContent := AContent;
+  Result := Self;
+end;
+
+function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
+begin
+  FWebResponse.StatusCode := AStatus.ToInteger;
   Result := Self;
 end;
 
