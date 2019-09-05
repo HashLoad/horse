@@ -2,9 +2,18 @@ unit Horse;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.Core, IdContext;
+uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router;
 
 type
+  EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
+  TProc = System.SysUtils.TProc;
+  THorseList = Horse.HTTP.THorseList;
+  THorseRequest = Horse.HTTP.THorseRequest;
+  THorseHackRequest = Horse.HTTP.THorseHackRequest;
+  THorseResponse = Horse.HTTP.THorseResponse;
+  THorseHackResponse = Horse.HTTP.THorseHackResponse;
+  THorseCallback = Horse.Router.THorseCallback;
+
   THorse = class(THorseCore)
   private
     FPort: Integer;
@@ -21,7 +30,7 @@ implementation
 
 { THorse }
 
-uses Horse.Constants, Horse.WebModule, System.SysUtils, Web.WebReq;
+uses Horse.Constants, Horse.WebModule, Web.WebReq;
 
 constructor THorse.Create(APort: Integer);
 begin

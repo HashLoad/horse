@@ -2,9 +2,18 @@ unit Horse.ISAPI;
 
 interface
 
-uses Horse.Core;
+uses Horse.Core, Horse.HTTP, System.SysUtils, Horse.Router;
 
 type
+  EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
+  TProc = System.SysUtils.TProc;
+  THorseList = Horse.HTTP.THorseList;
+  THorseRequest = Horse.HTTP.THorseRequest;
+  THorseHackRequest = Horse.HTTP.THorseHackRequest;
+  THorseResponse = Horse.HTTP.THorseResponse;
+  THorseHackResponse = Horse.HTTP.THorseHackResponse;
+  THorseCallback = Horse.Router.THorseCallback;
+
   THorse = class(THorseCore)
   public
     procedure Start; override;

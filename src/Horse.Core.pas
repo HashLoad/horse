@@ -2,18 +2,9 @@ unit Horse.Core;
 
 interface
 
-uses Horse.HTTP, System.SysUtils, Horse.Router, Web.HTTPApp;
+uses System.SysUtils, Web.HTTPApp, Horse.Router;
 
 type
-  EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
-  TProc = System.SysUtils.TProc;
-  THorseList = Horse.HTTP.THorseList;
-  THorseRequest = Horse.HTTP.THorseRequest;
-  THorseHackRequest = Horse.HTTP.THorseHackRequest;
-  THorseResponse = Horse.HTTP.THorseResponse;
-  THorseHackResponse = Horse.HTTP.THorseHackResponse;
-  THorseCallback = Horse.Router.THorseCallback;
-
   THorseCore = class
   private
     FRoutes: THorseRouterTree;

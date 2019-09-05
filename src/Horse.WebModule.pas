@@ -19,6 +19,8 @@ var
 
 implementation
 
+uses Horse.HTTP;
+
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$R *.dfm}
 
