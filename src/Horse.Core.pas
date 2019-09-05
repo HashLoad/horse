@@ -1,4 +1,4 @@
-unit Horse.API;
+unit Horse.Core;
 
 interface
 
@@ -14,12 +14,12 @@ type
   THorseHackResponse = Horse.HTTP.THorseHackResponse;
   THorseCallback = Horse.Router.THorseCallback;
 
-  THorseAPI = class
+  THorseCore = class
   private
     FRoutes: THorseRouterTree;
     procedure Initialize;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
-    class var FInstance: THorseAPI;
+    class var FInstance: THorseCore;
   public
     destructor Destroy; override;
     constructor Create; overload;
@@ -39,25 +39,25 @@ type
     procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
 
     procedure Start; virtual; abstract;
-    class function GetInstance: THorseAPI;
+    class function GetInstance: THorseCore;
   end;
 
 implementation
 
-{ THorse }
+{ THorseCore }
 
-constructor THorseAPI.Create;
+constructor THorseCore.Create;
 begin
   Initialize;
 end;
 
-destructor THorseAPI.Destroy;
+destructor THorseCore.Destroy;
 begin
   FRoutes.free;
   inherited;
 end;
 
-procedure THorseAPI.Delete(APath: string; ACallbacks: array of THorseCallback);
+procedure THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin
@@ -67,23 +67,23 @@ begin
   end;
 end;
 
-procedure THorseAPI.Delete(APath: string; ACallback: THorseCallback);
+procedure THorseCore.Delete(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtDelete, APath, ACallback);
 end;
 
-procedure THorseAPI.Initialize;
+procedure THorseCore.Initialize;
 begin
   FInstance := Self;
   FRoutes := THorseRouterTree.Create;
 end;
 
-procedure THorseAPI.Get(APath: string; ACallback: THorseCallback);
+procedure THorseCore.Get(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtGet, APath, ACallback);
 end;
 
-procedure THorseAPI.Get(APath: string; ACallbacks: array of THorseCallback);
+procedure THorseCore.Get(APath: string; ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin
@@ -93,22 +93,22 @@ begin
   end;
 end;
 
-class function THorseAPI.GetInstance: THorseAPI;
+class function THorseCore.GetInstance: THorseCore;
 begin
   Result := FInstance;
 end;
 
-procedure THorseAPI.Post(APath: string; ACallback: THorseCallback);
+procedure THorseCore.Post(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtPost, APath, ACallback);
 end;
 
-procedure THorseAPI.Put(APath: string; ACallback: THorseCallback);
+procedure THorseCore.Put(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtPut, APath, ACallback);
 end;
 
-procedure THorseAPI.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
+procedure THorseCore.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 begin
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
@@ -117,7 +117,7 @@ begin
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;
 
-procedure THorseAPI.Use(ACallbacks: array of THorseCallback);
+procedure THorseCore.Use(ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin
@@ -125,7 +125,7 @@ begin
     Use(LCallback);
 end;
 
-procedure THorseAPI.Use(APath: string; ACallbacks: array of THorseCallback);
+procedure THorseCore.Use(APath: string; ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin
@@ -133,17 +133,17 @@ begin
     Use(APath, LCallback);
 end;
 
-procedure THorseAPI.Use(ACallback: THorseCallback);
+procedure THorseCore.Use(ACallback: THorseCallback);
 begin
   FRoutes.RegisterMiddleware('/', ACallback);
 end;
 
-procedure THorseAPI.Use(APath: string; ACallback: THorseCallback);
+procedure THorseCore.Use(APath: string; ACallback: THorseCallback);
 begin
   FRoutes.RegisterMiddleware(APath, ACallback);
 end;
 
-procedure THorseAPI.Post(APath: string; ACallbacks: array of THorseCallback);
+procedure THorseCore.Post(APath: string; ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin
@@ -151,7 +151,7 @@ begin
     Post(APath, LCallback);
 end;
 
-procedure THorseAPI.Put(APath: string; ACallbacks: array of THorseCallback);
+procedure THorseCore.Put(APath: string; ACallbacks: array of THorseCallback);
 var
   LCallback: THorseCallback;
 begin

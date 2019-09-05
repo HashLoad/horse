@@ -32,7 +32,7 @@ requires
   rtl;
 
 contains
-  Horse.API in 'src\Horse.API.pas',
+  Horse.Core in 'src\Horse.Core.pas',
   Horse.Constants in 'src\Horse.Constants.pas',
   Horse.HTTP in 'src\Horse.HTTP.pas',
   Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},

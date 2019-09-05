@@ -2,10 +2,10 @@ unit Horse.ISAPI;
 
 interface
 
-uses Horse.API;
+uses Horse.Core;
 
 type
-  THorse = class(THorseAPI)
+  THorse = class(THorseCore)
   public
     procedure Start; override;
   end;

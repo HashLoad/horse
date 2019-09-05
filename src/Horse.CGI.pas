@@ -2,10 +2,10 @@ unit Horse.CGI;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.API, IdContext;
+uses IdHTTPWebBrokerBridge, Horse.Core, IdContext;
 
 type
-  THorse = class(THorseAPI)
+  THorse = class(THorseCore)
   private
     FPort: Integer;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;

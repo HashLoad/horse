@@ -81,7 +81,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="src\Horse.API.pas"/>
+        <DCCReference Include="src\Horse.Core.pas"/>
         <DCCReference Include="src\Horse.Constants.pas"/>
         <DCCReference Include="src\Horse.HTTP.pas"/>
         <DCCReference Include="src\Horse.WebModule.pas">
