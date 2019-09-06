@@ -34,5 +34,6 @@ end.
 * [**horse-jwt**](https://github.com/HashLoad/horse-jwt) - Middleware for JWT in HORSE
 * [**horse-basic-auth**](https://github.com/viniciussanchez/horse-basic-auth) - Middleware for Basic Authentication in HORSE
 * [**horse-compression**](https://github.com/viniciussanchez/horse-compression) - Middleware for compression in HORSE
+* [**handle-exception**](https://github.com/HashLoad/handle-exception) - Middleware for handler exceptions in HORSE
 
 ### [Documentation](https://horse.hashload.com/pt-br)
