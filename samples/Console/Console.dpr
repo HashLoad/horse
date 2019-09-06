@@ -1,4 +1,4 @@
-program CGI;
+program Console;
 
 {$APPTYPE CONSOLE}
 
