@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Generics.Collections, System.Types,
-  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq,
+  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, IdCustomTCPServer, Web.HTTPApp, Web.WebReq,
   Horse.HTTP,
   Horse.Router, IdContext;
 
@@ -29,6 +29,8 @@ type
   private
     FPort: Integer;
     FRoutes: THorseRouterTree;
+    FMaxConnections: Integer;
+    FListenQueue: Integer;
     procedure OnAuthentication(AContext: TIdContext;
       const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
@@ -36,11 +38,15 @@ type
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string;
       ACallback: THorseCallback);
     class var FInstance: THorse;
+    procedure SetListenQueue(const Value: Integer);
+    procedure SetMaxConnections(const Value: Integer);
   public
     destructor Destroy; override;
     constructor Create(APort: Integer); overload;
     constructor Create; overload;
     property Port: Integer read FPort write FPort;
+    property ListenQueue: Integer read FListenQueue write SetListenQueue default IdListenQueueDefault;
+    property MaxConnections: Integer read FMaxConnections write SetMaxConnections default 0;
     property Routes: THorseRouterTree read FRoutes write FRoutes;
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
@@ -133,6 +139,7 @@ procedure THorse.Initialize;
 begin
   FInstance := Self;
   FRoutes := THorseRouterTree.Create;
+  FListenQueue := IdListenQueueDefault;
 end;
 
 procedure THorse.Get(APath: string; ACallback: THorseCallback);
@@ -189,6 +196,16 @@ begin
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;
 
+procedure THorse.SetListenQueue(const Value: Integer);
+begin
+  FListenQueue := Value;
+end;
+
+procedure THorse.SetMaxConnections(const Value: Integer);
+begin
+  FMaxConnections := Value;
+end;
+
 procedure THorse.Start;
 var
   LHTTPWebBroker: TIdHTTPWebBrokerBridge;
@@ -200,7 +217,8 @@ begin
     try
 
       LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-
+      LHTTPWebBroker.MaxConnections := FMaxConnections;
+      LHTTPWebBroker.ListenQueue := FListenQueue;
       LHTTPWebBroker.DefaultPort := FPort;
       Writeln(Format(START_RUNNING, [FPort]));
       LHTTPWebBroker.Active := True;
