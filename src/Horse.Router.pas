@@ -183,8 +183,10 @@ begin
   Result := TQueue<string>.Create;
   for LPart in APath.Split(['/']) do
   begin
-    if not LPart.IsEmpty then
-      Result.Enqueue(LPart);
+    if (Result.Count > 0) and LPart.IsEmpty then
+      Continue;
+
+    Result.Enqueue(LPart);
   end;
 end;
 

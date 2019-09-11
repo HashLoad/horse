@@ -1,11 +1,10 @@
 unit Horse;
-
+
 interface
 
 uses
-  System.SysUtils, System.Generics.Collections, System.Types,
-  IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, Web.HTTPApp, Web.WebReq, Horse.HTTP,
-  Horse.Router, IdContext;
+  System.SysUtils, System.Generics.Collections, System.Types, IPPeerServer, IPPeerAPI, IdHTTPWebBrokerBridge, IdCustomTCPServer,
+  Web.HTTPApp, Web.WebReq, Horse.HTTP, Horse.Router, IdContext;
 
 type
   EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
@@ -28,8 +27,11 @@ type
   private
     FPort: Integer;
     FRoutes: THorseRouterTree;
-    procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
-      var VUsername, VPassword: String; var VHandled: Boolean);
+    FMaxConnections: Integer;
+    FListenQueue: Integer;
+    procedure OnAuthentication(AContext: TIdContext;
+      const AAuthType, AAuthData: String; var VUsername, VPassword: String;
+      var VHandled: Boolean);
     procedure Initialize;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     class var FInstance: THorse;
@@ -38,6 +40,8 @@ type
     constructor Create(APort: Integer); overload;
     constructor Create; overload;
     property Port: Integer read FPort write FPort;
+    property ListenQueue: Integer read FListenQueue write FListenQueue default IdListenQueueDefault;
+    property MaxConnections: Integer read FMaxConnections write FMaxConnections default 0;
     property Routes: THorseRouterTree read FRoutes write FRoutes;
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
@@ -45,13 +49,21 @@ type
     procedure Use(ACallbacks: array of THorseCallback); overload;
 
     procedure Get(APath: string; ACallback: THorseCallback); overload;
+    procedure Get(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Get(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Get(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
     procedure Put(APath: string; ACallback: THorseCallback); overload;
+    procedure Put(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Put(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
     procedure Post(APath: string; ACallback: THorseCallback); overload;
+    procedure Post(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Post(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
     procedure Delete(APath: string; ACallback: THorseCallback); overload;
+    procedure Delete(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
 
     procedure Start;
     class function GetInstance: THorse;
@@ -75,6 +87,22 @@ begin
   Initialize;
 end;
 
+procedure THorse.Delete(APath: string; AMiddleware, ACallback: THorseCallback);
+begin
+  Delete(APath, [AMiddleware, ACallback]);
+end;
+
+procedure THorse.Delete(APath: string; ACallbacks: array of THorseCallback;
+  ACallback: THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Delete(APath, LCallback);
+
+  Delete(APath, ACallback);
+end;
+
 destructor THorse.Destroy;
 begin
   FRoutes.free;
@@ -82,13 +110,13 @@ begin
 end;
 
 procedure THorse.Delete(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
   begin
-    Delete(APath, LCallback); 
-  end; 
+    Delete(APath, LCallback);
+  end;
 end;
 
 procedure THorse.Delete(APath: string; ACallback: THorseCallback);
@@ -100,6 +128,7 @@ procedure THorse.Initialize;
 begin
   FInstance := Self;
   FRoutes := THorseRouterTree.Create;
+  FListenQueue := IdListenQueueDefault;
 end;
 
 procedure THorse.Get(APath: string; ACallback: THorseCallback);
@@ -108,13 +137,18 @@ begin
 end;
 
 procedure THorse.Get(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
   begin
-    Get(APath, LCallback); 
-  end; 
+    Get(APath, LCallback);
+  end;
+end;
+
+procedure THorse.Get(APath: string; AMiddleware, ACallback: THorseCallback);
+begin
+  Get(APath, [AMiddleware, ACallback]);
 end;
 
 class function THorse.GetInstance: THorse;
@@ -122,8 +156,9 @@ begin
   Result := FInstance;
 end;
 
-procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String;
-  var VUsername, VPassword: String; var VHandled: Boolean);
+procedure THorse.OnAuthentication(AContext: TIdContext;
+  const AAuthType, AAuthData: String; var VUsername, VPassword: String;
+  var VHandled: Boolean);
 begin
   VHandled := True;
 end;
@@ -138,7 +173,8 @@ begin
   RegisterRoute(mtPut, APath, ACallback);
 end;
 
-procedure THorse.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
+procedure THorse.RegisterRoute(AHTTPType: TMethodType; APath: string;
+  ACallback: THorseCallback);
 begin
   if APath.EndsWith('/') then
     APath := APath.Remove(High(APath) - 1, 1);
@@ -160,7 +196,8 @@ begin
     try
 
       LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-
+      LHTTPWebBroker.MaxConnections := FMaxConnections;
+      LHTTPWebBroker.ListenQueue := FListenQueue;
       LHTTPWebBroker.DefaultPort := FPort;
       Writeln(Format(START_RUNNING, [FPort]));
       LHTTPWebBroker.Active := True;
@@ -181,19 +218,19 @@ begin
 end;
 
 procedure THorse.Use(ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Use(LCallback); 
+    Use(LCallback);
 end;
 
 procedure THorse.Use(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Use(APath, LCallback); 
+    Use(APath, LCallback);
 end;
 
 procedure THorse.Use(ACallback: THorseCallback);
@@ -207,20 +244,63 @@ begin
 end;
 
 procedure THorse.Post(APath: string; ACallbacks: array of THorseCallback);
-var 
+
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Post(APath, LCallback); 
+    Post(APath, LCallback);
+end;
+
+procedure THorse.Post(APath: string; AMiddleware, ACallback: THorseCallback);
+begin
+  Post(APath, [AMiddleware, ACallback]);
+end;
+
+procedure THorse.Put(APath: string; AMiddleware, ACallback: THorseCallback);
+begin
+  Put(APath, [AMiddleware, ACallback]);
 end;
 
 procedure THorse.Put(APath: string; ACallbacks: array of THorseCallback);
-var 
+var
   LCallback: THorseCallback;
 begin
   for LCallback in ACallbacks do
-    Put(APath, LCallback); 
+    Put(APath, LCallback);
+end;
+
+procedure THorse.Get(APath: string; ACallbacks: array of THorseCallback;
+  ACallback: THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Get(APath, LCallback);
+
+  Get(APath, ACallback);
+end;
+
+procedure THorse.Post(APath: string; ACallbacks: array of THorseCallback;
+  ACallback: THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Post(APath, LCallback);
+
+  Post(APath, ACallback);
+end;
+
+procedure THorse.Put(APath: string; ACallbacks: array of THorseCallback;
+  ACallback: THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Put(APath, LCallback);
+
+  Put(APath, ACallback);
 end;
 
 end.
-

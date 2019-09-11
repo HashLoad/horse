@@ -109,6 +109,7 @@ procedure THorseRequest.InitializeHeaders;
 var
   LKey, LValue, LHeader: string;
   LPosSeparator: Integer;
+
 begin
   FHeaders := THorseList.Create;
   for LHeader in TIdHTTPAppRequest(FWebRequest).GetRequestInfo.RawHeaders do
