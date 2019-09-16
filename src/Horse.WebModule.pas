@@ -2,17 +2,15 @@ unit Horse.WebModule;
 
 interface
 
-uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse,
-  System.RegularExpressions;
+uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse.Core, System.RegularExpressions;
 
 type
   THorseWebModule = class(TWebModule)
-    procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse;
-      var Handled: Boolean);
+    procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
   private
-    FHorse: THorse;
+    FHorse: THorseCore;
   public
-    property Horse: THorse read FHorse write FHorse;
+    property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
   end;
 
@@ -21,13 +19,15 @@ var
 
 implementation
 
+uses Horse.HTTP;
+
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$R *.dfm}
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
   inherited;
-  FHorse := THorse.GetInstance;
+  FHorse := THorseCore.GetInstance;
 end;
 
 procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
