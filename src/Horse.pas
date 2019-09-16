@@ -17,11 +17,17 @@ type
   THorse = class(THorseCore)
   private
     FPort: Integer;
+    FMaxConnections: Integer;
+    FListenQueue: Integer;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
+  protected
+    procedure Initialize; override;
   public
     constructor Create; overload;
     constructor Create(APort: Integer); overload;
+    property ListenQueue: Integer read FListenQueue write FListenQueue;
+    property MaxConnections: Integer read FMaxConnections write FMaxConnections;
     property Port: Integer read FPort write FPort;
     procedure Start; override;
   end;
@@ -30,12 +36,19 @@ implementation
 
 { THorse }
 
-uses Horse.Constants, Horse.WebModule, Web.WebReq;
+uses Horse.Constants, Horse.WebModule, Web.WebReq, IdCustomTCPServer;
 
 constructor THorse.Create(APort: Integer);
 begin
   inherited Create;
   FPort := APort;
+end;
+
+procedure THorse.Initialize;
+begin
+  inherited;
+  FListenQueue := IdListenQueueDefault;
+  MaxConnections := 0;
 end;
 
 constructor THorse.Create;
@@ -62,6 +75,8 @@ begin
     try
       LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
 
+      LHTTPWebBroker.MaxConnections := FMaxConnections;
+      LHTTPWebBroker.ListenQueue := FListenQueue;
       LHTTPWebBroker.DefaultPort := FPort;
       Writeln(Format(START_RUNNING, [FPort]));
       LHTTPWebBroker.Active := True;

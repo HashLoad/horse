@@ -8,9 +8,10 @@ type
   THorseCore = class
   private
     FRoutes: THorseRouterTree;
-    procedure Initialize;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     class var FInstance: THorseCore;
+  protected
+    procedure Initialize; virtual;
   public
     destructor Destroy; override;
     constructor Create; overload;
