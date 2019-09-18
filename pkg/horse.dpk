@@ -1,0 +1,56 @@
+package horse;
+
+{$R *.res}
+{$R *.dres}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'Horse'}
+{$LIBSUFFIX '103'}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  designide,
+  ExpertsCreators,
+  IndySystem,
+  IndyProtocols,
+  IndyCore,
+  dbrtl,
+  dxCoreRS26,
+  dxGDIPlusRS26;
+
+contains
+  Horse.CodeGen.NewHorseProject in 'src\Horse.CodeGen.NewHorseProject.pas',
+  Horse.CodeGen.NewProject in 'src\Horse.CodeGen.NewProject.pas',
+  Horse.CodeGen.NewUnit in 'src\Horse.CodeGen.NewUnit.pas',
+  Horse.CodeGen.SourceFile in 'src\Horse.CodeGen.SourceFile.pas',
+  Horse.CodeGen.Templates in 'src\Horse.CodeGen.Templates.pas',
+  Horse.Views.Wizard in 'src\Horse.Views.Wizard.pas' {FrmNewProject},
+  Horse.ProjectWizardEx in 'src\Horse.ProjectWizardEx.pas',
+  Horse.Registration in 'src\Horse.Registration.pas',
+  Horse.Splash.Registration in 'src\Horse.Splash.Registration.pas';
+
+end.
+
