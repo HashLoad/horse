@@ -3,10 +3,11 @@ Fast, opinionated, minimalist web framework for Delphi
 
 ### For install in your project using [boss](https://github.com/HashLoad/boss):
 ``` sh
-$ boss install github.com/HashLoad/horse
+$ boss install horse
 ```
+* (Optional) Install [**wizard**](https://github.com/viniciussanchez/horse-wizard)
 
-Sample Horse Server
+### Samples
 ```delphi
 uses
   Horse;
