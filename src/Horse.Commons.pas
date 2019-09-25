@@ -68,10 +68,30 @@ type
     NotExtended = 510,
     NetworkAuthenticationRequired = 511,
     NetworkConnectTimeoutError = 599);
+
+  TMimeTypes = (
+    ApplicationJSON,
+    ApplicationOctetStream,
+    ApplicationXML,
+    ApplicationJavaScript,
+    ApplicationPDF,
+    ApplicationTypeScript,
+    ApplicationZIP,
+    TextPlain,
+    TextCSS,
+    TextCSV,
+    TextHTML,
+    ImageJPEG,
+    ImagePNG,
+    ImageGIF);
 {$SCOPEDENUMS OFF}
 
   THTTPStatusHelper = record helper for THTTPStatus
     function ToInteger: Integer;
+  end;
+
+  TMimeTypesHelper = record helper for TMimeTypes
+    function ToString: string;
   end;
 
 implementation
@@ -81,6 +101,42 @@ implementation
 function THTTPStatusHelper.ToInteger: Integer;
 begin
   Result := Ord(Self);
+end;
+
+{ TMimeTypesHelper }
+
+function TMimeTypesHelper.ToString: string;
+begin
+  case Self of
+    TMimeTypes.ApplicationJSON:
+      Result := 'application/json';
+    TMimeTypes.ApplicationOctetStream:
+      Result := 'application/octet-stream';
+    TMimeTypes.ApplicationXML:
+      Result := 'application/xml';
+    TMimeTypes.ApplicationJavaScript:
+      Result := 'application/javascript';
+    TMimeTypes.ApplicationPDF:
+      Result := 'application/pdf';
+    TMimeTypes.ApplicationTypeScript:
+      Result := 'application/typescript';
+    TMimeTypes.ApplicationZIP:
+      Result := 'application/zip';
+    TMimeTypes.TextPlain:
+      Result := 'text/plain';
+    TMimeTypes.TextCSS:
+      Result := 'text/css';
+    TMimeTypes.TextCSV:
+      Result := 'text/csv';
+    TMimeTypes.TextHTML:
+      Result := 'text/html';
+    TMimeTypes.ImageJPEG:
+      Result := 'image/jpeg';
+    TMimeTypes.ImagePNG:
+      Result := 'image/png';
+    TMimeTypes.ImageGIF:
+      Result := 'image/gif';
+  end;
 end;
 
 end.
