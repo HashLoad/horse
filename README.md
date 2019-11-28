@@ -37,4 +37,4 @@ end.
 * [**horse-compression**](https://github.com/viniciussanchez/horse-compression) - Middleware for compression in HORSE
 * [**handle-exception**](https://github.com/HashLoad/handle-exception) - Middleware for handler exceptions in HORSE
 
-### [Documentation](https://horse.hashload.com/pt-br)
+### [Documentation](https://romantic-lalande-2d106d.netlify.com/pt-br)
