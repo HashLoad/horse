@@ -32,6 +32,11 @@ type
     procedure Put(APath: string; ACallbacks: array of THorseCallback); overload;
     procedure Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
 
+    procedure Patch(APath: string; ACallback: THorseCallback); overload;
+    procedure Patch(APath: string; AMiddleware, ACallback: THorseCallback); overload;
+    procedure Patch(APath: string; ACallbacks: array of THorseCallback); overload;
+    procedure Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
+
     procedure Post(APath: string; ACallback: THorseCallback); overload;
     procedure Post(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Post(APath: string; ACallbacks: array of THorseCallback); overload;
@@ -126,6 +131,11 @@ begin
   RegisterRoute(mtPost, APath, ACallback);
 end;
 
+procedure THorseCore.Patch(APath: string; ACallback: THorseCallback);
+begin
+  RegisterRoute(mtPatch, APath, ACallback);
+end;
+
 procedure THorseCore.Put(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtPut, APath, ACallback);
@@ -179,9 +189,22 @@ begin
   Post(APath, [AMiddleware, ACallback]);
 end;
 
+procedure THorseCore.Patch(APath: string; AMiddleware, ACallback: THorseCallback);
+begin
+  Patch(APath, [AMiddleware, ACallback]);
+end;
+
 procedure THorseCore.Put(APath: string; AMiddleware, ACallback: THorseCallback);
 begin
   Put(APath, [AMiddleware, ACallback]);
+end;
+
+procedure THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Patch(APath, LCallback);
 end;
 
 procedure THorseCore.Put(APath: string; ACallbacks: array of THorseCallback);
@@ -208,6 +231,15 @@ begin
   for LCallback in ACallbacks do
     Post(APath, LCallback);
   Post(APath, ACallback);
+end;
+
+procedure THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback);
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    Patch(APath, LCallback);
+  Patch(APath, ACallback);
 end;
 
 procedure THorseCore.Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback);
