@@ -16,10 +16,12 @@ type
     FWebRequest: TWebRequest;
     FQuery: THorseList;
     FParams: THorseList;
+    FCookie: THorseList;
     FBody: TObject;
     FSession: TObject;
     procedure InitializeQuery;
     procedure InitializeParams;
+    procedure InitializeCookie;
     function GetHeaders(AIndex: string): string;
   public
     function Body: string; overload;
@@ -27,6 +29,8 @@ type
     function Session<T: class>: T;
     function Query: THorseList;
     function Params: THorseList;
+    function Cookie: THorseList;
+    function MethodType: TMethodType;
     property Headers[index: string]: string read GetHeaders;
     constructor Create(AWebRequest: TWebRequest);
     destructor Destroy; override;
@@ -62,6 +66,10 @@ type
 
 implementation
 
+const
+  KEY = 0;
+  VALUE = 1;
+
 function THorseRequest.Body: string;
 begin
   Result := FWebRequest.Content;
@@ -72,17 +80,24 @@ begin
   Result := T(FBody);
 end;
 
+function THorseRequest.Cookie: THorseList;
+begin
+  Result := FCookie;
+end;
+
 constructor THorseRequest.Create(AWebRequest: TWebRequest);
 begin
   FWebRequest := AWebRequest;
   InitializeQuery;
   InitializeParams;
+  InitializeCookie;
 end;
 
 destructor THorseRequest.Destroy;
 begin
   FQuery.Free;
   FParams.Free;
+  FCookie.Free;
   if Assigned(FBody) then
     FBody.Free;
   inherited;
@@ -93,15 +108,25 @@ begin
   Result := FWebRequest.GetFieldByName(AIndex);
 end;
 
+procedure THorseRequest.InitializeCookie;
+var
+  LParam: TArray<string>;
+  LItem: string;
+begin
+  FCookie := THorseList.Create;
+  for LItem in FWebRequest.CookieFields do
+  begin
+    LParam := LItem.Split(['=']);
+    FCookie.Add(LParam[KEY], LParam[VALUE]);
+  end;
+end;
+
 procedure THorseRequest.InitializeParams;
 begin
   FParams := THorseList.Create;
 end;
 
 procedure THorseRequest.InitializeQuery;
-const
-  KEY = 0;
-  VALUE = 1;
 var
   LParam: TArray<string>;
   LItem: string;
@@ -112,6 +137,11 @@ begin
     LParam := LItem.Split(['=']);
     FQuery.Add(LParam[KEY], LParam[VALUE]);
   end;
+end;
+
+function THorseRequest.MethodType: TMethodType;
+begin
+  Result := FWebRequest.MethodType;
 end;
 
 function THorseRequest.Params: THorseList;
