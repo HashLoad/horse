@@ -19,13 +19,16 @@ type
     FPort: Integer;
     FMaxConnections: Integer;
     FListenQueue: Integer;
+    LHTTPWebBroker: TIdHTTPWebBrokerBridge;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
+    procedure WebBrokerDestroy;
   protected
     procedure Initialize; override;
   public
     constructor Create; overload;
     constructor Create(APort: Integer); overload;
+    destructor Destroy; override;
     property ListenQueue: Integer read FListenQueue write FListenQueue;
     property MaxConnections: Integer read FMaxConnections write FMaxConnections;
     property Port: Integer read FPort write FPort;
@@ -56,6 +59,20 @@ begin
   inherited Create;
   FPort := DEFAULT_PORT;
 end;
+destructor THorse.Destroy;
+begin
+  WebBrokerDestroy;
+  inherited Destroy;
+end;
+
+procedure THorse.WebBrokerDestroy;
+begin
+    if Assigned(LHTTPWebBroker) then begin
+      LHTTPWebBroker.Active := False;
+      LHTTPWebBroker.Bindings.Clear;
+      LHTTPWebBroker.Free;
+    end;
+end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
   var VHandled: Boolean);
@@ -65,34 +82,37 @@ end;
 
 procedure THorse.Start;
 var
-  LHTTPWebBroker: TIdHTTPWebBrokerBridge;
   LAttach: string;
 begin
   inherited;
   WebRequestHandler.WebModuleClass := WebModuleClass;
+  WebBrokerDestroy;
   LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   try
     try
       LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-
       LHTTPWebBroker.MaxConnections := FMaxConnections;
       LHTTPWebBroker.ListenQueue := FListenQueue;
       LHTTPWebBroker.DefaultPort := FPort;
-      Writeln(Format(START_RUNNING, [FPort]));
+      if IsConsole then 
+        Writeln(Format(START_RUNNING, [FPort]));
       LHTTPWebBroker.Active := True;
       LHTTPWebBroker.StartListening;
-      Write('Press return to stop ...');
-      Read(LAttach);
-
-      LHTTPWebBroker.Active := False;
-      LHTTPWebBroker.Bindings.Clear;
+      if IsConsole then begin
+        Write('Press return to stop ...');
+        Read(LAttach);
+        WebBrokerDestroy;
+      end;
     except
       on E: Exception do
-        Writeln(E.ClassName, ': ', E.Message);
+        if IsConsole then 
+           Writeln(E.ClassName, ': ', E.Message)
+        else
+          raise E;
     end;
   finally
-    LHTTPWebBroker.free;
   end;
 end;
+
 
 end.
