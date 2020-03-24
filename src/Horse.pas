@@ -19,10 +19,9 @@ type
     FPort: Integer;
     FMaxConnections: Integer;
     FListenQueue: Integer;
-    LHTTPWebBroker: TIdHTTPWebBrokerBridge;
+    FHTTPWebBroker: TIdHTTPWebBrokerBridge;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
-    procedure WebBrokerDestroy;
   protected
     procedure Initialize; override;
   public
@@ -47,9 +46,18 @@ begin
   FPort := APort;
 end;
 
+destructor THorse.Destroy;
+begin
+  if Assigned(FHTTPWebBroker) then
+    FHTTPWebBroker.Free;
+  inherited;
+end;
+
 procedure THorse.Initialize;
 begin
   inherited;
+  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
+  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
   FListenQueue := IdListenQueueDefault;
   MaxConnections := 0;
 end;
@@ -59,20 +67,6 @@ begin
   inherited Create;
   FPort := DEFAULT_PORT;
 end;
-destructor THorse.Destroy;
-begin
-  WebBrokerDestroy;
-  inherited Destroy;
-end;
-
-procedure THorse.WebBrokerDestroy;
-begin
-    if Assigned(LHTTPWebBroker) then begin
-      LHTTPWebBroker.Active := False;
-      LHTTPWebBroker.Bindings.Clear;
-      LHTTPWebBroker.Free;
-    end;
-end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
   var VHandled: Boolean);
@@ -86,33 +80,31 @@ var
 begin
   inherited;
   WebRequestHandler.WebModuleClass := WebModuleClass;
-  WebBrokerDestroy;
-  LHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   try
-    try
-      LHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-      LHTTPWebBroker.MaxConnections := FMaxConnections;
-      LHTTPWebBroker.ListenQueue := FListenQueue;
-      LHTTPWebBroker.DefaultPort := FPort;
-      if IsConsole then 
-        Writeln(Format(START_RUNNING, [FPort]));
-      LHTTPWebBroker.Active := True;
-      LHTTPWebBroker.StartListening;
-      if IsConsole then begin
-        Write('Press return to stop ...');
-        Read(LAttach);
-        WebBrokerDestroy;
-      end;
-    except
-      on E: Exception do
-        if IsConsole then 
-           Writeln(E.ClassName, ': ', E.Message)
-        else
-          raise E;
+    FHTTPWebBroker.MaxConnections := FMaxConnections;
+    FHTTPWebBroker.ListenQueue := FListenQueue;
+    FHTTPWebBroker.DefaultPort := FPort;
+    FHTTPWebBroker.Active := True;
+    FHTTPWebBroker.StartListening;
+
+    if IsConsole then
+    begin
+      Writeln(Format(START_RUNNING, [FPort]));
+      Write('Press return to stop ...');
+      Read(LAttach);
     end;
-  finally
+  except
+    on E: Exception do
+    begin
+      if IsConsole then
+      begin
+        Writeln(E.ClassName, ': ', E.Message);
+        Read(LAttach);
+      end
+      else
+        raise E;
+    end;
   end;
 end;
-
 
 end.

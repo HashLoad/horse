@@ -8,7 +8,7 @@ const
   ENV_D = 'd';
   ENV_DEV = 'dev';
   ENV_DEVELOPMENT = 'development';
-  START_RUNNING = 'Server runing on port %d';
+  START_RUNNING = 'Server is runing on port %d';
 
 implementation
 
