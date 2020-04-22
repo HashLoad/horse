@@ -36,5 +36,6 @@ end.
 * [**horse-basic-auth**](https://github.com/viniciussanchez/horse-basic-auth) - Middleware for Basic Authentication in HORSE
 * [**horse-compression**](https://github.com/viniciussanchez/horse-compression) - Middleware for compression in HORSE
 * [**handle-exception**](https://github.com/HashLoad/handle-exception) - Middleware for handler exceptions in HORSE
+* [**horse-etag**](https://github.com/bittencourtthulio/Horse-ETag) - Horse Server Middleware for Etag Control
 
 ### [Documentation](https://romantic-lalande-2d106d.netlify.com/pt-br)
