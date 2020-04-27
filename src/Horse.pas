@@ -81,7 +81,8 @@ begin
   inherited;
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
-    FHTTPWebBroker.MaxConnections := FMaxConnections;
+    if FMaxConnections > 0 then
+      FHTTPWebBroker.MaxConnections := FMaxConnections;
     FHTTPWebBroker.ListenQueue := FListenQueue;
     FHTTPWebBroker.DefaultPort := FPort;
     FHTTPWebBroker.Active := True;
