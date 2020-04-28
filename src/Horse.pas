@@ -32,6 +32,7 @@ type
     property MaxConnections: Integer read FMaxConnections write FMaxConnections;
     property Port: Integer read FPort write FPort;
     procedure Start; override;
+    procedure Stop; override;
   end;
 
 implementation
@@ -72,6 +73,16 @@ procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthDa
   var VHandled: Boolean);
 begin
   VHandled := True;
+end;
+
+procedure THorse.stop;
+begin
+   inherited;
+   if Assigned(FHTTPWebBroker) then
+   begin
+      FHTTPWebBroker.StopListening;
+      FHTTPWebBroker.Active := false;
+   end;
 end;
 
 procedure THorse.Start;
