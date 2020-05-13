@@ -2,10 +2,11 @@ unit Horse;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router;
+uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router, Horse.Exception;
 
 type
-  EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
+  EHorseException = Horse.Exception.EHorseException;
+  EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
   TProc = System.SysUtils.TProc;
   THorseList = Horse.HTTP.THorseList;
   THorseRequest = Horse.HTTP.THorseRequest;

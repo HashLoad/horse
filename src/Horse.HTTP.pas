@@ -5,10 +5,6 @@ interface
 uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo, Horse.Commons;
 
 type
-  EHorseCallbackInterrupted = class(Exception)
-    constructor Create; reintroduce;
-  end;
-
   THorseList = TDictionary<string, string>;
 
   THorseRequest = class
@@ -236,13 +232,6 @@ end;
 function THorseHackResponse.GetWebResponse: TWebResponse;
 begin
   Result := FWebResponse;
-end;
-
-{ EHorseCallbackInterrupted }
-
-constructor EHorseCallbackInterrupted.Create;
-begin
-  inherited Create('');
 end;
 
 end.
