@@ -1,16 +1,16 @@
 # Horse
 Fast, opinionated, minimalist web framework for Delphi
 
-### For install in your project using [boss](https://github.com/HashLoad/boss):
+## ⚙️ Installation
+Installation is done using the [`boss install`](https://github.com/HashLoad/boss) command:
 ``` sh
 $ boss install horse
 ```
 * (Optional) Install [**wizard**](https://github.com/viniciussanchez/horse-wizard)
 
-### Samples
+## ⚡️ Quickstart
 ```delphi
-uses
-  Horse;
+uses Horse;
   
 var
   App: THorse;
@@ -28,14 +28,21 @@ begin
 end.
 ```
 
-## Middlewares
-* [**jhonson**](https://github.com/HashLoad/jhonson) - Middleware for parse JSON in HORSE
-* [**horse-cors**](https://github.com/HashLoad/horse-cors) - Middleware for inject CORS headers in HORSE
-* [**horse-octet-stream**](https://github.com/HashLoad/horse-octet-stream) - Middleware for work with application/octet-stream in HORSE
-* [**horse-jwt**](https://github.com/HashLoad/horse-jwt) - Middleware for JWT in HORSE
-* [**horse-basic-auth**](https://github.com/viniciussanchez/horse-basic-auth) - Middleware for Basic Authentication in HORSE
-* [**horse-compression**](https://github.com/viniciussanchez/horse-compression) - Middleware for compression in HORSE
-* [**handle-exception**](https://github.com/HashLoad/handle-exception) - Middleware for handler exceptions in HORSE
-* [**horse-etag**](https://github.com/bittencourtthulio/Horse-ETag) - Horse Server Middleware for Etag Control
+## 🧬 Official Middlewares
+
+For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
+
+- [horse/json](https://github.com/HashLoad/jhonson)
+- [horse/cors](https://github.com/HashLoad/horse-cors)
+- [horse/stream](https://github.com/HashLoad/horse-octet-stream)
+- [horse/jwt](https://github.com/HashLoad/horse-jwt)
+- [horse/exception](https://github.com/HashLoad/handle-exception)
+
+## 🌱 Third Party Middlewares
+
+This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
+- [viniciussanchez/basic-auth](https://github.com/viniciussanchez/horse-basic-auth)
+- [viniciussanchez/compression](https://github.com/viniciussanchez/horse-compression)
+- [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
 
 ### [Documentation](https://romantic-lalande-2d106d.netlify.com/pt-br)
