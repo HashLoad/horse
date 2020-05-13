@@ -45,4 +45,6 @@ This is a list of middlewares that are created by the Horse community, please cr
 - [viniciussanchez/compression](https://github.com/viniciussanchez/horse-compression)
 - [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
 
-### [Documentation](https://romantic-lalande-2d106d.netlify.com/pt-br)
+## ⚠️ License
+
+`Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE). 
