@@ -19,7 +19,7 @@ var
 
 implementation
 
-uses Horse.HTTP;
+uses Horse.HTTP, Horse.Exception;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$R *.dfm}
