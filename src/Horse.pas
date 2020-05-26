@@ -83,7 +83,7 @@ begin
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
     if FMaxConnections > 0 then
-      FHTTPWebBroker.MaxConnections := FMaxConnections;
+      WebRequestHandler.MaxConnections := FMaxConnections;
     FHTTPWebBroker.ListenQueue := FListenQueue;
     FHTTPWebBroker.DefaultPort := FPort;
     FHTTPWebBroker.Active := True;
