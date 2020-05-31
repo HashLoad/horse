@@ -15,6 +15,7 @@ type
   public
     destructor Destroy; override;
     constructor Create; overload;
+    class destructor UnInitialize;
     property Routes: THorseRouterTree read FRoutes write FRoutes;
 
     procedure Use(APath: string; ACallback: THorseCallback); overload;
@@ -167,6 +168,12 @@ begin
   if not APath.StartsWith('/') then
     APath := '/' + APath;
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
+end;
+
+class destructor THorseCore.UnInitialize;
+begin
+  if Assigned(FInstance) then
+     FInstance.Free;
 end;
 
 procedure THorseCore.Use(ACallbacks: array of THorseCallback);
