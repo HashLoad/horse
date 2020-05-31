@@ -55,6 +55,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 - [viniciussanchez/basic-auth](https://github.com/viniciussanchez/horse-basic-auth)
 - [viniciussanchez/compression](https://github.com/viniciussanchez/horse-compression)
 - [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
+- [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
 - [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
 
 ## ⚠️ License
