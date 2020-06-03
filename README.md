@@ -44,6 +44,7 @@ end.
 For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
 
 - [horse/json](https://github.com/HashLoad/jhonson)
+- [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)
 - [horse/cors](https://github.com/HashLoad/horse-cors)
 - [horse/stream](https://github.com/HashLoad/horse-octet-stream)
 - [horse/jwt](https://github.com/HashLoad/horse-jwt)
@@ -54,7 +55,6 @@ For an more _maintainable_ middleware _ecosystem_, we've put official [middlewar
 ## 🌱 Third Party Middlewares
 
 This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
-- [viniciussanchez/basic-auth](https://github.com/viniciussanchez/horse-basic-auth)
 - [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
 - [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
 - [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
