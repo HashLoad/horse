@@ -142,8 +142,15 @@ begin
           begin
             if AResponse.Status = THTTPStatus.NotFound.ToInteger then
               AResponse.Send('');
-
-            LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+            try
+              LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+            except
+              on E: Exception do
+              begin
+                AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+                raise;
+              end;
+            end;
             if (LCallback.Count > LIndexCallback) then
               LNext;
           end;
@@ -170,9 +177,11 @@ end;
 function THorseRouterTree.GetQueuePath(APath: string): TQueue<String>;
 var
   LPart: String;
+  LSplitedPath: TArray<string>;
 begin
   Result := TQueue<string>.Create;
-  for LPart in APath.Split(['/']) do
+  LSplitedPath := APath.Split(['/']);
+  for LPart in LSplitedPath do
   begin
     if (Result.Count > 0) and LPart.IsEmpty then
       Continue;
