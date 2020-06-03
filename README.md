@@ -17,7 +17,7 @@ Installation is done using the [`boss install`](https://github.com/HashLoad/boss
 ``` sh
 $ boss install horse
 ```
-* (Optional) Install [**wizard**](https://github.com/viniciussanchez/horse-wizard)
+* (Optional) Install [**wizard**](https://github.com/HashLoad/horse-wizard)
 
 ## ⚡️ Quickstart
 ```delphi
