@@ -49,12 +49,12 @@ For an more _maintainable_ middleware _ecosystem_, we've put official [middlewar
 - [horse/jwt](https://github.com/HashLoad/horse-jwt)
 - [horse/exception](https://github.com/HashLoad/handle-exception)
 - [horse/logger](https://github.com/HashLoad/horse-logger)
+- [horse/compression](https://github.com/HashLoad/horse-compression)
 
 ## 🌱 Third Party Middlewares
 
 This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
 - [viniciussanchez/basic-auth](https://github.com/viniciussanchez/horse-basic-auth)
-- [viniciussanchez/compression](https://github.com/viniciussanchez/horse-compression)
 - [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
 - [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
 - [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
