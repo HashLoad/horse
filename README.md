@@ -48,6 +48,7 @@ For an more _maintainable_ middleware _ecosystem_, we've put official [middlewar
 - [horse/stream](https://github.com/HashLoad/horse-octet-stream)
 - [horse/jwt](https://github.com/HashLoad/horse-jwt)
 - [horse/exception](https://github.com/HashLoad/handle-exception)
+- [horse/logger](https://github.com/HashLoad/horse-logger)
 
 ## 🌱 Third Party Middlewares
 
