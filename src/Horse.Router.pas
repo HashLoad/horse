@@ -161,8 +161,11 @@ begin
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;
-  LNext;
-  LNext := nil;
+  try
+    LNext;
+  finally
+    LNext := nil;
+  end;
 end;
 
 function THorseRouterTree.ForcePath(APath: String): THorseRouterTree;
