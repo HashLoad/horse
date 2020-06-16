@@ -38,7 +38,7 @@ implementation
 
 { THorseRouterTree }
 
-uses Horse.Commons;
+uses Horse.Commons, Horse.Exception;
 
 procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 var
@@ -147,7 +147,8 @@ begin
             except
               on E: Exception do
               begin
-                AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+                if (not (E is EHorseCallbackInterrupted)) and (not (E is EHorseException)) then
+                  AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
                 raise;
               end;
             end;
