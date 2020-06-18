@@ -2,7 +2,7 @@ unit Horse.Core;
 
 interface
 
-uses System.SysUtils, Web.HTTPApp, Horse.Router;
+uses System.SysUtils, Web.HTTPApp, Horse.Router, Horse.Core.Route.Intf;
 
 type
   THorseCore = class
@@ -16,7 +16,9 @@ type
     destructor Destroy; override;
     constructor Create; overload;
     class destructor UnInitialize;
+
     property Routes: THorseRouterTree read FRoutes write FRoutes;
+    function Route(APath: string): IHorseCoreRoute;
 
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
@@ -58,6 +60,9 @@ type
   end;
 
 implementation
+
+uses
+  Horse.Core.Route;
 
 { THorseCore }
 
@@ -168,6 +173,11 @@ begin
   if not APath.StartsWith('/') then
     APath := '/' + APath;
   FRoutes.RegisterRoute(AHTTPType, APath, ACallback);
+end;
+
+function THorseCore.Route(APath: string): IHorseCoreRoute;
+begin
+  Result := THorseCoreRoute.Create(APath, Self);
 end;
 
 class destructor THorseCore.UnInitialize;
