@@ -8,8 +8,8 @@ uses
 type
   THorseCoreRoute = class(TInterfacedObject, IHorseCoreRoute)
   private
-    FPath:string;
-    FHorseCore:THorseCore;
+    FPath: string;
+    FHorseCore: THorseCore;
   public
     constructor Create(APath: string; AHorseCore: THorseCore);
 

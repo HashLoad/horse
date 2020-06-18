@@ -18,7 +18,7 @@ type
     class destructor UnInitialize;
 
     property Routes: THorseRouterTree read FRoutes write FRoutes;
-    function Route(APath:string):IHorseCoreRoute;
+    function Route(APath: string): IHorseCoreRoute;
 
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
