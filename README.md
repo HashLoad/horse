@@ -58,6 +58,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 - [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
 - [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
 - [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
+- [WillHubner/Horse-SocketIO](https://github.com/WillHubner/Horse-SocketIO)
 
 ## ⚠️ License
 
