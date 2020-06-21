@@ -55,6 +55,7 @@ constructor THorseCoreGroup.Create(ARoutes: THorseRouterTree);
 begin
   FHorseCore := THorseCore.Create;
   FHorseCore.Routes := ARoutes.CreateRouter('group');
+  FHorseCore.Routes.Prefix('');
 end;
 
 destructor THorseCoreGroup.Destroy;
