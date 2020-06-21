@@ -69,7 +69,6 @@ begin
   LPathOrigin := APath;
   LCurrent := APath.Peek;
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
-
   if(not LFound)then
   begin
     LFound := FRoute.TryGetValue('group', LAcceptable);
@@ -77,7 +76,6 @@ begin
       APath := LPathOrigin;
     LIsGroup := LFound;
   end;
-
   if (not LFound) and (FRegexedKeys.Count > 0) then
   begin
     for LKey in FRegexedKeys do

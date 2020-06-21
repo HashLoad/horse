@@ -114,7 +114,7 @@ end;
 
 procedure THorse.Initialize;
 begin
-  FInstance:= Self;
+  FInstance := Self;
 end;
 
 class destructor THorse.UnInitialize;

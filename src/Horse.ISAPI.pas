@@ -17,7 +17,7 @@ type
 
   THorse = class(THorseCore)
   public
-    procedure Start;//override;
+    procedure Start;
   end;
 
 implementation
