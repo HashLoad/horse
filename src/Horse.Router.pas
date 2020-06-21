@@ -27,7 +27,7 @@ type
     procedure CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse);
     function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
   public
-    function CreateRouter(APath: String):THorseRouterTree;
+    function CreateRouter(APath: String): THorseRouterTree;
     procedure Prefix(APrefix: string);
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;
