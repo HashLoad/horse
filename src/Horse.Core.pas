@@ -2,23 +2,20 @@ unit Horse.Core;
 
 interface
 
-uses System.SysUtils, Web.HTTPApp, Horse.Router, Horse.Core.Route.Intf;
+uses System.SysUtils, Web.HTTPApp, Horse.Router, Horse.Core.Route.Intf, Horse.Core.Group.Intf;
 
 type
   THorseCore = class
   private
     FRoutes: THorseRouterTree;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
-    class var FInstance: THorseCore;
-  protected
-    procedure Initialize; virtual;
   public
     destructor Destroy; override;
     constructor Create; overload;
-    class destructor UnInitialize;
 
     property Routes: THorseRouterTree read FRoutes write FRoutes;
     function Route(APath: string): IHorseCoreRoute;
+    function Group(): IHorseCoreGroup;
 
     procedure Use(APath: string; ACallback: THorseCallback); overload;
     procedure Use(ACallback: THorseCallback); overload;
@@ -54,21 +51,18 @@ type
     procedure Delete(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
     procedure Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
-
-    procedure Start; virtual; abstract;
-    class function GetInstance: THorseCore;
   end;
 
 implementation
 
 uses
-  Horse.Core.Route;
+  Horse.Core.Route, Horse.Core.Group;
 
 { THorseCore }
 
 constructor THorseCore.Create;
 begin
-  Initialize;
+  FRoutes := THorseRouterTree.Create;
 end;
 
 procedure THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback);
@@ -82,7 +76,7 @@ end;
 
 destructor THorseCore.Destroy;
 begin
-  FRoutes.free;
+  FRoutes.Free;
   inherited;
 end;
 
@@ -102,12 +96,6 @@ end;
 procedure THorseCore.Delete(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtDelete, APath, ACallback);
-end;
-
-procedure THorseCore.Initialize;
-begin
-  FInstance := Self;
-  FRoutes := THorseRouterTree.Create;
 end;
 
 procedure THorseCore.Head(APath: string; ACallback: THorseCallback);
@@ -146,11 +134,6 @@ begin
   Get(APath, [AMiddleware, ACallback]);
 end;
 
-class function THorseCore.GetInstance: THorseCore;
-begin
-  Result := FInstance;
-end;
-
 procedure THorseCore.Post(APath: string; ACallback: THorseCallback);
 begin
   RegisterRoute(mtPost, APath, ACallback);
@@ -180,10 +163,9 @@ begin
   Result := THorseCoreRoute.Create(APath, Self);
 end;
 
-class destructor THorseCore.UnInitialize;
+function THorseCore.Group(): IHorseCoreGroup;
 begin
-  if Assigned(FInstance) then
-     FInstance.Free;
+  Result := THorseCoreGroup.Create(FRoutes);
 end;
 
 procedure THorseCore.Use(ACallbacks: array of THorseCallback);
