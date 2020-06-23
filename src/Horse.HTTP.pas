@@ -27,6 +27,7 @@ type
     function Params: THorseList;
     function Cookie: THorseList;
     function MethodType: TMethodType;
+    function ClientIP: string;
     property Headers[index: string]: string read GetHeaders;
     constructor Create(AWebRequest: TWebRequest);
     destructor Destroy; override;
@@ -74,6 +75,44 @@ end;
 function THorseRequest.Body<T>: T;
 begin
   Result := T(FBody);
+end;
+
+function THorseRequest.ClientIP: string;
+var
+  S: string;
+begin
+  Result := EmptyStr;
+
+  if FWebRequest.GetFieldByName('HTTP_CLIENT_IP') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('HTTP_CLIENT_IP'));
+
+  for S in string(FWebRequest.GetFieldByName('HTTP_X_FORWARDED_FOR')).Split([',']) do
+    if not S.Trim.IsEmpty then
+      Exit(S.Trim);
+
+  if FWebRequest.GetFieldByName('HTTP_X_FORWARDED') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('HTTP_X_FORWARDED'));
+
+  if FWebRequest.GetFieldByName('HTTP_X_CLUSTER_CLIENT_IP') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('HTTP_X_CLUSTER_CLIENT_IP'));
+
+  if FWebRequest.GetFieldByName('HTTP_FORWARDED_FOR') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('HTTP_FORWARDED_FOR'));
+
+  if FWebRequest.GetFieldByName('HTTP_FORWARDED') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('HTTP_FORWARDED'));
+
+  if FWebRequest.GetFieldByName('REMOTE_ADDR') <> EmptyStr then
+    Exit(FWebRequest.GetFieldByName('REMOTE_ADDR'));
+
+  if FWebRequest.RemoteIP <> EmptyStr then
+    Exit(FWebRequest.RemoteIP);
+
+  if FWebRequest.RemoteAddr <> EmptyStr then
+    Exit(FWebRequest.RemoteAddr);
+
+  if FWebRequest.RemoteHost <> EmptyStr then
+    Exit(FWebRequest.RemoteHost);
 end;
 
 function THorseRequest.Cookie: THorseList;
