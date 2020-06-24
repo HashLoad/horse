@@ -71,7 +71,7 @@ begin
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
   if(not LFound)then
   begin
-    LFound := FRoute.TryGetValue('group', LAcceptable);
+    LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
     if(LFound)then
       APath := LPathOrigin;
     LIsGroup := LFound;

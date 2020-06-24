@@ -3,7 +3,8 @@ unit Horse.Core.Group;
 interface
 
 uses
-  Horse.Core.Group.Intf, Horse.Core.Route.Intf, Horse.Router, Horse.Core, Horse.Core.Route;
+  Horse.Core.Group.Intf, Horse.Core.Route.Intf, Horse.Router, Horse.Core, Horse.Core.Route,
+  System.SysUtils;
 
 type
   THorseCoreGroup = class(TInterfacedObject, IHorseCoreGroup)
@@ -54,8 +55,8 @@ implementation
 constructor THorseCoreGroup.Create(ARoutes: THorseRouterTree);
 begin
   FHorseCore := THorseCore.Create;
-  FHorseCore.Routes := ARoutes.CreateRouter('group');
-  FHorseCore.Routes.Prefix('');
+  FHorseCore.Routes := ARoutes.CreateRouter(EmptyStr);
+  FHorseCore.Routes.Prefix(EmptyStr);
 end;
 
 destructor THorseCoreGroup.Destroy;
