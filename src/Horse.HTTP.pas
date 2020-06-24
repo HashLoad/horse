@@ -79,40 +79,30 @@ end;
 
 function THorseRequest.ClientIP: string;
 var
-  S: string;
+  LIP: string;
 begin
   Result := EmptyStr;
-
-  if FWebRequest.GetFieldByName('HTTP_CLIENT_IP') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('HTTP_CLIENT_IP'));
-
-  for S in string(FWebRequest.GetFieldByName('HTTP_X_FORWARDED_FOR')).Split([',']) do
-    if not S.Trim.IsEmpty then
-      Exit(S.Trim);
-
-  if FWebRequest.GetFieldByName('HTTP_X_FORWARDED') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('HTTP_X_FORWARDED'));
-
-  if FWebRequest.GetFieldByName('HTTP_X_CLUSTER_CLIENT_IP') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('HTTP_X_CLUSTER_CLIENT_IP'));
-
-  if FWebRequest.GetFieldByName('HTTP_FORWARDED_FOR') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('HTTP_FORWARDED_FOR'));
-
-  if FWebRequest.GetFieldByName('HTTP_FORWARDED') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('HTTP_FORWARDED'));
-
-  if FWebRequest.GetFieldByName('REMOTE_ADDR') <> EmptyStr then
-    Exit(FWebRequest.GetFieldByName('REMOTE_ADDR'));
-
-  if FWebRequest.RemoteIP <> EmptyStr then
-    Exit(FWebRequest.RemoteIP);
-
-  if FWebRequest.RemoteAddr <> EmptyStr then
-    Exit(FWebRequest.RemoteAddr);
-
-  if FWebRequest.RemoteHost <> EmptyStr then
-    Exit(FWebRequest.RemoteHost);
+  if not GetHeaders('HTTP_CLIENT_IP').Trim.IsEmpty then
+    Exit(GetHeaders('HTTP_CLIENT_IP').Trim);
+  for LIP in string(GetHeaders('HTTP_X_FORWARDED_FOR')).Split([',']) do
+    if not LIP.Trim.IsEmpty then
+      Exit(LIP.Trim);
+  if not GetHeaders('HTTP_X_FORWARDED').Trim.IsEmpty then
+    Exit(GetHeaders('HTTP_X_FORWARDED').Trim);
+  if not GetHeaders('HTTP_X_CLUSTER_CLIENT_IP').Trim.IsEmpty then
+    Exit(GetHeaders('HTTP_X_CLUSTER_CLIENT_IP').Trim);
+  if not GetHeaders('HTTP_FORWARDED_FOR').Trim.IsEmpty then
+    Exit(GetHeaders('HTTP_FORWARDED_FOR').Trim);
+  if not GetHeaders('HTTP_FORWARDED').Trim.IsEmpty then
+    Exit(GetHeaders('HTTP_FORWARDED').Trim);
+  if not GetHeaders('REMOTE_ADDR').Trim.IsEmpty then
+    Exit(GetHeaders('REMOTE_ADDR').Trim);
+  if not FWebRequest.RemoteIP.Trim.IsEmpty then
+    Exit(FWebRequest.RemoteIP.Trim);
+  if not FWebRequest.RemoteAddr.Trim.IsEmpty then
+    Exit(FWebRequest.RemoteAddr.Trim);
+  if not FWebRequest.RemoteHost.Trim.IsEmpty then
+    Exit(FWebRequest.RemoteHost.Trim);
 end;
 
 function THorseRequest.Cookie: THorseList;
