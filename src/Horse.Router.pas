@@ -28,6 +28,7 @@ type
     function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
   public
     function CreateRouter(APath: String): THorseRouterTree;
+    function GetPrefix(): string;
     procedure Prefix(APrefix: string);
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;
@@ -201,11 +202,12 @@ end;
 
 procedure THorseRouterTree.Prefix(APrefix: string);
 begin
-  if APrefix.EndsWith('/') then
-    APrefix := APrefix.Remove(High(APrefix) - 1, 1);
-  if not APrefix.StartsWith('/') then
-    APrefix := '/' + APrefix;
-  FPrefix := APrefix;
+  FPrefix := '/'+APrefix.Trim(['/']);
+end;
+
+function THorseRouterTree.GetPrefix(): string;
+begin
+  Result := FPrefix;
 end;
 
 function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<String>;

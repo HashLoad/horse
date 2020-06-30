@@ -55,7 +55,7 @@ implementation
 constructor THorseCoreGroup.Create(ARoutes: THorseRouterTree);
 begin
   FHorseCore := THorseCore.Create;
-  FHorseCore.Routes := ARoutes.CreateRouter(EmptyStr);
+  FHorseCore.Routes := ARoutes.CreateRouter(ARoutes.GetPrefix().Trim(['/']));
   FHorseCore.Routes.Prefix(EmptyStr);
 end;
 
