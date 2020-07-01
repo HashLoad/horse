@@ -63,8 +63,7 @@ end;
 
 constructor THorse.Create;
 begin
-  inherited Create;
-  FPort := DEFAULT_PORT;
+  Create(DEFAULT_PORT);
 end;
 
 class function THorse.GetInstance: THorse;
