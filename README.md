@@ -61,6 +61,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 - [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)
 - [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)
 - [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)
+- [giorgiobazzo/horse-upload](https://github.com/giorgiobazzo/horse-upload)
 
 ## ⚠️ License
 
