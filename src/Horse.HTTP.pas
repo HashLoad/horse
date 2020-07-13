@@ -10,11 +10,11 @@ type
   THorseRequest = class
   private
     FWebRequest: TWebRequest;
-    FQuery     : THorseList;
-    FParams    : THorseList;
-    FCookie    : THorseList;
-    FBody      : TObject;
-    FSession   : TObject;
+    FQuery: THorseList;
+    FParams: THorseList;
+    FCookie: THorseList;
+    FBody: TObject;
+    FSession: TObject;
     procedure InitializeQuery;
     procedure InitializeParams;
     procedure InitializeCookie;
@@ -43,7 +43,7 @@ type
   THorseResponse = class
   private
     FWebResponse: TWebResponse;
-    FContent    : TObject;
+    FContent: TObject;
   public
     function Send(AContent: string): THorseResponse; overload;
     function Send<T: class>(AContent: T): THorseResponse; overload;
@@ -51,7 +51,6 @@ type
     function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
     constructor Create(AWebResponse: TWebResponse);
-    property WebResponse: TWebResponse read FWebResponse;
     destructor Destroy; override;
   end;
 
@@ -64,7 +63,7 @@ type
 implementation
 
 const
-  KEY   = 0;
+  KEY = 0;
   VALUE = 1;
 
 function THorseRequest.Body: string;
@@ -108,7 +107,7 @@ end;
 procedure THorseRequest.InitializeCookie;
 var
   LParam: TArray<string>;
-  LItem : string;
+  LItem: string;
 begin
   FCookie := THorseList.Create;
   for LItem in FWebRequest.CookieFields do
@@ -126,7 +125,7 @@ end;
 procedure THorseRequest.InitializeQuery;
 var
   LParam: TArray<string>;
-  LItem : string;
+  LItem: string;
 begin
   FQuery := THorseList.Create;
   for LItem in FWebRequest.QueryFields do
@@ -173,21 +172,21 @@ end;
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
   FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
-  FWebResponse.Content    := AContent;
-  Result                  := Self;
+  FWebResponse.Content := AContent;
+  Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
   FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
-  FContent                := AContent;
-  Result                  := Self;
+  FContent := AContent;
+  Result := Self;
 end;
 
 function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
 begin
   FWebResponse.StatusCode := AStatus.ToInteger;
-  Result                  := Self;
+  Result := Self;
 end;
 
 function THorseResponse.Status: Integer;
@@ -198,7 +197,7 @@ end;
 function THorseResponse.Status(AStatus: Integer): THorseResponse;
 begin
   FWebResponse.StatusCode := AStatus;
-  Result                  := Self;
+  Result := Self;
 end;
 
 { THorseHackRequest }
