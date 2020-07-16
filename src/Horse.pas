@@ -21,10 +21,9 @@ type
     FMaxConnections: Integer;
     FListenQueue: Integer;
     FHTTPWebBroker: TIdHTTPWebBrokerBridge;
+    class var FInstance: THorse;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
-  protected
-    procedure Initialize; override;
   public
     constructor Create; overload;
     constructor Create(APort: Integer); overload;
@@ -32,7 +31,10 @@ type
     property ListenQueue: Integer read FListenQueue write FListenQueue;
     property MaxConnections: Integer read FMaxConnections write FMaxConnections;
     property Port: Integer read FPort write FPort;
-    procedure Start; override;
+    procedure Start;
+    procedure Initialize;
+    class function GetInstance: THorse;
+    class destructor UnInitialize;
   end;
 
 implementation
@@ -45,6 +47,11 @@ constructor THorse.Create(APort: Integer);
 begin
   inherited Create;
   FPort := APort;
+  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
+  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
+  FListenQueue := IdListenQueueDefault;
+  MaxConnections := 0;
+  Initialize;
 end;
 
 destructor THorse.Destroy;
@@ -54,19 +61,14 @@ begin
   inherited;
 end;
 
-procedure THorse.Initialize;
-begin
-  inherited;
-  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
-  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-  FListenQueue := IdListenQueueDefault;
-  MaxConnections := 0;
-end;
-
 constructor THorse.Create;
 begin
-  inherited Create;
-  FPort := DEFAULT_PORT;
+  Create(DEFAULT_PORT);
+end;
+
+class function THorse.GetInstance: THorse;
+begin
+  Result := FInstance;
 end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
@@ -107,6 +109,17 @@ begin
         raise E;
     end;
   end;
+end;
+
+procedure THorse.Initialize;
+begin
+  FInstance := Self;
+end;
+
+class destructor THorse.UnInitialize;
+begin
+  if Assigned(FInstance) then
+     FInstance.Free;
 end;
 
 end.
