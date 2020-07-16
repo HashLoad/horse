@@ -8,6 +8,11 @@ uses
 type
   IHorseCoreRoute = interface
     ['{39ABE601-E812-40B4-8857-F14C938B9773}']
+    function All(ACallback: THorseCallback): IHorseCoreRoute; overload;
+    function All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute; overload;
+    function All(ACallbacks: array of THorseCallback): IHorseCoreRoute; overload;
+    function All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute; overload;
+
     function Get(ACallback: THorseCallback): IHorseCoreRoute; overload;
     function Get(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute; overload;
     function Get(ACallbacks: array of THorseCallback): IHorseCoreRoute; overload;

@@ -13,6 +13,11 @@ type
   public
     constructor Create(APath: string; AHorseCore: THorseCore);
 
+    function All(ACallback: THorseCallback): IHorseCoreRoute; overload;
+    function All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute; overload;
+    function All(ACallbacks: array of THorseCallback): IHorseCoreRoute; overload;
+    function All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute; overload;
+
     function Get(ACallback: THorseCallback): IHorseCoreRoute; overload;
     function Get(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute; overload;
     function Get(ACallbacks: array of THorseCallback): IHorseCoreRoute; overload;
@@ -52,6 +57,31 @@ constructor THorseCoreRoute.Create(APath: string; AHorseCore: THorseCore);
 begin
   FPath := APath;
   FHorseCore := AHorseCore;
+end;
+
+function THorseCoreRoute.All(ACallback: THorseCallback): IHorseCoreRoute;
+begin
+  Result := Self;
+  FHorseCore.Use(FPath, ACallback);
+end;
+
+function THorseCoreRoute.All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute;
+begin
+  Result := Self;
+  FHorseCore.Use(FPath, [AMiddleware, ACallback]);
+end;
+
+function THorseCoreRoute.All(ACallbacks: array of THorseCallback): IHorseCoreRoute;
+begin
+  Result := Self;
+  FHorseCore.Use(FPath, ACallbacks);
+end;
+
+function THorseCoreRoute.All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute;
+begin
+  Result := Self;
+  FHorseCore.Use(FPath, ACallbacks);
+  FHorseCore.Use(FPath, [ACallback]);
 end;
 
 function THorseCoreRoute.Delete(ACallbacks: array of THorseCallback): IHorseCoreRoute;
