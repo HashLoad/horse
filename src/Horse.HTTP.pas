@@ -160,6 +160,7 @@ end;
 constructor THorseResponse.Create(AWebResponse: TWebResponse);
 begin
   FWebResponse := AWebResponse;
+  FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
 end;
 
 destructor THorseResponse.Destroy;
@@ -171,14 +172,12 @@ end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
 begin
-  FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
   FWebResponse.Content := AContent;
   Result := Self;
 end;
 
 function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
-  FWebResponse.StatusCode := THTTPStatus.OK.ToInteger;
   FContent := AContent;
   Result := Self;
 end;
