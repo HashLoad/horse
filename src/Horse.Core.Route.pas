@@ -117,7 +117,7 @@ end;
 function THorseCoreRoute.Get(ACallback: THorseCallback): IHorseCoreRoute;
 begin
   Result := Self;
-  FHorseCore.Get(FPath, ACallback, ACallback);
+  FHorseCore.Get(FPath, ACallback);
 end;
 
 function THorseCoreRoute.Get(ACallbacks: array of THorseCallback): IHorseCoreRoute;
@@ -213,13 +213,13 @@ end;
 function THorseCoreRoute.Put(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute;
 begin
   Result := Self;
-  FHorseCore.Put(FPath, ACallback);
+  FHorseCore.Put(FPath, AMiddleware, ACallback);
 end;
 
 function THorseCoreRoute.Put(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute;
 begin
   Result := Self;
-  FHorseCore.Put(FPath, ACallback);
+  FHorseCore.Put(FPath, ACallbacks, ACallback);
 end;
 
 function THorseCoreRoute.Put(ACallbacks: array of THorseCallback): IHorseCoreRoute;
