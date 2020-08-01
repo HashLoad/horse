@@ -94,6 +94,7 @@
         <DCCReference Include="src\Horse.pas"/>
         <DCCReference Include="src\Horse.ISAPI.pas"/>
         <DCCReference Include="src\Horse.Commons.pas"/>
+        <DCCReference Include="src\Horse.Exception.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -126,7 +127,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\horse.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\Public\Documents\Embarcadero\Studio\20.0\Bpl\horse.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>horse.bpl</RemoteName>
                         <Overwrite>true</Overwrite>

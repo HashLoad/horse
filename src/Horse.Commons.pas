@@ -84,6 +84,8 @@ type
     ImageJPEG,
     ImagePNG,
     ImageGIF);
+	
+  TMessageType = (Error, Warning, Information);	
 {$SCOPEDENUMS OFF}
 
   THTTPStatusHelper = record helper for THTTPStatus

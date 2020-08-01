@@ -2,10 +2,11 @@ unit Horse;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router;
+uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router, Horse.Exception;
 
 type
-  EHorseCallbackInterrupted = Horse.HTTP.EHorseCallbackInterrupted;
+  EHorseException = Horse.Exception.EHorseException;
+  EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
   TProc = System.SysUtils.TProc;
   THorseList = Horse.HTTP.THorseList;
   THorseRequest = Horse.HTTP.THorseRequest;
@@ -20,10 +21,9 @@ type
     FMaxConnections: Integer;
     FListenQueue: Integer;
     FHTTPWebBroker: TIdHTTPWebBrokerBridge;
+    class var FInstance: THorse;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
-  protected
-    procedure Initialize; override;
   public
     constructor Create; overload;
     constructor Create(APort: Integer); overload;
@@ -33,6 +33,9 @@ type
     property Port: Integer read FPort write FPort;
     procedure Start; override;
     procedure Stop; override;
+    procedure Initialize;
+    class function GetInstance: THorse;
+    class destructor UnInitialize;
   end;
 
 implementation
@@ -45,6 +48,11 @@ constructor THorse.Create(APort: Integer);
 begin
   inherited Create;
   FPort := APort;
+  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
+  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
+  FListenQueue := IdListenQueueDefault;
+  MaxConnections := 0;
+  Initialize;
 end;
 
 destructor THorse.Destroy;
@@ -54,19 +62,14 @@ begin
   inherited;
 end;
 
-procedure THorse.Initialize;
-begin
-  inherited;
-  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
-  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-  FListenQueue := IdListenQueueDefault;
-  MaxConnections := 0;
-end;
-
 constructor THorse.Create;
 begin
-  inherited Create;
-  FPort := DEFAULT_PORT;
+  Create(DEFAULT_PORT);
+end;
+
+class function THorse.GetInstance: THorse;
+begin
+  Result := FInstance;
 end;
 
 procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
@@ -93,7 +96,7 @@ begin
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
     if FMaxConnections > 0 then
-      FHTTPWebBroker.MaxConnections := FMaxConnections;
+      WebRequestHandler.MaxConnections := FMaxConnections;
     FHTTPWebBroker.ListenQueue := FListenQueue;
     FHTTPWebBroker.DefaultPort := FPort;
     FHTTPWebBroker.Active := True;
@@ -117,6 +120,17 @@ begin
         raise E;
     end;
   end;
+end;
+
+procedure THorse.Initialize;
+begin
+  FInstance := Self;
+end;
+
+class destructor THorse.UnInitialize;
+begin
+  if Assigned(FInstance) then
+     FInstance.Free;
 end;
 
 end.

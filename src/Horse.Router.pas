@@ -9,8 +9,9 @@ type
 
   THorseRouterTree = class
   strict private
+    FPrefix: string;
     FIsInitialized: Boolean;
-    function GetQueuePath(APath: string): TQueue<String>;
+    function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<String>;
     function ForcePath(APath: String): THorseRouterTree;
   private
     FPart: String;
@@ -22,10 +23,13 @@ type
     FRoute: TDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
-    procedure ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse);
+    procedure ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False);
     procedure CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse);
     function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
   public
+    function CreateRouter(APath: String): THorseRouterTree;
+    function GetPrefix(): string;
+    procedure Prefix(APrefix: string);
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(AMiddleware: THorseCallback); overload;
@@ -38,7 +42,7 @@ implementation
 
 { THorseRouterTree }
 
-uses Horse.Commons;
+uses Horse.Commons, Horse.Exception;
 
 procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 var
@@ -59,9 +63,20 @@ var
   LAcceptable: THorseRouterTree;
   LFound: Boolean;
   LKey: String;
+  LPathOrigin: TQueue<string>;
+  LIsGroup: Boolean;
 begin
+  LIsGroup := False;
+  LPathOrigin := APath;
   LCurrent := APath.Peek;
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
+  if(not LFound)then
+  begin
+    LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
+    if(LFound)then
+      APath := LPathOrigin;
+    LIsGroup := LFound;
+  end;
   if (not LFound) and (FRegexedKeys.Count > 0) then
   begin
     for LKey in FRegexedKeys do
@@ -75,7 +90,7 @@ begin
     end;
   end
   else if LFound then
-    LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
+    LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
 end;
 
 constructor THorseRouterTree.Create;
@@ -84,6 +99,7 @@ begin
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<String>.Create;
   FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
+  FPrefix := '';
 end;
 
 destructor THorseRouterTree.Destroy;
@@ -100,7 +116,7 @@ procedure THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseRes
 var
   LQueue: TQueue<string>;
 begin
-  LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo);
+  LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo, False);
   try
     ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
       AResponse);
@@ -110,14 +126,15 @@ begin
 end;
 
 procedure THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse);
+  AResponse: THorseResponse; AIsGroup: Boolean = False);
 var
   LCurrent: string;
   LIndex, LIndexCallback: Integer;
   LNext: TProc;
   LCallback: TList<THorseCallback>;
 begin
-  LCurrent := APath.Dequeue;
+  if not AIsGroup then
+    LCurrent := APath.Dequeue;
 
   LIndex := -1;
   LIndexCallback := -1;
@@ -142,8 +159,16 @@ begin
           begin
             if AResponse.Status = THTTPStatus.NotFound.ToInteger then
               AResponse.Send('');
-
-            LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+            try
+              LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+            except
+              on E: Exception do
+              begin
+                if (not (E is EHorseCallbackInterrupted)) and (not (E is EHorseException)) then
+                  AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+                raise;
+              end;
+            end;
             if (LCallback.Count > LIndexCallback) then
               LNext;
           end;
@@ -154,8 +179,11 @@ begin
       else
         CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;
-  LNext;
-  LNext := nil;
+  try
+    LNext;
+  finally
+    LNext := nil;
+  end;
 end;
 
 function THorseRouterTree.ForcePath(APath: String): THorseRouterTree;
@@ -167,12 +195,31 @@ begin
   end;
 end;
 
-function THorseRouterTree.GetQueuePath(APath: string): TQueue<String>;
+function THorseRouterTree.CreateRouter(APath: String): THorseRouterTree;
+begin
+  Result := ForcePath(APath);
+end;
+
+procedure THorseRouterTree.Prefix(APrefix: string);
+begin
+  FPrefix := '/'+APrefix.Trim(['/']);
+end;
+
+function THorseRouterTree.GetPrefix(): string;
+begin
+  Result := FPrefix;
+end;
+
+function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<String>;
 var
   LPart: String;
+  LSplitedPath: TArray<string>;
 begin
   Result := TQueue<string>.Create;
-  for LPart in APath.Split(['/']) do
+  if AUsePrefix then
+    APath := FPrefix+APath;
+  LSplitedPath := APath.Split(['/']);
+  for LPart in LSplitedPath do
   begin
     if (Result.Count > 0) and LPart.IsEmpty then
       Continue;
