@@ -51,6 +51,10 @@ type
     procedure Delete(APath: string; AMiddleware, ACallback: THorseCallback); overload;
     procedure Delete(APath: string; ACallbacks: array of THorseCallback); overload;
     procedure Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback); overload;
+
+    procedure Start; virtual; abstract;
+    procedure Stop; virtual; abstract;
+    class function GetInstance: THorseCore;
   end;
 
 implementation

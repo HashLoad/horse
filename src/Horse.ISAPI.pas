@@ -17,7 +17,8 @@ type
 
   THorse = class(THorseCore)
   public
-    procedure Start;
+    procedure Start; override;
+    procedure Stop; override;
   end;
 
 implementation
@@ -33,6 +34,11 @@ begin
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
   Application.Run;
+end;
+
+procedure THorse.Stop;
+begin
+  inherited;  
 end;
 
 end.
