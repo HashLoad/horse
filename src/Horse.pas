@@ -17,6 +17,7 @@ type
 
   THorse = class(THorseCore)
   private
+    FAddr: string;
     FPort: Integer;
     FMaxConnections: Integer;
     FListenQueue: Integer;
@@ -27,6 +28,7 @@ type
   public
     constructor Create; overload;
     constructor Create(APort: Integer); overload;
+    constructor Create(AAddr: string; APort: Integer); overload;
     destructor Destroy; override;
     property ListenQueue: Integer read FListenQueue write FListenQueue;
     property MaxConnections: Integer read FMaxConnections write FMaxConnections;
@@ -45,7 +47,13 @@ uses Horse.Constants, Horse.WebModule, Web.WebReq, IdCustomTCPServer;
 
 constructor THorse.Create(APort: Integer);
 begin
+  Create(DEFAULT_ADDR, APort);
+end;
+
+constructor THorse.Create(AAddr: string; APort: Integer);
+begin
   inherited Create;
+  FAddr := AAddr;
   FPort := APort;
   FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
   FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
@@ -63,7 +71,7 @@ end;
 
 constructor THorse.Create;
 begin
-  Create(DEFAULT_PORT);
+  Create(DEFAULT_ADDR, DEFAULT_PORT);
 end;
 
 class function THorse.GetInstance: THorse;
@@ -87,13 +95,17 @@ begin
     if FMaxConnections > 0 then
       WebRequestHandler.MaxConnections := FMaxConnections;
     FHTTPWebBroker.ListenQueue := FListenQueue;
+    FHTTPWebBroker.Bindings.Clear;
+    FHTTPWebBroker.Bindings.Add;
+    FHTTPWebBroker.Bindings.Items[0].IP:= FAddr;
+    FHTTPWebBroker.Bindings.Items[0].Port:= FPort;
     FHTTPWebBroker.DefaultPort := FPort;
     FHTTPWebBroker.Active := True;
     FHTTPWebBroker.StartListening;
 
     if IsConsole then
     begin
-      Writeln(Format(START_RUNNING, [FPort]));
+      Writeln(Format(START_RUNNING, [FAddr, FPort]));
       Write('Press return to stop ...');
       Read(LAttach);
     end;
