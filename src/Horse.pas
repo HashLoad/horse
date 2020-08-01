@@ -2,7 +2,10 @@ unit Horse;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router, Horse.Exception;
+uses
+  System.SysUtils,
+  Horse.Core, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract,
+  Horse.Provider.Console, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -13,113 +16,26 @@ type
   THorseHackRequest = Horse.HTTP.THorseHackRequest;
   THorseResponse = Horse.HTTP.THorseResponse;
   THorseHackResponse = Horse.HTTP.THorseHackResponse;
-  THorseCallback = Horse.Router.THorseCallback;
+  THorseCallback = Horse.Core.RouterTree.THorseCallback;
+  THTTPStatus = Horse.Commons.THTTPStatus;
+  TMimeTypes = Horse.Commons.TMimeTypes;
+  TMessageType = Horse.Commons.TMessageType;
+  THTTPStatusHelper = Horse.Commons.THTTPStatusHelper;
+  TMimeTypesHelper = Horse.Commons.TMimeTypesHelper;
 
-  THorse = class(THorseCore)
-  private
-    FPort: Integer;
-    FMaxConnections: Integer;
-    FListenQueue: Integer;
-    FHTTPWebBroker: TIdHTTPWebBrokerBridge;
-    class var FInstance: THorse;
-    procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
-      var VHandled: Boolean);
-  public
-    constructor Create; overload;
-    constructor Create(APort: Integer); overload;
-    destructor Destroy; override;
-    property ListenQueue: Integer read FListenQueue write FListenQueue;
-    property MaxConnections: Integer read FMaxConnections write FMaxConnections;
-    property Port: Integer read FPort write FPort;
-    procedure Start;
-    procedure Initialize;
-    class function GetInstance: THorse;
-    class destructor UnInitialize;
-  end;
+{$IF DEFINED(HORSE_ISAPP)}
+  THorseProvider = Horse.Provider.ISAPP.THorseProvider;
+{$ELSEIF DEFINED(HORSE_APACHE)}
+  THorseProvider = Horse.Provider.Apache.THorseProvider;
+{$ELSEIF DEFINED(HORSE_CGI)}
+  THorseProvider = Horse.Provider.CGI.THorseProvider;
+{$ELSE}
+  THorseProvider = Horse.Provider.Console.THorseProvider;
+{$ENDIF}
+
+  THorse = class(THorseProvider);
 
 implementation
 
-{ THorse }
-
-uses Horse.Constants, Horse.WebModule, Web.WebReq, IdCustomTCPServer;
-
-constructor THorse.Create(APort: Integer);
-begin
-  inherited Create;
-  FPort := APort;
-  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
-  FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
-  FListenQueue := IdListenQueueDefault;
-  MaxConnections := 0;
-  Initialize;
-end;
-
-destructor THorse.Destroy;
-begin
-  if Assigned(FHTTPWebBroker) then
-    FHTTPWebBroker.Free;
-  inherited;
-end;
-
-constructor THorse.Create;
-begin
-  Create(DEFAULT_PORT);
-end;
-
-class function THorse.GetInstance: THorse;
-begin
-  Result := FInstance;
-end;
-
-procedure THorse.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
-  var VHandled: Boolean);
-begin
-  VHandled := True;
-end;
-
-procedure THorse.Start;
-var
-  LAttach: string;
-begin
-  inherited;
-  WebRequestHandler.WebModuleClass := WebModuleClass;
-  try
-    if FMaxConnections > 0 then
-      WebRequestHandler.MaxConnections := FMaxConnections;
-    FHTTPWebBroker.ListenQueue := FListenQueue;
-    FHTTPWebBroker.DefaultPort := FPort;
-    FHTTPWebBroker.Active := True;
-    FHTTPWebBroker.StartListening;
-
-    if IsConsole then
-    begin
-      Writeln(Format(START_RUNNING, [FPort]));
-      Write('Press return to stop ...');
-      Read(LAttach);
-    end;
-  except
-    on E: Exception do
-    begin
-      if IsConsole then
-      begin
-        Writeln(E.ClassName, ': ', E.Message);
-        Read(LAttach);
-      end
-      else
-        raise E;
-    end;
-  end;
-end;
-
-procedure THorse.Initialize;
-begin
-  FInstance := Self;
-end;
-
-class destructor THorse.UnInitialize;
-begin
-  if Assigned(FInstance) then
-     FInstance.Free;
-end;
 
 end.

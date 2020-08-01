@@ -1,0 +1,50 @@
+unit Horse.Core.Group.Contract;
+
+interface
+
+uses
+
+  Horse.Core.Route.Contract, Horse.Core.RouterTree;
+
+type
+
+  IHorseCoreGroup<T: class, constructor> = interface
+    ['{5EB734D6-6944-473E-9C79-506647E2F5E8}']
+    function Prefix(APrefix: string): IHorseCoreGroup<T>;
+    function Route(APath: string): IHorseCoreRoute<T>;
+
+    function Get(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Get(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Get(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
+    function Put(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Put(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Put(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
+    function Patch(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Patch(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Patch(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
+    function Head(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Head(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Head(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Head(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
+    function Post(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Post(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Post(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
+    function Delete(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Delete(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Delete(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function &End: T;
+  end;
+
+implementation
+
+end.

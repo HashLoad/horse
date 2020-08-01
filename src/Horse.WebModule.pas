@@ -2,15 +2,15 @@ unit Horse.WebModule;
 
 interface
 
-uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse, System.RegularExpressions;
+uses System.SysUtils, System.Classes, Web.HTTPApp, Horse.Core, Horse.Commons;
 
 type
   THorseWebModule = class(TWebModule)
     procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
   private
-    FHorse: THorse;
+    FHorse: THorseCore;
   public
-    property Horse: THorse read FHorse write FHorse;
+    property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
   end;
 
@@ -19,7 +19,7 @@ var
 
 implementation
 
-uses Horse.HTTP, Horse.Exception;
+uses Horse.HTTP, Horse.Exception, Web.WebConst;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$R *.dfm}
@@ -27,7 +27,7 @@ uses Horse.HTTP, Horse.Exception;
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
   inherited;
-  FHorse := THorse.GetInstance;
+  FHorse := THorseCore.GetInstance;
 end;
 
 procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
@@ -39,10 +39,12 @@ begin
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try
-    Response.Content := 'Not Found';
-    Response.StatusCode := 404;
     try
-      FHorse.Routes.Execute(LRequest, LResponse);
+      if not FHorse.Routes.Execute(LRequest, LResponse) then
+      begin
+        Response.Content := 'Not Found';
+        Response.StatusCode := THTTPStatus.NotFound.ToInteger;
+      end;
     except
       on E: Exception do
         if not E.InheritsFrom(EHorseCallbackInterrupted) then
