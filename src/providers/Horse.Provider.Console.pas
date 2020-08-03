@@ -15,15 +15,20 @@ type
     FCertFile: string;
     FOnGetPassword: TPasswordEvent;
     FPort: Integer;
+    FActive: Boolean;
     procedure SetCertFile(const Value: string);
     procedure SetKeyFile(const Value: string);
     procedure SetRootCertFile(const Value: string);
     procedure SetOnGetPassword(const Value: TPasswordEvent);
+    procedure SetActive(const Value: Boolean);
     function GetCertFile: string;
     function GetKeyFile: string;
     function GetRootCertFile: string;
     function GetOnGetPassword: TPasswordEvent;
+    function GetActive: Boolean;
   public
+    constructor Create;
+    property Active: Boolean read GetActive write SetActive default True;
     property CertFile: string read GetCertFile write SetCertFile;
     property RootCertFile: string read GetRootCertFile write SetRootCertFile;
     property KeyFile: string read GetKeyFile write SetKeyFile;
@@ -91,7 +96,7 @@ end;
 
 class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
-  VUseSSL := FHorseProviderIOHandleSSL <> nil;
+  VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
 end;
 
 class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;
@@ -242,6 +247,16 @@ end;
 
 { THorseProviderIOHandleSSL }
 
+constructor THorseProviderIOHandleSSL.Create;
+begin
+  FActive := True;
+end;
+
+function THorseProviderIOHandleSSL.GetActive: Boolean;
+begin
+  Result := FActive;
+end;
+
 function THorseProviderIOHandleSSL.GetCertFile: string;
 begin
   Result := FCertFile;
@@ -260,6 +275,11 @@ end;
 function THorseProviderIOHandleSSL.GetRootCertFile: string;
 begin
   Result := FRootCertFile;
+end;
+
+procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);
+begin
+  FActive := Value;
 end;
 
 procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);
