@@ -54,7 +54,6 @@ type
 
     procedure Start; virtual; abstract;
     procedure Stop; virtual; abstract;
-    class function GetInstance: THorseCore;
   end;
 
 implementation

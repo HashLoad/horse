@@ -2,7 +2,7 @@ unit Horse.WebModule;
 
 interface
 
-uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse, System.RegularExpressions;
+uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse, Horse.Commons, System.RegularExpressions;
 
 type
   THorseWebModule = class(TWebModule)
@@ -39,10 +39,12 @@ begin
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try
-    Response.Content := 'Not Found';
-    Response.StatusCode := 404;
     try
-      FHorse.Routes.Execute(LRequest, LResponse);
+      if not FHorse.Routes.Execute(LRequest, LResponse) then
+      begin
+        Response.Content := 'Not Found';
+        Response.StatusCode := THTTPStatus.NotFound.ToInteger;
+      end;
     except
       on E: Exception do
         if not E.InheritsFrom(EHorseCallbackInterrupted) then

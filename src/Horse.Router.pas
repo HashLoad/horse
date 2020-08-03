@@ -23,8 +23,8 @@ type
     FRoute: TDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
-    procedure ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False);
-    procedure CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse);
+    function ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
+    function CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
     function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
   public
     function CreateRouter(APath: String): THorseRouterTree;
@@ -33,7 +33,7 @@ type
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
     procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(AMiddleware: THorseCallback); overload;
-    procedure Execute(ARequest: THorseRequest; AResponse: THorseResponse);
+    function Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -56,8 +56,8 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse);
+function THorseRouterTree.CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
+  AResponse: THorseResponse): Boolean;
 var
   LCurrent: string;
   LAcceptable: THorseRouterTree;
@@ -91,6 +91,7 @@ begin
   end
   else if LFound then
     LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
+  Result := LFound;
 end;
 
 constructor THorseRouterTree.Create;
@@ -112,26 +113,27 @@ begin
   inherited;
 end;
 
-procedure THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse);
+function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
 var
   LQueue: TQueue<string>;
 begin
   LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo, False);
   try
-    ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
+    Result := ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
       AResponse);
   finally
     LQueue.Free;
   end;
 end;
 
-procedure THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse; AIsGroup: Boolean = False);
+function THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
+  AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
 var
   LCurrent: string;
   LIndex, LIndexCallback: Integer;
   LNext: TProc;
   LCallback: TList<THorseCallback>;
+  LFound: Boolean;
 begin
   if not AIsGroup then
     LCurrent := APath.Dequeue;
@@ -146,6 +148,7 @@ begin
       inc(LIndex);
       if (FMiddleware.Count > LIndex) then
       begin
+        LFound:= True;
         Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
         if (FMiddleware.Count > LIndex) then
           LNext;
@@ -160,6 +163,7 @@ begin
             if AResponse.Status = THTTPStatus.NotFound.ToInteger then
               AResponse.Send('');
             try
+              LFound:= True;
               LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
             except
               on E: Exception do
@@ -177,12 +181,13 @@ begin
           AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
       end
       else
-        CallNextPath(APath, AHTTPType, ARequest, AResponse);
+        LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
     end;
   try
     LNext;
   finally
     LNext := nil;
+    Result := LFound;
   end;
 end;
 
