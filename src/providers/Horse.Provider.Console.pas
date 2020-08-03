@@ -236,6 +236,8 @@ end;
 class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
+  if FHorseProviderIOHandleSSL <> nil then
+    FreeAndNil(FHorseProviderIOHandleSSL);
 end;
 
 { THorseProviderIOHandleSSL }
