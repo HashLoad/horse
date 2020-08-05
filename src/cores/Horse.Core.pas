@@ -79,6 +79,9 @@ implementation
 constructor THorseCore.Create;
 begin
   FRoutes := THorseRouterTree.Create;
+  if FDefaultHorse <> nil then
+    raise Exception.Create('The Horse instance has already been created');
+  FDefaultHorse := Self
 end;
 
 destructor THorseCore.Destroy;
@@ -239,17 +242,6 @@ class function THorseCore.Put(APath: string; ACallback: THorseCallback): THorseC
 begin
   Result := RegisterRoute(mtPut, APath, ACallback);
 end;
-
-
-// class procedure THorseCore.SetRoutes(const Value: THorseRouterTree);
-// begin
-// FRoutes := Value;
-// end;
-//
-// class function THorseCore.Group(): THorseCoreGroup<THorseCore>;
-// begin
-// Result := THorseCoreGroup.Create(FRoutes);
-// end;
 
 class function THorseCore.Use(ACallbacks: array of THorseCallback): THorseCore;
 var
