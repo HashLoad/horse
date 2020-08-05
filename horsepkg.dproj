@@ -82,28 +82,28 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="src\Horse.Commons.pas"/>
+        <DCCReference Include="src\Horse.Constants.pas"/>
+        <DCCReference Include="src\Horse.Core.Group.Contract.pas"/>
+        <DCCReference Include="src\Horse.Core.Group.pas"/>
+        <DCCReference Include="src\Horse.Core.pas"/>
+        <DCCReference Include="src\Horse.Core.Route.Contract.pas"/>
+        <DCCReference Include="src\Horse.Core.Route.pas"/>
+        <DCCReference Include="src\Horse.Core.RouterTree.pas"/>
+        <DCCReference Include="src\Horse.Exception.pas"/>
+        <DCCReference Include="src\Horse.HTTP.pas"/>
         <DCCReference Include="src\Horse.pas"/>
+        <DCCReference Include="src\Horse.Provider.Abstract.pas"/>
+        <DCCReference Include="src\Horse.Provider.Apache.pas"/>
+        <DCCReference Include="src\Horse.Provider.CGI.pas"/>
+        <DCCReference Include="src\Horse.Provider.Console.pas"/>
+        <DCCReference Include="src\Horse.Provider.ISAPP.pas"/>
         <DCCReference Include="src\Horse.WebModule.pas">
             <Form>HorseWebModule</Form>
             <FormType>dfm</FormType>
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
-        <DCCReference Include="src\utils\Horse.Commons.pas"/>
-        <DCCReference Include="src\utils\Horse.Constants.pas"/>
-        <DCCReference Include="src\utils\Horse.Exception.pas"/>
-        <DCCReference Include="src\utils\Horse.HTTP.pas"/>
-        <DCCReference Include="src\utils\Web.WebConst.pas"/>
-        <DCCReference Include="src\providers\Horse.Provider.Abstract.pas"/>
-        <DCCReference Include="src\providers\Horse.Provider.Apache.pas"/>
-        <DCCReference Include="src\providers\Horse.Provider.CGI.pas"/>
-        <DCCReference Include="src\providers\Horse.Provider.Console.pas"/>
-        <DCCReference Include="src\providers\Horse.Provider.ISAPP.pas"/>
-        <DCCReference Include="src\cores\Horse.Core.Group.pas"/>
-        <DCCReference Include="src\cores\Horse.Core.pas"/>
-        <DCCReference Include="src\cores\Horse.Core.Route.pas"/>
-        <DCCReference Include="src\cores\Horse.Core.RouterTree.pas"/>
-        <DCCReference Include="src\contracts\Horse.Core.Group.Contract.pas"/>
-        <DCCReference Include="src\contracts\Horse.Core.Route.Contract.pas"/>
+        <DCCReference Include="src\Web.WebConst.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -136,12 +136,6 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>horsepkg.bpl</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
                     <Platform Name="OSX64">
                         <Overwrite>true</Overwrite>
@@ -168,6 +162,12 @@
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\19.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>horsepkg.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>horsepkg.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
