@@ -11,23 +11,23 @@ type
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
-    function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<String>;
-    function ForcePath(APath: String): THorseRouterTree;
+    function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<string>;
+    function ForcePath(APath: string): THorseRouterTree;
   private
-    FPart: String;
-    FTag: String;
+    FPart: string;
+    FTag: string;
     FIsRegex: Boolean;
     FMiddleware: TList<THorseCallback>;
-    FRegexedKeys: TList<String>;
+    FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
     FRoute: TDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
     function ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
     function CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
-    function HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
+    function HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
   public
-    function CreateRouter(APath: String): THorseRouterTree;
+    function CreateRouter(APath: string): THorseRouterTree;
     function GetPrefix(): string;
     procedure Prefix(APrefix: string);
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
@@ -62,7 +62,7 @@ var
   LCurrent: string;
   LAcceptable: THorseRouterTree;
   LFound: Boolean;
-  LKey: String;
+  LKey: string;
   LPathOrigin: TQueue<string>;
   LIsGroup: Boolean;
 begin
@@ -99,7 +99,7 @@ constructor THorseRouterTree.Create;
 begin
   FMiddleware := TList<THorseCallback>.Create;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
-  FRegexedKeys := TList<String>.Create;
+  FRegexedKeys := TList<string>.Create;
   FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
   FPrefix := '';
 end;
@@ -191,7 +191,7 @@ begin
   end;
 end;
 
-function THorseRouterTree.ForcePath(APath: String): THorseRouterTree;
+function THorseRouterTree.ForcePath(APath: string): THorseRouterTree;
 begin
   if not FRoute.TryGetValue(APath, Result) then
   begin
@@ -200,7 +200,7 @@ begin
   end;
 end;
 
-function THorseRouterTree.CreateRouter(APath: String): THorseRouterTree;
+function THorseRouterTree.CreateRouter(APath: string): THorseRouterTree;
 begin
   Result := ForcePath(APath);
 end;
@@ -215,9 +215,9 @@ begin
   Result := FPrefix;
 end;
 
-function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<String>;
+function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<string>;
 var
-  LPart: String;
+  LPart: string;
   LSplitedPath: TArray<string>;
 begin
   Result := TQueue<string>.Create;
@@ -232,11 +232,11 @@ begin
   end;
 end;
 
-function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<String>; AIndex: Integer = 0): Boolean;
+function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
 var
   LNext: string;
   LNextRoute: THorseRouterTree;
-  LKey: String;
+  LKey: string;
 begin
   Result := False;
   if (Length(APaths) <= AIndex) then
@@ -261,7 +261,7 @@ end;
 
 procedure THorseRouterTree.RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
 var
-  LNextPart: String;
+  LNextPart: string;
   LCallbacks: TList<THorseCallback>;
 begin
   if not FIsInitialized then
@@ -300,7 +300,7 @@ end;
 
 procedure THorseRouterTree.RegisterMiddleware(APath: string; AMiddleware: THorseCallback);
 var
-  LPathChain: TQueue<String>;
+  LPathChain: TQueue<string>;
 begin
   LPathChain := GetQueuePath(APath);
   try
