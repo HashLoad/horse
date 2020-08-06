@@ -1,8 +1,11 @@
-unit Horse.Provider.Console;
+unit Horse.Provider.Daemon;
 
 interface
 
+{$IF DEFINED(HORSE_DAEMON)}
+
 uses
+
   Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext;
 
 type
@@ -13,6 +16,7 @@ type
     FRootCertFile: string;
     FCertFile: string;
     FOnGetPassword: TPasswordEvent;
+    FPort: Integer;
     FActive: Boolean;
     procedure SetCertFile(const Value: string);
     procedure SetKeyFile(const Value: string);
@@ -68,11 +72,42 @@ type
     class destructor UnInitialize;
   end;
 
+{$ENDIF}
+
 implementation
 
+{$IF DEFINED(HORSE_DAEMON)}
+
 uses
-  System.SysUtils, Web.WebReq, Horse.WebModule,
-  IdCustomTCPServer;
+
+  System.SysUtils, System.SyncObjs, Web.WebReq, Horse.WebModule, IdCustomTCPServer,
+  Posix.Stdlib, Posix.SysStat, Posix.SysTypes, Posix.Unistd, Posix.Signal, Posix.Fcntl, ThirdParty.Posix.Syslog;
+
+var
+  FEvent: TEvent;
+  FRunning: Boolean;
+  FPID: pid_t;
+  FId: Integer;
+  FIdx: Integer;
+
+const
+  EXIT_FAILURE = 1;
+  EXIT_SUCCESS = 0;
+
+procedure HandleSignals(SigNum: Integer); cdecl;
+begin
+  case SigNum of
+    SIGTERM:
+      begin
+        FRunning := False;
+        FEvent.SetEvent;
+      end;
+    SIGHUP:
+      begin
+        Syslog(LOG_NOTICE, 'daemon: reloading config');
+      end;
+  end;
+end;
 
 { THorseProvider }
 
@@ -147,44 +182,95 @@ var
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
 begin
   inherited;
-  if FPort <= 0 then
-    FPort := GetDefaultPort;
-  LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;
-  WebRequestHandler.WebModuleClass := WebModuleClass;
+
+  FEvent := TEvent.Create(True);
   try
-    if FMaxConnections > 0 then
-    begin
-      WebRequestHandler.MaxConnections := FMaxConnections;
-      GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
-    end;
-    if FListenQueue = 0 then
-      FListenQueue := IdListenQueueDefault;
+    openlog(nil, LOG_PID or LOG_NDELAY, LOG_DAEMON);
 
-    if FHorseProviderIOHandleSSL <> nil then
-      InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
-    LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
-    LIdHTTPWebBrokerBridge.DefaultPort := FPort;
-    LIdHTTPWebBrokerBridge.Active := True;
-    LIdHTTPWebBrokerBridge.StartListening;
+    if getppid() > 1 then
+    begin
+      FPID := fork();
+      if FPID < 0 then
+        raise Exception.Create('Error forking the process');
 
-    if IsConsole then
-    begin
-      Writeln(Format(START_RUNNING, [FPort]));
-      Write('Press return to stop ...');
-      Read(LAttach);
+      if FPID > 0 then
+        Halt(EXIT_SUCCESS);
+
+      if setsid() < 0 then
+        raise Exception.Create('Impossible to create an independent session');
+
+      Signal(SIGCHLD, TSignalHandler(SIG_IGN));
+      Signal(SIGHUP, HandleSignals);
+      Signal(SIGTERM, HandleSignals);
+
+      FPID := fork();
+      if FPID < 0 then
+        raise Exception.Create('Error forking the process');
+
+      if FPID > 0 then
+        Halt(EXIT_SUCCESS);
+
+      for FIdx := sysconf(_SC_OPEN_MAX) downto 0 do
+        __close(FIdx);
+
+      FId := __open('/dev/null', O_RDWR);
+      dup(FId);
+      dup(FId);
+
+      umask(027);
+
+      chdir('/');
     end;
-  except
-    on E: Exception do
-    begin
-      if IsConsole then
+
+    FRunning := True;
+    try
+
+      if FPort <= 0 then
+        FPort := GetDefaultPort;
+      LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;
+      WebRequestHandler.WebModuleClass := WebModuleClass;
+      try
+
+        if FMaxConnections > 0 then
+        begin
+          WebRequestHandler.MaxConnections := FMaxConnections;
+          GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
+        end;
+        if FListenQueue = 0 then
+          FListenQueue := IdListenQueueDefault;
+
+        if FHorseProviderIOHandleSSL <> nil then
+          InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
+        LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
+        LIdHTTPWebBrokerBridge.DefaultPort := FPort;
+        LIdHTTPWebBrokerBridge.Active := True;
+        LIdHTTPWebBrokerBridge.StartListening;
+
+        Syslog(LOG_INFO, Format(START_RUNNING, [FPort]));
+
+      except
+        on E: Exception do
+          Syslog(LOG_ERR, E.ClassName+ ': '+ E.Message);
+      end;
+
+      while FRunning do
+        FEvent.WaitFor();
+
+      ExitCode := EXIT_SUCCESS;
+    except
+      on E: Exception do
       begin
-        Writeln(E.ClassName, ': ', E.Message);
-        Read(LAttach);
-      end
-      else
-        raise E;
+        Syslog(LOG_ERR, 'Error: ' + E.Message);
+        ExitCode := EXIT_FAILURE;
+      end;
     end;
+
+    Syslog(LOG_NOTICE, 'daemon stopped');
+    closelog();
+  finally
+    FEvent.Free;
   end;
+
 end;
 
 class procedure THorseProvider.InternalStopListen;
@@ -299,5 +385,7 @@ procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
 begin
   FRootCertFile := Value;
 end;
+
+{$ENDIF}
 
 end.

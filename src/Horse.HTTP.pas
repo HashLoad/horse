@@ -2,7 +2,7 @@ unit Horse.HTTP;
 
 interface
 
-uses System.SysUtils, System.Generics.Collections, Web.HTTPApp, Horse.Commons;
+uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, Horse.Commons;
 
 type
   THorseList = TDictionary<string, string>;
