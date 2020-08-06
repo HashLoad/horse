@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils,
   Horse.Core, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract,
-  Horse.Provider.Console, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI;
+  Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -29,6 +29,8 @@ type
   THorseProvider = Horse.Provider.Apache.THorseProvider;
 {$ELSEIF DEFINED(HORSE_CGI)}
   THorseProvider = Horse.Provider.CGI.THorseProvider;
+{$ELSEIF DEFINED(HORSE_DAEMON)}
+  THorseProvider = Horse.Provider.Daemon.THorseProvider;
 {$ELSE}
   THorseProvider = Horse.Provider.Console.THorseProvider;
 {$ENDIF}
