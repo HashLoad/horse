@@ -97,12 +97,14 @@
         <DCCReference Include="src\Horse.Provider.Apache.pas"/>
         <DCCReference Include="src\Horse.Provider.CGI.pas"/>
         <DCCReference Include="src\Horse.Provider.Console.pas"/>
+        <DCCReference Include="src\Horse.Provider.Daemon.pas"/>
         <DCCReference Include="src\Horse.Provider.ISAPP.pas"/>
         <DCCReference Include="src\Horse.WebModule.pas">
             <Form>HorseWebModule</Form>
             <FormType>dfm</FormType>
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
+        <DCCReference Include="src\ThirdParty.Posix.Syslog.pas"/>
         <DCCReference Include="src\Web.WebConst.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -161,7 +163,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\19.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\21.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>horsepkg.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
