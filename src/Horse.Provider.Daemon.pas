@@ -318,6 +318,8 @@ begin
   begin
     GetDefaultHTTPWebBroker.StopListening;
     FRunning := False;
+    if FEvent <> nil then
+      FEvent.SetEvent;
   end
   else
     raise Exception.Create('Horse not listen');
@@ -407,8 +409,6 @@ end;
 class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
-  if FEvent <> nil then
-    FreeAndNil(FEvent);
   if FHorseProviderIOHandleSSL <> nil then
     FreeAndNil(FHorseProviderIOHandleSSL);
 end;
