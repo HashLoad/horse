@@ -26,7 +26,7 @@ type
     class procedure SetRoutes(const Value: THorseRouterTree); static;
   public
     { public declarations }
-    constructor Create;
+    constructor Create; virtual;
     destructor Destroy; override;
 
     class destructor UnInitialize; virtual;
@@ -366,4 +366,5 @@ begin
 end;
 
 end.
+
 
