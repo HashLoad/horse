@@ -255,7 +255,6 @@ begin
       chdir('/');
     end;
 
-    FRunning := True;
     try
 
       if FPort <= 0 then
@@ -279,11 +278,13 @@ begin
         LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
         LIdHTTPWebBrokerBridge.Bindings.Clear;
         LIdHTTPWebBrokerBridge.Bindings.Add;
-        LIdHTTPWebBrokerBridge.Bindings.Items[0].IP:= FHost;
-        LIdHTTPWebBrokerBridge.Bindings.Items[0].Port:= FPort;
+        LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
+        LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
         LIdHTTPWebBrokerBridge.DefaultPort := FPort;
         LIdHTTPWebBrokerBridge.Active := True;
         LIdHTTPWebBrokerBridge.StartListening;
+        FRunning := True;
+        DoOnListen;
 
         Syslog(LOG_INFO, Format(START_RUNNING, [FHost, FPort]));
 
