@@ -1,9 +1,11 @@
 unit Horse.Provider.CGI;
 
 interface
+
 {$IF DEFINED(HORSE_CGI)}
+
 uses
-  Horse.Provider.Abstract;
+  Horse.Provider.Abstract, System.SysUtils;
 
 type
 
@@ -11,13 +13,16 @@ type
   private
     class procedure InternalListen; static;
   public
+    class procedure Start; deprecated 'Use Listen instead';
     class procedure Listen; overload; override;
+    class procedure Listen(ACallback: TProc<TObject>); reintroduce; overload; static;
   end;
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_CGI)}
+
 uses Web.WebBroker, Web.CGIApp, Horse.WebModule;
 
 { THorseProvider }
@@ -34,6 +39,20 @@ begin
   inherited;
   InternalListen;
 end;
+
+class procedure THorseProvider.Listen(ACallback: TProc<TObject>);
+begin
+  inherited;
+  SetOnListen(ACallback);
+  InternalListen;
+end;
+
+class procedure THorseProvider.Start;
+begin
+  Listen;
+end;
+
+
 {$ENDIF}
 
 end.
