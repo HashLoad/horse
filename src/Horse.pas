@@ -22,17 +22,18 @@ type
   TMessageType = Horse.Commons.TMessageType;
   THTTPStatusHelper = Horse.Commons.THTTPStatusHelper;
   TMimeTypesHelper = Horse.Commons.TMimeTypesHelper;
+  THorse = class;
 
 {$IF DEFINED(HORSE_ISAPP)}
-  THorseProvider = Horse.Provider.ISAPP.THorseProvider;
+  THorseProvider = Horse.Provider.ISAPP.THorseProvider<THorse>;
 {$ELSEIF DEFINED(HORSE_APACHE)}
-  THorseProvider = Horse.Provider.Apache.THorseProvider;
+  THorseProvider = Horse.Provider.Apache.THorseProvider<THorse>;
 {$ELSEIF DEFINED(HORSE_CGI)}
-  THorseProvider = Horse.Provider.CGI.THorseProvider;
+  THorseProvider = Horse.Provider.CGI.THorseProvider<THorse>;
 {$ELSEIF DEFINED(HORSE_DAEMON)}
-  THorseProvider = Horse.Provider.Daemon.THorseProvider;
+  THorseProvider = Horse.Provider.Daemon.THorseProvider<THorse>;
 {$ELSE}
-  THorseProvider = Horse.Provider.Console.THorseProvider;
+  THorseProvider = Horse.Provider.Console.THorseProvider<THorse>;
 {$ENDIF}
 
   THorse = class(THorseProvider);
