@@ -51,6 +51,8 @@ begin
           raise;
     end;
   finally
+    if LRequest.Body<TObject> = THorseHackResponse(LResponse).GetContent then
+      THorseHackResponse(LResponse).SetContent(nil);
     LRequest.Free;
     LResponse.Free;
   end;

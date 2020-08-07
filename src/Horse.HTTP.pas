@@ -58,6 +58,7 @@ type
   public
     function GetWebResponse: TWebResponse;
     function GetContent: TObject;
+    procedure SetContent(AContent: TObject);
   end;
 
 implementation
@@ -231,6 +232,11 @@ end;
 function THorseHackResponse.GetWebResponse: TWebResponse;
 begin
   Result := FWebResponse;
+end;
+
+procedure THorseHackResponse.SetContent(AContent: TObject);
+begin
+  FContent := AContent;
 end;
 
 end.
