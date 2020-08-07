@@ -9,13 +9,13 @@ uses
 
 type
 
-  THorseProvider = class(THorseProviderAbstract)
+  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class procedure InternalListen; static;
   public
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Listen; overload; override;
-    class procedure Listen(ACallback: TProc<TObject>); reintroduce; overload; static;
+    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
   end;
 {$ENDIF}
 
@@ -26,9 +26,9 @@ implementation
 uses
   Web.WebBroker, System.Win.ComObj, Winapi.ActiveX, Horse.WebModule;
 
-{ THorseProvider }
+{ THorseProvider<T> }
 
-class procedure THorseProvider.InternalListen;
+class procedure THorseProvider<T>.InternalListen;
 begin
   CoInitFlags := COINIT_MULTITHREADED;
   Application.Initialize;
@@ -37,20 +37,20 @@ begin
   Application.Run;
 end;
 
-class procedure THorseProvider.Listen;
+class procedure THorseProvider<T>.Listen;
 begin
   inherited;
   InternalListen;
 end;
 
-class procedure THorseProvider.Listen(ACallback: TProc<TObject>);
+class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
 begin
   inherited;
   SetOnListen(ACallback);
   InternalListen;
 end;
 
-class procedure THorseProvider.Start;
+class procedure THorseProvider<T>.Start;
 begin
   Listen;
 end;
