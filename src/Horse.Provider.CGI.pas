@@ -31,6 +31,7 @@ class procedure THorseProvider.InternalListen;
 begin
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
+  DoOnListen;
   Application.Run;
 end;
 

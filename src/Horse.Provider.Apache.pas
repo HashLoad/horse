@@ -40,6 +40,7 @@ begin
   Web.ApacheApp.InitApplication(@ModuleData);
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
+  DoOnListen;
   Application.Run;
 end;
 

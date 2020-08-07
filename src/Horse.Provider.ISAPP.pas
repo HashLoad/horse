@@ -33,6 +33,7 @@ begin
   CoInitFlags := COINIT_MULTITHREADED;
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
+  DoOnListen;
   Application.Run;
 end;
 
