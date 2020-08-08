@@ -1,15 +1,22 @@
 unit Horse.Core;
-
+
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
 interface
 
 uses
-  System.SysUtils, Web.HTTPApp,
-  Horse.Core.RouterTree, Horse.Core.Route, Horse.Core.Group,
-  Horse.Core.Group.Contract, Horse.Core.Route.Contract;
+  {$IF DEFINED(FPC)}
+    SysUtils, Horse.MethodType,
+  {$ELSE}
+    System.SysUtils, Web.HTTPApp,
+  {$ENDIF}
+  Horse.Core.RouterTree,
+  Horse.Core.Group.Contract, Horse.Core.Route.Contract,
+  Horse.HTTP;
 
 type
-
-  THorseCore = class;
 
   THorseCore = class
   private
@@ -29,7 +36,7 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
 
-    class destructor UnInitialize; virtual;
+    class destructor UnInitialize; {$IFNDEF FPC}virtual;{$ENDIF}
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
     class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;
@@ -73,6 +80,9 @@ type
   end;
 
 implementation
+
+uses
+  Horse.Core.Route, Horse.Core.Group;
 
 { THorseCore }
 
@@ -143,12 +153,12 @@ end;
 
 function THorseCore.InternalGroup(): IHorseCoreGroup<THorseCore>;
 begin
-  Result := THorseCoreGroup<THorseCore>.Create(FRoutes);
+ Result := THorseCoreGroup<THorseCore>.Create(FRoutes);
 end;
 
 function THorseCore.InternalRoute(APath: string): IHorseCoreRoute<THorseCore>;
 begin
-  Result := THorseCoreRoute<THorseCore>.Create(APath, Self);
+ Result := THorseCoreRoute<THorseCore>.Create(APath, Self);
 end;
 
 procedure THorseCore.InternalSetRoutes(const Value: THorseRouterTree);
@@ -367,4 +377,4 @@ end;
 
 end.
 
-
+

@@ -1,13 +1,23 @@
 unit Horse.Core.Group;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
 uses
-  System.SysUtils, Horse.Core.Group.Contract, Horse.Core.Route.Contract, Horse.Core.RouterTree;
+
+  {$IF DEFINED(FPC)}
+  SysUtils,
+  {$ELSE}
+    System.SysUtils,
+  {$ENDIF}
+  Horse.Core.Group.Contract, Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
 
-  THorseCoreGroup<T: class, constructor> = class(TInterfacedObject, IHorseCoreGroup<T>)
+  { THorseCoreGroup }
+
+  THorseCoreGroup<T: class> = class(TInterfacedObject, IHorseCoreGroup<T>)
   private
     FHorseCore: TObject;
   public
@@ -224,4 +234,3 @@ begin
 end;
 
 end.
-

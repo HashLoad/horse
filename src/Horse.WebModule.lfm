@@ -1,0 +1,9 @@
+object HorseWebModule: THorseWebModule
+  OldCreateOrder = False
+  Actions = <>
+  CreateSession = False
+  Height = 150
+  HorizontalOffset = 527
+  VerticalOffset = 145
+  Width = 150
+end

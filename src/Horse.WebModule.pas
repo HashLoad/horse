@@ -1,12 +1,26 @@
 unit Horse.WebModule;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
-uses System.SysUtils, System.Classes, Web.HTTPApp, Horse.Core, Horse.Commons;
+uses
+{$IF DEFINED(FPC)}
+  SysUtils, Classes, httpdefs, fpHTTP, fpWeb,
+{$ELSE}
+  System.SysUtils, System.Classes, Web.HTTPApp,
+{$ENDIF}
+  Horse.Core, Horse.Commons;
 
 type
+
+{$IF DEFINED(FPC)}
+  THorseWebModule = class(TFPWebModule)
+      procedure DoOnRequest(ARequest: TRequest; AResponse: TResponse; var AHandled: Boolean); override;
+{$ELSE}
   THorseWebModule = class(TWebModule)
-    procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
+{$ENDIF}
+    procedure HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
   private
     FHorse: THorseCore;
   public
@@ -15,14 +29,24 @@ type
   end;
 
 var
-  WebModuleClass: TComponentClass = THorseWebModule;
+  {$IF DEFINED(FPC)}
+    HorseWebModule: THorseWebModule;
+  {$ELSE}
+    WebModuleClass: TComponentClass = THorseWebModule;
+  {$ENDIF}
+
 
 implementation
 
 uses Horse.HTTP, Horse.Exception, Web.WebConst;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
+{$IF DEFINED(FPC)}
+{$R Horse.WebModule.lfm}
+{$ELSE}
 {$R *.dfm}
+{$ENDIF}
+
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
@@ -30,12 +54,20 @@ begin
   FHorse := THorseCore.GetInstance;
 end;
 
-procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
-  Response: TWebResponse; var Handled: Boolean);
+{$IF DEFINED(FPC)}
+procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
+begin
+  HandlerAction(Self, ARequest, AResponse, AHandled);
+end;
+{$ENDIF}
+
+procedure THorseWebModule.HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
+  Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
 begin
+  Handled := true;
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try
@@ -43,7 +75,7 @@ begin
       if not FHorse.Routes.Execute(LRequest, LResponse) then
       begin
         Response.Content := 'Not Found';
-        Response.StatusCode := THTTPStatus.NotFound.ToInteger;
+        {$IF DEFINED(FPC)}Response.Code{$ELSE}  Response.StatusCode {$ENDIF} := THTTPStatus.NotFound.ToInteger;
       end;
     except
       on E: Exception do
@@ -58,4 +90,8 @@ begin
   end;
 end;
 
+{$IF DEFINED(FPC)}
+initialization
+  RegisterHTTPModule('THorseWebModule', THorseWebModule);
+{$ENDIF}
 end.

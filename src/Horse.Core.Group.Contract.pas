@@ -1,5 +1,7 @@
 unit Horse.Core.Group.Contract;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
 uses
@@ -8,7 +10,7 @@ uses
 
 type
 
-  IHorseCoreGroup<T: class, constructor> = interface
+   IHorseCoreGroup<T: class> = interface
     ['{5EB734D6-6944-473E-9C79-506647E2F5E8}']
     function Prefix(APrefix: string): IHorseCoreGroup<T>;
     function Route(APath: string): IHorseCoreRoute<T>;

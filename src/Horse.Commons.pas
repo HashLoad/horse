@@ -1,8 +1,12 @@
 unit Horse.Commons;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+  {$MODESWITCH TypeHelpers}
+{$ENDIF}
 interface
 
 type
+
 {$SCOPEDENUMS ON}
   THTTPStatus = (
     Continue = 100,
@@ -88,11 +92,11 @@ type
   TMessageType = (Error, Warning, Information);	
 {$SCOPEDENUMS OFF}
 
-  THTTPStatusHelper = record helper for THTTPStatus
+  THTTPStatusHelper = {$IF DEFINED(FPC)}type{$ELSE}record{$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
   end;
 
-  TMimeTypesHelper = record helper for TMimeTypes
+  TMimeTypesHelper = {$IF DEFINED(FPC)}type{$ELSE}record{$ENDIF} helper for TMimeTypes
     function ToString: string;
   end;
 

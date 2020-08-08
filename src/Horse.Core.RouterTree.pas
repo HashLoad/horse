@@ -1,26 +1,38 @@
 unit Horse.Core.RouterTree;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
-uses Web.HTTPApp, Horse.HTTP, System.SysUtils, System.Generics.Collections;
+uses
+  {$IF DEFINED(FPC)}
+  SysUtils, Generics.Collections, fpHTTP, Horse.MethodType, Horse.Proc,
+  {$ELSE}
+    System.SysUtils, Web.HTTPApp, System.Generics.Collections,
+  {$ENDIF}
+   Horse.HTTP;
 
 type
-  THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TProc);
+  {$IF DEFINED(FPC)}
+    THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TProc);
+  {$ELSE}
+    THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TProc);
+  {$ENDIF}
 
   THorseRouterTree = class
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
-    function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<string>;
+    function GetQueuePath(APath: string; AUsePrefix: Boolean = True):  TQueue<string>;
     function ForcePath(APath: string): THorseRouterTree;
   private
     FPart: string;
     FTag: string;
     FIsRegex: Boolean;
-    FMiddleware: TList<THorseCallback>;
-    FRegexedKeys: TList<string>;
+    FMiddleware:  TList<THorseCallback>;
+    FRegexedKeys:  TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
-    FRoute: TDictionary<string, THorseRouterTree>;
+    FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
     function ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
@@ -73,7 +85,7 @@ begin
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
   if(not LFound)then
   begin
-    LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
+     LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
     if(LFound)then
       APath := LPathOrigin;
     LIsGroup := LFound;
@@ -97,10 +109,10 @@ end;
 
 constructor THorseRouterTree.Create;
 begin
-  FMiddleware := TList<THorseCallback>.Create;
-  FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
+  FMiddleware :=  TList<THorseCallback>.Create;
+  FRoute :=  TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
-  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
+  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create;
   FPrefix := '';
 end;
 
@@ -116,25 +128,67 @@ end;
 
 function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
 var
-  LQueue: TQueue<string>;
+  LQueue:  TQueue<string>;
 begin
   LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo, False);
   try
-    Result := ExecuteInternal(LQueue, THorseHackRequest(ARequest).GetWebRequest.MethodType, ARequest,
-      AResponse);
+    Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType( THorseHackRequest(ARequest).GetWebRequest.Method ) {$ELSE} THorseHackRequest(ARequest).GetWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
   finally
     LQueue.Free;
   end;
 end;
 
-function THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
+function THorseRouterTree.ExecuteInternal(APath:  TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
   AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
 var
   LCurrent: string;
   LIndex, LIndexCallback: Integer;
-  LNext: TProc;
   LCallback: TList<THorseCallback>;
   LFound: Boolean;
+  {$IFNDEF FPC}
+  LNext: TProc;
+  {$ENDIF}
+
+  {$IF DEFINED(FPC)}
+  procedure InternalNext();
+  begin
+      inc(LIndex);
+      if (FMiddleware.Count > LIndex) then
+      begin
+        LFound:= True;
+        Self.FMiddleware.Items[LIndex](ARequest, AResponse, @InternalNext);
+        if (FMiddleware.Count > LIndex) then
+          InternalNext;
+      end
+      else if (APath.Count = 0) and assigned(FCallBack) then
+      begin
+        inc(LIndexCallback);
+        if  FCallBack.TryGetValue(AHTTPType, LCallback) then
+        begin
+          if (LCallback.Count > LIndexCallback) then
+          begin
+            try
+              LFound:= True;
+              LCallback.Items[LIndexCallback](ARequest, AResponse, @InternalNext);
+            except
+              on E: Exception do
+              begin
+                if (not (E is EHorseCallbackInterrupted)) and (not (E is EHorseException)) then
+                  AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+                raise;
+              end;
+            end;
+            if (LCallback.Count > LIndexCallback) then
+              InternalNext;
+          end;
+        end
+        else
+          AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+      end
+      else
+        LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
+  end;
+  {$ENDIF}
 begin
 
   if not AIsGroup then
@@ -145,55 +199,60 @@ begin
   if Self.FIsRegex then
     ARequest.Params.Add(FTag, LCurrent);
 
-  LNext := procedure
-    begin
-      inc(LIndex);
-      if (FMiddleware.Count > LIndex) then
+  try
+    {$IF DEFINED(FPC)}
+    InternalNext;
+    {$ELSE}
+    LNext := procedure
       begin
-        LFound:= True;
-        Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
+        inc(LIndex);
         if (FMiddleware.Count > LIndex) then
-          LNext;
-      end
-      else if (APath.Count = 0) and assigned(FCallBack) then
-      begin
-        inc(LIndexCallback);
-        if FCallBack.TryGetValue(AHTTPType, LCallback) then
         begin
-          if (LCallback.Count > LIndexCallback) then
+          LFound := True;
+          Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
+          if (FMiddleware.Count > LIndex) then
+            LNext;
+        end
+        else if (APath.Count = 0) and assigned(FCallBack) then
+        begin
+          inc(LIndexCallback);
+          if FCallBack.TryGetValue(AHTTPType, LCallback) then
           begin
-            try
-              LFound:= True;
-              LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
-            except
-              on E: Exception do
-              begin
-                if (not (E is EHorseCallbackInterrupted)) and (not (E is EHorseException)) then
-                  AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
-                raise;
-              end;
-            end;
             if (LCallback.Count > LIndexCallback) then
-              LNext;
-          end;
+            begin
+              try
+                LFound := True;
+                LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
+              except
+                on E: Exception do
+                begin
+                  if (not(E is EHorseCallbackInterrupted)) and (not(E is EHorseException)) then
+                    AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+                  raise;
+                end;
+              end;
+              if (LCallback.Count > LIndexCallback) then
+                LNext;
+            end;
+          end
+          else
+            AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
         end
         else
-          AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
-      end
-      else
-        LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
-    end;
-  try
-    LNext;
+          LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
+      end;
+    {$ENDIF}
   finally
-    LNext := nil;
+  {$IFNDEF FPC}
+    LNext:= nil;
+  {$ENDIF}
     Result := LFound;
   end;
 end;
 
 function THorseRouterTree.ForcePath(APath: string): THorseRouterTree;
 begin
-  if not FRoute.TryGetValue(APath, Result) then
+  if not FRoute.TryGetValue(APath, Result)  then
   begin
     Result := THorseRouterTree.Create;
     FRoute.Add(APath, Result);
@@ -246,9 +305,10 @@ begin
 
   LNext := APaths[AIndex + 1];
   inc(AIndex);
-
   if FRoute.TryGetValue(LNext, LNextRoute) then
-    Result := LNextRoute.HasNext(AMethod, APaths, AIndex)
+  begin
+    Result := LNextRoute.HasNext(AMethod, APaths, AIndex);
+  end
   else
   begin
     for LKey in FRegexedKeys do

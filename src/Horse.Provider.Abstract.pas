@@ -1,9 +1,16 @@
 unit Horse.Provider.Abstract;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
 uses
-  System.SysUtils, Horse.Core;
+  {$IF DEFINED(FPC)}
+    SysUtils, Horse.Proc,
+  {$ELSE}
+    System.SysUtils,
+  {$ENDIF}
+   Horse.Core;
 
 type
 
@@ -30,7 +37,7 @@ uses
 class procedure THorseProviderAbstract<T>.DoOnListen;
 begin
   if Assigned(FOnListen) then
-    FOnListen(GetInstance);
+    FOnListen(GetInstance as T);
 end;
 
 class function THorseProviderAbstract<T>.GetOnListen: TProc<T>;
