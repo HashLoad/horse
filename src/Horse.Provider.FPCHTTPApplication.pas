@@ -10,7 +10,7 @@ interface
 
 uses
 
-  SysUtils, Classes, SyncObjs, httpdefs, fpHTTP, fphttpapp,
+  SysUtils, Classes, httpdefs, fpHTTP, fphttpapp,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
