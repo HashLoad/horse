@@ -169,7 +169,7 @@ end;
 constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF});
 begin
   FWebResponse := AWebResponse;
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF} := THTTPStatus.OK.ToInteger;
+  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF} := THTTPStatus.Ok.ToInteger;
 end;
 
 destructor THorseResponse.Destroy;
