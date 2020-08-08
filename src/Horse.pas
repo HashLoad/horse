@@ -1,16 +1,24 @@
 unit Horse;
+{$IF DEFINED(FPC)}
+{$MODE DELPHI}{$H+}
+{$ENDIF}
 
 interface
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils, Horse.Proc,
+{$ELSE}
   System.SysUtils,
+{$ENDIF}
   Horse.Core, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract,
-  Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI;
+  {$IF DEFINED(FPC)}Horse.Provider.FPCHTTPApplication {$ELSE}
+  Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI{$ENDIF};
 
 type
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
-  TProc = System.SysUtils.TProc;
+  TProc = {$IF DEFINED(FPC)} Horse.Proc.TProc {$ELSE} System.SysUtils.TProc {$ENDIF};
   THorseList = Horse.HTTP.THorseList;
   THorseRequest = Horse.HTTP.THorseRequest;
   THorseHackRequest = Horse.HTTP.THorseHackRequest;
@@ -20,8 +28,6 @@ type
   THTTPStatus = Horse.Commons.THTTPStatus;
   TMimeTypes = Horse.Commons.TMimeTypes;
   TMessageType = Horse.Commons.TMessageType;
-  THTTPStatusHelper = Horse.Commons.THTTPStatusHelper;
-  TMimeTypesHelper = Horse.Commons.TMimeTypesHelper;
   THorse = class;
 
 {$IF DEFINED(HORSE_ISAPP)}
@@ -33,9 +39,13 @@ type
 {$ELSEIF DEFINED(HORSE_DAEMON)}
   THorseProvider = Horse.Provider.Daemon.THorseProvider<THorse>;
 {$ELSE}
-  THorseProvider = Horse.Provider.Console.THorseProvider<THorse>;
+  THorseProvider =
+  {$IF DEFINED(FPC)}
+      Horse.Provider.FPCHTTPApplication.THorseProvider<THorse>
+    {$ELSE}
+      Horse.Provider.Console.THorseProvider<THorse>
+  {$ENDIF};
 {$ENDIF}
-
   THorse = class(THorseProvider);
 
 implementation

@@ -1,5 +1,7 @@
 unit Horse.Constants;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
 const

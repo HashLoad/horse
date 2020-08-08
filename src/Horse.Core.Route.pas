@@ -1,18 +1,29 @@
 unit Horse.Core.Route;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
 uses
+  {$IF DEFINED(FPC)}
+    SysUtils,
+  {$ELSE}
+    System.SysUtils,
+  {$ENDIF}
   Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
 
-  THorseCoreRoute<T: class, constructor> = class(TInterfacedObject, IHorseCoreRoute<T>)
+  { THorseCoreRoute }
+
+  THorseCoreRoute<T: class> = class(TInterfacedObject, IHorseCoreRoute<T>)
   private
     FPath: string;
     FHorseCore: T;
   public
     constructor Create(APath: string; AHorseCore: T);
+
+    function This: IHorseCoreRoute<T>;
 
     function All(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
@@ -63,6 +74,11 @@ constructor THorseCoreRoute<T>.Create(APath: string; AHorseCore: T);
 begin
   FPath := APath;
   FHorseCore := AHorseCore;
+end;
+
+function THorseCoreRoute<T>.This: IHorseCoreRoute<T>;
+begin
+  Result := Self;
 end;
 
 function THorseCoreRoute<T>.All(ACallback: THorseCallback): IHorseCoreRoute<T>;

@@ -1,8 +1,16 @@
 unit Horse.Exception;
-
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 interface
 
-uses System.SysUtils, Horse.Commons;
+uses
+  {$IF DEFINED(FPC)}
+  SysUtils,
+  {$ELSE}
+    System.SysUtils,
+  {$ENDIF}
+  Horse.Commons;
 
 type
   EHorseCallbackInterrupted = class(Exception)
@@ -174,4 +182,3 @@ begin
 end;
 
 end.
-
