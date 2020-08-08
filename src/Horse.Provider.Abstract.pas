@@ -29,9 +29,6 @@ type
 
 implementation
 
-uses
-  Horse.Constants;
-
 { THorseProviderAbstract }
 
 class procedure THorseProviderAbstract<T>.DoOnListen;

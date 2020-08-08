@@ -13,8 +13,7 @@ uses
     System.SysUtils, Web.HTTPApp,
   {$ENDIF}
   Horse.Core.RouterTree,
-  Horse.Core.Group.Contract, Horse.Core.Route.Contract,
-  Horse.HTTP;
+  Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
 
