@@ -10,8 +10,8 @@ interface
 
 uses
 
-  SysUtils, Classes, SyncObjs, httpdefs, fpHTTP, fphttpapp, Horse.Proc,
-  Horse.Provider.Abstract, Horse.Constants;
+  SysUtils, Classes, SyncObjs, httpdefs, fpHTTP, fphttpapp,
+  Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
 
@@ -58,17 +58,14 @@ implementation
 
 uses
 
-  Horse.WebModule,
-  IdCustomTCPServer;
+  Horse.WebModule;
 
 { THorseProvider<T> }
 
 class function THorseProvider<T>.GetDefaultHTTPApplication: THTTPApplication;
 begin
   if HTTPApplicationIsNil then
-  begin
     FHTTPApplication := Application;
-  end;
   Result := FHTTPApplication;
 end;
 
@@ -122,7 +119,6 @@ end;
 
 class procedure THorseProvider<T>.InternalListen;
 var
-  LAttach: string;
   LHTTPApplication: THTTPApplication;
 begin
   inherited;
@@ -132,7 +128,7 @@ begin
     FHost := GetDefaultHost;
 
     if FListenQueue = 0 then
-      FListenQueue := IdListenQueueDefault;
+      FListenQueue := 15;
     LHTTPApplication := GetDefaultHTTPApplication;
     LHTTPApplication.Threaded:= True;
     LHTTPApplication.QueueSize:= FListenQueue;
