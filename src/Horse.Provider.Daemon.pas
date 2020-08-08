@@ -2,7 +2,7 @@ unit Horse.Provider.Daemon;
 
 interface
 
-{$IF DEFINED(HORSE_DAEMON)}
+{$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
 
 
 uses
@@ -105,7 +105,7 @@ procedure HandleSignals(SigNum: Integer); cdecl;
 
 implementation
 
-{$IF DEFINED(HORSE_DAEMON)}
+{$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
 
 
 uses

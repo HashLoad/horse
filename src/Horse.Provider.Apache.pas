@@ -2,7 +2,7 @@ unit Horse.Provider.Apache;
 
 interface
 
-{$IF DEFINED(HORSE_APACHE)}
+{$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
 
 uses
@@ -26,7 +26,7 @@ var
 
 implementation
 
-{$IF DEFINED(HORSE_APACHE)}
+{$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
 
 uses Web.ApacheApp, Web.WebBroker, {$IFDEF MSWINDOWS} Winapi.ActiveX, System.Win.ComObj, {$ENDIF } Horse.WebModule;
