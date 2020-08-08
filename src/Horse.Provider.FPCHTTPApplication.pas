@@ -132,7 +132,6 @@ begin
     LHTTPApplication := GetDefaultHTTPApplication;
     LHTTPApplication.Threaded:= True;
     LHTTPApplication.QueueSize:= FListenQueue;
-    LHTTPApplication.Title := 'httpproject1';
     LHTTPApplication.Port := FPort;
     LHTTPApplication.LegacyRouting := True;
     LHTTPApplication.Address := FHost;
