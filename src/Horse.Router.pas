@@ -70,10 +70,10 @@ begin
   LPathOrigin := APath;
   LCurrent := APath.Peek;
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
-  if(not LFound)then
+  if (not LFound) then
   begin
     LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
-    if(LFound)then
+    if (LFound) then
       APath := LPathOrigin;
     LIsGroup := LFound;
   end;
@@ -84,13 +84,13 @@ begin
       FRoute.TryGetValue(LKey, LAcceptable);
       if LAcceptable.HasNext(AHTTPType, APath.ToArray) then
       begin
-        LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
+        LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
         Break;
       end;
     end;
   end
   else if LFound then
-    LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
+    LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
   Result := LFound;
 end;
 
@@ -99,7 +99,7 @@ begin
   FMiddleware := TList<THorseCallback>.Create;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<String>.Create;
-  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
+  FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
   FPrefix := '';
 end;
 
@@ -148,7 +148,7 @@ begin
       inc(LIndex);
       if (FMiddleware.Count > LIndex) then
       begin
-        LFound:= True;
+        LFound := True;
         Self.FMiddleware.Items[LIndex](ARequest, AResponse, LNext);
         if (FMiddleware.Count > LIndex) then
           LNext;
@@ -163,12 +163,12 @@ begin
             if AResponse.Status = THTTPStatus.NotFound.ToInteger then
               AResponse.Send('');
             try
-              LFound:= True;
+              LFound := True;
               LCallback.Items[LIndexCallback](ARequest, AResponse, LNext);
             except
               on E: Exception do
               begin
-                if (not (E is EHorseCallbackInterrupted)) and (not (E is EHorseException)) then
+                if (not(E is EHorseCallbackInterrupted)) and (not(E is EHorseException)) then
                   AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
                 raise;
               end;
@@ -177,8 +177,10 @@ begin
               LNext;
           end;
         end
+        else if FCallBack.Count > 0 then
+          AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
         else
-          AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+          AResponse.Send('Not Found').Status(THTTPStatus.NotFound)
       end
       else
         LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
@@ -207,7 +209,7 @@ end;
 
 procedure THorseRouterTree.Prefix(APrefix: string);
 begin
-  FPrefix := '/'+APrefix.Trim(['/']);
+  FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
 function THorseRouterTree.GetPrefix(): string;
@@ -222,7 +224,7 @@ var
 begin
   Result := TQueue<string>.Create;
   if AUsePrefix then
-    APath := FPrefix+APath;
+    APath := FPrefix + APath;
   LSplitedPath := APath.Split(['/']);
   for LPart in LSplitedPath do
   begin
@@ -242,7 +244,7 @@ begin
   if (Length(APaths) <= AIndex) then
     Exit(False);
   if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsRegex)) then
-    Exit(FCallBack.ContainsKey(AMethod) or (Amethod = mtAny));
+    Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
 
   LNext := APaths[AIndex + 1];
   inc(AIndex);
@@ -254,7 +256,7 @@ begin
     for LKey in FRegexedKeys do
     begin
       if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then
-        Exit(true);
+        Exit(True);
     end;
   end;
 end;
@@ -269,7 +271,7 @@ begin
     FPart := APath.Dequeue;
     FIsRegex := FPart.StartsWith(':');
     FTag := FPart.Substring(1, Length(FPart) - 1);
-    FIsInitialized := true;
+    FIsInitialized := True;
   end
   else
     APath.Dequeue;
