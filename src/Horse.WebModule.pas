@@ -92,6 +92,6 @@ end;
 
 {$IF DEFINED(FPC)}
 initialization
-  RegisterHTTPModule('THorseWebModule', THorseWebModule);
+  RegisterHTTPModule(THorseWebModule);
 {$ENDIF}
 end.

@@ -97,13 +97,13 @@ begin
       FRoute.TryGetValue(LKey, LAcceptable);
       if LAcceptable.HasNext(AHTTPType, APath.ToArray) then
       begin
-        LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
+        LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
         Break;
       end;
     end;
   end
   else if LFound then
-    LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
+    LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
   Result := LFound;
 end;
 
@@ -130,6 +130,7 @@ function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResp
 var
   LQueue:  TQueue<string>;
 begin
+  Result := False;
   LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo, False);
   try
     Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType( THorseHackRequest(ARequest).GetWebRequest.Method ) {$ELSE} THorseHackRequest(ARequest).GetWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
@@ -182,15 +183,16 @@ var
               InternalNext;
           end;
         end
-        else
-          AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+          else if FCallBack.Count > 0 then
+            AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
+          else
+            AResponse.Send('Not Found').Status(THTTPStatus.NotFound)
       end
       else
         LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
   end;
   {$ENDIF}
 begin
-
   if not AIsGroup then
     LCurrent := APath.Dequeue;
 
@@ -199,10 +201,7 @@ begin
   if Self.FIsRegex then
     ARequest.Params.Add(FTag, LCurrent);
 
-  try
-    {$IF DEFINED(FPC)}
-    InternalNext;
-    {$ELSE}
+    {$IF NOT DEFINED(FPC)}
     LNext := procedure
       begin
         inc(LIndex);
@@ -235,12 +234,21 @@ begin
                 LNext;
             end;
           end
+          else if FCallBack.Count > 0 then
+            AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
           else
-            AResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+            AResponse.Send('Not Found').Status(THTTPStatus.NotFound)
         end
         else
           LFound := CallNextPath(APath, AHTTPType, ARequest, AResponse);
       end;
+    {$ENDIF}
+
+  try
+    {$IF NOT DEFINED(FPC)}
+      LNext;
+    {$ELSE}
+      InternalNext;
     {$ENDIF}
   finally
   {$IFNDEF FPC}

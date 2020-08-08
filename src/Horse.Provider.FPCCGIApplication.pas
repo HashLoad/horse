@@ -5,14 +5,16 @@ unit Horse.Provider.FPCCGIApplication;
 
 interface
 
-{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC) }
 
 uses
 
-  SysUtils, Classes, fpCGI,
+  SysUtils, Classes, fpCGI, fphttp, httpdefs,
   Horse.Provider.Abstract, Horse.Proc;
 
 type
+
+  { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
@@ -20,6 +22,7 @@ type
     class function GetDefaultCGIApplication: TCGIApplication;
     class function CGIApplicationIsNil: Boolean;
     class procedure InternalListen; virtual;
+    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     class procedure Listen; overload; override;
@@ -35,7 +38,7 @@ var
 
 implementation
 
-{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC) }
 
 uses
 
@@ -66,10 +69,17 @@ var
 begin
   inherited;
   LCGIApplication := GetDefaultCGIApplication;
+  LCGIApplication.AllowDefaultModule:= True;
+  LCGIApplication.OnGetModule:= DoGetModule;
   LCGIApplication.LegacyRouting := True;
   LCGIApplication.Initialize;
   DoOnListen;
   LCGIApplication.Run;
+end;
+
+class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+begin
+  ModuleClass :=  THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.Start;

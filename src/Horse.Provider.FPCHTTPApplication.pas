@@ -15,16 +15,16 @@ uses
 
 type
 
+  { THorseProvider }
+
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
     class var FHost: string;
     class var FRunning: Boolean;
-    class var FEvent: TEvent;
     class var FListenQueue: Integer;
     class var FHTTPApplication: THTTPApplication;
     class function GetDefaultHTTPApplication: THTTPApplication;
-    class function GetDefaultEvent: TEvent;
     class function HTTPApplicationIsNil: Boolean;
     class procedure SetListenQueue(const Value: Integer); static;
     class procedure SetPort(const Value: Integer); static;
@@ -35,6 +35,7 @@ type
     class function GetDefaultHost: string; static;
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
+    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     constructor Create(APort: Integer); reintroduce; overload; deprecated 'Use Port method to set port';
@@ -85,13 +86,6 @@ begin
   inherited Create;
 end;
 
-class function THorseProvider<T>.GetDefaultEvent: TEvent;
-begin
-  if FEvent = nil then
-    FEvent := TEvent.Create(nil, False, False, '');
-end;
-
-
 class function THorseProvider<T>.GetDefaultHost: string;
 begin
   Result := DEFAULT_HOST;
@@ -130,6 +124,8 @@ begin
     if FListenQueue = 0 then
       FListenQueue := 15;
     LHTTPApplication := GetDefaultHTTPApplication;
+    LHTTPApplication.AllowDefaultModule:= True;
+    LHTTPApplication.OnGetModule:= DoGetModule;
     LHTTPApplication.Threaded:= True;
     LHTTPApplication.QueueSize:= FListenQueue;
     LHTTPApplication.Port := FPort;
@@ -141,6 +137,11 @@ begin
     Writeln(Format(START_RUNNING, [FHost, FPort]));
     LHTTPApplication.Run;
 
+end;
+
+class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+begin
+  ModuleClass :=  THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.Start;
@@ -193,8 +194,7 @@ end;
 
 class destructor THorseProvider<T>.UnInitialize;
 begin
-  if FEvent <> nil then
-    FreeAndNil(FEvent);
+
 end;
 
 {$ENDIF}

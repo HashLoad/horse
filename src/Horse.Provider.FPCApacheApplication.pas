@@ -5,7 +5,7 @@ unit Horse.Provider.FPCApacheApplication;
 
 interface
 
-{$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC) }
+{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC) }
 
 
 uses
@@ -13,7 +13,7 @@ uses
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-  httpd, custapache, fpApache,
+  httpd, custapache, fpApache, fphttp, httpdefs,
   SysUtils, Classes,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
@@ -31,6 +31,7 @@ type
     class function GetModuleName: string; static;
     class procedure SetDefaultModule(const Value: Module); static;
     class function GetDefaultModule: Module; static;
+    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     class property ModuleName: string read GetModuleName write SetModuleName;
@@ -45,7 +46,7 @@ type
 
 implementation
 
-{$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC) }
+{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC) }
 
 
 uses
@@ -86,12 +87,19 @@ var
 begin
   inherited;
   LApacheApplication := GetDefaultApacheApplication;
+  LApacheApplication.AllowDefaultModule:= True;
+  LApacheApplication.OnGetModule:= DoGetModule;
   LApacheApplication.LegacyRouting := True;
   LApacheApplication.ModuleName := FModuleName;
   LApacheApplication.HandlerName := FModuleName;
   LApacheApplication.SetModuleRecord(FDefaultModule);
   DoOnListen;
   LApacheApplication.Initialize;
+end;
+
+class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+begin
+  ModuleClass :=  THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.SetDefaultModule(const Value: Module);
