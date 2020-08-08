@@ -12,7 +12,7 @@ uses
   System.SysUtils,
 {$ENDIF}
   Horse.Core, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract,
-  {$IF DEFINED(FPC)}Horse.Provider.FPCHTTPApplication {$ELSE}
+  {$IF DEFINED(FPC)} Horse.Provider.FPCHTTPApplication, Horse.Provider.FPCCGIApplication {$ELSE}
   Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI{$ENDIF};
 
 type
@@ -35,7 +35,12 @@ type
 {$ELSEIF DEFINED(HORSE_APACHE)}
   THorseProvider = Horse.Provider.Apache.THorseProvider<THorse>;
 {$ELSEIF DEFINED(HORSE_CGI)}
-  THorseProvider = Horse.Provider.CGI.THorseProvider<THorse>;
+  THorseProvider =
+  {$IF DEFINED(FPC)}
+      Horse.Provider.FPCCGIApplication.THorseProvider<THorse>
+    {$ELSE}
+      Horse.Provider.CGI.THorseProvider<THorse>
+  {$ENDIF};
 {$ELSEIF DEFINED(HORSE_DAEMON)}
   THorseProvider = Horse.Provider.Daemon.THorseProvider<THorse>;
 {$ELSE}
@@ -46,6 +51,7 @@ type
       Horse.Provider.Console.THorseProvider<THorse>
   {$ENDIF};
 {$ENDIF}
+
   THorse = class(THorseProvider);
 
 implementation
