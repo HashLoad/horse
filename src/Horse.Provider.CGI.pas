@@ -2,7 +2,7 @@ unit Horse.Provider.CGI;
 
 interface
 
-{$IF DEFINED(HORSE_CGI)}
+{$IF DEFINED(HORSE_CGI) AND NOT DEFINED(FPC) }
 
 uses
   Horse.Provider.Abstract, System.SysUtils;
@@ -21,7 +21,7 @@ type
 
 implementation
 
-{$IF DEFINED(HORSE_CGI)}
+{$IF DEFINED(HORSE_CGI) AND NOT DEFINED(FPC)}
 
 uses Web.WebBroker, Web.CGIApp, Horse.WebModule;
 

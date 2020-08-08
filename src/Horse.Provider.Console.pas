@@ -2,6 +2,8 @@ unit Horse.Provider.Console;
 
 interface
 
+{$IF NOT DEFINED(FPC)}
+
 uses
   Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
@@ -87,7 +89,11 @@ type
     class destructor UnInitialize;
   end;
 
+{$ENDIF}
+
 implementation
+
+{$IF NOT DEFINED(FPC)}
 
 uses
   Web.WebReq, Horse.WebModule,
@@ -398,5 +404,7 @@ procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
 begin
   FRootCertFile := Value;
 end;
+
+{$ENDIF}
 
 end.

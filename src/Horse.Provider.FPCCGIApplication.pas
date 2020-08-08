@@ -5,13 +5,12 @@ unit Horse.Provider.FPCCGIApplication;
 
 interface
 
-{$IF DEFINED(FPC)}
-
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
 uses
 
   SysUtils, Classes, fpCGI,
-  Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+  Horse.Provider.Abstract, Horse.Proc;
 
 type
 
@@ -20,8 +19,6 @@ type
     class var FCGIApplication: TCGIApplication;
     class function GetDefaultCGIApplication: TCGIApplication;
     class function CGIApplicationIsNil: Boolean;
-    class function GetDefaultPort: Integer; static;
-    class function GetDefaultHost: string; static;
     class procedure InternalListen; virtual;
   public
     constructor Create; reintroduce; overload;
@@ -38,8 +35,7 @@ var
 
 implementation
 
-{$IF DEFINED(FPC)}
-
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
 uses
 
@@ -62,16 +58,6 @@ end;
 constructor THorseProvider<T>.Create;
 begin
   inherited Create;
-end;
-
-class function THorseProvider<T>.GetDefaultHost: string;
-begin
-  Result := DEFAULT_HOST;
-end;
-
-class function THorseProvider<T>.GetDefaultPort: Integer;
-begin
-  Result := DEFAULT_PORT;
 end;
 
 class procedure THorseProvider<T>.InternalListen;
