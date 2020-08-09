@@ -348,6 +348,7 @@ function TNextCaller.Init: TNextCaller;
 var
   LCurrent: string;
 begin
+  Result := Self;
   if not FIsGroup then
     LCurrent := FPath.Dequeue;
   FIndex := -1;
