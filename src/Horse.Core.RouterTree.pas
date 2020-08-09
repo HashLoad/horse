@@ -7,18 +7,17 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Generics.Collections, fpHTTP, Horse.MethodType, Horse.Proc,
+  SysUtils, Generics.Collections, fpHTTP,
 {$ELSE}
   System.SysUtils, Web.HTTPApp, System.Generics.Collections,
 {$ENDIF}
-  Horse.HTTP;
+  Horse.HTTP, Horse.Proc, Horse.Commons;
 
 type
 {$IF DEFINED(FPC)}
   THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
   TCallNextPath = function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean of object;
 {$ELSE}
-  TNextProc = TProc;
   THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
   TCallNextPath = reference to function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
 {$ENDIF}
@@ -94,7 +93,7 @@ implementation
 
 { THorseRouterTree }
 
-uses Horse.Commons, Horse.Exception;
+uses Horse.Exception;
 
 procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
 var
