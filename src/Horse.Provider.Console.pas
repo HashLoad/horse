@@ -4,6 +4,7 @@ interface
 
 {$IF NOT DEFINED(FPC)}
 
+
 uses
   Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
@@ -94,6 +95,7 @@ type
 implementation
 
 {$IF NOT DEFINED(FPC)}
+
 
 uses
   Web.WebReq, Horse.WebModule,
@@ -228,9 +230,11 @@ begin
     FRunning := True;
     DoOnListen;
 
-    while FRunning do
-      GetDefaultEvent.WaitFor();
-
+    if IsConsole then
+    begin
+      while FRunning do
+        GetDefaultEvent.WaitFor();
+    end
   except
     on E: Exception do
     begin
