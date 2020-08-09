@@ -34,7 +34,7 @@ implementation
 class procedure THorseProviderAbstract<T>.DoOnListen;
 begin
   if Assigned(FOnListen) then
-    FOnListen(GetInstance as T);
+    FOnListen(GetInstance{$IF DEFINED(FPC)} as T{$ENDIF});
 end;
 
 class function THorseProviderAbstract<T>.GetOnListen: TProc<T>;

@@ -1,23 +1,26 @@
 unit Horse.Proc;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF NOT DEFINED(FPC)}
+
 uses
   System.SysUtils;
 {$ENDIF}
+
 
 type
 
   TNextProc = {$IF DEFINED(FPC)} procedure of object {$ELSE} System.SysUtils.TProc {$ENDIF};
   TProc = {$IF DEFINED(FPC)} procedure {$ELSE} System.SysUtils.TProc {$ENDIF};
-  TProc<T> = {$IF DEFINED(FPC)} procedure (Arg1: T) {$ELSE} reference to procedure (Arg1: T) {$ENDIF};
+{$IF DEFINED(FPC)}
+  TProc<T> = reference to procedure(Arg1: T);
+{$ENDIF}
 
 implementation
 
 end.
-

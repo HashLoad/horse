@@ -5,7 +5,7 @@ interface
 {$IF NOT DEFINED(FPC)}
 
 uses
-  Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+  Horse.Provider.Abstract, Horse.Constants, Horse.Proc, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
 
 type
