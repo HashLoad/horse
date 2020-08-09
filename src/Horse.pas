@@ -19,6 +19,7 @@ type
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
   TProc = {$IF DEFINED(FPC)} Horse.Proc.TProc {$ELSE} System.SysUtils.TProc {$ENDIF};
+  TNextProc = {$IF DEFINED(FPC)} Horse.Proc.TNextProc {$ELSE} System.SysUtils.TProc {$ENDIF};
   THorseList = Horse.HTTP.THorseList;
   THorseRequest = Horse.HTTP.THorseRequest;
   THorseHackRequest = Horse.HTTP.THorseHackRequest;
