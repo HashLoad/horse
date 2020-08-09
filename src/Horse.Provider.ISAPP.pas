@@ -5,7 +5,8 @@ interface
 {$IF DEFINED(HORSE_ISAPP) AND NOT DEFINED(FPC)}
 
 uses
-  Horse.Provider.Abstract, System.SysUtils;
+  Horse.Provider.Abstract, System.SysUtils,
+  Web.Win.ISAPIApp;
 
 type
 
@@ -25,6 +26,11 @@ implementation
 
 uses
   Web.WebBroker, System.Win.ComObj, Winapi.ActiveX, Horse.WebModule;
+
+exports
+  GetExtensionVersion,
+  HttpExtensionProc,
+  TerminateExtension;
 
 { THorseProvider<T> }
 
