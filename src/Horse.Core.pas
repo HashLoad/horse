@@ -8,11 +8,11 @@ interface
 
 uses
   {$IF DEFINED(FPC)}
-    SysUtils, Horse.MethodType,
+    SysUtils,
   {$ELSE}
     System.SysUtils, Web.HTTPApp,
   {$ENDIF}
-  Horse.Core.RouterTree,
+  Horse.Core.RouterTree, Horse.Commons,
   Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type

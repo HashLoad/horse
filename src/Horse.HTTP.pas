@@ -6,7 +6,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-     SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs, Horse.MethodType,
+     SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
 {$ENDIF}

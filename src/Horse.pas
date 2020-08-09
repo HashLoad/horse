@@ -7,19 +7,17 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Horse.Proc,
+  SysUtils, Horse.Provider.FPCHTTPApplication, Horse.Provider.FPCApacheApplication, Horse.Provider.FPCCGIApplication,
 {$ELSE}
-  System.SysUtils,
+  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI,
 {$ENDIF}
-  Horse.Core, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract,
-  {$IF DEFINED(FPC)} Horse.Provider.FPCHTTPApplication, Horse.Provider.FPCApacheApplication, Horse.Provider.FPCCGIApplication {$ELSE}
-  Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI{$ENDIF};
+  Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
 
 type
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
-  TProc = {$IF DEFINED(FPC)} Horse.Proc.TProc {$ELSE} System.SysUtils.TProc {$ENDIF};
-  TNextProc = {$IF DEFINED(FPC)} Horse.Proc.TNextProc {$ELSE} System.SysUtils.TProc {$ENDIF};
+  TProc = Horse.Proc.TProc;
+  TNextProc = Horse.Proc.TNextProc;
   THorseList = Horse.HTTP.THorseList;
   THorseRequest = Horse.HTTP.THorseRequest;
   THorseHackRequest = Horse.HTTP.THorseHackRequest;
