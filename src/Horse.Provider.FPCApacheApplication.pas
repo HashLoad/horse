@@ -13,7 +13,7 @@ uses
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-  httpd, custapache, fpApache, fphttp, httpdefs,
+  httpd24, fpApache24, custapache24, fphttp, httpdefs,
   SysUtils, Classes,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
@@ -26,7 +26,7 @@ type
     class var FApacheApplication: TCustomApacheApplication;
     class var FHandlerName: string;
     class var FModuleName: string;
-    class var FDefaultModule: Module;
+    class var FDefaultModule: Pmodule;
     class function GetDefaultApacheApplication: TCustomApacheApplication;
     class function ApacheApplicationIsNil: Boolean;
     class procedure InternalListen; virtual;
@@ -34,14 +34,14 @@ type
     class function GetHandlerName: string; static;
     class procedure SetModuleName(const Value: string); static;
     class function GetModuleName: string; static;
-    class procedure SetDefaultModule(const Value: Module); static;
-    class function GetDefaultModule: Module; static;
+    class procedure SetDefaultModule(const Value: Pmodule); static;
+    class function GetDefaultModule: Pmodule; static;
     class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property ModuleName: string read GetModuleName write SetModuleName;
-    class property DefaultModule: Module read GetDefaultModule write SetDefaultModule;
+    class property DefaultModule: Pmodule read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
@@ -67,7 +67,7 @@ begin
   Result := FApacheApplication;
 end;
 
-class function THorseProvider<T>.GetDefaultModule: Module;
+class function THorseProvider<T>.GetDefaultModule: Pmodule;
 begin
   Result := FDefaultModule;
 end;
@@ -106,8 +106,9 @@ begin
   LApacheApplication.AllowDefaultModule:= True;
   LApacheApplication.OnGetModule:= DoGetModule;
   LApacheApplication.LegacyRouting := True;
+  LApacheApplication.ModuleName:= FModuleName;
   LApacheApplication.HandlerName := FHandlerName;
-  LApacheApplication.SetModuleRecord(FDefaultModule);
+  LApacheApplication.SetModuleRecord(FDefaultModule^);
   DoOnListen;
   LApacheApplication.Initialize;
 end;
@@ -117,7 +118,7 @@ begin
   ModuleClass :=  THorseWebModule;
 end;
 
-class procedure THorseProvider<T>.SetDefaultModule(const Value: Module);
+class procedure THorseProvider<T>.SetDefaultModule(const Value: Pmodule);
 begin
   FDefaultModule := Value;
 end;
@@ -134,7 +135,7 @@ end;
 
 class procedure THorseProvider<T>.Listen;
 begin
-  InternalListen;;
+  InternalListen;
 end;
 
 class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
