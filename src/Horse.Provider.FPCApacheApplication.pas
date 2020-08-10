@@ -13,7 +13,7 @@ uses
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-  httpd24, fpApache24, custapache24, fphttp, httpdefs,
+   fphttp, httpdefs, httpd24, fpApache24, custapache24,
   SysUtils, Classes,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
@@ -26,7 +26,7 @@ type
     class var FApacheApplication: TCustomApacheApplication;
     class var FHandlerName: string;
     class var FModuleName: string;
-    class var FDefaultModule: Pmodule;
+    class var FDefaultModule: pmodule;
     class function GetDefaultApacheApplication: TCustomApacheApplication;
     class function ApacheApplicationIsNil: Boolean;
     class procedure InternalListen; virtual;
@@ -34,14 +34,14 @@ type
     class function GetHandlerName: string; static;
     class procedure SetModuleName(const Value: string); static;
     class function GetModuleName: string; static;
-    class procedure SetDefaultModule(const Value: Pmodule); static;
-    class function GetDefaultModule: Pmodule; static;
-    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
+    class procedure SetDefaultModule(const Value: pmodule); static;
+    class function GetDefaultModule: pmodule; static;
+    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var pmoduleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property ModuleName: string read GetModuleName write SetModuleName;
-    class property DefaultModule: Pmodule read GetDefaultModule write SetDefaultModule;
+    class property DefaultModule: pmodule read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
@@ -67,7 +67,7 @@ begin
   Result := FApacheApplication;
 end;
 
-class function THorseProvider<T>.GetDefaultModule: Pmodule;
+class function THorseProvider<T>.GetDefaultModule: pmodule;
 begin
   Result := FDefaultModule;
 end;
@@ -103,22 +103,22 @@ var
 begin
   inherited;
   LApacheApplication := GetDefaultApacheApplication;
-  LApacheApplication.AllowDefaultModule:= True;
-  LApacheApplication.OnGetModule:= DoGetModule;
-  LApacheApplication.LegacyRouting := True;
   LApacheApplication.ModuleName:= FModuleName;
   LApacheApplication.HandlerName := FHandlerName;
   LApacheApplication.SetModuleRecord(FDefaultModule^);
+  LApacheApplication.AllowDefaultModule:= True;
+  LApacheApplication.OnGetModule:= DoGetModule;
+  LApacheApplication.LegacyRouting := True;
   DoOnListen;
   LApacheApplication.Initialize;
 end;
 
-class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var pmoduleClass: TCustomHTTPModuleClass);
 begin
-  ModuleClass :=  THorseWebModule;
+  pmoduleClass :=  THorseWebModule;
 end;
 
-class procedure THorseProvider<T>.SetDefaultModule(const Value: Pmodule);
+class procedure THorseProvider<T>.SetDefaultModule(const Value: pmodule);
 begin
   FDefaultModule := Value;
 end;
