@@ -6,7 +6,7 @@ Uses
 {$ifdef unix}
   cthreads,
 {$endif}
-  Horse, httpd;
+  Horse, httpd24;
 
 const
   ModuleName = 'apache_horse_module';
@@ -23,8 +23,8 @@ end;
 
 begin
 
-  THorse.DefaultModule := ApacheModuleData;
-  THorse.HandlerName := 'apache_horse_module-handle';
+  THorse.DefaultModule := @ApacheModuleData;
+  THorse.HandlerName := ModuleName;
   THorse.ModuleName := ModuleName;
 
   THorse.Get('/ping', GetPing);

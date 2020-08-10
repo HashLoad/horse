@@ -4,14 +4,14 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="5">
+    <Units Count="13">
       <Unit0>
         <Filename Value="Apache.pas"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="119" Y="14"/>
-        <UsageCount Value="20"/>
-        <Loaded Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="35" Y="27"/>
+        <UsageCount Value="21"/>
       </Unit0>
       <Unit1>
         <Filename Value="unit1.pas"/>
@@ -21,7 +21,6 @@
         <EditorIndex Value="-1"/>
         <CursorPos X="34" Y="11"/>
         <UsageCount Value="20"/>
-        <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\httpd22\src\http_config.inc"/>
@@ -32,61 +31,78 @@
       </Unit2>
       <Unit3>
         <Filename Value="..\..\..\src\Horse.pas"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="16"/>
         <CursorPos X="28" Y="37"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <EditorIndex Value="2"/>
-        <CursorPos X="3" Y="87"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="93"/>
+        <CursorPos X="53" Y="111"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\httpd22\src\httpd.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="46"/>
+        <UsageCount Value="10"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\httpd24\src\httpd24.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="253"/>
+        <UsageCount Value="10"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\httpd24\src\http_config.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="411"/>
+        <CursorPos X="3" Y="429"/>
+        <UsageCount Value="10"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\custapache.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="83"/>
+        <CursorPos X="3" Y="135"/>
+        <UsageCount Value="10"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\fphttp.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="46"/>
+        <UsageCount Value="10"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\fpapache.pp"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="26" Y="15"/>
+        <UsageCount Value="10"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\fpapache24.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="10"/>
+        <CursorPos X="34" Y="20"/>
+        <UsageCount Value="10"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\custapache24.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="85"/>
+        <CursorPos X="27" Y="93"/>
+        <UsageCount Value="10"/>
+      </Unit12>
     </Units>
     <OtherDefines Count="1">
       <Define0 Value="HORSE_APACHE"/>
     </OtherDefines>
-    <JumpHistory Count="9" HistoryIndex="8">
-      <Position1>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="37" Column="28" TopLine="13"/>
-      </Position1>
-      <Position2>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="109" Column="45" TopLine="79"/>
-      </Position2>
-      <Position3>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="93" Column="45" TopLine="75"/>
-      </Position3>
-      <Position4>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="107" Column="48" TopLine="81"/>
-      </Position4>
-      <Position5>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="94" Column="60" TopLine="76"/>
-      </Position5>
-      <Position6>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="94" Column="44" TopLine="76"/>
-      </Position6>
-      <Position7>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="101" Column="53" TopLine="76"/>
-      </Position7>
-      <Position8>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="94" Column="56" TopLine="76"/>
-      </Position8>
-      <Position9>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="35" Column="30" TopLine="12"/>
-      </Position9>
-    </JumpHistory>
+    <General>
+      <ActiveWindowIndexAtStart Value="-1"/>
+    </General>
+    <JumpHistory HistoryIndex="-1"/>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes Count="0" ActiveMode=""/>
