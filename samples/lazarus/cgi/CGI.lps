@@ -6,16 +6,17 @@
     <BuildModes Active="Default"/>
     <Units Count="1">
       <Unit0>
-        <Filename Value="Console.lpr"/>
+        <Filename Value="CGI.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="-1"/>
+        <CursorPos X="48" Y="17"/>
         <UsageCount Value="20"/>
+        <Loaded Value="True"/>
       </Unit0>
     </Units>
-    <General>
-      <ActiveWindowIndexAtStart Value="-1"/>
-    </General>
+    <OtherDefines Count="1">
+      <Define0 Value="HORSE_CGI"/>
+    </OtherDefines>
     <JumpHistory HistoryIndex="-1"/>
     <RunParams>
       <FormatVersion Value="2"/>
