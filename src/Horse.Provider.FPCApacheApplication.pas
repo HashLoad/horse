@@ -19,14 +19,19 @@ uses
 
 type
 
+  { THorseProvider }
+
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FApacheApplication: TCustomApacheApplication;
+    class var FHandlerName: string;
     class var FModuleName: string;
     class var FDefaultModule: Module;
     class function GetDefaultApacheApplication: TCustomApacheApplication;
     class function ApacheApplicationIsNil: Boolean;
     class procedure InternalListen; virtual;
+    class procedure SetHandlerName(const Value: string); static;
+    class function GetHandlerName: string; static;
     class procedure SetModuleName(const Value: string); static;
     class function GetModuleName: string; static;
     class procedure SetDefaultModule(const Value: Module); static;
@@ -34,6 +39,7 @@ type
     class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
+    class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property ModuleName: string read GetModuleName write SetModuleName;
     class property DefaultModule: Module read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
@@ -66,9 +72,19 @@ begin
   Result := FDefaultModule;
 end;
 
+class function THorseProvider<T>.GetHandlerName: string;
+begin
+  Result := FHandlerName;
+end;
+
+class procedure THorseProvider<T>.SetModuleName(const Value: string);
+begin
+  FModuleName := Value;
+end;
+
 class function THorseProvider<T>.GetModuleName: string;
 begin
-  Result := FModuleName;
+  Result:= FModuleName;
 end;
 
 class function THorseProvider<T>.ApacheApplicationIsNil: Boolean;
@@ -90,8 +106,7 @@ begin
   LApacheApplication.AllowDefaultModule:= True;
   LApacheApplication.OnGetModule:= DoGetModule;
   LApacheApplication.LegacyRouting := True;
-  LApacheApplication.ModuleName := FModuleName;
-  LApacheApplication.HandlerName := FModuleName;
+  LApacheApplication.HandlerName := FHandlerName;
   LApacheApplication.SetModuleRecord(FDefaultModule);
   DoOnListen;
   LApacheApplication.Initialize;
@@ -107,9 +122,9 @@ begin
   FDefaultModule := Value;
 end;
 
-class procedure THorseProvider<T>.SetModuleName(const Value: string);
+class procedure THorseProvider<T>.SetHandlerName(const Value: string);
 begin
-  FModuleName := Value;
+  FHandlerName := Value;
 end;
 
 class procedure THorseProvider<T>.Start;

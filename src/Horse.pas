@@ -34,7 +34,7 @@ type
 {$ELSEIF DEFINED(HORSE_APACHE)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-      Horse.Provider.FPCApcheApplication.THorseProvider<THorse>
+      Horse.Provider.FPCApacheApplication.THorseProvider<THorse>
     {$ELSE}
       Horse.Provider.Apache.THorseProvider<THorse>
   {$ENDIF};
