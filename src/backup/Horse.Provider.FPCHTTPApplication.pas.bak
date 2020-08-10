@@ -17,7 +17,7 @@ type
 
   { THorseProvider }
 
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider<T: class, constructor> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
     class var FHost: string;

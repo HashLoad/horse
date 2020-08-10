@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Compiler Value="C:\lazarus\fpc\3.2.0\bin\x86_64-win64\fpc.exe" Date="1357350767"/>
+  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -l -vewnhibq -FiE:\Projects\HashLoad\horse\samples\lazarus\console\lib\x86_64-win64 -FuE:\Projects\HashLoad\horse\samples\lazarus\console\ -FUE:\Projects\HashLoad\horse\samples\lazarus\console\lib\x86_64-win64\ -FEE:\Projects\HashLoad\horse\samples\lazarus\console\ -oE:\Projects\HashLoad\horse\samples\lazarus\console\Console.exe Console.lpr"/>
+  <Complete Value="False"/>
+</CONFIG>
