@@ -14,7 +14,7 @@ uses
 
 type
 
-  THorseProviderAbstract<T: class{$IF DEFINED(FPC)}, constructor{$ENDIF}> = class(THorseCore)
+  THorseProviderAbstract<T: class, constructor> = class(THorseCore)
   private
     class var FOnListen: TProc<T>;
   protected
