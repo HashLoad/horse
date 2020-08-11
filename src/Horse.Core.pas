@@ -23,15 +23,16 @@ type
 
   THorseModule = record
   private
-    FHorseCoreInstance: PHorseCore;
+    FSelfInstance: PHorseCore;
+    FDefaultHorseCoreInstance: PHorseCore;
     FHorseRouterTree: PHorseRouterTree;
-    function GetHorseCoreInstance: PHorseCore;
+    function GetSelfInstance: PHorseCore;
+    function GetDefaultHorseCoreInstance: PHorseCore;
     function GetHorseRouterTree: PHorseRouterTree;
   public
     function ToHorse: THorseCore;
-    constructor Create(AHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
+    constructor Create(ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
   end;
-
 
   THorseCore = class
   private
@@ -52,7 +53,6 @@ type
     { public declarations }
     class function ToModule: THorseModule;
     constructor Create; virtual;
-    destructor Destroy; override;
     class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
@@ -112,12 +112,6 @@ begin
   FDefaultHorse := Self
 end;
 
-destructor THorseCore.Destroy;
-begin
-  FRoutes.Free;
-  inherited;
-end;
-
 class function THorseCore.GetDefaultHorse: THorseCore;
 begin
   if FDefaultHorse = nil then
@@ -166,7 +160,7 @@ end;
 
 class function THorseCore.ToModule: THorseModule;
 begin
-  Result := THorseModule.Create(@FDefaultHorse, @FRoutes);
+  Result := THorseModule.Create(@Self, @FDefaultHorse, @FRoutes);
 end;
 
 function THorseCore.InternalGetRoutes: THorseRouterTree;
@@ -191,7 +185,10 @@ end;
 
 class destructor THorseCore.UnInitialize;
 begin
-  FreeAndNil(FDefaultHorse);
+  if FDefaultHorse <> nil then
+    FreeAndNil(FDefaultHorse);
+  if FRoutes <> nil then
+    FreeAndNil(FRoutes);
 end;
 
 class function THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
@@ -400,27 +397,33 @@ end;
 
 { THorseModule }
 
-constructor THorseModule.Create(AHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
+constructor THorseModule.Create(ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
 begin
-  FHorseCoreInstance := AHorseCoreInstance;
+  FSelfInstance := ASelfInstance;
+  FDefaultHorseCoreInstance := ADefaultHorseCoreInstance;
   FHorseRouterTree := AHorseRouterTree;
 end;
 
 function THorseModule.ToHorse: THorseCore;
 begin
-  Result := GetHorseCoreInstance^;
-  Result.FDefaultHorse := Result;
-  Result.FRoutes := GetHorseRouterTree^
+  Result := GetSelfInstance^;
+  Result.FDefaultHorse := GetDefaultHorseCoreInstance^;
+  Result.FRoutes := GetHorseRouterTree^;
 end;
 
-function THorseModule.GetHorseCoreInstance: PHorseCore;
+function THorseModule.GetDefaultHorseCoreInstance: PHorseCore;
 begin
-  Result := FHorseCoreInstance;
+  Result := FDefaultHorseCoreInstance;
 end;
 
 function THorseModule.GetHorseRouterTree: PHorseRouterTree;
 begin
   Result := FHorseRouterTree;
+end;
+
+function THorseModule.GetSelfInstance: PHorseCore;
+begin
+  Result := FSelfInstance;
 end;
 
 end.
