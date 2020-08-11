@@ -10,7 +10,7 @@ uses
   {$ELSE}
     System.SysUtils,
   {$ENDIF}
-   Horse.Core;
+   Horse.Core, Horse.Core.RouterTree;
 
 type
 

@@ -1,41 +1,59 @@
 unit Horse.Core;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
-  {$IF DEFINED(FPC)}
-    SysUtils,
-  {$ELSE}
-    System.SysUtils, Web.HTTPApp,
-  {$ENDIF}
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils, Web.HTTPApp,
+{$ENDIF}
   Horse.Core.RouterTree, Horse.Commons,
   Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
 
+  THorseCore = class;
+  PHorseCore = ^THorseCore;
+  PHorseModule = ^THorseModule;
+
+  THorseModule = record
+  private
+    FHorseCoreInstance: PHorseCore;
+    FHorseRouterTree: PHorseRouterTree;
+    function GetHorseCoreInstance: PHorseCore;
+    function GetHorseRouterTree: PHorseRouterTree;
+  public
+    function ToHorse: THorseCore;
+    constructor Create(AHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
+  end;
+
+
   THorseCore = class
   private
     { private declarations }
-    FRoutes: THorseRouterTree;
+    class var FRoutes: THorseRouterTree;
     class function RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;
     class var FDefaultHorse: THorseCore;
-    class function GetDefaultHorse: THorseCore;
+
     function InternalRoute(APath: string): IHorseCoreRoute<THorseCore>;
     function InternalGroup(): IHorseCoreGroup<THorseCore>;
     function InternalGetRoutes: THorseRouterTree;
     procedure InternalSetRoutes(const Value: THorseRouterTree);
     class function GetRoutes: THorseRouterTree; static;
     class procedure SetRoutes(const Value: THorseRouterTree); static;
+  protected
+    class function GetDefaultHorse: THorseCore;
   public
     { public declarations }
+    class function ToModule: THorseModule;
     constructor Create; virtual;
     destructor Destroy; override;
-
-    class destructor UnInitialize; {$IFNDEF FPC}virtual;{$ENDIF}
+    class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
     class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;
@@ -87,9 +105,10 @@ uses
 
 constructor THorseCore.Create;
 begin
-  FRoutes := THorseRouterTree.Create;
   if FDefaultHorse <> nil then
     raise Exception.Create('The Horse instance has already been created');
+  if FRoutes = nil then
+    FRoutes := THorseRouterTree.Create;
   FDefaultHorse := Self
 end;
 
@@ -145,6 +164,11 @@ begin
   GetDefaultHorse.InternalSetRoutes(Value);
 end;
 
+class function THorseCore.ToModule: THorseModule;
+begin
+  Result := THorseModule.Create(@FDefaultHorse, @FRoutes);
+end;
+
 function THorseCore.InternalGetRoutes: THorseRouterTree;
 begin
   Result := FRoutes;
@@ -152,12 +176,12 @@ end;
 
 function THorseCore.InternalGroup(): IHorseCoreGroup<THorseCore>;
 begin
- Result := THorseCoreGroup<THorseCore>.Create(FRoutes);
+  Result := THorseCoreGroup<THorseCore>.Create(FRoutes);
 end;
 
 function THorseCore.InternalRoute(APath: string): IHorseCoreRoute<THorseCore>;
 begin
- Result := THorseCoreRoute<THorseCore>.Create(APath, Self);
+  Result := THorseCoreRoute<THorseCore>.Create(APath, Self);
 end;
 
 procedure THorseCore.InternalSetRoutes(const Value: THorseRouterTree);
@@ -374,6 +398,29 @@ begin
   Put(APath, ACallback);
 end;
 
+{ THorseModule }
+
+constructor THorseModule.Create(AHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);
+begin
+  FHorseCoreInstance := AHorseCoreInstance;
+  FHorseRouterTree := AHorseRouterTree;
+end;
+
+function THorseModule.ToHorse: THorseCore;
+begin
+  Result := GetHorseCoreInstance^;
+  Result.FDefaultHorse := Result;
+  Result.FRoutes := GetHorseRouterTree^
+end;
+
+function THorseModule.GetHorseCoreInstance: PHorseCore;
+begin
+  Result := FHorseCoreInstance;
+end;
+
+function THorseModule.GetHorseRouterTree: PHorseRouterTree;
+begin
+  Result := FHorseRouterTree;
+end;
+
 end.
-
-
