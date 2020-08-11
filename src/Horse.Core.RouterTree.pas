@@ -22,6 +22,8 @@ type
   TCallNextPath = reference to function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
 {$ENDIF}
 
+  PHorseRouterTree = ^THorseRouterTree;
+
   THorseRouterTree = class
   strict private
     FPrefix: string;
@@ -52,6 +54,7 @@ type
     constructor Create;
     destructor Destroy; override;
   end;
+
 
   TNextCaller = class
   private
@@ -326,10 +329,8 @@ begin
 end;
 
 procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
-var
-  FCurrent: string;
 begin
-  FCurrent := APath.Dequeue;
+  APath.Dequeue;
   if APath.Count = 0 then
     FMiddleware.Add(AMiddleware)
   else

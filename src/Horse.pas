@@ -27,7 +27,14 @@ type
   THTTPStatus = Horse.Commons.THTTPStatus;
   TMimeTypes = Horse.Commons.TMimeTypes;
   TMessageType = Horse.Commons.TMessageType;
+  THorseModule = Horse.Core.THorseModule;
+
+  PHorseModule = Horse.Core.PHorseModule;
+  PHorseCore = Horse.Core.PHorseCore;
+  PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
+
   THorse = class;
+
 
 {$IF DEFINED(HORSE_ISAPP)}
   THorseProvider = Horse.Provider.ISAPP.THorseProvider<THorse>;
