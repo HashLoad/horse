@@ -2,15 +2,15 @@ unit Horse.WebModule;
 
 interface
 
-uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse, Horse.Commons, System.RegularExpressions;
+uses System.SysUtils, System.IOUtils, System.Classes, Web.HTTPApp, Horse.Core, Horse.Commons, System.RegularExpressions;
 
 type
   THorseWebModule = class(TWebModule)
     procedure HandlerAction(Sender: TObject; Request: TWebRequest; Response: TWebResponse; var Handled: Boolean);
   private
-    FHorse: THorse;
+    FHorse: THorseCore;
   public
-    property Horse: THorse read FHorse write FHorse;
+    property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
   end;
 
@@ -27,7 +27,7 @@ uses Horse.HTTP, Horse.Exception;
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
   inherited;
-  FHorse := THorse.GetInstance;
+  FHorse := THorseCore.GetInstance;
 end;
 
 procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
@@ -35,12 +35,15 @@ procedure THorseWebModule.HandlerAction(Sender: TObject; Request: TWebRequest;
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
+  LFound: Boolean;
 begin
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try
     try
-      if not FHorse.Routes.Execute(LRequest, LResponse) then
+      LFound := FHorse.Routes.Execute(LRequest, LResponse);
+
+      if not LFound then
       begin
         Response.Content := 'Not Found';
         Response.StatusCode := THTTPStatus.NotFound.ToInteger;

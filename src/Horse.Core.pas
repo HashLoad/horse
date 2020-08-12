@@ -8,10 +8,13 @@ type
   THorseCore = class
   private
     FRoutes: THorseRouterTree;
+    class var FDefaultHorse: THorseCore;
     procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
   public
     destructor Destroy; override;
     constructor Create; overload;
+
+    class function GetInstance: THorseCore;
 
     property Routes: THorseRouterTree read FRoutes write FRoutes;
     function Route(APath: string): IHorseCoreRoute;
@@ -66,6 +69,8 @@ uses
 constructor THorseCore.Create;
 begin
   FRoutes := THorseRouterTree.Create;
+
+  FDefaultHorse := Self
 end;
 
 procedure THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback);
@@ -252,6 +257,11 @@ begin
   for LCallback in ACallbacks do
     Get(APath, LCallback);
   Get(APath, ACallback);
+end;
+
+class function THorseCore.GetInstance: THorseCore;
+begin
+  Result := FDefaultHorse;
 end;
 
 procedure THorseCore.Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback);
