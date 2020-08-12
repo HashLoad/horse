@@ -220,10 +220,13 @@ begin
     if FHorseProviderIOHandleSSL <> nil then
       InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
-    LIdHTTPWebBrokerBridge.Bindings.Clear;
-    LIdHTTPWebBrokerBridge.Bindings.Add;
-    LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-    LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+    if FHost <> GetDefaultHost then
+    begin
+      LIdHTTPWebBrokerBridge.Bindings.Clear;
+      LIdHTTPWebBrokerBridge.Bindings.Add;
+      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
+      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+    end;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
     LIdHTTPWebBrokerBridge.Active := True;
     LIdHTTPWebBrokerBridge.StartListening;
@@ -320,7 +323,7 @@ end;
 
 class procedure THorseProvider<T>.SetHost(const Value: string);
 begin
-  FHost := Value;
+  FHost := Value.Trim;
 end;
 
 class procedure THorseProvider<T>.SetIOHandleSSL(const Value: THorseProviderIOHandleSSL);
