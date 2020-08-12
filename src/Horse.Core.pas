@@ -47,6 +47,7 @@ type
     procedure InternalSetRoutes(const Value: THorseRouterTree);
     class function GetRoutes: THorseRouterTree; static;
     class procedure SetRoutes(const Value: THorseRouterTree); static;
+    class function MakeHorseModule: THorseModule;
   protected
     class function GetDefaultHorse: THorseCore;
   public
@@ -160,7 +161,7 @@ end;
 
 class function THorseCore.ToModule: THorseModule;
 begin
-  Result := THorseModule.Create(@Self, @FDefaultHorse, @FRoutes);
+  Result := GetDefaultHorse.MakeHorseModule;
 end;
 
 function THorseCore.InternalGetRoutes: THorseRouterTree;
@@ -181,6 +182,11 @@ end;
 procedure THorseCore.InternalSetRoutes(const Value: THorseRouterTree);
 begin
   FRoutes := Value;
+end;
+
+class function THorseCore.MakeHorseModule: THorseModule;
+begin
+   Result := THorseModule.Create(@Self, @FDefaultHorse, @FRoutes);
 end;
 
 class destructor THorseCore.UnInitialize;
