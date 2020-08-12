@@ -154,7 +154,7 @@ begin
   FMiddleware := TList<THorseCallback>.Create;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
-  FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create;
+  FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
   FPrefix := '';
 end;
 
