@@ -141,11 +141,7 @@ var
 begin
   LDefaultHorse := GetDefaultHorse;
   Result := LDefaultHorse;
-
-  if APath.EndsWith('/') then
-    APath := APath.Remove(High(APath) - 1, 1);
-  if not APath.StartsWith('/') then
-    APath := '/' + APath;
+  APath := '/' + APath.Trim(['/']);
   LDefaultHorse.GetRoutes.RegisterRoute(AHTTPType, APath, ACallback);
 end;
 
@@ -171,12 +167,12 @@ end;
 
 function THorseCore.InternalGroup(): IHorseCoreGroup<THorseCore>;
 begin
-  Result := THorseCoreGroup<THorseCore>.Create(FRoutes);
+  Result := THorseCoreGroup<THorseCore>.Create;
 end;
 
 function THorseCore.InternalRoute(APath: string): IHorseCoreRoute<THorseCore>;
 begin
-  Result := THorseCoreRoute<THorseCore>.Create(APath, Self);
+  Result := THorseCoreRoute<THorseCore>.Create(APath);
 end;
 
 procedure THorseCore.InternalSetRoutes(const Value: THorseRouterTree);
