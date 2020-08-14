@@ -123,9 +123,6 @@ begin
 end;
 
 procedure THorseRequest.InitializeQuery;
-const
-  KEY = 0;
-  VALUE = 1;
 var
   LParams: TArray<string>;
   LParam: TArray<string>;
