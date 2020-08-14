@@ -1,0 +1,20 @@
+object Daemon_Manager: TDaemon_Manager
+  DaemonDefs = <  
+    item
+      DaemonClassName = 'TDaemon_Main'
+      Name = 'HorseService'
+      Description = 'Windows Service Horse'
+      DisplayName = 'WinSrvHorse'
+      Options = [doAllowStop, doAllowPause]
+      WinBindings.Dependencies = <>
+      WinBindings.StartType = stBoot
+      WinBindings.WaitHint = 0
+      WinBindings.IDTag = 0
+      WinBindings.ServiceType = stWin32
+      WinBindings.ErrorSeverity = esIgnore
+      LogStatusReport = False
+    end>
+  OnCreate = Daemon_ManagerCreate
+  Left = 1040
+  Top = 129
+end

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="11"/>
+    <BuildModes Active="Default"/>
+    <Units Count="7">
+      <Unit0>
+        <Filename Value="WinSvc.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="50" Y="14"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="daemonmanager.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Daemon_Manager"/>
+        <HasResources Value="True"/>
+        <UnitName Value="DaemonManager"/>
+        <TopLine Value="4"/>
+        <CursorPos X="29" Y="20"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="daemonmain.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Daemon_Main"/>
+        <ResourceBaseClass Value="DataModule"/>
+        <UnitName Value="DaemonMain"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="10"/>
+        <CursorPos X="20" Y="36"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\delphi\winsvc\Main.Service.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos Y="6"/>
+        <UsageCount Value="10"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="8"/>
+        <CursorPos X="31" Y="10"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\..\esysframework-M\Server\ESF.Server.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="37" Y="24"/>
+        <UsageCount Value="10"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="105"/>
+        <CursorPos X="52" Y="133"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit6>
+    </Units>
+    <JumpHistory Count="24" HistoryIndex="23">
+      <Position1>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Column="4"/>
+      </Position1>
+      <Position2>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="44" Column="28" TopLine="9"/>
+      </Position2>
+      <Position3>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="55" Column="18" TopLine="15"/>
+      </Position3>
+      <Position4>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="50" Column="21" TopLine="15"/>
+      </Position4>
+      <Position5>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="38" Column="21" TopLine="18"/>
+      </Position5>
+      <Position6>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="28" Column="79"/>
+      </Position6>
+      <Position7>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="32" Column="84" TopLine="10"/>
+      </Position7>
+      <Position8>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="41" Column="70" TopLine="22"/>
+      </Position8>
+      <Position9>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="44" Column="4" TopLine="24"/>
+      </Position9>
+      <Position10>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="48" Column="22" TopLine="26"/>
+      </Position10>
+      <Position11>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="40" Column="18" TopLine="25"/>
+      </Position11>
+      <Position12>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="28" Column="5" TopLine="20"/>
+      </Position12>
+      <Position13>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="34" TopLine="5"/>
+      </Position13>
+      <Position14>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="8" Column="38"/>
+      </Position14>
+      <Position15>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="48" Column="23" TopLine="17"/>
+      </Position15>
+      <Position16>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="46" Column="23" TopLine="11"/>
+      </Position16>
+      <Position17>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="38" Column="47" TopLine="26"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="69" Column="8" TopLine="37"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="38" Column="24" TopLine="11"/>
+      </Position19>
+      <Position20>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="21" Column="23" TopLine="11"/>
+      </Position20>
+      <Position21>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="58" Column="50" TopLine="11"/>
+      </Position21>
+      <Position22>
+        <Filename Value="daemonmain.pas"/>
+        <Caret Line="36" Column="20" TopLine="10"/>
+      </Position22>
+      <Position23>
+        <Filename Value="WinSvc.lpr"/>
+        <Caret Line="13"/>
+      </Position23>
+      <Position24>
+        <Filename Value="WinSvc.lpr"/>
+        <Caret Line="14" Column="93"/>
+      </Position24>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
