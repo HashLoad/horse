@@ -120,7 +120,6 @@ var
   LPathOrigin: TQueue<string>;
   LIsGroup: Boolean;
 begin
-
   LIsGroup := False;
   LPathOrigin := APath;
   LCurrent := APath.Peek;
