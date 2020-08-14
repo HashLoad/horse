@@ -2,7 +2,7 @@ unit Horse.HTTP;
 
 interface
 
-uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo, Horse.Commons;
+uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo, Horse.Commons, IdURI;
 
 type
   THorseList = TDictionary<string, string>;
@@ -124,14 +124,16 @@ end;
 
 procedure THorseRequest.InitializeQuery;
 var
+  LParams: TArray<string>;
   LParam: TArray<string>;
   LItem: string;
 begin
+  LParams := FWebRequest.Query.Split(['&']);
   FQuery := THorseList.Create;
-  for LItem in FWebRequest.QueryFields do
+  for LItem in LParams do
   begin
     LParam := LItem.Split(['=']);
-    FQuery.Add(LParam[KEY], LParam[VALUE]);
+    FQuery.Add(TIdURI.URLDecode(LParam[KEY]), TIdURI.URLDecode(LParam[VALUE]));
   end;
 end;
 
