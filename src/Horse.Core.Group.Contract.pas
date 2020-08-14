@@ -9,7 +9,6 @@ uses
   Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
-
    IHorseCoreGroup<T: class> = interface
     ['{5EB734D6-6944-473E-9C79-506647E2F5E8}']
     function Prefix(APrefix: string): IHorseCoreGroup<T>;

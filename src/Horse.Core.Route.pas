@@ -13,15 +13,12 @@ uses
   Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
-
-  { THorseCoreRoute }
-
   THorseCoreRoute<T: class> = class(TInterfacedObject, IHorseCoreRoute<T>)
   private
     FPath: string;
-    FHorseCore: T;
+    FHorseCore: TObject;
   public
-    constructor Create(APath: string; AHorseCore: T);
+    constructor Create(APath: string);
 
     function This: IHorseCoreRoute<T>;
 
@@ -70,10 +67,10 @@ uses
 
 { THorseCoreRoute }
 
-constructor THorseCoreRoute<T>.Create(APath: string; AHorseCore: T);
+constructor THorseCoreRoute<T>.Create(APath: string);
 begin
   FPath := APath;
-  FHorseCore := AHorseCore;
+  FHorseCore := THorseCore.GetInstance;
 end;
 
 function THorseCoreRoute<T>.This: IHorseCoreRoute<T>;
@@ -101,7 +98,7 @@ end;
 
 function THorseCoreRoute<T>.&End: T;
 begin
-  Result := FHorseCore;
+  Result := FHorseCore as T;
 end;
 
 function THorseCoreRoute<T>.All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
