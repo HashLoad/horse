@@ -133,14 +133,16 @@ end;
 
 procedure THorseRequest.InitializeQuery;
 var
-  LParam: TArray<string>;
   LItem: string;
+  LKey: string;
+  LValue: string;
 begin
   FQuery := THorseList.Create;
   for LItem in FWebRequest.QueryFields do
   begin
-    LParam := LItem.Split(['=']);
-    FQuery.Add(LParam[KEY], LParam[VALUE]);
+    LKey := Copy(Litem, 1, Pos('=', Litem) - 1);
+    LValue := Copy(Litem, Pos('=', Litem) + 1, Length(LItem));
+    FQuery.Add(LKey, LValue);
   end;
 end;
 
