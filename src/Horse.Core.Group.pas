@@ -1,25 +1,24 @@
 unit Horse.Core.Group;
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
 
 uses
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}
   SysUtils,
-  {$ELSE}
-    System.SysUtils,
-  {$ENDIF}
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
   Horse.Core.Group.Contract, Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
   THorseCoreGroup<T: class> = class(TInterfacedObject, IHorseCoreGroup<T>)
   private
     FHorseCore: TObject;
-    FRoutesOld: THorseRouterTree;
-    FRoutesNew: THorseRouterTree;
-    procedure RouterOld;
-    procedure RouterNew;
+    FPrefix: string;
+    function NormalizePath(APath: string): string;
   public
     constructor Create;
 
@@ -74,251 +73,166 @@ end;
 constructor THorseCoreGroup<T>.Create;
 begin
   FHorseCore := THorseCore.GetInstance;
-  FRoutesOld := THorseCore(FHorseCore).Routes;
-  FRoutesNew := FRoutesOld.CreateRouter(FRoutesOld.GetPrefix().Trim(['/']));
-  FRoutesNew.Prefix(EmptyStr);
 end;
 
 function THorseCoreGroup<T>.Prefix(APrefix: string): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Routes.Prefix(APrefix);
-  RouterOld;
+  FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
 function THorseCoreGroup<T>.Route(APath: string): IHorseCoreRoute<T>;
 begin
-  RouterNew;
-  Result := THorseCore(FHorseCore).Route(APath) as IHorseCoreRoute<T>;
-  RouterOld;
+  Result := THorseCore(FHorseCore).Route(NormalizePath(APath)) as IHorseCoreRoute<T>;
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Get(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Get(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Get(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Get(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Get(APath, ACallbacks, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
 function THorseCoreGroup<T>.Put(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Put(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Put(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Put(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Put(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Put(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Put(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Put(APath, ACallbacks, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
 function THorseCoreGroup<T>.Patch(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Patch(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Patch(APath, ACallbacks, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
 function THorseCoreGroup<T>.Patch(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Patch(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Patch(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Patch(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Head(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Head(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Head(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallbacks, ACallback);
+end;
 
-  RouterNew;
-  THorseCore(FHorseCore).Head(APath, ACallbacks, ACallback);
-  RouterOld;
+function THorseCoreGroup<T>.NormalizePath(APath: string): string;
+begin
+  Result := FPrefix + '/' + APath.Trim(['/']);
 end;
 
 function THorseCoreGroup<T>.Head(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Head(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Head(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Head(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Head(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Post(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Post(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Post(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Post(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Post(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Post(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Post(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Post(APath, ACallbacks, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
 function THorseCoreGroup<T>.Delete(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Delete(APath, AMiddleware, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), AMiddleware, ACallback);
 end;
 
 function THorseCoreGroup<T>.Delete(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Delete(APath, ACallbacks);
-  RouterOld;
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Delete(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Delete(APath, ACallback);
-  RouterOld;
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
 end;
 
 function THorseCoreGroup<T>.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-
-  RouterNew;
-  THorseCore(FHorseCore).Delete(APath, ACallbacks, ACallback);
-  RouterOld;
-end;
-
-procedure THorseCoreGroup<T>.RouterNew;
-begin
-  THorseCore(FHorseCore).Routes := FRoutesNew;
-end;
-
-procedure THorseCoreGroup<T>.RouterOld;
-begin
-  THorseCore(FHorseCore).Routes := FRoutesOld;
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
 end.
