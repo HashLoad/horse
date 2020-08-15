@@ -386,8 +386,8 @@ begin
             raise;
           end;
         end;
-        if (LCallback.Count > FIndexCallback) then
-          Next;
+
+        Next;
       end;
     end
     else if FCallBack.Count > 0 then
