@@ -136,12 +136,14 @@ var
   LItem: string;
   LKey: string;
   LValue: string;
+  p : Integer;  
 begin
   FQuery := THorseList.Create;
   for LItem in FWebRequest.QueryFields do
   begin
-    LKey := Copy(Litem, 1, Pos('=', Litem) - 1);
-    LValue := Copy(Litem, Pos('=', Litem) + 1, Length(LItem));
+    p := Pos('=', Litem);
+    LKey := Copy(Litem, 1, p - 1);
+    LValue := Copy(Litem, p + 1, Length(LItem));
     FQuery.Add(LKey, LValue);
   end;
 end;
