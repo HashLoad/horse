@@ -25,6 +25,11 @@ type
     function Prefix(APrefix: string): IHorseCoreGroup<T>;
     function Route(APath: string): IHorseCoreRoute<T>;
 
+    function Use(ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+
     function Get(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Get(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
@@ -84,6 +89,31 @@ end;
 function THorseCoreGroup<T>.Route(APath: string): IHorseCoreRoute<T>;
 begin
   Result := THorseCore(FHorseCore).Route(NormalizePath(APath)) as IHorseCoreRoute<T>;
+end;
+
+function THorseCoreGroup<T>.Use(AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Use('/', [AMiddleware, ACallback]);
+end;
+
+function THorseCoreGroup<T>.Use(ACallback: THorseCallback): IHorseCoreGroup<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Use('/', ACallback);
+end;
+
+function THorseCoreGroup<T>.Use(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Use('/', ACallbacks);
+  THorseCore(FHorseCore).Use('/', [ACallback]);
+end;
+
+function THorseCoreGroup<T>.Use(ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Use('/', ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;

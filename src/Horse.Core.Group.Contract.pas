@@ -5,7 +5,6 @@ unit Horse.Core.Group.Contract;
 interface
 
 uses
-
   Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
@@ -13,6 +12,11 @@ type
     ['{5EB734D6-6944-473E-9C79-506647E2F5E8}']
     function Prefix(APrefix: string): IHorseCoreGroup<T>;
     function Route(APath: string): IHorseCoreRoute<T>;
+
+    function Use(ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
     function Get(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
