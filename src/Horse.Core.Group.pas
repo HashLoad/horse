@@ -94,26 +94,26 @@ end;
 function THorseCoreGroup<T>.Use(AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-  THorseCore(FHorseCore).Use('/', [AMiddleware, ACallback]);
+  THorseCore(FHorseCore).Use(NormalizePath('/'), [AMiddleware, ACallback]);
 end;
 
 function THorseCoreGroup<T>.Use(ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-  THorseCore(FHorseCore).Use('/', ACallback);
+  THorseCore(FHorseCore).Use(NormalizePath('/'), ACallback);
 end;
 
 function THorseCoreGroup<T>.Use(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-  THorseCore(FHorseCore).Use('/', ACallbacks);
-  THorseCore(FHorseCore).Use('/', [ACallback]);
+  THorseCore(FHorseCore).Use(NormalizePath('/'), ACallbacks);
+  THorseCore(FHorseCore).Use(NormalizePath('/'), [ACallback]);
 end;
 
 function THorseCoreGroup<T>.Use(ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
-  THorseCore(FHorseCore).Use('/', ACallbacks);
+  THorseCore(FHorseCore).Use(NormalizePath('/'), ACallbacks);
 end;
 
 function THorseCoreGroup<T>.Get(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
