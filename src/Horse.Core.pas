@@ -13,7 +13,6 @@ type
   public
     destructor Destroy; override;
     constructor Create; overload;
-    class destructor UnInitialize;
     class function GetInstance: THorseCore;
 
     property Routes: THorseRouterTree read FRoutes write FRoutes;
@@ -174,12 +173,6 @@ end;
 function THorseCore.Group(): IHorseCoreGroup;
 begin
   Result := THorseCoreGroup.Create(FRoutes);
-end;
-
-class destructor THorseCore.UnInitialize;
-begin
-  if Assigned(FDefaultHorse) then
-     FreeAndNil(FDefaultHorse);
 end;
 
 procedure THorseCore.Use(ACallbacks: array of THorseCallback);
