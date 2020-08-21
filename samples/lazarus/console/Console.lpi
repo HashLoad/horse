@@ -41,7 +41,6 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..\..\..\src;..\..\..\..\horse-basic-auth\src;..\..\..\..\horse-cors\src;..\..\..\..\horse-octet-stream\src;..\..\..\..\handle-exception\Src;..\..\..\..\jhonson\src"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>
