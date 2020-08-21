@@ -4,22 +4,250 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="1">
+    <Units Count="13">
       <Unit0>
         <Filename Value="Console.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="-1"/>
-        <UsageCount Value="20"/>
+        <CursorPos X="9" Y="10"/>
+        <UsageCount Value="50"/>
+        <Loaded Value="True"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="..\..\..\..\horse-basic-auth\src\Horse.BasicAuthentication.pas"/>
+        <EditorIndex Value="10"/>
+        <TopLine Value="46"/>
+        <CursorPos Y="8"/>
+        <UsageCount Value="25"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
+        <EditorIndex Value="11"/>
+        <TopLine Value="40"/>
+        <CursorPos X="27" Y="57"/>
+        <UsageCount Value="25"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\..\horse-cors\src\Horse.CORS.pas"/>
+        <EditorIndex Value="9"/>
+        <TopLine Value="22"/>
+        <CursorPos X="17" Y="47"/>
+        <UsageCount Value="25"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="59"/>
+        <CursorPos Y="77"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-web\src\base\httpdefs.pp"/>
+        <UnitName Value="HTTPDefs"/>
+        <EditorIndex Value="8"/>
+        <CursorPos X="10"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="2"/>
+        <CursorPos X="23" Y="14"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="..\..\..\src\Horse.Commons.pas"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="17"/>
+        <CursorPos X="5" Y="43"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
+        <EditorIndex Value="5"/>
+        <CursorPos Y="2"/>
+        <UsageCount Value="24"/>
+        <Loaded Value="True"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="42"/>
+        <CursorPos X="107" Y="62"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\..\..\..\jhonson\src\Horse.Jhonson.pas"/>
+        <EditorIndex Value="3"/>
+        <CursorPos X="122" Y="19"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-json\src\fpjson.pp"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="81"/>
+        <CursorPos X="3" Y="99"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\rtl\inc\objpash.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="183"/>
+        <CursorPos X="8" Y="201"/>
+        <UsageCount Value="10"/>
+      </Unit12>
     </Units>
-    <General>
-      <ActiveWindowIndexAtStart Value="-1"/>
-    </General>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory Count="30" HistoryIndex="29">
+      <Position1>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="68" Column="25" TopLine="38"/>
+      </Position1>
+      <Position2>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="44" Column="53" TopLine="23"/>
+      </Position2>
+      <Position3>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="30" Column="39" TopLine="12"/>
+      </Position3>
+      <Position4>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="41" Column="34" TopLine="23"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="68" Column="27" TopLine="38"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="52" Column="23" TopLine="39"/>
+      </Position6>
+      <Position7>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-json\src\fpjson.pp"/>
+        <Caret Line="558" Column="3" TopLine="541"/>
+      </Position7>
+      <Position8>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\fcl-json\src\fpjson.pp"/>
+        <Caret Line="99" Column="3" TopLine="81"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="52" Column="23" TopLine="39"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
+        <Caret Line="57" Column="40" TopLine="40"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="37" Column="52" TopLine="30"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="34" Column="52" TopLine="19"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="41" Column="25" TopLine="25"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="34" Column="43" TopLine="16"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="30" Column="36" TopLine="27"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="63" Column="37" TopLine="31"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="70" Column="83" TopLine="42"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="71" Column="44" TopLine="42"/>
+      </Position18>
+      <Position19>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="26" Column="126" TopLine="2"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <Caret Line="83" Column="45" TopLine="59"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <Caret Line="45" TopLine="27"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="34" TopLine="16"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="74" TopLine="41"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <Caret Line="80" Column="5" TopLine="59"/>
+      </Position24>
+      <Position25>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="34" TopLine="16"/>
+      </Position25>
+      <Position26>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="9" Column="191"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <Caret Line="77" TopLine="59"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\..\..\..\handle-exception\Src\Horse.HandleException.pas"/>
+        <Caret Line="34" TopLine="16"/>
+      </Position28>
+      <Position29>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="6" Column="62" TopLine="12"/>
+      </Position29>
+      <Position30>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="11" Column="63"/>
+      </Position30>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes Count="0" ActiveMode=""/>
     </RunParams>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints Count="1">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
+        <Line Value="45"/>
+      </Item1>
+    </BreakPoints>
+    <Watches Count="1">
+      <Item1>
+        <Expression Value="LWebRequest.ContentType"/>
+      </Item1>
+    </Watches>
+  </Debugging>
 </CONFIG>

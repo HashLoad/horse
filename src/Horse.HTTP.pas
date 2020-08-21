@@ -13,7 +13,7 @@ uses
  Horse.Commons;
 
 type
-  THorseList = {$IF DEFINED(FPC)}TAVLTreeMap<string, string>{$ELSE} TDictionary<string, string>{$ENDIF};
+  THorseList = {$IF DEFINED(FPC)}TDictionary<string, string>{$ELSE} TDictionary<string, string>{$ENDIF};
 
   THorseRequest = class
   private
