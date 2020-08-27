@@ -2,7 +2,8 @@ unit Horse.HTTP;
 
 interface
 
-uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo, Horse.Commons, IdURI;
+uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo,
+  IdHTTPWebBrokerBridge, IdIOHandler, IdGlobal, Horse.Commons, IdURI;
 
 type
   THorseList = TDictionary<string, string>;
@@ -58,6 +59,11 @@ type
   public
     function GetWebResponse: TWebResponse;
     function GetContent: TObject;
+  end;
+
+  THorseHTTPWebBroker = class(TIdHTTPWebBrokerBridge)
+  protected
+    procedure DoMaxConnectionsExceeded(AIOHandler: TIdIOHandler); override;
   end;
 
 implementation
@@ -233,6 +239,22 @@ end;
 function THorseHackResponse.GetWebResponse: TWebResponse;
 begin
   Result := FWebResponse;
+end;
+
+{ THorseHTTPWebBroker }
+
+procedure THorseHTTPWebBroker.DoMaxConnectionsExceeded(AIOHandler: TIdIOHandler);
+var
+  Body: string;
+begin
+  Body := 'Site is overloaded';
+  AIOHandler.WriteLn('HTTP/1.1 529 Site is overloaded');
+  AIOHandler.WriteLn('Connection: close');
+  AIOHandler.WriteLn('Content-Type: text/plain');
+  AIOHandler.WriteLn('Content-Length: ' + IntToStr(Length(Body)));
+  AIOHandler.WriteLn;
+  AIOHandler.Write(Body);
+  AIOHandler.WaitFor('');
 end;
 
 end.

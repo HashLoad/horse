@@ -2,7 +2,7 @@ unit Horse;
 
 interface
 
-uses IdHTTPWebBrokerBridge, Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router, Horse.Exception;
+uses Horse.Core, IdContext, Horse.HTTP, System.SysUtils, Horse.Router, Horse.Exception;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -21,7 +21,7 @@ type
     FPort: Integer;
     FMaxConnections: Integer;
     FListenQueue: Integer;
-    FHTTPWebBroker: TIdHTTPWebBrokerBridge;
+    FHTTPWebBroker: THorseHTTPWebBroker;
     class var FInstance: THorse;
     procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String;
       var VHandled: Boolean);
@@ -56,7 +56,7 @@ begin
   inherited Create;
   FAddr := AAddr;
   FPort := APort;
-  FHTTPWebBroker := TIdHTTPWebBrokerBridge.Create(nil);
+  FHTTPWebBroker := THorseHTTPWebBroker.Create(nil);
   FHTTPWebBroker.OnParseAuthentication := OnAuthentication;
   FListenQueue := IdListenQueueDefault;
   MaxConnections := 0;
@@ -103,8 +103,8 @@ begin
   inherited;
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
-    if FMaxConnections > 0 then
-      WebRequestHandler.MaxConnections := FMaxConnections;
+    WebRequestHandler.MaxConnections := 0;
+    FHTTPWebBroker.MaxConnections := FMaxConnections;
     FHTTPWebBroker.ListenQueue := FListenQueue;
     FHTTPWebBroker.Bindings.Clear;
     FHTTPWebBroker.Bindings.Add;
