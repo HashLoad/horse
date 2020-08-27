@@ -3,7 +3,7 @@ unit Horse.HTTP;
 interface
 
 uses System.SysUtils, System.Classes, System.Generics.Collections, Web.HTTPApp, IdHTTPHeaderInfo,
-  IdHTTPWebBrokerBridge, IdIOHandler, IdGlobal, Horse.Commons, IdURI;
+  IdHTTPWebBrokerBridge, IdIOHandler, Horse.Commons, IdURI;
 
 type
   THorseList = TDictionary<string, string>;
