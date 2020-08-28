@@ -290,7 +290,7 @@ end;
 
 class procedure THorseProvider<T>.Listen;
 begin
-  InternalListen;;
+  InternalListen;
 end;
 
 class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);

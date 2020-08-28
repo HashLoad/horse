@@ -9,7 +9,7 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, Horse.Provider.FPCHTTPApplication, Horse.Provider.FPCApacheApplication, Horse.Provider.FPCCGIApplication, Horse.Provider.FPCFCGIApplication,
 {$ELSE}
-  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI,
+  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPP, Horse.Provider.Apache, Horse.Provider.CGI, Horse.Provider.VCL,
 {$ENDIF}
   Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
 
@@ -59,6 +59,8 @@ type
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_DAEMON)}
   THorseProvider = Horse.Provider.Daemon.THorseProvider<THorse>;
+{$ELSEIF DEFINED(HORSE_VLC)}
+  THorseProvider = Horse.Provider.VCL.THorseProvider<THorse>;
 {$ELSE}
   THorseProvider =
   {$IF DEFINED(FPC)}
@@ -71,6 +73,5 @@ type
   THorse = class(THorseProvider);
 
 implementation
-
 
 end.
