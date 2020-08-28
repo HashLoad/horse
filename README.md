@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://github.com/HashLoad/horse/blob/master/img/horse.png">
     <img alt="Horse" height="150" src="https://github.com/HashLoad/horse/blob/master/img/horse.png">
-  </a>
+  </a>  
 </p><br>
 <p align="center">
   <b>Horse</b> is an <a href="https://github.com/expressjs/express">Express</a> inspired <b>web framework</b> for Delphi.<br>Designed to <b>ease</b> things up for <b>fast</b> development in a <b>minimalist</b> way and with high <b>performance</b>.
@@ -12,12 +12,18 @@
   </a>
 </p>
 
+## ⚙️ Installation
+Installation is done using the [`boss install`](https://github.com/HashLoad/boss) command:
+``` sh
+$ boss install horse
+```
+* (Optional) Install [**wizard**](https://github.com/HashLoad/horse-wizard)
+
 ## ⚡️ Quickstart
 ```delphi
 uses Horse;
 
 begin
-
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
@@ -25,10 +31,33 @@ begin
     end);
 
   THorse.Listen(9000);
-
 end.
 ```
 
+## 🧬 Official Middlewares
+
+For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
+
+- [horse/json](https://github.com/HashLoad/jhonson)
+- [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)
+- [horse/cors](https://github.com/HashLoad/horse-cors)
+- [horse/stream](https://github.com/HashLoad/horse-octet-stream)
+- [horse/jwt](https://github.com/HashLoad/horse-jwt)
+- [horse/exception](https://github.com/HashLoad/handle-exception)
+- [horse/logger](https://github.com/HashLoad/horse-logger)
+- [horse/compression](https://github.com/HashLoad/horse-compression)
+
+## 🌱 Third Party Middlewares
+
+This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
+- [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
+- [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
+- [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
+- [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)
+- [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)
+- [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)
+- [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)
+
 ## ⚠️ License
 
-`Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE).
+`Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE). 
