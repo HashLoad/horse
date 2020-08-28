@@ -38,25 +38,25 @@ end.
 
 For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
 
-- [horse/json](https://github.com/HashLoad/jhonson)
-- [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)
-- [horse/cors](https://github.com/HashLoad/horse-cors)
-- [horse/stream](https://github.com/HashLoad/horse-octet-stream)
-- [horse/jwt](https://github.com/HashLoad/horse-jwt)
-- [horse/exception](https://github.com/HashLoad/handle-exception)
-- [horse/logger](https://github.com/HashLoad/horse-logger)
-- [horse/compression](https://github.com/HashLoad/horse-compression)
+- [x] [horse/json](https://github.com/HashLoad/jhonson)
+- [x] [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)
+- [x] [horse/cors](https://github.com/HashLoad/horse-cors)
+- [x] [horse/stream](https://github.com/HashLoad/horse-octet-stream)
+- [x] [horse/jwt](https://github.com/HashLoad/horse-jwt)
+- [x] [horse/exception](https://github.com/HashLoad/handle-exception)
+- [x] [horse/logger](https://github.com/HashLoad/horse-logger)
+- [x] [horse/compression](https://github.com/HashLoad/horse-compression)
 
 ## 🌱 Third Party Middlewares
 
 This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
-- [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
-- [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
-- [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
-- [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)
-- [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)
-- [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)
-- [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)
+- [x] [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
+- [x] [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
+- [x] [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
+- [x] [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)
+- [x] [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)
+- [x] [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)
+- [x] [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)
 
 ## ⚠️ License
 
