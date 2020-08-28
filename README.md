@@ -38,25 +38,30 @@ end.
 
 For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
 
-- [x] [horse/json](https://github.com/HashLoad/jhonson)
-- [x] [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)
-- [x] [horse/cors](https://github.com/HashLoad/horse-cors)
-- [x] [horse/stream](https://github.com/HashLoad/horse-octet-stream)
-- [x] [horse/jwt](https://github.com/HashLoad/horse-jwt)
-- [x] [horse/exception](https://github.com/HashLoad/handle-exception)
-- [x] [horse/logger](https://github.com/HashLoad/horse-logger)
-- [x] [horse/compression](https://github.com/HashLoad/horse-compression)
+| Middleware | Delphi | Lazarus |
+| ------------------------------------------------------------------- | -------------------- | --------------------------- |
+|  [horse/json](https://github.com/HashLoad/jhonson)                  | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/basic-auth](https://github.com/HashLoad/horse-basic-auth)   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/cors](https://github.com/HashLoad/horse-cors)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/stream](https://github.com/HashLoad/horse-octet-stream)     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/jwt](https://github.com/HashLoad/horse-jwt)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [horse/exception](https://github.com/HashLoad/handle-exception)    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/logger](https://github.com/HashLoad/horse-logger)           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [horse/compression](https://github.com/HashLoad/horse-compression) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 ## 🌱 Third Party Middlewares
 
 This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
-- [x] [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)
-- [x] [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)
-- [x] [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)
-- [x] [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)
-- [x] [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)
-- [x] [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)
-- [x] [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)
+
+| Middleware | Delphi | Lazarus |
+| ---------------------------------------------------------------------------------- | -------------------- | --------------------------- |
+|  [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [gabrielbaltazar/gbswagger](https://bitbucket.org/gabrielbaltazar/gbswagger)      | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 ## ⚠️ License
 
