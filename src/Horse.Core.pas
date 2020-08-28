@@ -16,7 +16,6 @@ uses
   Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
-
   THorseCore = class;
   PHorseCore = ^THorseCore;
   PHorseModule = ^THorseModule;
@@ -302,6 +301,7 @@ end;
 class function THorseCore.Use(APath: string; ACallback: THorseCallback): THorseCore;
 begin
   Result := GetDefaultHorse;
+  APath := '/' + APath.Trim(['/']);
   Result.Routes.RegisterMiddleware(APath, ACallback);
 end;
 
