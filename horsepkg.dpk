@@ -48,10 +48,10 @@ contains
   Horse.Provider.CGI in 'src\Horse.Provider.CGI.pas',
   Horse.Provider.Console in 'src\Horse.Provider.Console.pas',
   Horse.Provider.Daemon in 'src\Horse.Provider.Daemon.pas',
-  Horse.Provider.ISAPP in 'src\Horse.Provider.ISAPP.pas',
-  Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   ThirdParty.Posix.Syslog in 'src\ThirdParty.Posix.Syslog.pas',
   Web.WebConst in 'src\Web.WebConst.pas',
-  Horse.Provider.VCL in 'src\Horse.Provider.VCL.pas';
+  Horse.Provider.VCL in 'src\Horse.Provider.VCL.pas',
+  Horse.Provider.ISAPI in 'src\Horse.Provider.ISAPI.pas',
+  Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule};
 
 end.

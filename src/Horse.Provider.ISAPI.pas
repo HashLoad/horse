@@ -1,8 +1,8 @@
-unit Horse.Provider.ISAPP;
+unit Horse.Provider.ISAPI;
 
 interface
 
-{$IF DEFINED(HORSE_ISAPP) AND NOT DEFINED(FPC)}
+{$IF DEFINED(HORSE_ISAPI) AND NOT DEFINED(FPC)}
 
 uses
   Horse.Provider.Abstract, System.SysUtils,
@@ -22,7 +22,7 @@ type
 
 implementation
 
-{$IF DEFINED(HORSE_ISAPP) AND NOT DEFINED(FPC)}
+{$IF DEFINED(HORSE_ISAPI) AND NOT DEFINED(FPC)}
 
 uses
   Web.WebBroker, System.Win.ComObj, Winapi.ActiveX, Horse.WebModule;

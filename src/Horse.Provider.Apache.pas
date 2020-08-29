@@ -34,7 +34,7 @@ implementation
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
 
-uses Web.ApacheApp, Web.WebBroker, {$IFDEF MSWINDOWS} Winapi.ActiveX, System.Win.ComObj, {$ENDIF } Horse.WebModule;
+uses Web.WebBroker, Web.ApacheApp, {$IFDEF MSWINDOWS} Winapi.ActiveX, System.Win.ComObj, {$ENDIF } Horse.WebModule;
 
 { THorseProvider<T:class> }
 

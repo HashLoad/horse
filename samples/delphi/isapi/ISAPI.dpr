@@ -1,4 +1,4 @@
-library ISAPP;
+library ISAPI;
 
 {$R *.res}
 
