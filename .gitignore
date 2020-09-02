@@ -36,3 +36,10 @@ src/*.~*
 *.~*
 *.a
 *.stat
+
+# Mac
+*.DS_Store
+
+#FPC/Laz
+lib/
+backup/
