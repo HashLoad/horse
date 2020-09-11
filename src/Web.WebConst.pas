@@ -46,7 +46,7 @@ resourcestring
   sWebDirectoryExclude = 'Exclude';
   sWebDirectoryItemDisplayName = 'Action: %0:s, Mask: ''%1:s''';
 
-  {$IF CompilerVersion = 27.0}
+  {$IF CompilerVersion <= 27.0}
     sErrorDecodingURLText = 'Error decoding URL text';
     sInvalidURLEncodedChar = 'Invalid URL encoded char';
     sInvalidHTMLEncodedChar = 'Invalid HTML encoded char';
