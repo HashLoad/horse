@@ -40,10 +40,12 @@ type
     function Put(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
+    {$IF CompilerVersion > 27.0}
     function Patch(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Patch(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Patch(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    {$IFEND}
 
     function Head(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Head(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
@@ -55,10 +57,12 @@ type
     function Post(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
+    {$IF CompilerVersion > 27.0}
     function Delete(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    {$IFEND}
 
     function &End: T;
   end;
@@ -164,6 +168,7 @@ begin
   THorseCore(FHorseCore).Put(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
+{$IF CompilerVersion > 27.0}
 function THorseCoreGroup<T>.Patch(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
@@ -187,6 +192,7 @@ begin
   Result := Self;
   THorseCore(FHorseCore).Patch(NormalizePath(APath), AMiddleware, ACallback);
 end;
+{$IFEND}
 
 function THorseCoreGroup<T>.Head(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>;
 begin
@@ -241,6 +247,7 @@ begin
   THorseCore(FHorseCore).Post(NormalizePath(APath), ACallbacks, ACallback);
 end;
 
+{$IF CompilerVersion > 27.0}
 function THorseCoreGroup<T>.Delete(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
@@ -264,5 +271,6 @@ begin
   Result := Self;
   THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallbacks, ACallback);
 end;
+{$IFEND}
 
 end.
