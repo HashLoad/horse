@@ -71,10 +71,12 @@ type
     class function Put(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
 
+    {$IF CompilerVersion <> 27.0}
     class function Patch(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
     class function Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
+    {$IFEND}
 
     class function Head(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Head(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
@@ -86,10 +88,12 @@ type
     class function Post(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
 
+    {$IF CompilerVersion <> 27.0}
     class function Delete(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Delete(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
     class function Delete(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
+    {$IFEND}
 
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
 
@@ -192,6 +196,7 @@ begin
     FreeAndNil(FRoutes);
 end;
 
+{$IF CompilerVersion <> 27.0}
 class function THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
@@ -220,6 +225,7 @@ class function THorseCore.Delete(APath: string; ACallback: THorseCallback): THor
 begin
   Result := RegisterRoute(mtDelete, APath, ACallback);
 end;
+{$IFEND}
 
 class function THorseCore.Head(APath: string; ACallback: THorseCallback): THorseCore;
 begin
@@ -264,10 +270,12 @@ begin
   Result := RegisterRoute(mtPost, APath, ACallback);
 end;
 
+{$IF CompilerVersion <> 27.0}
 class function THorseCore.Patch(APath: string; ACallback: THorseCallback): THorseCore;
 begin
   Result := RegisterRoute(mtPatch, APath, ACallback);
 end;
+{$IFEND}
 
 class function THorseCore.Put(APath: string; ACallback: THorseCallback): THorseCore;
 begin
@@ -319,16 +327,19 @@ begin
   Result := Post(APath, [AMiddleware, ACallback]);
 end;
 
+{$IF CompilerVersion <> 27.0}
 class function THorseCore.Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;
 begin
   Result := Patch(APath, [AMiddleware, ACallback]);
 end;
+{$IFEND}
 
 class function THorseCore.Put(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;
 begin
   Result := Put(APath, [AMiddleware, ACallback]);
 end;
 
+{$IF CompilerVersion <> 27.0}
 class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
@@ -337,6 +348,7 @@ begin
   for LCallback in ACallbacks do
     Patch(APath, LCallback);
 end;
+{$IFEND}
 
 class function THorseCore.Put(APath: string; ACallbacks: array of THorseCallback): THorseCore;
 var
@@ -377,6 +389,7 @@ begin
   Post(APath, ACallback);
 end;
 
+{$IF CompilerVersion <> 27.0}
 class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
@@ -386,6 +399,7 @@ begin
     Patch(APath, LCallback);
   Patch(APath, ACallback);
 end;
+{$IFEND}
 
 class function THorseCore.Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
 var
