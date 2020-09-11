@@ -25,7 +25,7 @@ type
     function Put(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
     function Put(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
 
-    {$IF CompilerVersion <> 27.0}
+    {$IF CompilerVersion > 27.0}
     function Patch(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Patch(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Patch(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
@@ -42,7 +42,7 @@ type
     function Post(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
     function Post(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
 
-    {$IF CompilerVersion <> 27.0}
+    {$IF CompilerVersion > 27.0}
     function Delete(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Delete(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Delete(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
