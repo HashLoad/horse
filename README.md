@@ -36,7 +36,7 @@ end.
 
 ## 🧬 Official Middlewares
 
-For an more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
+For a more _maintainable_ middleware _ecosystem_, we've put official [middlewares](https://docs.gofiber.io/middleware) into separate repositories:
 
 | Middleware | Delphi | Lazarus |
 | ------------------------------------------------------------------- | -------------------- | --------------------------- |
