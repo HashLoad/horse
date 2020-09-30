@@ -2,7 +2,7 @@ unit Horse.Provider.VCL;
 
 interface
 
-{$IF DEFINED(HORSE_VLC)}
+{$IF DEFINED(HORSE_VCL)}
 
 uses
   Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL,
@@ -93,7 +93,7 @@ type
 
 implementation
 
-{$IF DEFINED(HORSE_VLC)}
+{$IF DEFINED(HORSE_VCL)}
 
 uses
   Web.WebReq, Horse.WebModule, IdCustomTCPServer;
