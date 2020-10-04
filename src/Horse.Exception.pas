@@ -1,14 +1,16 @@
 unit Horse.Exception;
+
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
 
 uses
   {$IF DEFINED(FPC)}
   SysUtils,
   {$ELSE}
-    System.SysUtils,
+  System.SysUtils,
   {$ENDIF}
   Horse.Commons;
 

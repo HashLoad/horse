@@ -1,4 +1,5 @@
 unit Horse.Commons;
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$MODESWITCH TypeHelpers}
@@ -7,12 +8,10 @@ unit Horse.Commons;
 interface
 
 {$IF DEFINED(FPC)}
-uses
-  Classes, SysUtils;
+uses Classes, SysUtils;
 {$ENDIF}
 
 type
-
 {$IF DEFINED(FPC)}
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
 {$ENDIF}
@@ -99,16 +98,17 @@ type
     ImagePNG,
     ImageGIF);
 
-  TMessageType = (Error, Warning, Information);
+  TMessageType = (Default, Error, Warning, Information);
 {$SCOPEDENUMS OFF}
+
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
-end;
+  end;
 
-TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-for TMimeTypes
-  function ToString: string;
-end;
+  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
+  for TMimeTypes
+    function ToString: string;
+  end;
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(ACommand: string): TMethodType;
@@ -117,7 +117,6 @@ function StringCommandToMethodType(ACommand: string): TMethodType;
 implementation
 
 {$IF DEFINED(FPC)}
-
 
 function StringCommandToMethodType(ACommand: string): TMethodType;
 begin
@@ -135,7 +134,6 @@ begin
     Result := TMethodType.mtPost;
   if ACommand = 'PUT' then
     Result := TMethodType.mtPut;
-
 end;
 {$ENDIF}
 
