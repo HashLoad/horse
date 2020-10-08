@@ -28,7 +28,7 @@ type
     function Put(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
-    {$IF CompilerVersion > 27.0}
+    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     function Patch(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Patch(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Patch(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
@@ -45,7 +45,7 @@ type
     function Post(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
-    {$IF CompilerVersion > 27.0}
+    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     function Delete(APath: string; ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(APath: string; AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(APath: string; ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
