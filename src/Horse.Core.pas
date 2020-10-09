@@ -71,7 +71,7 @@ type
     class function Put(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
 
-    {$IF CompilerVersion > 27.0}
+    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     class function Patch(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
     class function Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
@@ -88,7 +88,7 @@ type
     class function Post(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;
 
-    {$IF CompilerVersion > 27.0}
+    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     class function Delete(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Delete(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
     class function Delete(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
@@ -196,7 +196,7 @@ begin
     FreeAndNil(FRoutes);
 end;
 
-{$IF CompilerVersion > 27.0}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
 class function THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
@@ -270,7 +270,7 @@ begin
   Result := RegisterRoute(mtPost, APath, ACallback);
 end;
 
-{$IF CompilerVersion > 27.0}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
 class function THorseCore.Patch(APath: string; ACallback: THorseCallback): THorseCore;
 begin
   Result := RegisterRoute(mtPatch, APath, ACallback);
@@ -327,7 +327,7 @@ begin
   Result := Post(APath, [AMiddleware, ACallback]);
 end;
 
-{$IF CompilerVersion > 27.0}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
 class function THorseCore.Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;
 begin
   Result := Patch(APath, [AMiddleware, ACallback]);
@@ -339,7 +339,7 @@ begin
   Result := Put(APath, [AMiddleware, ACallback]);
 end;
 
-{$IF CompilerVersion > 27.0}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
 class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
@@ -389,7 +389,7 @@ begin
   Post(APath, ACallback);
 end;
 
-{$IF CompilerVersion > 27.0}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
 class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
