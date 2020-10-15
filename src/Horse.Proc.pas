@@ -7,14 +7,11 @@ unit Horse.Proc;
 interface
 
 {$IF NOT DEFINED(FPC)}
-
 uses
   System.SysUtils;
 {$ENDIF}
 
-
 type
-
   TNextProc = {$IF DEFINED(FPC)} procedure of object {$ELSE} System.SysUtils.TProc {$ENDIF};
   TProc = {$IF DEFINED(FPC)} procedure {$ELSE} System.SysUtils.TProc {$ENDIF};
 {$IF DEFINED(FPC)}

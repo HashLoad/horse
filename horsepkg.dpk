@@ -52,6 +52,7 @@ contains
   Web.WebConst in 'src\Web.WebConst.pas',
   Horse.Provider.VCL in 'src\Horse.Provider.VCL.pas',
   Horse.Provider.ISAPI in 'src\Horse.Provider.ISAPI.pas',
-  Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule};
+  Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
+  Horse.Proc in 'src\Horse.Proc.pas';
 
 end.

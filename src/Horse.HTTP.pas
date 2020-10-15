@@ -1,23 +1,25 @@
 unit Horse.HTTP;
+
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
 
 uses
 {$IF DEFINED(FPC)}
-     SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
+  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
 {$ENDIF}
- Horse.Commons;
+  Horse.Commons;
 
 type
-  THorseList = {$IF DEFINED(FPC)}TDictionary<string, string>{$ELSE} TDictionary<string, string>{$ENDIF};
+  THorseList = {$IF DEFINED(FPC)}TDictionary<string, string>{$ELSE}TDictionary<string, string>{$ENDIF};
 
   THorseRequest = class
   private
-    FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
+    FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     FQuery: THorseList;
     FParams: THorseList;
     FCookie: THorseList;
@@ -36,13 +38,13 @@ type
     function Cookie: THorseList;
     function MethodType: TMethodType;
     property Headers[index: string]: string read GetHeaders;
-    constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF});
+    constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
   end;
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
+    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     function GetParams: THorseList;
     procedure SetBody(ABody: TObject);
     procedure SetSession(ASession: TObject);
@@ -50,7 +52,7 @@ type
 
   THorseResponse = class
   private
-    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF};
+    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
   public
     function Send(AContent: string): THorseResponse; overload;
@@ -58,13 +60,14 @@ type
     function Status(AStatus: Integer): THorseResponse; overload;
     function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
-    constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF});
+    function ContentType(AContentType: string): THorseResponse;
+    constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
     destructor Destroy; override;
   end;
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF};
+    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     function GetContent: TObject;
     procedure SetContent(AContent: TObject);
   end;
@@ -90,7 +93,7 @@ begin
   Result := FCookie;
 end;
 
-constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF});
+constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
   InitializeQuery;
@@ -150,7 +153,7 @@ end;
 
 function THorseRequest.MethodType: TMethodType;
 begin
-  Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command)  {$ELSE} FWebRequest.MethodType;  {$ENDIF}
+  Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command){$ELSE}FWebRequest.MethodType;{$ENDIF}
 end;
 
 function THorseRequest.Params: THorseList;
@@ -170,10 +173,16 @@ end;
 
 { THorseResponse }
 
-constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF});
+function THorseResponse.ContentType(AContentType: string): THorseResponse;
+begin
+  FWebResponse.ContentType := AContentType;
+  Result := Self;
+end;
+
+constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 begin
   FWebResponse := AWebResponse;
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF} := THTTPStatus.Ok.ToInteger;
+  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
 end;
 
 destructor THorseResponse.Destroy;
@@ -197,18 +206,18 @@ end;
 
 function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
 begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF} := AStatus.ToInteger;
+  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
   Result := Self;
 end;
 
 function THorseResponse.Status: Integer;
 begin
-  Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF};
+  Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF};
 end;
 
 function THorseResponse.Status(AStatus: Integer): THorseResponse;
 begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE} FWebResponse.StatusCode {$ENDIF} := AStatus;
+  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
   Result := Self;
 end;
 
@@ -224,7 +233,7 @@ begin
   Result := FParams;
 end;
 
-function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
+function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
 end;
@@ -241,7 +250,7 @@ end;
 
 { THorseHackResponse }
 
-function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE} TWebResponse {$ENDIF};
+function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
   Result := FWebResponse;
 end;
