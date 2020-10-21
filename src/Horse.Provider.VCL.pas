@@ -3,14 +3,12 @@ unit Horse.Provider.VCL;
 interface
 
 {$IF DEFINED(HORSE_VCL)}
-
 uses
   Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL,
   IdContext, System.Classes, System.SyncObjs, System.SysUtils;
 
 type
   THorseProviderIOHandleSSL = class;
-
   THorseProvider<T: class> = class;
 
   THorseProviderIOHandleSSL = class
@@ -86,10 +84,9 @@ type
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
-    class function IsRunning: Boolean; static;
+    class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
-
 {$ENDIF}
 
 implementation
@@ -100,6 +97,11 @@ uses
   Web.WebReq, Horse.WebModule, IdCustomTCPServer;
 
 { THorseProvider<T> }
+
+class function THorseProvider<T>.IsRunning: Boolean;
+begin
+  Result := FRunning;
+end;
 
 class function THorseProvider<T>.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
@@ -160,11 +162,6 @@ end;
 class function THorseProvider<T>.GetHost: string;
 begin
   Result := FHost;
-end;
-
-class function THorseProvider<T>.IsRunning: Boolean;
-begin
-  Result := FRunning;
 end;
 
 class function THorseProvider<T>.GetIOHandleSSL: THorseProviderIOHandleSSL;

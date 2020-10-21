@@ -48,6 +48,7 @@ type
     class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
+    class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
 
@@ -145,6 +146,11 @@ end;
 class procedure THorseProvider<T>.Start;
 begin
   Listen;
+end;
+
+class function THorseProvider<T>.IsRunning: Boolean;
+begin
+  Result := FRunning;
 end;
 
 class procedure THorseProvider<T>.Listen;

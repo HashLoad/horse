@@ -4,11 +4,12 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="13">
+    <Units Count="14">
       <Unit0>
         <Filename Value="Console.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="65" Y="9"/>
+        <IsVisibleTab Value="True"/>
+        <CursorPos X="41" Y="19"/>
         <UsageCount Value="52"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -21,10 +22,8 @@
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="161"/>
-        <CursorPos X="35" Y="170"/>
+        <EditorIndex Value="3"/>
+        <CursorPos X="26" Y="171"/>
         <UsageCount Value="25"/>
         <Loaded Value="True"/>
       </Unit2>
@@ -51,7 +50,8 @@
       <Unit6>
         <Filename Value="..\..\..\src\Horse.pas"/>
         <EditorIndex Value="1"/>
-        <CursorPos X="33" Y="14"/>
+        <TopLine Value="29"/>
+        <CursorPos X="33" Y="66"/>
         <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit6>
@@ -95,8 +95,16 @@
         <CursorPos X="8" Y="201"/>
         <UsageCount Value="10"/>
       </Unit12>
+      <Unit13>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="151"/>
+        <CursorPos X="22" Y="153"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit13>
     </Units>
-    <JumpHistory Count="11" HistoryIndex="10">
+    <JumpHistory Count="25" HistoryIndex="24">
       <Position1>
         <Filename Value="Console.lpr"/>
         <Caret Line="26" Column="126" TopLine="2"/>
@@ -141,6 +149,62 @@
         <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
         <Caret Line="63" Column="22" TopLine="46"/>
       </Position11>
+      <Position12>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="10" Column="37"/>
+      </Position12>
+      <Position13>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="23" Column="10"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="66" Column="33" TopLine="29"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="36" Column="21" TopLine="16"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="101" Column="3" TopLine="99"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="37" Column="48" TopLine="12"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="107" Column="22" TopLine="105"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="51" Column="39" TopLine="19"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="103" Column="5" TopLine="103"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\..\src\Horse.Provider.FPCHTTPApplication.pas"/>
+        <Caret Line="51" Column="39" TopLine="12"/>
+      </Position21>
+      <Position22>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="21" Column="29"/>
+      </Position22>
+      <Position23>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="13"/>
+      </Position23>
+      <Position24>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="24" Column="36"/>
+      </Position24>
+      <Position25>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="20" Column="36"/>
+      </Position25>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -148,7 +212,7 @@
     </RunParams>
   </ProjectSession>
   <Debugging>
-    <BreakPoints Count="1">
+    <BreakPoints Count="3">
       <Item1>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
@@ -156,6 +220,20 @@
         <Source Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
         <Line Value="45"/>
       </Item1>
+      <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Console.lpr"/>
+        <Line Value="26"/>
+      </Item2>
+      <Item3>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Console.lpr"/>
+        <Line Value="28"/>
+      </Item3>
     </BreakPoints>
     <Watches Count="1">
       <Item1>

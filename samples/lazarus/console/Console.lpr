@@ -10,7 +10,7 @@ uses
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
-  Res.Send('pong');
+  Res.Send('Pong');
 end;
 
 procedure OnListen(Horse: THorse);
@@ -19,9 +19,7 @@ begin
 end;
 
 begin
-
   THorse.Get('/ping', GetPing);
 
   THorse.Listen(9000, OnListen);
-
 end.
