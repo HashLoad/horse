@@ -2,13 +2,13 @@ program VCL;
 
 uses
   Vcl.Forms,
-  uVCL in 'uVCL.pas' {frmVCL};
+  Main.Form in 'src\Main.Form.pas' {FrmVCL};
 
 {$R *.res}
 
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TfrmVCL, frmVCL);
+  Application.CreateForm(TFrmVCL, FrmVCL);
   Application.Run;
 end.
