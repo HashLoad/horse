@@ -87,6 +87,7 @@ type
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
+    class function IsRunning: Boolean; static;
     class destructor UnInitialize;
   end;
 
@@ -162,6 +163,11 @@ end;
 class function THorseProvider<T>.GetHost: string;
 begin
   Result := FHost;
+end;
+
+class function THorseProvider<T>.IsRunning: Boolean;
+begin
+  Result := FRunning;
 end;
 
 class function THorseProvider<T>.GetIOHandleSSL: THorseProviderIOHandleSSL;
