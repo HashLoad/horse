@@ -10,11 +10,8 @@ type
     procedure ServiceCreate(Sender: TObject);
     procedure ServiceStart(Sender: TService; var Started: Boolean);
     procedure ServiceStop(Sender: TService; var Stopped: Boolean);
-  private
-    { Private declarations }
   public
     function GetServiceController: TServiceController; override;
-    { Public declarations }
   end;
 
 var
@@ -23,11 +20,9 @@ var
 implementation
 
 uses
-
   Horse;
 
 {$R *.dfm}
-
 
 procedure ServiceController(CtrlCode: DWord); stdcall;
 begin
@@ -50,14 +45,14 @@ end;
 
 procedure TMainService.ServiceStart(Sender: TService; var Started: Boolean);
 begin
-  THorse.Listen(7000);
-  Started := true;
+  THorse.Listen(9000);
+  Started := True;
 end;
 
 procedure TMainService.ServiceStop(Sender: TService; var Stopped: Boolean);
 begin
   THorse.StopListen;
-  Stopped := true;
+  Stopped := True;
 end;
 
 end.

@@ -20,7 +20,7 @@ begin
   // Windows 2003 Server.
   //
   // Application.DelayInitialize := True;
-  //
+
   if not Application.DelayInitialize or Application.Installing then
     Application.Initialize;
   Application.CreateForm(TMainService, MainService);

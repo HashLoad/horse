@@ -30,7 +30,6 @@ exports
   ApacheModuleData name 'apache_horse_module';
 
 begin
-
   THorse.DefaultModule := @ApacheModuleData;
   THorse.HandlerName := 'apache_horse_module-handle';
 
@@ -41,5 +40,4 @@ begin
     end);
 
   THorse.Listen;
-
 end.
