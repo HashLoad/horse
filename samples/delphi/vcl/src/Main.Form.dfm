@@ -4,8 +4,8 @@ object FrmVCL: TFrmVCL
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
   Caption = 'VCL'
-  ClientHeight = 77
-  ClientWidth = 129
+  ClientHeight = 93
+  ClientWidth = 248
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -31,13 +31,23 @@ object FrmVCL: TFrmVCL
     Height = 13
     Caption = 'Port:'
   end
-  object btnStartStop: TBitBtn
+  object btnStop: TBitBtn
+    Left = 127
+    Top = 53
+    Width = 113
+    Height = 25
+    Caption = 'Stop'
+    Enabled = False
+    TabOrder = 0
+    OnClick = btnStopClick
+  end
+  object btnStart: TBitBtn
     Left = 8
-    Top = 45
+    Top = 53
     Width = 113
     Height = 25
     Caption = 'Start'
-    TabOrder = 0
-    OnClick = btnStartStopClick
+    TabOrder = 1
+    OnClick = btnStartClick
   end
 end

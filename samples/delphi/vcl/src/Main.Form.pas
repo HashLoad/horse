@@ -9,10 +9,13 @@ type
   TFrmVCL = class(TForm)
     lbStatus: TLabel;
     lbPorta: TLabel;
-    btnStartStop: TBitBtn;
-    procedure btnStartStopClick(Sender: TObject);
+    btnStop: TBitBtn;
+    btnStart: TBitBtn;
+    procedure btnStopClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure btnStartClick(Sender: TObject);
   private
+    procedure Status;
     procedure Start;
     procedure Stop;
   end;
@@ -43,27 +46,37 @@ begin
   THorse.Listen(9000);
 end;
 
-procedure TFrmVCL.Stop;
+procedure TFrmVCL.Status;
 begin
-  THorse.StopListen;
-end;
-
-procedure TFrmVCL.btnStartStopClick(Sender: TObject);
-begin
+  btnStop.Enabled := THorse.IsRunning;
+  btnStart.Enabled := not THorse.IsRunning;
   if THorse.IsRunning then
   begin
-    Start;
-    btnStartStop.Caption := 'Stop';
     lbStatus.Caption := 'Status: Online';
     lbPorta.Caption := 'Port: ' + IntToStr(THorse.Port);
   end
   else
   begin
-    Stop;
-    btnStartStop.Caption := 'Start';
     lbStatus.Caption := 'Status: Offline';
     lbPorta.Caption := 'Port: ';
   end;
+end;
+
+procedure TFrmVCL.Stop;
+begin
+  THorse.StopListen;
+end;
+
+procedure TFrmVCL.btnStartClick(Sender: TObject);
+begin
+  Start;
+  Status;
+end;
+
+procedure TFrmVCL.btnStopClick(Sender: TObject);
+begin
+  Stop;
+  Status;
 end;
 
 end.
