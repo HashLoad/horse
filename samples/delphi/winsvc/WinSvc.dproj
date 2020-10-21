@@ -134,7 +134,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="Main.Service.pas">
+        <DCCReference Include="src\Main.Service.pas">
             <Form>MainService</Form>
             <FormType>dfm</FormType>
             <DesignClass>TService</DesignClass>

@@ -2,7 +2,7 @@ program WinSvc;
 
 uses
   Vcl.SvcMgr,
-  Main.Service in 'Main.Service.pas' {MainService: TService};
+  Main.Service in 'src\Main.Service.pas' {MainService: TService};
 
 {$R *.RES}
 
