@@ -62,6 +62,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/query](https://github.com/dliocode/horse-query)                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 ## ⚠️ License
 
