@@ -51,7 +51,6 @@ type
     class var FListenQueue: Integer;
     class var FHTTPServerThread: THTTPServerThread;
     class function GetDefaultHTTPServerThread: THTTPServerThread;
-    class function GetRunning: Boolean; static;
     class function HTTPServerThreadIsNil: Boolean;
     class procedure SetListenQueue(const Value: Integer); static;
     class procedure SetPort(const Value: Integer); static;
@@ -69,7 +68,6 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
-    class property Running: Boolean read GetRunning;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
     class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
@@ -78,6 +76,7 @@ type
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class destructor UnInitialize;
+    class function IsRunning: Boolean;
   end;
 
 {$ENDIF}
@@ -99,7 +98,7 @@ begin
   Result := FHTTPServerThread;
 end;
 
-class function THorseProvider<T>.GetRunning: Boolean;
+class function THorseProvider<T>.IsRunning: Boolean;
 begin
   Result := FRunning;
 end;
