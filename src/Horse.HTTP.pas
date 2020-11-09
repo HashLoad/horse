@@ -47,7 +47,7 @@ type
   public
     function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class';
     function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class';
-    procedure SetBody(ABody: TObject);
+    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class';
     procedure SetSession(ASession: TObject);
   end;
 
