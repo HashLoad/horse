@@ -37,6 +37,7 @@ type
     function Params: THorseList;
     function Cookie: THorseList;
     function MethodType: TMethodType;
+    function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Headers[index: string]: string read GetHeaders;
     constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
@@ -44,7 +45,7 @@ type
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class';
     function GetParams: THorseList;
     procedure SetBody(ABody: TObject);
     procedure SetSession(ASession: TObject);
@@ -61,13 +62,14 @@ type
     function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
     function ContentType(AContentType: string): THorseResponse;
+    function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
     destructor Destroy; override;
   end;
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
+    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class';
     function GetContent: TObject;
     procedure SetContent(AContent: TObject);
   end;
@@ -166,6 +168,11 @@ begin
   Result := FQuery;
 end;
 
+function THorseRequest.RawWebRequest: TWebRequest;
+begin
+  Result := FWebRequest;
+end;
+
 function THorseRequest.Session<T>: T;
 begin
   Result := T(FSession);
@@ -190,6 +197,11 @@ begin
   if Assigned(FContent) then
     FContent.Free;
   inherited;
+end;
+
+function THorseResponse.RawWebResponse: TWebResponse;
+begin
+  Result := FWebResponse;
 end;
 
 function THorseResponse.Send(AContent: string): THorseResponse;
