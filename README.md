@@ -67,3 +67,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 ## ⚠️ License
 
 `Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE). 
+
+## 📐 Tests
+
+![tests](https://github.com/GlerystonMatos/horse/workflows/tests/badge.svg) ![Console Coverage ](https://img.shields.io/badge/console%20coverage-39%25-blue) ![VCL Coverage ](https://img.shields.io/badge/vcl%20coverage-38%25-blue)
