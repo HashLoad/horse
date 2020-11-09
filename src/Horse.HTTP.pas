@@ -46,7 +46,7 @@ type
   THorseHackRequest = class(THorseRequest)
   public
     function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class';
-    function GetParams: THorseList;
+    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class';
     procedure SetBody(ABody: TObject);
     procedure SetSession(ASession: TObject);
   end;
@@ -61,6 +61,8 @@ type
     function Status(AStatus: Integer): THorseResponse; overload;
     function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
+    function Content: TObject; overload;
+    function Content(AContent: TObject): THorseResponse; overload;
     function ContentType(AContentType: string): THorseResponse;
     function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
@@ -70,8 +72,8 @@ type
   THorseHackResponse = class(THorseResponse)
   public
     function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class';
-    function GetContent: TObject;
-    procedure SetContent(AContent: TObject);
+    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class';
+    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class';
   end;
 
 implementation
@@ -179,6 +181,17 @@ begin
 end;
 
 { THorseResponse }
+
+function THorseResponse.Content(AContent: TObject): THorseResponse;
+begin
+  Result := Self;
+  FContent := AContent;
+end;
+
+function THorseResponse.Content: TObject;
+begin
+  Result := FContent;
+end;
 
 function THorseResponse.ContentType(AContentType: string): THorseResponse;
 begin
