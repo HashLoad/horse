@@ -83,8 +83,8 @@ begin
           raise;
     end;
   finally
-    if LRequest.Body<TObject> = THorseHackResponse(LResponse).GetContent then
-      THorseHackResponse(LResponse).SetContent(nil);
+    if LRequest.Body<TObject> = LResponse.Content then
+      LResponse.Content(nil);
     LRequest.Free;
     LResponse.Free;
   end;
