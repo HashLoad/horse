@@ -22,11 +22,13 @@ type
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     FQuery: THorseList;
     FParams: THorseList;
+    FContentFields: THorseList;
     FCookie: THorseList;
     FBody: TObject;
     FSession: TObject;
     procedure InitializeQuery;
     procedure InitializeParams;
+    procedure InitializeContentFields;
     procedure InitializeCookie;
     function GetHeaders(AIndex: string): string;
   public
@@ -36,6 +38,7 @@ type
     function Query: THorseList;
     function Params: THorseList;
     function Cookie: THorseList;
+    function ContentFields: THorseList;
     function MethodType: TMethodType;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Headers[index: string]: string read GetHeaders;
@@ -92,6 +95,11 @@ begin
   Result := T(FBody);
 end;
 
+function THorseRequest.ContentFields: THorseList;
+begin
+  Result := FContentFields;
+end;
+
 function THorseRequest.Cookie: THorseList;
 begin
   Result := FCookie;
@@ -102,6 +110,7 @@ begin
   FWebRequest := AWebRequest;
   InitializeQuery;
   InitializeParams;
+  InitializeContentFields;
   InitializeCookie;
 end;
 
@@ -109,6 +118,7 @@ destructor THorseRequest.Destroy;
 begin
   FQuery.Free;
   FParams.Free;
+  FContentFields.Free;
   FCookie.Free;
   if Assigned(FBody) then
     FBody.Free;
@@ -118,6 +128,19 @@ end;
 function THorseRequest.GetHeaders(AIndex: string): string;
 begin
   Result := FWebRequest.GetFieldByName(AIndex);
+end;
+
+procedure THorseRequest.InitializeContentFields;
+var
+  LItem: string;
+  LParam: TArray<string>;
+begin
+  FContentFields := THorseList.Create;
+  for LItem in FWebRequest.ContentFields do
+  begin
+    LParam := LItem.Split(['=']);
+    FContentFields.Add(LParam[KEY], LParam[VALUE]);
+  end;
 end;
 
 procedure THorseRequest.InitializeCookie;
