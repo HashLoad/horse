@@ -172,7 +172,7 @@ function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResp
 var
   LQueue: TQueue<string>;
 begin
-  LQueue := GetQueuePath(ARequest.RawWebRequest.PathInfo, False);
+  LQueue := GetQueuePath(ARequest.RawWebRequest.RawPathInfo, False);
   try
     Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(THorseHackRequest(ARequest).GetWebRequest.Method)
       {$ELSE} ARequest.RawWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
