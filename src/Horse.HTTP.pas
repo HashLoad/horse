@@ -193,7 +193,7 @@ begin
   Result := FQuery;
 end;
 
-function THorseRequest.RawWebRequest: TWebRequest;
+function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
 end;
@@ -235,7 +235,7 @@ begin
   inherited;
 end;
 
-function THorseResponse.RawWebResponse: TWebResponse;
+function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
   Result := FWebResponse;
 end;
