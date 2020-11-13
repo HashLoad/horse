@@ -132,14 +132,13 @@ end;
 
 procedure THorseRequest.InitializeContentFields;
 var
-  LItem: string;
-  LParam: TArray<string>;
+  I: Integer;
 begin
   FContentFields := THorseList.Create;
-  for LItem in FWebRequest.ContentFields do
+  for I := 0 to Pred(FWebRequest.ContentFields.Count) do
   begin
-    LParam := LItem.Split(['=']);
-    FContentFields.Add(LParam[KEY], LParam[VALUE]);
+    FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
+      FWebRequest.ContentFields.ValueFromIndex[I]);
   end;
 end;
 
