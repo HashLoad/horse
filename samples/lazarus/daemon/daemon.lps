@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="11"/>
+    <BuildModes Active="Release"/>
+    <Units Count="3">
+      <Unit0>
+        <Filename Value="daemon.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <CursorPos X="97" Y="22"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="Horse.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="46"/>
+        <CursorPos X="30" Y="60"/>
+        <UsageCount Value="10"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="horse.provider.fpcdaemon.pas"/>
+        <UnitName Value="Horse.Provider.FPCDaemon"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="226"/>
+        <CursorPos X="96" Y="248"/>
+        <UsageCount Value="10"/>
+      </Unit2>
+    </Units>
+    <OtherDefines Count="1">
+      <Define0 Value="HORSE_DAEMON"/>
+    </OtherDefines>
+    <JumpHistory Count="18" HistoryIndex="17">
+      <Position1>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="30" Column="12"/>
+      </Position1>
+      <Position2>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="32" Column="14"/>
+      </Position2>
+      <Position3>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="33" Column="14"/>
+      </Position3>
+      <Position4>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="34" Column="15" TopLine="2"/>
+      </Position4>
+      <Position5>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="25"/>
+      </Position5>
+      <Position6>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="15"/>
+      </Position6>
+      <Position7>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="24" Column="17"/>
+      </Position7>
+      <Position8>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="28" Column="43" TopLine="5"/>
+      </Position8>
+      <Position9>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="24" Column="45" TopLine="5"/>
+      </Position9>
+      <Position10>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="29" TopLine="5"/>
+      </Position10>
+      <Position11>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="31" TopLine="5"/>
+      </Position11>
+      <Position12>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="29" Column="47" TopLine="5"/>
+      </Position12>
+      <Position13>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="37" Column="20" TopLine="6"/>
+      </Position13>
+      <Position14>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="32" Column="47" TopLine="7"/>
+      </Position14>
+      <Position15>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="18" Column="23" TopLine="6"/>
+      </Position15>
+      <Position16>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="42" Column="33" TopLine="8"/>
+      </Position16>
+      <Position17>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="37" Column="7" TopLine="10"/>
+      </Position17>
+      <Position18>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="42" Column="33" TopLine="8"/>
+      </Position18>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>

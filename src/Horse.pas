@@ -8,6 +8,7 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils, Horse.Provider.FPCHTTPApplication, Horse.Provider.FPCApacheApplication, Horse.Provider.FPCCGIApplication, Horse.Provider.FPCFCGIApplication,
+  Horse.Provider.FPCDaemon,
 {$ELSE}
   System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPI, Horse.Provider.Apache, Horse.Provider.CGI, Horse.Provider.VCL,
 {$ENDIF}
@@ -57,7 +58,12 @@ type
       Horse.Provider.FPCFCGIApplication.THorseProvider<THorse>;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_DAEMON)}
-  THorseProvider = Horse.Provider.Daemon.THorseProvider<THorse>;
+  THorseProvider =
+  {$IF DEFINED(FPC)}
+    Horse.Provider.FPCDaemon.THorseProvider<THorse>
+  {$ELSE}
+     Horse.Provider.Daemon.THorseProvider<THorse>
+  {$ENDIF};
 {$ELSEIF DEFINED(HORSE_VCL)}
   THorseProvider = Horse.Provider.VCL.THorseProvider<THorse>;
 {$ELSE}
