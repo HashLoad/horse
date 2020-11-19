@@ -34,7 +34,9 @@ type
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
-    function Session<T: class>: T;
+    function Body(ABody: TObject): THorseRequest; overload;
+    function Session<T: class>: T; overload;
+    function Session(ASession: TObject): THorseRequest; overload;
     function Query: THorseList;
     function Params: THorseList;
     function Cookie: THorseList;
@@ -88,6 +90,12 @@ const
 function THorseRequest.Body: string;
 begin
   Result := FWebRequest.Content;
+end;
+
+function THorseRequest.Body(ABody: TObject): THorseRequest;
+begin
+  Result := Self;
+  FBody := ABody;
 end;
 
 function THorseRequest.Body<T>: T;
@@ -195,6 +203,12 @@ end;
 function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
+end;
+
+function THorseRequest.Session(ASession: TObject): THorseRequest;
+begin
+  Result := Self;
+  FSession := ASession;
 end;
 
 function THorseRequest.Session<T>: T;
