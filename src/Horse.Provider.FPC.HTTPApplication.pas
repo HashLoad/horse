@@ -1,16 +1,15 @@
-unit Horse.Provider.FPCFCGIApplication;
+unit Horse.Provider.FPC.HTTPApplication;
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
-{$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-
+{$IF DEFINED(FPC)}
 
 uses
-
-  SysUtils, Classes, fpFCGI, httpdefs, fpHTTP,
+  SysUtils, Classes, httpdefs, fpHTTP, fphttpapp,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
@@ -22,28 +21,33 @@ type
     class var FPort: Integer;
     class var FHost: string;
     class var FRunning: Boolean;
-    class var FFastCGIApplication: TFCGIApplication;
-    class function GetDefaultFastCGIApplication: TFCGIApplication;
-    class function FastCGIApplicationIsNil: Boolean;
+    class var FListenQueue: Integer;
+    class var FHTTPApplication: THTTPApplication;
+    class function GetDefaultHTTPApplication: THTTPApplication;
+    class function HTTPApplicationIsNil: Boolean;
+    class procedure SetListenQueue(const Value: Integer); static;
     class procedure SetPort(const Value: Integer); static;
     class procedure SetHost(const Value: string); static;
+    class function GetListenQueue: Integer; static;
     class function GetPort: Integer; static;
     class function GetDefaultPort: Integer; static;
     class function GetDefaultHost: string; static;
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
-    class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     constructor Create(APort: Integer); reintroduce; overload; deprecated 'Use Port method to set port';
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
+    class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class procedure Listen; overload; override;
     class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
+    class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
 
@@ -51,25 +55,23 @@ type
 
 implementation
 
-{$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-
+{$IF DEFINED(FPC)}
 
 uses
-
   Horse.WebModule;
 
 { THorseProvider<T> }
 
-class function THorseProvider<T>.GetDefaultFastCGIApplication: TFCGIApplication;
+class function THorseProvider<T>.GetDefaultHTTPApplication: THTTPApplication;
 begin
-  if FastCGIApplicationIsNil then
-    FFastCGIApplication := Application;
-  Result := FFastCGIApplication;
+  if HTTPApplicationIsNil then
+    FHTTPApplication := Application;
+  Result := FHTTPApplication;
 end;
 
-class function THorseProvider<T>.FastCGIApplicationIsNil: Boolean;
+class function THorseProvider<T>.HTTPApplicationIsNil: Boolean;
 begin
-  Result := FFastCGIApplication = nil;
+  Result := FHTTPApplication = nil;
 end;
 
 constructor THorseProvider<T>.Create(APort: Integer);
@@ -90,12 +92,17 @@ end;
 
 class function THorseProvider<T>.GetDefaultPort: Integer;
 begin
-  Result := -1;
+  Result := DEFAULT_PORT;
 end;
 
 class function THorseProvider<T>.GetHost: string;
 begin
   Result := FHost;
+end;
+
+class function THorseProvider<T>.GetListenQueue: Integer;
+begin
+  Result := FListenQueue;
 end;
 
 class function THorseProvider<T>.GetPort: Integer;
@@ -105,32 +112,43 @@ end;
 
 class procedure THorseProvider<T>.InternalListen;
 var
-  LFastCGIApplication: TFCGIApplication;
+  LHTTPApplication: THTTPApplication;
 begin
   inherited;
+  if FPort <= 0 then
+    FPort := GetDefaultPort;
   if FHost.IsEmpty then
     FHost := GetDefaultHost;
-  LFastCGIApplication := GetDefaultFastCGIApplication;
-  LFastCGIApplication.AllowDefaultModule := True;
-  LFastCGIApplication.OnGetModule := DoGetModule;
-  if FPort > 0 then
-    LFastCGIApplication.Port := FPort;
-  LFastCGIApplication.LegacyRouting := True;
-  LFastCGIApplication.Address := FHost;
-  LFastCGIApplication.Initialize;
-  FRunning := True;
-  DoOnListen;
-  LFastCGIApplication.Run;
+
+    if FListenQueue = 0 then
+      FListenQueue := 15;
+    LHTTPApplication := GetDefaultHTTPApplication;
+    LHTTPApplication.AllowDefaultModule:= True;
+    LHTTPApplication.OnGetModule:= DoGetModule;
+    LHTTPApplication.Threaded:= True;
+    LHTTPApplication.QueueSize:= FListenQueue;
+    LHTTPApplication.Port := FPort;
+    LHTTPApplication.LegacyRouting := True;
+    LHTTPApplication.Address := FHost;
+    LHTTPApplication.Initialize;
+    FRunning := True;
+    DoOnListen;
+    LHTTPApplication.Run;
 end;
 
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
-  ModuleClass := THorseWebModule;
+  ModuleClass :=  THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.Start;
 begin
   Listen;
+end;
+
+class function THorseProvider<T>.IsRunning: Boolean;
+begin
+  Result := FRunning;
 end;
 
 class procedure THorseProvider<T>.Listen;
@@ -164,6 +182,11 @@ end;
 class procedure THorseProvider<T>.SetHost(const Value: string);
 begin
   FHost := Value;
+end;
+
+class procedure THorseProvider<T>.SetListenQueue(const Value: Integer);
+begin
+  FListenQueue := Value;
 end;
 
 class procedure THorseProvider<T>.SetPort(const Value: Integer);

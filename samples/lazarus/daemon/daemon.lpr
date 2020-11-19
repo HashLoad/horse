@@ -17,9 +17,9 @@ end;
 
 procedure OnListen(Horse: THorse);
 begin
-  if THorse.Running then
+  if THorse.IsRunning then
     Writeln(Format('Server is runing on %s:%d', [Horse.Host, Horse.Port]));
-  if not THorse.Running then
+  if not THorse.IsRunning then
     Writeln('Server stopped');
 end;
 

@@ -4,11 +4,11 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="17">
+    <Units Count="22">
       <Unit0>
         <Filename Value="Apache.pas"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="64"/>
+        <CursorPos Y="4"/>
         <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -30,19 +30,18 @@
       </Unit2>
       <Unit3>
         <Filename Value="..\..\..\src\Horse.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="29"/>
-        <CursorPos X="72" Y="11"/>
+        <TopLine Value="44"/>
+        <CursorPos X="48" Y="56"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="-1"/>
         <CursorPos X="46" Y="16"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\httpd22\src\httpd.pas"/>
@@ -111,7 +110,7 @@
       </Unit14>
       <Unit15>
         <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="9"/>
         <TopLine Value="62"/>
         <CursorPos X="35" Y="41"/>
         <UsageCount Value="10"/>
@@ -119,137 +118,174 @@
       </Unit15>
       <Unit16>
         <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="8"/>
         <TopLine Value="433"/>
         <CursorPos X="32" Y="199"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
       </Unit16>
+      <Unit17>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.HTTPApplication.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="169"/>
+        <CursorPos X="5" Y="203"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Apache.pas"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="116"/>
+        <CursorPos Y="151"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.CGI.pas"/>
+        <UnitName Value="Horse.Provider.FPCCGIApplication"/>
+        <EditorIndex Value="5"/>
+        <TopLine Value="72"/>
+        <CursorPos X="5" Y="106"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.FastCGI.pas"/>
+        <UnitName Value="Horse.Provider.FPCFCGIApplication"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="143"/>
+        <CursorPos X="5" Y="178"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Daemon.pas"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="281"/>
+        <CursorPos X="5" Y="313"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit21>
     </Units>
     <OtherDefines Count="1">
       <Define0 Value="HORSE_APACHE"/>
     </OtherDefines>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="66" Column="38" TopLine="40"/>
-      </Position1>
-      <Position2>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="16" Column="21"/>
-      </Position2>
-      <Position3>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="102" Column="36" TopLine="85"/>
-      </Position3>
-      <Position4>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="104" Column="35" TopLine="87"/>
-      </Position4>
-      <Position5>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="65" Column="22" TopLine="45"/>
-      </Position5>
-      <Position6>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="110" Column="49" TopLine="88"/>
-      </Position6>
-      <Position7>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="28" Column="26" TopLine="3"/>
-      </Position7>
-      <Position8>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="82" Column="14" TopLine="53"/>
-      </Position8>
-      <Position9>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="87" Column="23" TopLine="58"/>
-      </Position9>
-      <Position10>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="47" Column="22" TopLine="23"/>
-      </Position10>
-      <Position11>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="29" Column="37" TopLine="7"/>
-      </Position11>
-      <Position12>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="37" Column="57" TopLine="8"/>
-      </Position12>
-      <Position13>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="38" Column="44" TopLine="9"/>
-      </Position13>
-      <Position14>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="40" Column="49" TopLine="10"/>
-      </Position14>
-      <Position15>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="44" Column="41" TopLine="15"/>
-      </Position15>
-      <Position16>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="70" Column="58" TopLine="41"/>
-      </Position16>
-      <Position17>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="120" Column="98" TopLine="97"/>
-      </Position17>
-      <Position18>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="111" Column="52" TopLine="93"/>
-      </Position18>
-      <Position19>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="29" Column="37" TopLine="6"/>
-      </Position19>
-      <Position20>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="37" Column="57" TopLine="14"/>
-      </Position20>
-      <Position21>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="38" Column="44" TopLine="14"/>
-      </Position21>
-      <Position22>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="50" Column="42" TopLine="20"/>
-      </Position22>
-      <Position23>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="70" Column="58" TopLine="41"/>
-      </Position23>
-      <Position24>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="114" Column="107" TopLine="92"/>
-      </Position24>
-      <Position25>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="111" Column="62" TopLine="93"/>
-      </Position25>
-      <Position26>
         <Filename Value="Apache.pas"/>
         <Caret Line="9" Column="38"/>
-      </Position26>
-      <Position27>
+      </Position1>
+      <Position2>
         <Filename Value="Apache.pas"/>
         <Caret Line="21" Column="23"/>
-      </Position27>
-      <Position28>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="18" Column="28"/>
-      </Position28>
-      <Position29>
+      </Position2>
+      <Position3>
         <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
         <Caret Line="41" Column="35" TopLine="24"/>
+      </Position3>
+      <Position4>
+        <Filename Value="Apache.pas"/>
+        <Caret Line="4"/>
+      </Position4>
+      <Position5>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="10" Column="29"/>
+      </Position5>
+      <Position6>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="73" Column="52" TopLine="48"/>
+      </Position6>
+      <Position7>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.HTTPApplication.pas"/>
+        <Caret Line="61" Column="5" TopLine="43"/>
+      </Position7>
+      <Position8>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.HTTPApplication.pas"/>
+        <Caret Line="203" Column="5" TopLine="169"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Apache.pas"/>
+        <Caret Line="56" Column="44" TopLine="37"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Apache.pas"/>
+        <Caret Line="151" TopLine="116"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.CGI.pas"/>
+        <Caret Line="43" Column="5" TopLine="13"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.CGI.pas"/>
+        <Caret Line="106" Column="5" TopLine="72"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.FastCGI.pas"/>
+        <Caret Line="55" Column="5" TopLine="43"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.FastCGI.pas"/>
+        <Caret Line="178" Column="5" TopLine="143"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Daemon.pas"/>
+        <Caret Line="88" Column="5" TopLine="73"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Daemon.pas"/>
+        <Caret Line="313" Column="5" TopLine="281"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="45" Column="25" TopLine="27"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="3" Column="17"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="10" Column="17"/>
+      </Position20>
+      <Position21>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="11" Column="31"/>
+      </Position21>
+      <Position22>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="37" Column="25" TopLine="28"/>
+      </Position22>
+      <Position23>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="44" Column="19" TopLine="31"/>
+      </Position23>
+      <Position24>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="52" Column="29" TopLine="31"/>
+      </Position24>
+      <Position25>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="58" Column="19" TopLine="31"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="59" Column="33" TopLine="31"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="63" Column="19" TopLine="34"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="64" Column="24" TopLine="35"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\..\..\src\Horse.pas"/>
+        <Caret Line="72" Column="19" TopLine="43"/>
       </Position29>
-      <Position30>
-        <Filename Value="..\..\..\src\Horse.Provider.FPCApacheApplication.pas"/>
-        <Caret Line="18" Column="28"/>
-      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

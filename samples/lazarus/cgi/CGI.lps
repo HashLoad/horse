@@ -9,7 +9,7 @@
         <Filename Value="CGI.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="48" Y="17"/>
+        <CursorPos X="73" Y="15"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -17,7 +17,12 @@
     <OtherDefines Count="1">
       <Define0 Value="HORSE_CGI"/>
     </OtherDefines>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory Count="1">
+      <Position1>
+        <Filename Value="CGI.lpr"/>
+        <Caret Line="13" Column="17"/>
+      </Position1>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes Count="0" ActiveMode=""/>

@@ -1,4 +1,4 @@
-unit Horse.Provider.FPCDaemon;
+unit Horse.Provider.FPC.Daemon;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -9,7 +9,6 @@ interface
 {$IF DEFINED(HORSE_DAEMON)}
 
 uses
-
   SysUtils, Classes, httpdefs, fpHTTP, fphttpserver, Horse.HTTP, HOrse.Core,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc, Horse.Commons,
   Horse.Exception;
@@ -41,6 +40,7 @@ type
                         var ARequest: TFPHTTPConnectionRequest;
                         var AResponse : TFPHTTPConnectionResponse);
   end;
+
   { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
@@ -86,7 +86,6 @@ implementation
 {$IF DEFINED(HORSE_DAEMON) AND DEFINED(FPC)}
 
 uses
-
   Horse.WebModule;
 
 { THorseProvider<T> }
@@ -315,6 +314,3 @@ end;
 {$ENDIF}
 
 end.
-
-
-

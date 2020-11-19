@@ -1,20 +1,18 @@
-unit Horse.Provider.FPCApacheApplication;
+unit Horse.Provider.FPC.Apache;
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
-{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC) }
-
+{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC)}
 
 uses
-
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-   fphttp, httpdefs, httpd24, fpApache24, custapache24,
-  SysUtils, Classes,
+  fphttp, httpdefs, httpd24, fpApache24, custapache24, SysUtils, Classes,
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
@@ -52,8 +50,7 @@ type
 
 implementation
 
-{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC) }
-
+{$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC)}
 
 uses
   Horse.WebModule;
@@ -148,6 +145,7 @@ class destructor THorseProvider<T>.UnInitialize;
 begin
 
 end;
+
 {$ENDIF}
 
 end.

@@ -11,9 +11,7 @@ begin
 end;
 
 begin
-
   THorse.Get('/ping', GetPing);
 
   THorse.Listen;
-
 end.
