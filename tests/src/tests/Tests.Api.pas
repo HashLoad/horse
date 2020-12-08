@@ -16,13 +16,13 @@ type
     procedure TestGet;
     [Test]
     [TestCase('Test01', 'Teste de requisição POST')]
-    procedure TestPost(const Value: string);
+    procedure TestPost(const AValue: string);
     [Test]
     [TestCase('Test01', 'Teste de requisição PUT')]
-    procedure TestPut(const Value: string);
+    procedure TestPut(const AValue: string);
     [Test]
     [TestCase('Test01', '1')]
-    procedure TestDelete(const Value: string);
+    procedure TestDelete(const AValue: string);
   end;
 
 implementation
@@ -50,78 +50,78 @@ end;
 
 procedure TApiTest.TestGet;
 var
-  response: IResponse;
-  content: TJSONArray;
+  LResponse: IResponse;
+  LContent: TJSONArray;
 begin
   StartApi;
-  response := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
     .Get;
 
-  content := TJSONObject.ParseJSONValue(response.Content) as TJSONArray;
+  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
 
   Assert.AreEqual(9000, THorse.Port);
   Assert.AreEqual('0.0.0.0', THorse.Host);
   Assert.AreEqual(0, THorse.MaxConnections);
-  Assert.AreEqual(response.StatusCode, 200);
-  Assert.AreEqual(content.Count, 3);
+  Assert.AreEqual(LResponse.StatusCode, 200);
+  Assert.AreEqual(LContent.Count, 3);
 end;
 
-procedure TApiTest.TestPost(const Value: string);
+procedure TApiTest.TestPost(const AValue: string);
 var
-  response: IResponse;
-  content: TJSONObject;
+  LResponse: IResponse;
+  LContent: TJSONObject;
 begin
   StartApi;
-  response := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
-    .AddBody('{"value": "' + Value + '"}')
+    .AddBody('{"value": "' + AValue + '"}')
     .Post;
 
-  content := TJSONObject.ParseJSONValue(response.Content) as TJSONObject;
-  Assert.AreEqual(response.StatusCode, 201);
+  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  Assert.AreEqual(LResponse.StatusCode, 201);
 
-  if (not content.GetValue('value').Null) then
-    Assert.AreEqual(Value, content.GetValue('value').Value)
+  if (not LContent.GetValue('value').Null) then
+    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
   else
     Assert.Fail('O retorno não está no formato correto.');
 end;
 
-procedure TApiTest.TestPut(const Value: string);
+procedure TApiTest.TestPut(const AValue: string);
 var
-  response: IResponse;
-  content: TJSONObject;
+  LResponse: IResponse;
+  LContent: TJSONObject;
 begin
   StartApi;
-  response := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
-    .AddBody('{"value": "' + Value + '"}')
+    .AddBody('{"value": "' + AValue + '"}')
     .Put;
 
-  content := TJSONObject.ParseJSONValue(response.Content) as TJSONObject;
-  Assert.AreEqual(response.StatusCode, 200);
+  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  Assert.AreEqual(LResponse.StatusCode, 200);
 
-  if (not content.GetValue('value').Null) then
-    Assert.AreEqual(Value, content.GetValue('value').Value)
+  if (not LContent.GetValue('value').Null) then
+    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
   else
     Assert.Fail('O retorno não está no formato correto.');
 end;
 
-procedure TApiTest.TestDelete(const Value: string);
+procedure TApiTest.TestDelete(const AValue: string);
 var
-  response: IResponse;
-  content: TJSONObject;
+  LResponse: IResponse;
+  LContent: TJSONObject;
 begin
   StartApi;
-  response := TRequest.New.BaseURL('http://localhost:9000/Api/Test/' + Value)
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test/' + AValue)
     .Accept('application/json')
     .Delete;
 
-  content := TJSONObject.ParseJSONValue(response.Content) as TJSONObject;
-  Assert.AreEqual(response.StatusCode, 200);
+  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  Assert.AreEqual(LResponse.StatusCode, 200);
 
-  if (not content.GetValue('value').Null) then
-    Assert.AreEqual(Value, content.GetValue('value').Value)
+  if (not LContent.GetValue('value').Null) then
+    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
   else
     Assert.Fail('O retorno não está no formato correto.');
 end;

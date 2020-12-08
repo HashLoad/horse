@@ -40,10 +40,10 @@ uses
   Controllers.Api in 'controllers\Controllers.Api.pas';
 
 var
-  runner: ITestRunner;
-  results: IRunResults;
-  logger: ITestLogger;
-  nunitLogger: ITestLogger;
+  Runner: ITestRunner;
+  Results: IRunResults;
+  Logger: ITestLogger;
+  NunitLogger: ITestLogger;
 
 begin
 {$IFDEF TESTINSIGHT}
@@ -53,18 +53,18 @@ begin
   try
     TDUnitX.CheckCommandLine;
 
-    runner := TDUnitX.CreateRunner;
-    runner.UseRTTI := True;
+    Runner := TDUnitX.CreateRunner;
+    Runner.UseRTTI := True;
 
-    logger := TDUnitXConsoleLogger.Create(true);
-    runner.AddLogger(logger);
+    Logger := TDUnitXConsoleLogger.Create(true);
+    Runner.AddLogger(Logger);
 
-    nunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
-    runner.AddLogger(nunitLogger);
-    runner.FailsOnNoAsserts := False;
+    NunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
+    Runner.AddLogger(NunitLogger);
+    Runner.FailsOnNoAsserts := False;
 
-    results := runner.Execute;
-    if (not results.AllPassed) then
+    Results := Runner.Execute;
+    if (not Results.AllPassed) then
       System.ExitCode := EXIT_ERRORS;
 
     {$IFNDEF CI}
