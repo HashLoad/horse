@@ -10,7 +10,7 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
+  System.SysUtils, System.Classes, Web.HTTPApp, Web.ReqMulti, System.Generics.Collections,
 {$ENDIF}
   Horse.Commons;
 
@@ -105,21 +105,21 @@ end;
 
 function THorseRequest.ContentFields: THorseList;
 begin
+  if not Assigned(FContentFields) then
+    InitializeContentFields;
   Result := FContentFields;
 end;
 
 function THorseRequest.Cookie: THorseList;
 begin
+  if not Assigned(FCookie) then
+    InitializeCookie;
   Result := FCookie;
 end;
 
 constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
-  InitializeQuery;
-  InitializeParams;
-  InitializeContentFields;
-  InitializeCookie;
 end;
 
 destructor THorseRequest.Destroy;
@@ -192,11 +192,15 @@ end;
 
 function THorseRequest.Params: THorseList;
 begin
+  if not Assigned(FParams) then
+    InitializeParams;
   Result := FParams;
 end;
 
 function THorseRequest.Query: THorseList;
 begin
+  if not Assigned(FQuery) then
+    InitializeQuery;
   Result := FQuery;
 end;
 
