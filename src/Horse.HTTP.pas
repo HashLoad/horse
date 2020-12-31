@@ -8,7 +8,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
+  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs, ReqMulti
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, Web.ReqMulti, System.Generics.Collections,
 {$ENDIF}
@@ -31,6 +31,9 @@ type
     procedure InitializeContentFields;
     procedure InitializeCookie;
     function GetHeaders(AIndex: string): string;
+    function IsMultipartForm: Boolean;
+    function IsFormURLEncoded: Boolean;
+    function CanLoadContentFields: Boolean;
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
@@ -103,6 +106,11 @@ begin
   Result := T(FBody);
 end;
 
+function THorseRequest.CanLoadContentFields: Boolean;
+begin
+  Result := IsMultipartForm or IsFormURLEncoded;
+end;
+
 function THorseRequest.ContentFields: THorseList;
 begin
   if not Assigned(FContentFields) then
@@ -124,10 +132,14 @@ end;
 
 destructor THorseRequest.Destroy;
 begin
-  FQuery.Free;
-  FParams.Free;
-  FContentFields.Free;
-  FCookie.Free;
+  if Assigned(FQuery) then
+    FreeAndNil(FQuery);
+  if Assigned(FParams) then
+    FreeAndNil(FParams);
+  if Assigned(FContentFields) then
+    FreeAndNil(FContentFields);
+  if Assigned(FCookie) then
+    FreeAndNil(FCookie);
   if Assigned(FBody) then
     FBody.Free;
   inherited;
@@ -141,8 +153,11 @@ end;
 procedure THorseRequest.InitializeContentFields;
 var
   I: Integer;
+  LNormalizedContenType: string;
 begin
   FContentFields := THorseList.Create;
+  if (not CanLoadContentFields) then
+    Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
   begin
     FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
@@ -183,6 +198,18 @@ begin
     LValue := Copy(Litem, LEqualFirstPos + 1, Length(LItem));
     FQuery.Add(LKey, LValue);
   end;
+end;
+
+function THorseRequest.IsFormURLEncoded: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString),
+    Length(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString)) = 0;
+end;
+
+function THorseRequest.IsMultipartForm: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.MultiPartFormData.ToString),
+    Length(TMimeTypes.MultiPartFormData.ToString)) = 0;
 end;
 
 function THorseRequest.MethodType: TMethodType;
