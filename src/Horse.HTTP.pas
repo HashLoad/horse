@@ -8,7 +8,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs, ReqMulti
+  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, Web.ReqMulti, System.Generics.Collections,
 {$ENDIF}
