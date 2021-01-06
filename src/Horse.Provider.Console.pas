@@ -78,10 +78,10 @@ type
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure Listen; overload; override;
     class procedure StopListen; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
     class function IsRunning: Boolean;
@@ -295,28 +295,28 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
   SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, AHost, ACallback, ACallbackStopListen);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, FHost, ACallback, ACallbackStopListen);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(APort, FHost, ACallback, ACallbackStopListen);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProvider<T>.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
