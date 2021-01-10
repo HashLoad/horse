@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse.WebModule (D:\Repositórios\horse\src\Horse.WebModule.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:30 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.WebModule.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>16</td></tr><tr><td>Number of lines with code gen</td><td>21</td></tr><tr><td>Line coverage</td><td>76%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.WebModule;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;"> &nbsp;{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;"> &nbsp;SysUtils, Classes, httpdefs, fpHTTP, fpWeb,</pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;System.SysUtils, System.Classes, Web.HTTPApp,</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"> &nbsp;Horse.Core, Horse.Commons;</pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;"> &nbsp;THorseWebModule = class(TFPWebModule)</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;procedure DoOnRequest(ARequest: TRequest; AResponse: TResponse; var AHandled: Boolean); override;</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;THorseWebModule = class(TWebModule)</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE} &nbsp;TWebRequest {$ENDIF}; Response: {$IF DEFINED(FPC)}TResponse{$ELSE} &nbsp;TWebResponse {$ENDIF}; var Handled: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FHorse: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property Horse: THorseCore read FHorse write FHorse;</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create(AOwner: TComponent); override;</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;HorseWebModule: THorseWebModule;</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;WebModuleClass: TComponentClass = THorseWebModule;</pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;">uses Horse.HTTP, Horse.Exception, Web.WebConst;</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;">{%CLASSGROUP &apos;System.Classes.TPersistent&apos;}</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;">{$R Horse.WebModule.lfm}</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;">{$R *.dfm}</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;">constructor THorseWebModule.Create(AOwner: TComponent);</pre></td></tr>
+<tr class="covered"><td>52</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>53</td><td><pre style="display:inline;"> &nbsp;inherited;</pre></td></tr>
+<tr class="covered"><td>54</td><td><pre style="display:inline;"> &nbsp;FHorse := THorseCore.GetInstance;</pre></td></tr>
+<tr class="covered"><td>55</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;">procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE} &nbsp;TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE} &nbsp;TWebResponse {$ENDIF}; var AHandled: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;HandlerAction(Self, ARequest, AResponse, AHandled);</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;">procedure THorseWebModule.HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE} &nbsp;TWebRequest {$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;Response: {$IF DEFINED(FPC)}TResponse{$ELSE} &nbsp;TWebResponse {$ENDIF}; var Handled: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"> &nbsp;LRequest: THorseRequest;</pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"> &nbsp;LResponse: THorseResponse;</pre></td></tr>
+<tr class="covered"><td>69</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>70</td><td><pre style="display:inline;"> &nbsp;Handled := true;</pre></td></tr>
+<tr class="covered"><td>71</td><td><pre style="display:inline;"> &nbsp;LRequest := THorseRequest.Create(Request);</pre></td></tr>
+<tr class="covered"><td>72</td><td><pre style="display:inline;"> &nbsp;LResponse := THorseResponse.Create(Response);</pre></td></tr>
+<tr class="covered"><td>73</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="covered"><td>74</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;try</pre></td></tr>
+<tr class="covered"><td>75</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not FHorse.Routes.Execute(LRequest, LResponse) then</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>77</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Response.Content := &apos;Not Found&apos;;</pre></td></tr>
+<tr class="notcovered"><td>78</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{$IF DEFINED(FPC)}Response.Code{$ELSE} &nbsp;Response.StatusCode {$ENDIF} := THTTPStatus.NotFound.ToInteger;</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;except</pre></td></tr>
+<tr class="notcovered"><td>81</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;on E: Exception do</pre></td></tr>
+<tr class="notcovered"><td>82</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not E.InheritsFrom(EHorseCallbackInterrupted) then</pre></td></tr>
+<tr class="notcovered"><td>83</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise;</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"> &nbsp;finally</pre></td></tr>
+<tr class="covered"><td>86</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if LRequest.Body&lt;TObject&gt; = THorseHackResponse(LResponse).GetContent then</pre></td></tr>
+<tr class="covered"><td>87</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;THorseHackResponse(LResponse).SetContent(nil);</pre></td></tr>
+<tr class="covered"><td>88</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LRequest.Free;</pre></td></tr>
+<tr class="covered"><td>89</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LResponse.Free;</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>91</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;">initialization</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"> &nbsp;RegisterHTTPModule(THorseWebModule);</pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

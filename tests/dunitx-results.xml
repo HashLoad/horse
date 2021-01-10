@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<test-results name="D:\Repositórios\horse\tests\VCL.exe" total="4" errors="0" failures="0" ignored="0" inconclusive="0" not-run="0" skipped="0" invalid="0" date="2020-12-08" time="0.196">
+  <culture-info current-culture="en" current-uiculture="en" />
+  <test-suite type="Assembly" name="VCL.exe" executed="true" result="Success" success="True" time="0.196" asserts="0">
+    <results>
+        <test-suite type="Namespace" name="Tests" executed="true" result="Success" success="True" time="0.196" asserts="0" >
+          <results>
+              <test-suite type="Fixture" name="TApiTest" executed="True" result="Success" success="True" time="0.196" >
+                <results>
+                  <test-case name="TestGet" executed="True" result="Success" success="True" time="0.169" asserts="0" />
+                  <test-case name="TestPost.Test01" executed="True" result="Success" success="True" time="0.008" asserts="0" />
+                  <test-case name="TestPut.Test01" executed="True" result="Success" success="True" time="0.005" asserts="0" />
+                  <test-case name="TestDelete.Test01" executed="True" result="Success" success="True" time="0.014" asserts="0" />
+                </results>
+              </test-suite>
+          </results>
+        </test-suite>
+    </results>
+  </test-suite>
+</test-results>

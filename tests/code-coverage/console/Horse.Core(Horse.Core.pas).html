@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse.Core (D:\Repositórios\horse\src\Horse.Core.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:28 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.Core.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>52</td></tr><tr><td>Number of lines with code gen</td><td>184</td></tr><tr><td>Line coverage</td><td>28%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.Core;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;">{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;SysUtils,</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"> &nbsp;System.SysUtils, Web.HTTPApp,</pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;"> &nbsp;Horse.Core.RouterTree, Horse.Commons,</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"> &nbsp;Horse.Core.Group.Contract, Horse.Core.Route.Contract;</pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"> &nbsp;THorseCore = class;</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;PHorseCore = ^THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;PHorseModule = ^THorseModule;</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;THorseModule = record</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FSelfInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FDefaultHorseCoreInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FHorseRouterTree: PHorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetSelfInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetDefaultHorseCoreInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetHorseRouterTree: PHorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ToHorse: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create(ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;THorseCore = class</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{ private declarations }</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FRoutes: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FDefaultHorse: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function InternalRoute(APath: string): IHorseCoreRoute&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function InternalGroup(): IHorseCoreGroup&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function InternalGetRoutes: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure InternalSetRoutes(const Value: THorseRouterTree);</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetRoutes: THorseRouterTree; static;</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetRoutes(const Value: THorseRouterTree); static;</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function MakeHorseModule: THorseModule;</pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"> &nbsp;protected</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultHorse: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>52</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>53</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{ public declarations }</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function ToModule: THorseModule;</pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create; virtual;</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Group(): IHorseCoreGroup&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Route(APath: string): IHorseCoreRoute&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Use(ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Use(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Use(ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Get(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Get(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Get(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Get(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>69</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Put(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>70</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Put(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>71</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Put(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>72</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>73</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>74</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>75</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Patch(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>77</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>78</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>81</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Head(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>82</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Head(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>83</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Head(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Head(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>86</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Post(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>87</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Post(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>88</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Post(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>89</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>91</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Delete(APath: string; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Delete(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Delete(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore; overload;</pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>98</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property Routes: THorseRouterTree read GetRoutes write SetRoutes;</pre></td></tr>
+<tr class="nocodegen"><td>99</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>100</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetInstance: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>101</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>102</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>103</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>104</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>105</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>106</td><td><pre style="display:inline;"> &nbsp;Horse.Core.Route, Horse.Core.Group;</pre></td></tr>
+<tr class="nocodegen"><td>107</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>108</td><td><pre style="display:inline;">{ THorseCore }</pre></td></tr>
+<tr class="nocodegen"><td>109</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>110</td><td><pre style="display:inline;">constructor THorseCore.Create;</pre></td></tr>
+<tr class="covered"><td>111</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>112</td><td><pre style="display:inline;"> &nbsp;if FDefaultHorse &lt;&gt; nil then</pre></td></tr>
+<tr class="notcovered"><td>113</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;raise Exception.Create(&apos;The Horse instance has already been created&apos;);</pre></td></tr>
+<tr class="covered"><td>114</td><td><pre style="display:inline;"> &nbsp;if FRoutes = nil then</pre></td></tr>
+<tr class="covered"><td>115</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRoutes := THorseRouterTree.Create;</pre></td></tr>
+<tr class="covered"><td>116</td><td><pre style="display:inline;"> &nbsp;FDefaultHorse := Self</pre></td></tr>
+<tr class="covered"><td>117</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>118</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>119</td><td><pre style="display:inline;">class function THorseCore.GetDefaultHorse: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>120</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>121</td><td><pre style="display:inline;"> &nbsp;if FDefaultHorse = nil then</pre></td></tr>
+<tr class="covered"><td>122</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FDefaultHorse := THorseCore.Create;</pre></td></tr>
+<tr class="covered"><td>123</td><td><pre style="display:inline;"> &nbsp;Result := FDefaultHorse;</pre></td></tr>
+<tr class="covered"><td>124</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>125</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>126</td><td><pre style="display:inline;">class function THorseCore.GetInstance: THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>127</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>128</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="covered"><td>129</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>130</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>131</td><td><pre style="display:inline;">class function THorseCore.GetRoutes: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>132</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>133</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse.InternalGetRoutes;</pre></td></tr>
+<tr class="covered"><td>134</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>135</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>136</td><td><pre style="display:inline;">class function THorseCore.Group: IHorseCoreGroup&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="covered"><td>137</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>138</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse.InternalGroup();</pre></td></tr>
+<tr class="covered"><td>139</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>140</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>141</td><td><pre style="display:inline;">class function THorseCore.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>142</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>143</td><td><pre style="display:inline;"> &nbsp;LDefaultHorse: THorseCore;</pre></td></tr>
+<tr class="covered"><td>144</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>145</td><td><pre style="display:inline;"> &nbsp;LDefaultHorse := GetDefaultHorse;</pre></td></tr>
+<tr class="covered"><td>146</td><td><pre style="display:inline;"> &nbsp;Result := LDefaultHorse;</pre></td></tr>
+<tr class="covered"><td>147</td><td><pre style="display:inline;"> &nbsp;APath := &apos;/&apos; + APath.Trim([&apos;/&apos;]);</pre></td></tr>
+<tr class="covered"><td>148</td><td><pre style="display:inline;"> &nbsp;LDefaultHorse.GetRoutes.RegisterRoute(AHTTPType, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>149</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>150</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>151</td><td><pre style="display:inline;">class function THorseCore.Route(APath: string): IHorseCoreRoute&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="covered"><td>152</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>153</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse.InternalRoute(APath);</pre></td></tr>
+<tr class="covered"><td>154</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>155</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>156</td><td><pre style="display:inline;">class procedure THorseCore.SetRoutes(const Value: THorseRouterTree);</pre></td></tr>
+<tr class="nocodegen"><td>157</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>158</td><td><pre style="display:inline;"> &nbsp;GetDefaultHorse.InternalSetRoutes(Value);</pre></td></tr>
+<tr class="nocodegen"><td>159</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>160</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>161</td><td><pre style="display:inline;">class function THorseCore.ToModule: THorseModule;</pre></td></tr>
+<tr class="notcovered"><td>162</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>163</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse.MakeHorseModule;</pre></td></tr>
+<tr class="notcovered"><td>164</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>165</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>166</td><td><pre style="display:inline;">function THorseCore.InternalGetRoutes: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>167</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>168</td><td><pre style="display:inline;"> &nbsp;Result := FRoutes;</pre></td></tr>
+<tr class="covered"><td>169</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>170</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>171</td><td><pre style="display:inline;">function THorseCore.InternalGroup(): IHorseCoreGroup&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="covered"><td>172</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>173</td><td><pre style="display:inline;"> &nbsp;Result := THorseCoreGroup&lt;THorseCore&gt;.Create;</pre></td></tr>
+<tr class="covered"><td>174</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>175</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>176</td><td><pre style="display:inline;">function THorseCore.InternalRoute(APath: string): IHorseCoreRoute&lt;THorseCore&gt;;</pre></td></tr>
+<tr class="covered"><td>177</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>178</td><td><pre style="display:inline;"> &nbsp;Result := THorseCoreRoute&lt;THorseCore&gt;.Create(APath);</pre></td></tr>
+<tr class="covered"><td>179</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>180</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>181</td><td><pre style="display:inline;">procedure THorseCore.InternalSetRoutes(const Value: THorseRouterTree);</pre></td></tr>
+<tr class="nocodegen"><td>182</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>183</td><td><pre style="display:inline;"> &nbsp;FRoutes := Value;</pre></td></tr>
+<tr class="nocodegen"><td>184</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>185</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>186</td><td><pre style="display:inline;">class function THorseCore.MakeHorseModule: THorseModule;</pre></td></tr>
+<tr class="notcovered"><td>187</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>188</td><td><pre style="display:inline;"> &nbsp;&nbsp;Result := THorseModule.Create(@Self, @FDefaultHorse, @FRoutes);</pre></td></tr>
+<tr class="notcovered"><td>189</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>190</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>191</td><td><pre style="display:inline;">class destructor THorseCore.UnInitialize;</pre></td></tr>
+<tr class="covered"><td>192</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>193</td><td><pre style="display:inline;"> &nbsp;if FDefaultHorse &lt;&gt; nil then</pre></td></tr>
+<tr class="covered"><td>194</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FreeAndNil(FDefaultHorse);</pre></td></tr>
+<tr class="covered"><td>195</td><td><pre style="display:inline;"> &nbsp;if FRoutes &lt;&gt; nil then</pre></td></tr>
+<tr class="covered"><td>196</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FreeAndNil(FRoutes);</pre></td></tr>
+<tr class="covered"><td>197</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>198</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>199</td><td><pre style="display:inline;">{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>200</td><td><pre style="display:inline;">class function THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>201</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>202</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>203</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>204</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>205</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>206</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Delete(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>207</td><td><pre style="display:inline;"> &nbsp;Delete(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>208</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>209</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>210</td><td><pre style="display:inline;">class function THorseCore.Delete(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>211</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>212</td><td><pre style="display:inline;"> &nbsp;Result := Delete(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>213</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>214</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>215</td><td><pre style="display:inline;">class function THorseCore.Delete(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>216</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>217</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>218</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>219</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>220</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>221</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Delete(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>222</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>223</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>224</td><td><pre style="display:inline;">class function THorseCore.Delete(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="covered"><td>225</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>226</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtDelete, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>227</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>228</td><td><pre style="display:inline;">{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>229</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>230</td><td><pre style="display:inline;">class function THorseCore.Head(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>231</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>232</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtHead, APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>233</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>234</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>235</td><td><pre style="display:inline;">class function THorseCore.Get(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="covered"><td>236</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>237</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtGet, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>238</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>239</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>240</td><td><pre style="display:inline;">class function THorseCore.Head(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>241</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>242</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>243</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>244</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>245</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>246</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Head(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>247</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>248</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>249</td><td><pre style="display:inline;">class function THorseCore.Get(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>250</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>251</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>252</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>253</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>254</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>255</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Get(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>256</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>257</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>258</td><td><pre style="display:inline;">class function THorseCore.Head(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>259</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>260</td><td><pre style="display:inline;"> &nbsp;Result := Head(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>261</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>262</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>263</td><td><pre style="display:inline;">class function THorseCore.Get(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>264</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>265</td><td><pre style="display:inline;"> &nbsp;Result := Get(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>266</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>267</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>268</td><td><pre style="display:inline;">class function THorseCore.Post(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="covered"><td>269</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>270</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtPost, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>271</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>272</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>273</td><td><pre style="display:inline;">{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>274</td><td><pre style="display:inline;">class function THorseCore.Patch(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>275</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>276</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtPatch, APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>277</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>278</td><td><pre style="display:inline;">{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>279</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>280</td><td><pre style="display:inline;">class function THorseCore.Put(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="covered"><td>281</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>282</td><td><pre style="display:inline;"> &nbsp;Result := RegisterRoute(mtPut, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>283</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>284</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>285</td><td><pre style="display:inline;">class function THorseCore.Use(ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>286</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>287</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>288</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>289</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>290</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>291</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Use(LCallback);</pre></td></tr>
+<tr class="notcovered"><td>292</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>293</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>294</td><td><pre style="display:inline;">class function THorseCore.Use(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>295</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>296</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>297</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>298</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>299</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>300</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Use(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>301</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>302</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>303</td><td><pre style="display:inline;">class function THorseCore.Use(ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>304</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>305</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>306</td><td><pre style="display:inline;"> &nbsp;Result.Routes.RegisterMiddleware(&apos;/&apos;, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>307</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>308</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>309</td><td><pre style="display:inline;">class function THorseCore.Use(APath: string; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>310</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>311</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>312</td><td><pre style="display:inline;"> &nbsp;APath := &apos;/&apos; + APath.Trim([&apos;/&apos;]);</pre></td></tr>
+<tr class="notcovered"><td>313</td><td><pre style="display:inline;"> &nbsp;Result.Routes.RegisterMiddleware(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>314</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>315</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>316</td><td><pre style="display:inline;">class function THorseCore.Post(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>317</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>318</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>319</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>320</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>321</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>322</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Post(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>323</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>324</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>325</td><td><pre style="display:inline;">class function THorseCore.Post(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>326</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>327</td><td><pre style="display:inline;"> &nbsp;Result := Post(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>328</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>329</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>330</td><td><pre style="display:inline;">{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>331</td><td><pre style="display:inline;">class function THorseCore.Patch(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>332</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>333</td><td><pre style="display:inline;"> &nbsp;Result := Patch(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>334</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>335</td><td><pre style="display:inline;">{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>336</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>337</td><td><pre style="display:inline;">class function THorseCore.Put(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>338</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>339</td><td><pre style="display:inline;"> &nbsp;Result := Put(APath, [AMiddleware, ACallback]);</pre></td></tr>
+<tr class="notcovered"><td>340</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>341</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>342</td><td><pre style="display:inline;">{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>343</td><td><pre style="display:inline;">class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>344</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>345</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>346</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>347</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>348</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>349</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Patch(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>350</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>351</td><td><pre style="display:inline;">{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>352</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>353</td><td><pre style="display:inline;">class function THorseCore.Put(APath: string; ACallbacks: array of THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>354</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>355</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>356</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>357</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>358</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>359</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Put(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>360</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>361</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>362</td><td><pre style="display:inline;">class function THorseCore.Head(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>363</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>364</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>365</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>366</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>367</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>368</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Head(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>369</td><td><pre style="display:inline;"> &nbsp;Head(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>370</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>371</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>372</td><td><pre style="display:inline;">class function THorseCore.Get(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>373</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>374</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>375</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>376</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>377</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>378</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Get(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>379</td><td><pre style="display:inline;"> &nbsp;Get(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>380</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>381</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>382</td><td><pre style="display:inline;">class function THorseCore.Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>383</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>384</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>385</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>386</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>387</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>388</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Post(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>389</td><td><pre style="display:inline;"> &nbsp;Post(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>390</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>391</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>392</td><td><pre style="display:inline;">{$IF (defined(fpc) or (CompilerVersion &gt; 27.0))}</pre></td></tr>
+<tr class="nocodegen"><td>393</td><td><pre style="display:inline;">class function THorseCore.Patch(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>394</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>395</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>396</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>397</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>398</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>399</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Patch(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>400</td><td><pre style="display:inline;"> &nbsp;Patch(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>401</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>402</td><td><pre style="display:inline;">{$IFEND}</pre></td></tr>
+<tr class="nocodegen"><td>403</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>404</td><td><pre style="display:inline;">class function THorseCore.Put(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>405</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>406</td><td><pre style="display:inline;"> &nbsp;LCallback: THorseCallback;</pre></td></tr>
+<tr class="notcovered"><td>407</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>408</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorse;</pre></td></tr>
+<tr class="notcovered"><td>409</td><td><pre style="display:inline;"> &nbsp;for LCallback in ACallbacks do</pre></td></tr>
+<tr class="notcovered"><td>410</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Put(APath, LCallback);</pre></td></tr>
+<tr class="notcovered"><td>411</td><td><pre style="display:inline;"> &nbsp;Put(APath, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>412</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>413</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>414</td><td><pre style="display:inline;">{ THorseModule }</pre></td></tr>
+<tr class="nocodegen"><td>415</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>416</td><td><pre style="display:inline;">constructor THorseModule.Create(ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; AHorseRouterTree: PHorseRouterTree);</pre></td></tr>
+<tr class="notcovered"><td>417</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>418</td><td><pre style="display:inline;"> &nbsp;FSelfInstance := ASelfInstance;</pre></td></tr>
+<tr class="notcovered"><td>419</td><td><pre style="display:inline;"> &nbsp;FDefaultHorseCoreInstance := ADefaultHorseCoreInstance;</pre></td></tr>
+<tr class="notcovered"><td>420</td><td><pre style="display:inline;"> &nbsp;FHorseRouterTree := AHorseRouterTree;</pre></td></tr>
+<tr class="notcovered"><td>421</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>422</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>423</td><td><pre style="display:inline;">function THorseModule.ToHorse: THorseCore;</pre></td></tr>
+<tr class="notcovered"><td>424</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>425</td><td><pre style="display:inline;"> &nbsp;Result := GetSelfInstance^;</pre></td></tr>
+<tr class="notcovered"><td>426</td><td><pre style="display:inline;"> &nbsp;Result.FDefaultHorse := GetDefaultHorseCoreInstance^;</pre></td></tr>
+<tr class="notcovered"><td>427</td><td><pre style="display:inline;"> &nbsp;Result.FRoutes := GetHorseRouterTree^;</pre></td></tr>
+<tr class="notcovered"><td>428</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>429</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>430</td><td><pre style="display:inline;">function THorseModule.GetDefaultHorseCoreInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>431</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>432</td><td><pre style="display:inline;"> &nbsp;Result := FDefaultHorseCoreInstance;</pre></td></tr>
+<tr class="notcovered"><td>433</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>434</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>435</td><td><pre style="display:inline;">function THorseModule.GetHorseRouterTree: PHorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>436</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>437</td><td><pre style="display:inline;"> &nbsp;Result := FHorseRouterTree;</pre></td></tr>
+<tr class="notcovered"><td>438</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>439</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>440</td><td><pre style="display:inline;">function THorseModule.GetSelfInstance: PHorseCore;</pre></td></tr>
+<tr class="nocodegen"><td>441</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>442</td><td><pre style="display:inline;"> &nbsp;Result := FSelfInstance;</pre></td></tr>
+<tr class="notcovered"><td>443</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>444</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>445</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

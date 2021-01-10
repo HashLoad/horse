@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse (D:\Repositórios\horse\src\Horse.Provider.Console.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:28 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.Provider.Console.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>76</td></tr><tr><td>Number of lines with code gen</td><td>137</td></tr><tr><td>Line coverage</td><td>55%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.Provider.Console;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">{$IF NOT DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;"> &nbsp;Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;"> &nbsp;System.Classes, System.SyncObjs, System.SysUtils;</pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;THorseProviderIOHandleSSL = class;</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;"> &nbsp;THorseProvider&lt;T: class&gt; = class;</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;"> &nbsp;THorseProviderIOHandleSSL = class</pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FKeyFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRootCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FOnGetPassword: TPasswordEvent;</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FActive: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetCertFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetKeyFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetRootCertFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetOnGetPassword(const Value: TPasswordEvent);</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetActive(const Value: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetKeyFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetRootCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetOnGetPassword: TPasswordEvent;</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetActive: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create;</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property Active: Boolean read GetActive write SetActive default True;</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property CertFile: string read GetCertFile write SetCertFile;</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property RootCertFile: string read GetRootCertFile write SetRootCertFile;</pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property KeyFile: string read GetKeyFile write SetKeyFile;</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;</pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"> &nbsp;THorseProvider&lt;T: class&gt; = class(THorseProviderAbstract&lt;T&gt;)</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FPort: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FHost: string;</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FRunning: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FEvent: TEvent;</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FMaxConnections: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FListenQueue: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>52</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultEvent: TEvent;</pre></td></tr>
+<tr class="nocodegen"><td>53</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function HTTPWebBrokerIsNil: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetListenQueue(const Value: Integer); static;</pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetMaxConnections(const Value: Integer); static;</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetPort(const Value: Integer); static;</pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetIOHandleSSL(const Value: THorseProviderIOHandleSSL); static;</pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetHost(const Value: string); static;</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetListenQueue: Integer; static;</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetMaxConnections: Integer; static;</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetPort: Integer; static;</pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultPort: Integer; static;</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetDefaultHost: string; static;</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetIOHandleSSL: THorseProviderIOHandleSSL; static;</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetHost: string; static;</pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure InternalListen; virtual;</pre></td></tr>
+<tr class="nocodegen"><td>69</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure InternalStopListen; virtual;</pre></td></tr>
+<tr class="nocodegen"><td>70</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure InitServerIOHandlerSSLOpenSSL(AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);</pre></td></tr>
+<tr class="nocodegen"><td>71</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>72</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create; reintroduce; overload;</pre></td></tr>
+<tr class="nocodegen"><td>73</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create(APort: Integer); reintroduce; overload; deprecated &apos;Use Port method to set port&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>74</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property Host: string read GetHost write SetHost;</pre></td></tr>
+<tr class="nocodegen"><td>75</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property Port: Integer read GetPort write SetPort;</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;</pre></td></tr>
+<tr class="nocodegen"><td>77</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property ListenQueue: Integer read GetListenQueue write SetListenQueue;</pre></td></tr>
+<tr class="nocodegen"><td>78</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen; overload; override;</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure StopListen; override;</pre></td></tr>
+<tr class="nocodegen"><td>81</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen(APort: Integer; const AHost: string = &apos;0.0.0.0&apos;; ACallback: TProc&lt;T&gt; = nil); reintroduce; overload; static;</pre></td></tr>
+<tr class="nocodegen"><td>82</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen(APort: Integer; ACallback: TProc&lt;T&gt;); reintroduce; overload; static;</pre></td></tr>
+<tr class="nocodegen"><td>83</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen(AHost: string; const ACallback: TProc&lt;T&gt; = nil); reintroduce; overload; static;</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen(ACallback: TProc&lt;T&gt;); reintroduce; overload; static;</pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Start; deprecated &apos;Use Listen instead&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>86</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Stop; deprecated &apos;Use StopListen instead&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>87</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function IsRunning: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>88</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class destructor UnInitialize;</pre></td></tr>
+<tr class="nocodegen"><td>89</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>91</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;">{$IF NOT DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;"> &nbsp;Web.WebReq, Horse.WebModule,</pre></td></tr>
+<tr class="nocodegen"><td>98</td><td><pre style="display:inline;"> &nbsp;IdCustomTCPServer;</pre></td></tr>
+<tr class="nocodegen"><td>99</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>100</td><td><pre style="display:inline;">{ THorseProvider&lt;T&gt; }</pre></td></tr>
+<tr class="nocodegen"><td>101</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>102</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;</pre></td></tr>
+<tr class="covered"><td>103</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>104</td><td><pre style="display:inline;"> &nbsp;if HTTPWebBrokerIsNil then</pre></td></tr>
+<tr class="nocodegen"><td>105</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>106</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIdHTTPWebBrokerBridge := TIdHTTPWebBrokerBridge.Create(nil);</pre></td></tr>
+<tr class="covered"><td>107</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIdHTTPWebBrokerBridge.OnParseAuthentication := OnAuthentication;</pre></td></tr>
+<tr class="covered"><td>108</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIdHTTPWebBrokerBridge.OnQuerySSLPort := OnQuerySSLPort;</pre></td></tr>
+<tr class="nocodegen"><td>109</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>110</td><td><pre style="display:inline;"> &nbsp;Result := FIdHTTPWebBrokerBridge;</pre></td></tr>
+<tr class="covered"><td>111</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>112</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>113</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.HTTPWebBrokerIsNil: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>114</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>115</td><td><pre style="display:inline;"> &nbsp;Result := FIdHTTPWebBrokerBridge = nil;</pre></td></tr>
+<tr class="covered"><td>116</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>117</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>118</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);</pre></td></tr>
+<tr class="notcovered"><td>119</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>120</td><td><pre style="display:inline;"> &nbsp;VUseSSL := (FHorseProviderIOHandleSSL &lt;&gt; nil) and (FHorseProviderIOHandleSSL.Active);</pre></td></tr>
+<tr class="notcovered"><td>121</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>122</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>123</td><td><pre style="display:inline;">constructor THorseProvider&lt;T&gt;.Create(APort: Integer);</pre></td></tr>
+<tr class="notcovered"><td>124</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>125</td><td><pre style="display:inline;"> &nbsp;inherited Create;</pre></td></tr>
+<tr class="notcovered"><td>126</td><td><pre style="display:inline;"> &nbsp;SetPort(APort);</pre></td></tr>
+<tr class="notcovered"><td>127</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>128</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>129</td><td><pre style="display:inline;">constructor THorseProvider&lt;T&gt;.Create;</pre></td></tr>
+<tr class="notcovered"><td>130</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>131</td><td><pre style="display:inline;"> &nbsp;inherited Create;</pre></td></tr>
+<tr class="notcovered"><td>132</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>133</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>134</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetDefaultEvent: TEvent;</pre></td></tr>
+<tr class="nocodegen"><td>135</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>136</td><td><pre style="display:inline;"> &nbsp;if FEvent = nil then</pre></td></tr>
+<tr class="covered"><td>137</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FEvent := TEvent.Create;</pre></td></tr>
+<tr class="covered"><td>138</td><td><pre style="display:inline;"> &nbsp;Result := FEvent;</pre></td></tr>
+<tr class="covered"><td>139</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>140</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>141</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetDefaultHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>142</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>143</td><td><pre style="display:inline;"> &nbsp;if FHorseProviderIOHandleSSL = nil then</pre></td></tr>
+<tr class="notcovered"><td>144</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FHorseProviderIOHandleSSL := THorseProviderIOHandleSSL.Create;</pre></td></tr>
+<tr class="notcovered"><td>145</td><td><pre style="display:inline;"> &nbsp;Result := FHorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="notcovered"><td>146</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>147</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>148</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetDefaultHost: string;</pre></td></tr>
+<tr class="covered"><td>149</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>150</td><td><pre style="display:inline;"> &nbsp;Result := DEFAULT_HOST;</pre></td></tr>
+<tr class="covered"><td>151</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>152</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>153</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetDefaultPort: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>154</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>155</td><td><pre style="display:inline;"> &nbsp;Result := DEFAULT_PORT;</pre></td></tr>
+<tr class="covered"><td>156</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>157</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>158</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetHost: string;</pre></td></tr>
+<tr class="covered"><td>159</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>160</td><td><pre style="display:inline;"> &nbsp;Result := FHost;</pre></td></tr>
+<tr class="covered"><td>161</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>162</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>163</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.IsRunning: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>164</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>165</td><td><pre style="display:inline;"> &nbsp;Result := FRunning;</pre></td></tr>
+<tr class="covered"><td>166</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>167</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>168</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetIOHandleSSL: THorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>169</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>170</td><td><pre style="display:inline;"> &nbsp;Result := GetDefaultHorseProviderIOHandleSSL;</pre></td></tr>
+<tr class="nocodegen"><td>171</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>172</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>173</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetListenQueue: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>174</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>175</td><td><pre style="display:inline;"> &nbsp;Result := FListenQueue;</pre></td></tr>
+<tr class="nocodegen"><td>176</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>177</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>178</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetMaxConnections: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>179</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>180</td><td><pre style="display:inline;"> &nbsp;Result := FMaxConnections;</pre></td></tr>
+<tr class="covered"><td>181</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>182</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>183</td><td><pre style="display:inline;">class function THorseProvider&lt;T&gt;.GetPort: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>184</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>185</td><td><pre style="display:inline;"> &nbsp;Result := FPort;</pre></td></tr>
+<tr class="covered"><td>186</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>187</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>188</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.InitServerIOHandlerSSLOpenSSL(AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);</pre></td></tr>
+<tr class="nocodegen"><td>189</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>190</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;</pre></td></tr>
+<tr class="notcovered"><td>191</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>192</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL := TIdServerIOHandlerSSLOpenSSL.Create(AIdHTTPWebBrokerBridge);</pre></td></tr>
+<tr class="notcovered"><td>193</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL.SSLOptions.CertFile := FHorseProviderIOHandleSSL.CertFile;</pre></td></tr>
+<tr class="notcovered"><td>194</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.FRootCertFile;</pre></td></tr>
+<tr class="notcovered"><td>195</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL.SSLOptions.KeyFile := FHorseProviderIOHandleSSL.KeyFile;</pre></td></tr>
+<tr class="notcovered"><td>196</td><td><pre style="display:inline;"> &nbsp;LIOHandleSSL.OnGetPassword := FHorseProviderIOHandleSSL.OnGetPassword;</pre></td></tr>
+<tr class="notcovered"><td>197</td><td><pre style="display:inline;"> &nbsp;AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;</pre></td></tr>
+<tr class="notcovered"><td>198</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>199</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>200</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.InternalListen;</pre></td></tr>
+<tr class="nocodegen"><td>201</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>202</td><td><pre style="display:inline;"> &nbsp;LAttach: string;</pre></td></tr>
+<tr class="nocodegen"><td>203</td><td><pre style="display:inline;"> &nbsp;LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;</pre></td></tr>
+<tr class="covered"><td>204</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>205</td><td><pre style="display:inline;"> &nbsp;inherited;</pre></td></tr>
+<tr class="covered"><td>206</td><td><pre style="display:inline;"> &nbsp;if FPort &lt;= 0 then</pre></td></tr>
+<tr class="covered"><td>207</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FPort := GetDefaultPort;</pre></td></tr>
+<tr class="covered"><td>208</td><td><pre style="display:inline;"> &nbsp;if FHost.IsEmpty then</pre></td></tr>
+<tr class="covered"><td>209</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FHost := GetDefaultHost;</pre></td></tr>
+<tr class="covered"><td>210</td><td><pre style="display:inline;"> &nbsp;LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;</pre></td></tr>
+<tr class="covered"><td>211</td><td><pre style="display:inline;"> &nbsp;WebRequestHandler.WebModuleClass := WebModuleClass;</pre></td></tr>
+<tr class="covered"><td>212</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="covered"><td>213</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FMaxConnections &gt; 0 then</pre></td></tr>
+<tr class="nocodegen"><td>214</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>215</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WebRequestHandler.MaxConnections := FMaxConnections;</pre></td></tr>
+<tr class="notcovered"><td>216</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;</pre></td></tr>
+<tr class="nocodegen"><td>217</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="covered"><td>218</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FListenQueue = 0 then</pre></td></tr>
+<tr class="covered"><td>219</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FListenQueue := IdListenQueueDefault;</pre></td></tr>
+<tr class="nocodegen"><td>220</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>221</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FHorseProviderIOHandleSSL &lt;&gt; nil then</pre></td></tr>
+<tr class="notcovered"><td>222</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);</pre></td></tr>
+<tr class="covered"><td>223</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;</pre></td></tr>
+<tr class="covered"><td>224</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FHost &lt;&gt; GetDefaultHost then</pre></td></tr>
+<tr class="nocodegen"><td>225</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>226</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.Bindings.Clear;</pre></td></tr>
+<tr class="notcovered"><td>227</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.Bindings.Add;</pre></td></tr>
+<tr class="notcovered"><td>228</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;</pre></td></tr>
+<tr class="notcovered"><td>229</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;</pre></td></tr>
+<tr class="nocodegen"><td>230</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="covered"><td>231</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.DefaultPort := FPort;</pre></td></tr>
+<tr class="covered"><td>232</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.Active := True;</pre></td></tr>
+<tr class="covered"><td>233</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LIdHTTPWebBrokerBridge.StartListening;</pre></td></tr>
+<tr class="covered"><td>234</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRunning := True;</pre></td></tr>
+<tr class="covered"><td>235</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;DoOnListen;</pre></td></tr>
+<tr class="nocodegen"><td>236</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>237</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if IsConsole then</pre></td></tr>
+<tr class="nocodegen"><td>238</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>239</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while FRunning do</pre></td></tr>
+<tr class="covered"><td>240</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetDefaultEvent.WaitFor();</pre></td></tr>
+<tr class="nocodegen"><td>241</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>242</td><td><pre style="display:inline;"> &nbsp;except</pre></td></tr>
+<tr class="notcovered"><td>243</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;on E: Exception do</pre></td></tr>
+<tr class="nocodegen"><td>244</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>245</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if IsConsole then</pre></td></tr>
+<tr class="nocodegen"><td>246</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>247</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Writeln(E.ClassName, &apos;: &apos;, E.Message);</pre></td></tr>
+<tr class="notcovered"><td>248</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read(LAttach);</pre></td></tr>
+<tr class="nocodegen"><td>249</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>250</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else</pre></td></tr>
+<tr class="notcovered"><td>251</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise E;</pre></td></tr>
+<tr class="nocodegen"><td>252</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>253</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>254</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>255</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>256</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.InternalStopListen;</pre></td></tr>
+<tr class="covered"><td>257</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>258</td><td><pre style="display:inline;"> &nbsp;if not HTTPWebBrokerIsNil then</pre></td></tr>
+<tr class="nocodegen"><td>259</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>260</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;GetDefaultHTTPWebBroker.StopListening;</pre></td></tr>
+<tr class="covered"><td>261</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRunning := False;</pre></td></tr>
+<tr class="covered"><td>262</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FEvent &lt;&gt; nil then</pre></td></tr>
+<tr class="notcovered"><td>263</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GetDefaultEvent.SetEvent;</pre></td></tr>
+<tr class="nocodegen"><td>264</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>265</td><td><pre style="display:inline;"> &nbsp;else</pre></td></tr>
+<tr class="notcovered"><td>266</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;raise Exception.Create(&apos;Horse not listen&apos;);</pre></td></tr>
+<tr class="covered"><td>267</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>268</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>269</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Start;</pre></td></tr>
+<tr class="notcovered"><td>270</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>271</td><td><pre style="display:inline;"> &nbsp;SetOnListen(</pre></td></tr>
+<tr class="nocodegen"><td>272</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure(Horse: T)</pre></td></tr>
+<tr class="nocodegen"><td>273</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>274</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Writeln(Format(START_RUNNING, [FHost, FPort]));</pre></td></tr>
+<tr class="notcovered"><td>275</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Write(&apos;Press return to stop ...&apos;);</pre></td></tr>
+<tr class="notcovered"><td>276</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadLn;</pre></td></tr>
+<tr class="notcovered"><td>277</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;StopListen;</pre></td></tr>
+<tr class="notcovered"><td>278</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end);</pre></td></tr>
+<tr class="notcovered"><td>279</td><td><pre style="display:inline;"> &nbsp;Listen;</pre></td></tr>
+<tr class="notcovered"><td>280</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>281</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>282</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Stop;</pre></td></tr>
+<tr class="nocodegen"><td>283</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>284</td><td><pre style="display:inline;"> &nbsp;StopListen;</pre></td></tr>
+<tr class="notcovered"><td>285</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>286</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>287</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.StopListen;</pre></td></tr>
+<tr class="nocodegen"><td>288</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>289</td><td><pre style="display:inline;"> &nbsp;InternalStopListen;</pre></td></tr>
+<tr class="covered"><td>290</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>291</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>292</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Listen;</pre></td></tr>
+<tr class="nocodegen"><td>293</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>294</td><td><pre style="display:inline;"> &nbsp;InternalListen;</pre></td></tr>
+<tr class="covered"><td>295</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>296</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>297</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Listen(APort: Integer; const AHost: string; ACallback: TProc&lt;T&gt;);</pre></td></tr>
+<tr class="covered"><td>298</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>299</td><td><pre style="display:inline;"> &nbsp;SetPort(APort);</pre></td></tr>
+<tr class="covered"><td>300</td><td><pre style="display:inline;"> &nbsp;SetHost(AHost);</pre></td></tr>
+<tr class="covered"><td>301</td><td><pre style="display:inline;"> &nbsp;SetOnListen(ACallback);</pre></td></tr>
+<tr class="covered"><td>302</td><td><pre style="display:inline;"> &nbsp;InternalListen;</pre></td></tr>
+<tr class="notcovered"><td>303</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>304</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>305</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Listen(AHost: string; const ACallback: TProc&lt;T&gt;);</pre></td></tr>
+<tr class="notcovered"><td>306</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>307</td><td><pre style="display:inline;"> &nbsp;Listen(FPort, AHost, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>308</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>309</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>310</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Listen(ACallback: TProc&lt;T&gt;);</pre></td></tr>
+<tr class="notcovered"><td>311</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>312</td><td><pre style="display:inline;"> &nbsp;Listen(FPort, FHost, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>313</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>314</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>315</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.Listen(APort: Integer; ACallback: TProc&lt;T&gt;);</pre></td></tr>
+<tr class="notcovered"><td>316</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>317</td><td><pre style="display:inline;"> &nbsp;Listen(APort, FHost, ACallback);</pre></td></tr>
+<tr class="notcovered"><td>318</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>319</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>320</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);</pre></td></tr>
+<tr class="notcovered"><td>321</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>322</td><td><pre style="display:inline;"> &nbsp;VHandled := True;</pre></td></tr>
+<tr class="notcovered"><td>323</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>324</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>325</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.SetHost(const Value: string);</pre></td></tr>
+<tr class="covered"><td>326</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>327</td><td><pre style="display:inline;"> &nbsp;FHost := Value.Trim;</pre></td></tr>
+<tr class="covered"><td>328</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>329</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>330</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.SetIOHandleSSL(const Value: THorseProviderIOHandleSSL);</pre></td></tr>
+<tr class="nocodegen"><td>331</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>332</td><td><pre style="display:inline;"> &nbsp;FHorseProviderIOHandleSSL := Value;</pre></td></tr>
+<tr class="nocodegen"><td>333</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>334</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>335</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.SetListenQueue(const Value: Integer);</pre></td></tr>
+<tr class="nocodegen"><td>336</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>337</td><td><pre style="display:inline;"> &nbsp;FListenQueue := Value;</pre></td></tr>
+<tr class="nocodegen"><td>338</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>339</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>340</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.SetMaxConnections(const Value: Integer);</pre></td></tr>
+<tr class="nocodegen"><td>341</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>342</td><td><pre style="display:inline;"> &nbsp;FMaxConnections := Value;</pre></td></tr>
+<tr class="nocodegen"><td>343</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>344</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>345</td><td><pre style="display:inline;">class procedure THorseProvider&lt;T&gt;.SetPort(const Value: Integer);</pre></td></tr>
+<tr class="nocodegen"><td>346</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>347</td><td><pre style="display:inline;"> &nbsp;FPort := Value;</pre></td></tr>
+<tr class="covered"><td>348</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>349</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>350</td><td><pre style="display:inline;">class destructor THorseProvider&lt;T&gt;.UnInitialize;</pre></td></tr>
+<tr class="covered"><td>351</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>352</td><td><pre style="display:inline;"> &nbsp;FreeAndNil(FIdHTTPWebBrokerBridge);</pre></td></tr>
+<tr class="covered"><td>353</td><td><pre style="display:inline;"> &nbsp;if FEvent &lt;&gt; nil then</pre></td></tr>
+<tr class="covered"><td>354</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FreeAndNil(FEvent);</pre></td></tr>
+<tr class="covered"><td>355</td><td><pre style="display:inline;"> &nbsp;if FHorseProviderIOHandleSSL &lt;&gt; nil then</pre></td></tr>
+<tr class="notcovered"><td>356</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FreeAndNil(FHorseProviderIOHandleSSL);</pre></td></tr>
+<tr class="covered"><td>357</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>358</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>359</td><td><pre style="display:inline;">{ THorseProviderIOHandleSSL }</pre></td></tr>
+<tr class="nocodegen"><td>360</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>361</td><td><pre style="display:inline;">constructor THorseProviderIOHandleSSL.Create;</pre></td></tr>
+<tr class="nocodegen"><td>362</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>363</td><td><pre style="display:inline;"> &nbsp;FActive := True;</pre></td></tr>
+<tr class="nocodegen"><td>364</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>365</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>366</td><td><pre style="display:inline;">function THorseProviderIOHandleSSL.GetActive: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>367</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>368</td><td><pre style="display:inline;"> &nbsp;Result := FActive;</pre></td></tr>
+<tr class="nocodegen"><td>369</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>370</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>371</td><td><pre style="display:inline;">function THorseProviderIOHandleSSL.GetCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>372</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>373</td><td><pre style="display:inline;"> &nbsp;Result := FCertFile;</pre></td></tr>
+<tr class="nocodegen"><td>374</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>375</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>376</td><td><pre style="display:inline;">function THorseProviderIOHandleSSL.GetKeyFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>377</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>378</td><td><pre style="display:inline;"> &nbsp;Result := FKeyFile;</pre></td></tr>
+<tr class="nocodegen"><td>379</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>380</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>381</td><td><pre style="display:inline;">function THorseProviderIOHandleSSL.GetOnGetPassword: TPasswordEvent;</pre></td></tr>
+<tr class="nocodegen"><td>382</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>383</td><td><pre style="display:inline;"> &nbsp;Result := FOnGetPassword;</pre></td></tr>
+<tr class="nocodegen"><td>384</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>385</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>386</td><td><pre style="display:inline;">function THorseProviderIOHandleSSL.GetRootCertFile: string;</pre></td></tr>
+<tr class="nocodegen"><td>387</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>388</td><td><pre style="display:inline;"> &nbsp;Result := FRootCertFile;</pre></td></tr>
+<tr class="nocodegen"><td>389</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>390</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>391</td><td><pre style="display:inline;">procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);</pre></td></tr>
+<tr class="nocodegen"><td>392</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>393</td><td><pre style="display:inline;"> &nbsp;FActive := Value;</pre></td></tr>
+<tr class="nocodegen"><td>394</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>395</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>396</td><td><pre style="display:inline;">procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>397</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>398</td><td><pre style="display:inline;"> &nbsp;FCertFile := Value;</pre></td></tr>
+<tr class="nocodegen"><td>399</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>400</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>401</td><td><pre style="display:inline;">procedure THorseProviderIOHandleSSL.SetKeyFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>402</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>403</td><td><pre style="display:inline;"> &nbsp;FKeyFile := Value;</pre></td></tr>
+<tr class="nocodegen"><td>404</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>405</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>406</td><td><pre style="display:inline;">procedure THorseProviderIOHandleSSL.SetOnGetPassword(const Value: TPasswordEvent);</pre></td></tr>
+<tr class="nocodegen"><td>407</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>408</td><td><pre style="display:inline;"> &nbsp;FOnGetPassword := Value;</pre></td></tr>
+<tr class="nocodegen"><td>409</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>410</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>411</td><td><pre style="display:inline;">procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);</pre></td></tr>
+<tr class="nocodegen"><td>412</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>413</td><td><pre style="display:inline;"> &nbsp;FRootCertFile := Value;</pre></td></tr>
+<tr class="nocodegen"><td>414</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>415</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>416</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>417</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>418</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse.WebModule (D:\Repositórios\horse\src\Horse.HTTP.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:28 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.HTTP.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>2</td></tr><tr><td>Number of lines with code gen</td><td>2</td></tr><tr><td>Line coverage</td><td>100%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.HTTP;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;"> &nbsp;{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"> &nbsp;System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,</pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;"> &nbsp;Horse.Commons;</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;"> &nbsp;THorseList = {$IF DEFINED(FPC)}TDictionary&lt;string, string&gt;{$ELSE}TDictionary&lt;string, string&gt;{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;THorseRequest = class</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FQuery: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FParams: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCookie: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FBody: TObject;</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FSession: TObject;</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure InitializeQuery;</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure InitializeParams;</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure InitializeCookie;</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetHeaders(AIndex: string): string;</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Body: string; overload;</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Body&lt;T: class&gt;: T; overload;</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Session&lt;T: class&gt;: T;</pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Query: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Params: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Cookie: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function MethodType: TMethodType;</pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;property Headers[index: string]: string read GetHeaders;</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;destructor Destroy; override;</pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;"> &nbsp;THorseHackRequest = class(THorseRequest)</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetParams: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetBody(ABody: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetSession(ASession: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>52</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>53</td><td><pre style="display:inline;"> &nbsp;THorseResponse = class</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FContent: TObject;</pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Send(AContent: string): THorseResponse; overload;</pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Send&lt;T: class&gt;(AContent: T): THorseResponse; overload;</pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Status(AStatus: Integer): THorseResponse; overload;</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Status(AStatus: THTTPStatus): THorseResponse; overload;</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Status: Integer; overload;</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ContentType(AContentType: string): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;destructor Destroy; override;</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"> &nbsp;THorseHackResponse = class(THorseResponse)</pre></td></tr>
+<tr class="nocodegen"><td>69</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>70</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>71</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetContent: TObject;</pre></td></tr>
+<tr class="nocodegen"><td>72</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure SetContent(AContent: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>73</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>74</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>75</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>77</td><td><pre style="display:inline;">const</pre></td></tr>
+<tr class="nocodegen"><td>78</td><td><pre style="display:inline;"> &nbsp;KEY = 0;</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;VALUE = 1;</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>81</td><td><pre style="display:inline;">function THorseRequest.Body: string;</pre></td></tr>
+<tr class="nocodegen"><td>82</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>83</td><td><pre style="display:inline;"> &nbsp;Result := FWebRequest.Content;</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>86</td><td><pre style="display:inline;">function THorseRequest.Body&lt;T&gt;: T;</pre></td></tr>
+<tr class="nocodegen"><td>87</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>88</td><td><pre style="display:inline;"> &nbsp;Result := T(FBody);</pre></td></tr>
+<tr class="covered"><td>89</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>91</td><td><pre style="display:inline;">function THorseRequest.Cookie: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;"> &nbsp;Result := FCookie;</pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;">constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>98</td><td><pre style="display:inline;"> &nbsp;FWebRequest := AWebRequest;</pre></td></tr>
+<tr class="nocodegen"><td>99</td><td><pre style="display:inline;"> &nbsp;InitializeQuery;</pre></td></tr>
+<tr class="nocodegen"><td>100</td><td><pre style="display:inline;"> &nbsp;InitializeParams;</pre></td></tr>
+<tr class="nocodegen"><td>101</td><td><pre style="display:inline;"> &nbsp;InitializeCookie;</pre></td></tr>
+<tr class="nocodegen"><td>102</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>103</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>104</td><td><pre style="display:inline;">destructor THorseRequest.Destroy;</pre></td></tr>
+<tr class="nocodegen"><td>105</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>106</td><td><pre style="display:inline;"> &nbsp;FQuery.Free;</pre></td></tr>
+<tr class="nocodegen"><td>107</td><td><pre style="display:inline;"> &nbsp;FParams.Free;</pre></td></tr>
+<tr class="nocodegen"><td>108</td><td><pre style="display:inline;"> &nbsp;FCookie.Free;</pre></td></tr>
+<tr class="nocodegen"><td>109</td><td><pre style="display:inline;"> &nbsp;if Assigned(FBody) then</pre></td></tr>
+<tr class="nocodegen"><td>110</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FBody.Free;</pre></td></tr>
+<tr class="nocodegen"><td>111</td><td><pre style="display:inline;"> &nbsp;inherited;</pre></td></tr>
+<tr class="nocodegen"><td>112</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>113</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>114</td><td><pre style="display:inline;">function THorseRequest.GetHeaders(AIndex: string): string;</pre></td></tr>
+<tr class="nocodegen"><td>115</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>116</td><td><pre style="display:inline;"> &nbsp;Result := FWebRequest.GetFieldByName(AIndex);</pre></td></tr>
+<tr class="nocodegen"><td>117</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>118</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>119</td><td><pre style="display:inline;">procedure THorseRequest.InitializeCookie;</pre></td></tr>
+<tr class="nocodegen"><td>120</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>121</td><td><pre style="display:inline;"> &nbsp;LParam: TArray&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>122</td><td><pre style="display:inline;"> &nbsp;LItem: string;</pre></td></tr>
+<tr class="nocodegen"><td>123</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>124</td><td><pre style="display:inline;"> &nbsp;FCookie := THorseList.Create;</pre></td></tr>
+<tr class="nocodegen"><td>125</td><td><pre style="display:inline;"> &nbsp;for LItem in FWebRequest.CookieFields do</pre></td></tr>
+<tr class="nocodegen"><td>126</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="nocodegen"><td>127</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LParam := LItem.Split([&apos;=&apos;]);</pre></td></tr>
+<tr class="nocodegen"><td>128</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCookie.Add(LParam[KEY], LParam[VALUE]);</pre></td></tr>
+<tr class="nocodegen"><td>129</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>130</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>131</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>132</td><td><pre style="display:inline;">procedure THorseRequest.InitializeParams;</pre></td></tr>
+<tr class="nocodegen"><td>133</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>134</td><td><pre style="display:inline;"> &nbsp;FParams := THorseList.Create;</pre></td></tr>
+<tr class="nocodegen"><td>135</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>136</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>137</td><td><pre style="display:inline;">procedure THorseRequest.InitializeQuery;</pre></td></tr>
+<tr class="nocodegen"><td>138</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>139</td><td><pre style="display:inline;"> &nbsp;LItem: string;</pre></td></tr>
+<tr class="nocodegen"><td>140</td><td><pre style="display:inline;"> &nbsp;LKey: string;</pre></td></tr>
+<tr class="nocodegen"><td>141</td><td><pre style="display:inline;"> &nbsp;LValue: string;</pre></td></tr>
+<tr class="nocodegen"><td>142</td><td><pre style="display:inline;"> &nbsp;LEqualFirstPos : Integer;</pre></td></tr>
+<tr class="nocodegen"><td>143</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>144</td><td><pre style="display:inline;"> &nbsp;FQuery := THorseList.Create;</pre></td></tr>
+<tr class="nocodegen"><td>145</td><td><pre style="display:inline;"> &nbsp;for LItem in FWebRequest.QueryFields do</pre></td></tr>
+<tr class="nocodegen"><td>146</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="nocodegen"><td>147</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LEqualFirstPos := Pos(&apos;=&apos;, Litem);</pre></td></tr>
+<tr class="nocodegen"><td>148</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LKey := Copy(Litem, 1, LEqualFirstPos - 1);</pre></td></tr>
+<tr class="nocodegen"><td>149</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LValue := Copy(Litem, LEqualFirstPos + 1, Length(LItem));</pre></td></tr>
+<tr class="nocodegen"><td>150</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FQuery.Add(LKey, LValue);</pre></td></tr>
+<tr class="nocodegen"><td>151</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>152</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>153</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>154</td><td><pre style="display:inline;">function THorseRequest.MethodType: TMethodType;</pre></td></tr>
+<tr class="nocodegen"><td>155</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>156</td><td><pre style="display:inline;"> &nbsp;Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command){$ELSE}FWebRequest.MethodType;{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>157</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>158</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>159</td><td><pre style="display:inline;">function THorseRequest.Params: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>160</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>161</td><td><pre style="display:inline;"> &nbsp;Result := FParams;</pre></td></tr>
+<tr class="nocodegen"><td>162</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>163</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>164</td><td><pre style="display:inline;">function THorseRequest.Query: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>165</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>166</td><td><pre style="display:inline;"> &nbsp;Result := FQuery;</pre></td></tr>
+<tr class="nocodegen"><td>167</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>168</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>169</td><td><pre style="display:inline;">function THorseRequest.Session&lt;T&gt;: T;</pre></td></tr>
+<tr class="nocodegen"><td>170</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>171</td><td><pre style="display:inline;"> &nbsp;Result := T(FSession);</pre></td></tr>
+<tr class="nocodegen"><td>172</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>173</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>174</td><td><pre style="display:inline;">{ THorseResponse }</pre></td></tr>
+<tr class="nocodegen"><td>175</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>176</td><td><pre style="display:inline;">function THorseResponse.ContentType(AContentType: string): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>177</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>178</td><td><pre style="display:inline;"> &nbsp;FWebResponse.ContentType := AContentType;</pre></td></tr>
+<tr class="nocodegen"><td>179</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="nocodegen"><td>180</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>181</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>182</td><td><pre style="display:inline;">constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});</pre></td></tr>
+<tr class="nocodegen"><td>183</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>184</td><td><pre style="display:inline;"> &nbsp;FWebResponse := AWebResponse;</pre></td></tr>
+<tr class="nocodegen"><td>185</td><td><pre style="display:inline;"> &nbsp;{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;</pre></td></tr>
+<tr class="nocodegen"><td>186</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>187</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>188</td><td><pre style="display:inline;">destructor THorseResponse.Destroy;</pre></td></tr>
+<tr class="nocodegen"><td>189</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>190</td><td><pre style="display:inline;"> &nbsp;if Assigned(FContent) then</pre></td></tr>
+<tr class="nocodegen"><td>191</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FContent.Free;</pre></td></tr>
+<tr class="nocodegen"><td>192</td><td><pre style="display:inline;"> &nbsp;inherited;</pre></td></tr>
+<tr class="nocodegen"><td>193</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>194</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>195</td><td><pre style="display:inline;">function THorseResponse.Send(AContent: string): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>196</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>197</td><td><pre style="display:inline;"> &nbsp;FWebResponse.Content := AContent;</pre></td></tr>
+<tr class="nocodegen"><td>198</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="nocodegen"><td>199</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>200</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>201</td><td><pre style="display:inline;">function THorseResponse.Send&lt;T&gt;(AContent: T): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>202</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>203</td><td><pre style="display:inline;"> &nbsp;FContent := AContent;</pre></td></tr>
+<tr class="nocodegen"><td>204</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="nocodegen"><td>205</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>206</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>207</td><td><pre style="display:inline;">function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>208</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>209</td><td><pre style="display:inline;"> &nbsp;{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;</pre></td></tr>
+<tr class="nocodegen"><td>210</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="nocodegen"><td>211</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>212</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>213</td><td><pre style="display:inline;">function THorseResponse.Status: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>214</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>215</td><td><pre style="display:inline;"> &nbsp;Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>216</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>217</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>218</td><td><pre style="display:inline;">function THorseResponse.Status(AStatus: Integer): THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>219</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>220</td><td><pre style="display:inline;"> &nbsp;{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;</pre></td></tr>
+<tr class="nocodegen"><td>221</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="nocodegen"><td>222</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>223</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>224</td><td><pre style="display:inline;">{ THorseHackRequest }</pre></td></tr>
+<tr class="nocodegen"><td>225</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>226</td><td><pre style="display:inline;">function THorseHackResponse.GetContent: TObject;</pre></td></tr>
+<tr class="nocodegen"><td>227</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>228</td><td><pre style="display:inline;"> &nbsp;Result := FContent;</pre></td></tr>
+<tr class="nocodegen"><td>229</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>230</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>231</td><td><pre style="display:inline;">function THorseHackRequest.GetParams: THorseList;</pre></td></tr>
+<tr class="nocodegen"><td>232</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>233</td><td><pre style="display:inline;"> &nbsp;Result := FParams;</pre></td></tr>
+<tr class="nocodegen"><td>234</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>235</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>236</td><td><pre style="display:inline;">function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>237</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>238</td><td><pre style="display:inline;"> &nbsp;Result := FWebRequest;</pre></td></tr>
+<tr class="nocodegen"><td>239</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>240</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>241</td><td><pre style="display:inline;">procedure THorseHackRequest.SetBody(ABody: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>242</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>243</td><td><pre style="display:inline;"> &nbsp;FBody := ABody;</pre></td></tr>
+<tr class="nocodegen"><td>244</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>245</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>246</td><td><pre style="display:inline;">procedure THorseHackRequest.SetSession(ASession: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>247</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>248</td><td><pre style="display:inline;"> &nbsp;FSession := ASession;</pre></td></tr>
+<tr class="nocodegen"><td>249</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>250</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>251</td><td><pre style="display:inline;">{ THorseHackResponse }</pre></td></tr>
+<tr class="nocodegen"><td>252</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>253</td><td><pre style="display:inline;">function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};</pre></td></tr>
+<tr class="nocodegen"><td>254</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>255</td><td><pre style="display:inline;"> &nbsp;Result := FWebResponse;</pre></td></tr>
+<tr class="nocodegen"><td>256</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>257</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>258</td><td><pre style="display:inline;">procedure THorseHackResponse.SetContent(AContent: TObject);</pre></td></tr>
+<tr class="nocodegen"><td>259</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>260</td><td><pre style="display:inline;"> &nbsp;FContent := AContent;</pre></td></tr>
+<tr class="nocodegen"><td>261</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>262</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>263</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

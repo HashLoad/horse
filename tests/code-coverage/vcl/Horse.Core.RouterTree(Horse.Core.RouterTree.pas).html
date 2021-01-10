@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse.Core.RouterTree (D:\Repositórios\horse\src\Horse.Core.RouterTree.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:30 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.Core.RouterTree.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>164</td></tr><tr><td>Number of lines with code gen</td><td>209</td></tr><tr><td>Line coverage</td><td>78%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.Core.RouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;">{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;SysUtils, Generics.Collections, fpHTTP,</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"> &nbsp;System.SysUtils, Web.HTTPApp, System.Generics.Collections,</pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;"> &nbsp;Horse.HTTP, Horse.Proc, Horse.Commons;</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"> &nbsp;THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;TCallNextPath = function(var APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean of object;</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;">{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"> &nbsp;THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;TCallNextPath = reference to function(var APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;PHorseRouterTree = ^THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;THorseRouterTree = class</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;strict private</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FPrefix: string;</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsInitialized: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ForcePath(APath: string): THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FPart: string;</pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FTag: string;</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsRegex: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FMiddleware: TList&lt;THorseCallback&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRegexedKeys: TList&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCallBack: TObjectDictionary&lt;TMethodType, TList&lt;THorseCallback&gt;&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRoute: TObjectDictionary&lt;string, THorseRouterTree&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue&lt;string&gt;; ACallback: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure RegisterMiddlewareInternal(var APath: TQueue&lt;string&gt;; AMiddleware: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ExecuteInternal(APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function CallNextPath(var APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function HasNext(AMethod: TMethodType; APaths: TArray&lt;string&gt;; AIndex: Integer = 0): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function CreateRouter(APath: string): THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function GetPrefix(): string;</pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure Prefix(APrefix: string);</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>52</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;</pre></td></tr>
+<tr class="nocodegen"><td>53</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure RegisterMiddleware(AMiddleware: THorseCallback); overload;</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create;</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;destructor Destroy; override;</pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;TNextCaller = class</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{ private declarations }</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIndex: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIndexCallback: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FPath: TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FHTTPType: TMethodType;</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRequest: THorseRequest;</pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FResponse: THorseResponse;</pre></td></tr>
+<tr class="nocodegen"><td>69</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FMiddleware: TList&lt;THorseCallback&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>70</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCallBack: TObjectDictionary&lt;TMethodType, TList&lt;THorseCallback&gt;&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>71</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FCallNextPath: TCallNextPath;</pre></td></tr>
+<tr class="nocodegen"><td>72</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsGroup: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>73</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FTag: string;</pre></td></tr>
+<tr class="nocodegen"><td>74</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsRegex: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>75</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FFound: ^Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"> &nbsp;protected</pre></td></tr>
+<tr class="nocodegen"><td>77</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{ protected declarations }</pre></td></tr>
+<tr class="nocodegen"><td>78</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;{ public declarations }</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;constructor Create;</pre></td></tr>
+<tr class="nocodegen"><td>81</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function Init: TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>82</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetCallback(ACallback: TObjectDictionary &lt; TMethodType, TList &lt; THorseCallback &gt;&gt; ): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>83</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetPath(APath: TQueue&lt;string&gt;): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetHTTPType(AHTTPType: TMethodType): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetRequest(ARequest: THorseRequest): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>86</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetResponse(AResponse: THorseResponse): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>87</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetIsGroup(AIsGroup: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>88</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetMiddleware(AMiddleware: TList&lt;THorseCallback&gt;): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>89</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetTag(ATag: string): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetIsRegex(AIsRegex: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>91</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetOnCallNextPath(ACallNextPath: TCallNextPath): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function SetFound(var AFound: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;procedure Next;</pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>98</td><td><pre style="display:inline;">{ THorseRouterTree }</pre></td></tr>
+<tr class="nocodegen"><td>99</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>100</td><td><pre style="display:inline;">uses Horse.Exception;</pre></td></tr>
+<tr class="nocodegen"><td>101</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>102</td><td><pre style="display:inline;">procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>103</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>104</td><td><pre style="display:inline;"> &nbsp;LPathChain: TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="covered"><td>105</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>106</td><td><pre style="display:inline;"> &nbsp;LPathChain := GetQueuePath(APath);</pre></td></tr>
+<tr class="covered"><td>107</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="covered"><td>108</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RegisterInternal(AHTTPType, LPathChain, ACallback);</pre></td></tr>
+<tr class="nocodegen"><td>109</td><td><pre style="display:inline;"> &nbsp;finally</pre></td></tr>
+<tr class="covered"><td>110</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LPathChain.Free;</pre></td></tr>
+<tr class="nocodegen"><td>111</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>112</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>113</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>114</td><td><pre style="display:inline;">function THorseRouterTree.CallNextPath(var APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest;</pre></td></tr>
+<tr class="nocodegen"><td>115</td><td><pre style="display:inline;"> &nbsp;AResponse: THorseResponse): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>116</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>117</td><td><pre style="display:inline;"> &nbsp;LCurrent: string;</pre></td></tr>
+<tr class="nocodegen"><td>118</td><td><pre style="display:inline;"> &nbsp;LAcceptable: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>119</td><td><pre style="display:inline;"> &nbsp;LFound: Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>120</td><td><pre style="display:inline;"> &nbsp;LKey: string;</pre></td></tr>
+<tr class="nocodegen"><td>121</td><td><pre style="display:inline;"> &nbsp;LPathOrigin: TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>122</td><td><pre style="display:inline;"> &nbsp;LIsGroup: Boolean;</pre></td></tr>
+<tr class="covered"><td>123</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>124</td><td><pre style="display:inline;"> &nbsp;LIsGroup := False;</pre></td></tr>
+<tr class="covered"><td>125</td><td><pre style="display:inline;"> &nbsp;LPathOrigin := APath;</pre></td></tr>
+<tr class="covered"><td>126</td><td><pre style="display:inline;"> &nbsp;LCurrent := APath.Peek;</pre></td></tr>
+<tr class="covered"><td>127</td><td><pre style="display:inline;"> &nbsp;LFound := FRoute.TryGetValue(LCurrent, LAcceptable);</pre></td></tr>
+<tr class="covered"><td>128</td><td><pre style="display:inline;"> &nbsp;if (not LFound) then</pre></td></tr>
+<tr class="nocodegen"><td>129</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>130</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);</pre></td></tr>
+<tr class="covered"><td>131</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if (LFound) then</pre></td></tr>
+<tr class="notcovered"><td>132</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;APath := LPathOrigin;</pre></td></tr>
+<tr class="covered"><td>133</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LIsGroup := LFound;</pre></td></tr>
+<tr class="nocodegen"><td>134</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>135</td><td><pre style="display:inline;"> &nbsp;if (not LFound) and (FRegexedKeys.Count &gt; 0) then</pre></td></tr>
+<tr class="nocodegen"><td>136</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>137</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;for LKey in FRegexedKeys do</pre></td></tr>
+<tr class="nocodegen"><td>138</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>139</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FRoute.TryGetValue(LKey, LAcceptable);</pre></td></tr>
+<tr class="covered"><td>140</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if LAcceptable.HasNext(AHTTPType, APath.ToArray) then</pre></td></tr>
+<tr class="nocodegen"><td>141</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>142</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);</pre></td></tr>
+<tr class="covered"><td>143</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Break;</pre></td></tr>
+<tr class="nocodegen"><td>144</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="covered"><td>145</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>146</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="covered"><td>147</td><td><pre style="display:inline;"> &nbsp;else if LFound then</pre></td></tr>
+<tr class="covered"><td>148</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);</pre></td></tr>
+<tr class="covered"><td>149</td><td><pre style="display:inline;"> &nbsp;Result := LFound;</pre></td></tr>
+<tr class="covered"><td>150</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>151</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>152</td><td><pre style="display:inline;">constructor THorseRouterTree.Create;</pre></td></tr>
+<tr class="covered"><td>153</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>154</td><td><pre style="display:inline;"> &nbsp;FMiddleware := TList&lt;THorseCallback&gt;.Create;</pre></td></tr>
+<tr class="covered"><td>155</td><td><pre style="display:inline;"> &nbsp;FRoute := TObjectDictionary&lt;string, THorseRouterTree&gt;.Create([doOwnsValues]);</pre></td></tr>
+<tr class="covered"><td>156</td><td><pre style="display:inline;"> &nbsp;FRegexedKeys := TList&lt;string&gt;.Create;</pre></td></tr>
+<tr class="covered"><td>157</td><td><pre style="display:inline;"> &nbsp;FCallBack := TObjectDictionary &lt; TMethodType, TList &lt; THorseCallback &gt;&gt;.Create([doOwnsValues]);</pre></td></tr>
+<tr class="covered"><td>158</td><td><pre style="display:inline;"> &nbsp;FPrefix := &apos;&apos;;</pre></td></tr>
+<tr class="covered"><td>159</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>160</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>161</td><td><pre style="display:inline;">destructor THorseRouterTree.Destroy;</pre></td></tr>
+<tr class="covered"><td>162</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>163</td><td><pre style="display:inline;"> &nbsp;FMiddleware.Free;</pre></td></tr>
+<tr class="covered"><td>164</td><td><pre style="display:inline;"> &nbsp;FreeAndNil(FRoute);</pre></td></tr>
+<tr class="covered"><td>165</td><td><pre style="display:inline;"> &nbsp;FRegexedKeys.Clear;</pre></td></tr>
+<tr class="covered"><td>166</td><td><pre style="display:inline;"> &nbsp;FRegexedKeys.Free;</pre></td></tr>
+<tr class="covered"><td>167</td><td><pre style="display:inline;"> &nbsp;FCallBack.Free;</pre></td></tr>
+<tr class="covered"><td>168</td><td><pre style="display:inline;"> &nbsp;inherited;</pre></td></tr>
+<tr class="covered"><td>169</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>170</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>171</td><td><pre style="display:inline;">function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>172</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>173</td><td><pre style="display:inline;"> &nbsp;LQueue: TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="covered"><td>174</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>175</td><td><pre style="display:inline;"> &nbsp;LQueue := GetQueuePath(THorseHackRequest(ARequest).GetWebRequest.PathInfo, False);</pre></td></tr>
+<tr class="covered"><td>176</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="covered"><td>177</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(THorseHackRequest(ARequest).GetWebRequest.Method)</pre></td></tr>
+<tr class="nocodegen"><td>178</td><td><pre style="display:inline;">{$ELSE} THorseHackRequest(ARequest).GetWebRequest.MethodType{$ENDIF}, ARequest, AResponse);</pre></td></tr>
+<tr class="nocodegen"><td>179</td><td><pre style="display:inline;"> &nbsp;finally</pre></td></tr>
+<tr class="covered"><td>180</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LQueue.Free;</pre></td></tr>
+<tr class="nocodegen"><td>181</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>182</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>183</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>184</td><td><pre style="display:inline;">function THorseRouterTree.ExecuteInternal(APath: TQueue&lt;string&gt;; AHTTPType: TMethodType; ARequest: THorseRequest;</pre></td></tr>
+<tr class="nocodegen"><td>185</td><td><pre style="display:inline;"> &nbsp;AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>186</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>187</td><td><pre style="display:inline;"> &nbsp;LNextCaller: TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>188</td><td><pre style="display:inline;"> &nbsp;LFound: Boolean;</pre></td></tr>
+<tr class="covered"><td>189</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>190</td><td><pre style="display:inline;"> &nbsp;LNextCaller := TNextCaller.Create;</pre></td></tr>
+<tr class="covered"><td>191</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="covered"><td>192</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetCallback(FCallBack);</pre></td></tr>
+<tr class="covered"><td>193</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetPath(APath);</pre></td></tr>
+<tr class="covered"><td>194</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetHTTPType(AHTTPType);</pre></td></tr>
+<tr class="covered"><td>195</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetRequest(ARequest);</pre></td></tr>
+<tr class="covered"><td>196</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetResponse(AResponse);</pre></td></tr>
+<tr class="covered"><td>197</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetIsGroup(AIsGroup);</pre></td></tr>
+<tr class="covered"><td>198</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetMiddleware(FMiddleware);</pre></td></tr>
+<tr class="covered"><td>199</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetTag(FTag);</pre></td></tr>
+<tr class="covered"><td>200</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetIsRegex(FIsRegex);</pre></td></tr>
+<tr class="covered"><td>201</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetOnCallNextPath(CallNextPath);</pre></td></tr>
+<tr class="covered"><td>202</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.SetFound(LFound);</pre></td></tr>
+<tr class="covered"><td>203</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.Init;</pre></td></tr>
+<tr class="covered"><td>204</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.Next;</pre></td></tr>
+<tr class="nocodegen"><td>205</td><td><pre style="display:inline;"> &nbsp;finally</pre></td></tr>
+<tr class="covered"><td>206</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextCaller.Free;</pre></td></tr>
+<tr class="covered"><td>207</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := LFound;</pre></td></tr>
+<tr class="nocodegen"><td>208</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>209</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>210</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>211</td><td><pre style="display:inline;">function THorseRouterTree.ForcePath(APath: string): THorseRouterTree;</pre></td></tr>
+<tr class="covered"><td>212</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>213</td><td><pre style="display:inline;"> &nbsp;if not FRoute.TryGetValue(APath, Result) then</pre></td></tr>
+<tr class="nocodegen"><td>214</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>215</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := THorseRouterTree.Create;</pre></td></tr>
+<tr class="covered"><td>216</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRoute.Add(APath, Result);</pre></td></tr>
+<tr class="nocodegen"><td>217</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>218</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>219</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>220</td><td><pre style="display:inline;">function THorseRouterTree.CreateRouter(APath: string): THorseRouterTree;</pre></td></tr>
+<tr class="notcovered"><td>221</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>222</td><td><pre style="display:inline;"> &nbsp;Result := ForcePath(APath);</pre></td></tr>
+<tr class="notcovered"><td>223</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>224</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>225</td><td><pre style="display:inline;">procedure THorseRouterTree.Prefix(APrefix: string);</pre></td></tr>
+<tr class="notcovered"><td>226</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>227</td><td><pre style="display:inline;"> &nbsp;FPrefix := &apos;/&apos; + APrefix.Trim([&apos;/&apos;]);</pre></td></tr>
+<tr class="notcovered"><td>228</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>229</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>230</td><td><pre style="display:inline;">function THorseRouterTree.GetPrefix(): string;</pre></td></tr>
+<tr class="notcovered"><td>231</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>232</td><td><pre style="display:inline;"> &nbsp;Result := FPrefix;</pre></td></tr>
+<tr class="notcovered"><td>233</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>234</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>235</td><td><pre style="display:inline;">function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>236</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>237</td><td><pre style="display:inline;"> &nbsp;LPart: string;</pre></td></tr>
+<tr class="nocodegen"><td>238</td><td><pre style="display:inline;"> &nbsp;LSplitedPath: TArray&lt;string&gt;;</pre></td></tr>
+<tr class="covered"><td>239</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>240</td><td><pre style="display:inline;"> &nbsp;Result := TQueue&lt;string&gt;.Create;</pre></td></tr>
+<tr class="covered"><td>241</td><td><pre style="display:inline;"> &nbsp;if AUsePrefix then</pre></td></tr>
+<tr class="covered"><td>242</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;APath := FPrefix + APath;</pre></td></tr>
+<tr class="covered"><td>243</td><td><pre style="display:inline;"> &nbsp;LSplitedPath := APath.Split([&apos;/&apos;]);</pre></td></tr>
+<tr class="covered"><td>244</td><td><pre style="display:inline;"> &nbsp;for LPart in LSplitedPath do</pre></td></tr>
+<tr class="nocodegen"><td>245</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>246</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if (Result.Count &gt; 0) and LPart.IsEmpty then</pre></td></tr>
+<tr class="nocodegen"><td>247</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Continue;</pre></td></tr>
+<tr class="covered"><td>248</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result.Enqueue(LPart);</pre></td></tr>
+<tr class="covered"><td>249</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>250</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>251</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>252</td><td><pre style="display:inline;">function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray&lt;string&gt;; AIndex: Integer = 0): Boolean;</pre></td></tr>
+<tr class="nocodegen"><td>253</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>254</td><td><pre style="display:inline;"> &nbsp;LNext: string;</pre></td></tr>
+<tr class="nocodegen"><td>255</td><td><pre style="display:inline;"> &nbsp;LNextRoute: THorseRouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>256</td><td><pre style="display:inline;"> &nbsp;LKey: string;</pre></td></tr>
+<tr class="covered"><td>257</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>258</td><td><pre style="display:inline;"> &nbsp;Result := False;</pre></td></tr>
+<tr class="covered"><td>259</td><td><pre style="display:inline;"> &nbsp;if (Length(APaths) &lt;= AIndex) then</pre></td></tr>
+<tr class="notcovered"><td>260</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Exit(False);</pre></td></tr>
+<tr class="covered"><td>261</td><td><pre style="display:inline;"> &nbsp;if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsRegex)) then</pre></td></tr>
+<tr class="covered"><td>262</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));</pre></td></tr>
+<tr class="nocodegen"><td>263</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="notcovered"><td>264</td><td><pre style="display:inline;"> &nbsp;LNext := APaths[AIndex + 1];</pre></td></tr>
+<tr class="notcovered"><td>265</td><td><pre style="display:inline;"> &nbsp;inc(AIndex);</pre></td></tr>
+<tr class="notcovered"><td>266</td><td><pre style="display:inline;"> &nbsp;if FRoute.TryGetValue(LNext, LNextRoute) then</pre></td></tr>
+<tr class="nocodegen"><td>267</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>268</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := LNextRoute.HasNext(AMethod, APaths, AIndex);</pre></td></tr>
+<tr class="nocodegen"><td>269</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>270</td><td><pre style="display:inline;"> &nbsp;else</pre></td></tr>
+<tr class="nocodegen"><td>271</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>272</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;for LKey in FRegexedKeys do</pre></td></tr>
+<tr class="nocodegen"><td>273</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>274</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then</pre></td></tr>
+<tr class="notcovered"><td>275</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Exit(True);</pre></td></tr>
+<tr class="notcovered"><td>276</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>277</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>278</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>279</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>280</td><td><pre style="display:inline;">procedure THorseRouterTree.RegisterInternal(AHTTPType: TMethodType; var APath: TQueue&lt;string&gt;; ACallback: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>281</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>282</td><td><pre style="display:inline;"> &nbsp;LNextPart: string;</pre></td></tr>
+<tr class="nocodegen"><td>283</td><td><pre style="display:inline;"> &nbsp;LCallbacks: TList&lt;THorseCallback&gt;;</pre></td></tr>
+<tr class="covered"><td>284</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>285</td><td><pre style="display:inline;"> &nbsp;if not FIsInitialized then</pre></td></tr>
+<tr class="nocodegen"><td>286</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>287</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FPart := APath.Dequeue;</pre></td></tr>
+<tr class="covered"><td>288</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsRegex := FPart.StartsWith(&apos;:&apos;);</pre></td></tr>
+<tr class="covered"><td>289</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FTag := FPart.Substring(1, Length(FPart) - 1);</pre></td></tr>
+<tr class="covered"><td>290</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FIsInitialized := True;</pre></td></tr>
+<tr class="nocodegen"><td>291</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>292</td><td><pre style="display:inline;"> &nbsp;else</pre></td></tr>
+<tr class="covered"><td>293</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;APath.Dequeue;</pre></td></tr>
+<tr class="nocodegen"><td>294</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>295</td><td><pre style="display:inline;"> &nbsp;if APath.Count = 0 then</pre></td></tr>
+<tr class="nocodegen"><td>296</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>297</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then</pre></td></tr>
+<tr class="nocodegen"><td>298</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>299</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LCallbacks := TList&lt;THorseCallback&gt;.Create;</pre></td></tr>
+<tr class="covered"><td>300</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FCallBack.Add(AHTTPType, LCallbacks);</pre></td></tr>
+<tr class="nocodegen"><td>301</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="covered"><td>302</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LCallbacks.Add(ACallback)</pre></td></tr>
+<tr class="nocodegen"><td>303</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>304</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>305</td><td><pre style="display:inline;"> &nbsp;if APath.Count &gt; 0 then</pre></td></tr>
+<tr class="nocodegen"><td>306</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>307</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LNextPart := APath.Peek;</pre></td></tr>
+<tr class="covered"><td>308</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ForcePath(LNextPart).RegisterInternal(AHTTPType, APath, ACallback);</pre></td></tr>
+<tr class="covered"><td>309</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if ForcePath(LNextPart).FIsRegex then</pre></td></tr>
+<tr class="covered"><td>310</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FRegexedKeys.Add(LNextPart);</pre></td></tr>
+<tr class="nocodegen"><td>311</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="covered"><td>312</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>313</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>314</td><td><pre style="display:inline;">procedure THorseRouterTree.RegisterMiddleware(AMiddleware: THorseCallback);</pre></td></tr>
+<tr class="notcovered"><td>315</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>316</td><td><pre style="display:inline;"> &nbsp;FMiddleware.Add(AMiddleware);</pre></td></tr>
+<tr class="notcovered"><td>317</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>318</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>319</td><td><pre style="display:inline;">procedure THorseRouterTree.RegisterMiddleware(APath: string; AMiddleware: THorseCallback);</pre></td></tr>
+<tr class="nocodegen"><td>320</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>321</td><td><pre style="display:inline;"> &nbsp;LPathChain: TQueue&lt;string&gt;;</pre></td></tr>
+<tr class="notcovered"><td>322</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>323</td><td><pre style="display:inline;"> &nbsp;LPathChain := GetQueuePath(APath);</pre></td></tr>
+<tr class="notcovered"><td>324</td><td><pre style="display:inline;"> &nbsp;try</pre></td></tr>
+<tr class="notcovered"><td>325</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RegisterMiddlewareInternal(LPathChain, AMiddleware);</pre></td></tr>
+<tr class="nocodegen"><td>326</td><td><pre style="display:inline;"> &nbsp;finally</pre></td></tr>
+<tr class="notcovered"><td>327</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LPathChain.Free;</pre></td></tr>
+<tr class="nocodegen"><td>328</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="notcovered"><td>329</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>330</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>331</td><td><pre style="display:inline;">procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue&lt;string&gt;; AMiddleware: THorseCallback);</pre></td></tr>
+<tr class="notcovered"><td>332</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>333</td><td><pre style="display:inline;"> &nbsp;APath.Dequeue;</pre></td></tr>
+<tr class="notcovered"><td>334</td><td><pre style="display:inline;"> &nbsp;if APath.Count = 0 then</pre></td></tr>
+<tr class="notcovered"><td>335</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FMiddleware.Add(AMiddleware)</pre></td></tr>
+<tr class="nocodegen"><td>336</td><td><pre style="display:inline;"> &nbsp;else</pre></td></tr>
+<tr class="notcovered"><td>337</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);</pre></td></tr>
+<tr class="notcovered"><td>338</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>339</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>340</td><td><pre style="display:inline;">{ TNextCaller }</pre></td></tr>
+<tr class="nocodegen"><td>341</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>342</td><td><pre style="display:inline;">constructor TNextCaller.Create;</pre></td></tr>
+<tr class="covered"><td>343</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>344</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>345</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>346</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>347</td><td><pre style="display:inline;">function TNextCaller.Init: TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>348</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>349</td><td><pre style="display:inline;"> &nbsp;LCurrent: string;</pre></td></tr>
+<tr class="covered"><td>350</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>351</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>352</td><td><pre style="display:inline;"> &nbsp;if not FIsGroup then</pre></td></tr>
+<tr class="covered"><td>353</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LCurrent := FPath.Dequeue;</pre></td></tr>
+<tr class="covered"><td>354</td><td><pre style="display:inline;"> &nbsp;FIndex := -1;</pre></td></tr>
+<tr class="covered"><td>355</td><td><pre style="display:inline;"> &nbsp;FIndexCallback := -1;</pre></td></tr>
+<tr class="covered"><td>356</td><td><pre style="display:inline;"> &nbsp;if FIsRegex then</pre></td></tr>
+<tr class="covered"><td>357</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FRequest.Params.Add(FTag, LCurrent);</pre></td></tr>
+<tr class="covered"><td>358</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>359</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>360</td><td><pre style="display:inline;">procedure TNextCaller.Next;</pre></td></tr>
+<tr class="nocodegen"><td>361</td><td><pre style="display:inline;">var</pre></td></tr>
+<tr class="nocodegen"><td>362</td><td><pre style="display:inline;"> &nbsp;LCallback: TList&lt;THorseCallback&gt;;</pre></td></tr>
+<tr class="covered"><td>363</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>364</td><td><pre style="display:inline;"> &nbsp;inc(FIndex);</pre></td></tr>
+<tr class="covered"><td>365</td><td><pre style="display:inline;"> &nbsp;if (FMiddleware.Count &gt; FIndex) then</pre></td></tr>
+<tr class="nocodegen"><td>366</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>367</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FFound^ := True;</pre></td></tr>
+<tr class="notcovered"><td>368</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);</pre></td></tr>
+<tr class="notcovered"><td>369</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if (FMiddleware.Count &gt; FIndex) then</pre></td></tr>
+<tr class="notcovered"><td>370</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Next;</pre></td></tr>
+<tr class="nocodegen"><td>371</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="covered"><td>372</td><td><pre style="display:inline;"> &nbsp;else if (FPath.Count = 0) and assigned(FCallBack) then</pre></td></tr>
+<tr class="nocodegen"><td>373</td><td><pre style="display:inline;"> &nbsp;begin</pre></td></tr>
+<tr class="covered"><td>374</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;inc(FIndexCallback);</pre></td></tr>
+<tr class="covered"><td>375</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;if FCallBack.TryGetValue(FHTTPType, LCallback) then</pre></td></tr>
+<tr class="nocodegen"><td>376</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>377</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (LCallback.Count &gt; FIndexCallback) then</pre></td></tr>
+<tr class="nocodegen"><td>378</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="covered"><td>379</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try</pre></td></tr>
+<tr class="covered"><td>380</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FFound^ := True;</pre></td></tr>
+<tr class="covered"><td>381</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LCallback.Items[FIndexCallback](FRequest, FResponse, Next);</pre></td></tr>
+<tr class="nocodegen"><td>382</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;except</pre></td></tr>
+<tr class="notcovered"><td>383</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;on E: Exception do</pre></td></tr>
+<tr class="nocodegen"><td>384</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</pre></td></tr>
+<tr class="notcovered"><td>385</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (not(E is EHorseCallbackInterrupted)) and (not(E is EHorseException)) then</pre></td></tr>
+<tr class="notcovered"><td>386</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FResponse.Send(&apos;Internal Application Error&apos;).Status(THTTPStatus.InternalServerError);</pre></td></tr>
+<tr class="notcovered"><td>387</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raise;</pre></td></tr>
+<tr class="nocodegen"><td>388</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>389</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>390</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="covered"><td>391</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Next;</pre></td></tr>
+<tr class="nocodegen"><td>392</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>393</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;end</pre></td></tr>
+<tr class="notcovered"><td>394</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;else if FCallBack.Count &gt; 0 then</pre></td></tr>
+<tr class="notcovered"><td>395</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FResponse.Send(&apos;Method Not Allowed&apos;).Status(THTTPStatus.MethodNotAllowed)</pre></td></tr>
+<tr class="nocodegen"><td>396</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;else</pre></td></tr>
+<tr class="notcovered"><td>397</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FResponse.Send(&apos;Not Found&apos;).Status(THTTPStatus.NotFound)</pre></td></tr>
+<tr class="nocodegen"><td>398</td><td><pre style="display:inline;"> &nbsp;end</pre></td></tr>
+<tr class="nocodegen"><td>399</td><td><pre style="display:inline;"> &nbsp;else</pre></td></tr>
+<tr class="covered"><td>400</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);</pre></td></tr>
+<tr class="covered"><td>401</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>402</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>403</td><td><pre style="display:inline;">function TNextCaller.SetCallback(ACallback: TObjectDictionary &lt; TMethodType, TList &lt; THorseCallback &gt;&gt; ): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>404</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>405</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>406</td><td><pre style="display:inline;"> &nbsp;FCallBack := ACallback;</pre></td></tr>
+<tr class="covered"><td>407</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>408</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>409</td><td><pre style="display:inline;">function TNextCaller.SetFound(var AFound: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>410</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>411</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>412</td><td><pre style="display:inline;"> &nbsp;FFound := @AFound;</pre></td></tr>
+<tr class="covered"><td>413</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>414</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>415</td><td><pre style="display:inline;">function TNextCaller.SetHTTPType(AHTTPType: TMethodType): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>416</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>417</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>418</td><td><pre style="display:inline;"> &nbsp;FHTTPType := AHTTPType;</pre></td></tr>
+<tr class="covered"><td>419</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>420</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>421</td><td><pre style="display:inline;">function TNextCaller.SetIsGroup(AIsGroup: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>422</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>423</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>424</td><td><pre style="display:inline;"> &nbsp;FIsGroup := AIsGroup;</pre></td></tr>
+<tr class="covered"><td>425</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>426</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>427</td><td><pre style="display:inline;">function TNextCaller.SetIsRegex(AIsRegex: Boolean): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>428</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>429</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>430</td><td><pre style="display:inline;"> &nbsp;FIsRegex := AIsRegex;</pre></td></tr>
+<tr class="covered"><td>431</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>432</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>433</td><td><pre style="display:inline;">function TNextCaller.SetMiddleware(AMiddleware: TList&lt;THorseCallback&gt;): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>434</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>435</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>436</td><td><pre style="display:inline;"> &nbsp;FMiddleware := AMiddleware;</pre></td></tr>
+<tr class="covered"><td>437</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>438</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>439</td><td><pre style="display:inline;">function TNextCaller.SetOnCallNextPath(ACallNextPath: TCallNextPath): TNextCaller;</pre></td></tr>
+<tr class="covered"><td>440</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>441</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>442</td><td><pre style="display:inline;"> &nbsp;FCallNextPath := ACallNextPath;</pre></td></tr>
+<tr class="covered"><td>443</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>444</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>445</td><td><pre style="display:inline;">function TNextCaller.SetPath(APath: TQueue&lt;string&gt;): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>446</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>447</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>448</td><td><pre style="display:inline;"> &nbsp;FPath := APath;</pre></td></tr>
+<tr class="covered"><td>449</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>450</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>451</td><td><pre style="display:inline;">function TNextCaller.SetRequest(ARequest: THorseRequest): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>452</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>453</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>454</td><td><pre style="display:inline;"> &nbsp;FRequest := ARequest;</pre></td></tr>
+<tr class="covered"><td>455</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>456</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>457</td><td><pre style="display:inline;">function TNextCaller.SetResponse(AResponse: THorseResponse): TNextCaller;</pre></td></tr>
+<tr class="nocodegen"><td>458</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>459</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>460</td><td><pre style="display:inline;"> &nbsp;FResponse := AResponse;</pre></td></tr>
+<tr class="covered"><td>461</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>462</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>463</td><td><pre style="display:inline;">function TNextCaller.SetTag(ATag: string): TNextCaller;</pre></td></tr>
+<tr class="covered"><td>464</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>465</td><td><pre style="display:inline;"> &nbsp;Result := Self;</pre></td></tr>
+<tr class="covered"><td>466</td><td><pre style="display:inline;"> &nbsp;FTag := ATag;</pre></td></tr>
+<tr class="covered"><td>467</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>468</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>469</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>
