@@ -153,7 +153,6 @@ end;
 procedure THorseRequest.InitializeContentFields;
 var
   I: Integer;
-  LNormalizedContenType: string;
 begin
   FContentFields := THorseList.Create;
   if (not CanLoadContentFields) then
