@@ -38,7 +38,7 @@ var
 
 implementation
 
-uses Horse.HTTP, Horse.Exception, Web.WebConst;
+uses Horse.HTTP, Horse.Exception;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$IF DEFINED(FPC)}

@@ -174,7 +174,7 @@ var
 begin
   LQueue := GetQueuePath({$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF}, False);
   try
-    Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(THorseHackRequest(ARequest).GetWebRequest.Method)
+    Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method)
       {$ELSE} ARequest.RawWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
   finally
     LQueue.Free;
