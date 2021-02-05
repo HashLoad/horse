@@ -10,7 +10,10 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp, Web.ReqMulti, System.Generics.Collections,
+  System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
+  {$IFDEF VER320_UP}
+  Web.ReqMulti,
+  {$ENDIF}
 {$ENDIF}
   Horse.Commons;
 
