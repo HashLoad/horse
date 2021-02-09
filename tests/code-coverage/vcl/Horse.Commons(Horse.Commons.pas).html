@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse.Commons (D:\Repositórios\horse\src\Horse.Commons.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:30 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.Commons.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>2</td></tr><tr><td>Number of lines with code gen</td><td>19</td></tr><tr><td>Line coverage</td><td>10%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.Commons;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;">{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">{$MODESWITCH TypeHelpers}</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;">uses Classes, SysUtils;</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"> &nbsp;TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);</pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;">{$SCOPEDENUMS ON}</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;THTTPStatus = (</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Continue = 100,</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;SwitchingProtocols = 101,</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Processing = 102,</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;OK = 200,</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Created = 201,</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Accepted = 202,</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NonAuthoritativeInformation = 203,</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NoContent = 204,</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ResetContent = 205,</pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PartialContent = 206,</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;MultiStatus = 207,</pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;AlreadyReported = 208,</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;IMUsed = 226,</pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;MultipleChoices = 300,</pre></td></tr>
+<tr class="nocodegen"><td>35</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;MovedPermanently = 301,</pre></td></tr>
+<tr class="nocodegen"><td>36</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Found = 302,</pre></td></tr>
+<tr class="nocodegen"><td>37</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;SeeOther = 303,</pre></td></tr>
+<tr class="nocodegen"><td>38</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NotModified = 304,</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;UseProxy = 305,</pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TemporaryRedirect = 307,</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PermanentRedirect = 308,</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;BadRequest = 400,</pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Unauthorized = 401,</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PaymentRequired = 402,</pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Forbidden = 403,</pre></td></tr>
+<tr class="nocodegen"><td>46</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NotFound = 404,</pre></td></tr>
+<tr class="nocodegen"><td>47</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;MethodNotAllowed = 405,</pre></td></tr>
+<tr class="nocodegen"><td>48</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NotAcceptable = 406,</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ProxyAuthenticationRequired = 407,</pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RequestTimeout = 408,</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Conflict = 409,</pre></td></tr>
+<tr class="nocodegen"><td>52</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Gone = 410,</pre></td></tr>
+<tr class="nocodegen"><td>53</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LengthRequired = 411,</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PreconditionFailed = 412,</pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PayloadTooLarge = 413,</pre></td></tr>
+<tr class="nocodegen"><td>56</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RequestURITooLong = 414,</pre></td></tr>
+<tr class="nocodegen"><td>57</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;UnsupportedMediaType = 415,</pre></td></tr>
+<tr class="nocodegen"><td>58</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RequestedRangeNotSatisfiable = 416,</pre></td></tr>
+<tr class="nocodegen"><td>59</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ExpectationFailed = 417,</pre></td></tr>
+<tr class="nocodegen"><td>60</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Imateapot = 418,</pre></td></tr>
+<tr class="nocodegen"><td>61</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;MisdirectedRequest = 421,</pre></td></tr>
+<tr class="nocodegen"><td>62</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;UnprocessableEntity = 422,</pre></td></tr>
+<tr class="nocodegen"><td>63</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Locked = 423,</pre></td></tr>
+<tr class="nocodegen"><td>64</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FailedDependency = 424,</pre></td></tr>
+<tr class="nocodegen"><td>65</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;UpgradeRequired = 426,</pre></td></tr>
+<tr class="nocodegen"><td>66</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;PreconditionRequired = 428,</pre></td></tr>
+<tr class="nocodegen"><td>67</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TooManyRequests = 429,</pre></td></tr>
+<tr class="nocodegen"><td>68</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;RequestHeaderFieldsTooLarge = 431,</pre></td></tr>
+<tr class="nocodegen"><td>69</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ConnectionClosedWithoutResponse = 444,</pre></td></tr>
+<tr class="nocodegen"><td>70</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;UnavailableForLegalReasons = 451,</pre></td></tr>
+<tr class="nocodegen"><td>71</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ClientClosedRequest = 499,</pre></td></tr>
+<tr class="nocodegen"><td>72</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;InternalServerError = 500,</pre></td></tr>
+<tr class="nocodegen"><td>73</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NotImplemented = 501,</pre></td></tr>
+<tr class="nocodegen"><td>74</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;BadGateway = 502,</pre></td></tr>
+<tr class="nocodegen"><td>75</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ServiceUnavailable = 503,</pre></td></tr>
+<tr class="nocodegen"><td>76</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;GatewayTimeout = 504,</pre></td></tr>
+<tr class="nocodegen"><td>77</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;HTTPVersionNotSupported = 505,</pre></td></tr>
+<tr class="nocodegen"><td>78</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;VariantAlsoNegotiates = 506,</pre></td></tr>
+<tr class="nocodegen"><td>79</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;InsufficientStorage = 507,</pre></td></tr>
+<tr class="nocodegen"><td>80</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;LoopDetected = 508,</pre></td></tr>
+<tr class="nocodegen"><td>81</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NotExtended = 510,</pre></td></tr>
+<tr class="nocodegen"><td>82</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NetworkAuthenticationRequired = 511,</pre></td></tr>
+<tr class="nocodegen"><td>83</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;NetworkConnectTimeoutError = 599);</pre></td></tr>
+<tr class="nocodegen"><td>84</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>85</td><td><pre style="display:inline;"> &nbsp;TMimeTypes = (</pre></td></tr>
+<tr class="nocodegen"><td>86</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationJSON,</pre></td></tr>
+<tr class="nocodegen"><td>87</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationOctetStream,</pre></td></tr>
+<tr class="nocodegen"><td>88</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationXML,</pre></td></tr>
+<tr class="nocodegen"><td>89</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationJavaScript,</pre></td></tr>
+<tr class="nocodegen"><td>90</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationPDF,</pre></td></tr>
+<tr class="nocodegen"><td>91</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationTypeScript,</pre></td></tr>
+<tr class="nocodegen"><td>92</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ApplicationZIP,</pre></td></tr>
+<tr class="nocodegen"><td>93</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TextPlain,</pre></td></tr>
+<tr class="nocodegen"><td>94</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TextCSS,</pre></td></tr>
+<tr class="nocodegen"><td>95</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TextCSV,</pre></td></tr>
+<tr class="nocodegen"><td>96</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TextHTML,</pre></td></tr>
+<tr class="nocodegen"><td>97</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ImageJPEG,</pre></td></tr>
+<tr class="nocodegen"><td>98</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ImagePNG,</pre></td></tr>
+<tr class="nocodegen"><td>99</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;ImageGIF);</pre></td></tr>
+<tr class="nocodegen"><td>100</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>101</td><td><pre style="display:inline;"> &nbsp;TMessageType = (Default, Error, Warning, Information);</pre></td></tr>
+<tr class="nocodegen"><td>102</td><td><pre style="display:inline;">{$SCOPEDENUMS OFF}</pre></td></tr>
+<tr class="nocodegen"><td>103</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>104</td><td><pre style="display:inline;"> &nbsp;THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus</pre></td></tr>
+<tr class="nocodegen"><td>105</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ToInteger: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>106</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>107</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>108</td><td><pre style="display:inline;"> &nbsp;TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper</pre></td></tr>
+<tr class="nocodegen"><td>109</td><td><pre style="display:inline;"> &nbsp;for TMimeTypes</pre></td></tr>
+<tr class="nocodegen"><td>110</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;function ToString: string;</pre></td></tr>
+<tr class="nocodegen"><td>111</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>112</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>113</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>114</td><td><pre style="display:inline;">function StringCommandToMethodType(ACommand: string): TMethodType;</pre></td></tr>
+<tr class="nocodegen"><td>115</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>116</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>117</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>118</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>119</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>120</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>121</td><td><pre style="display:inline;">function StringCommandToMethodType(ACommand: string): TMethodType;</pre></td></tr>
+<tr class="nocodegen"><td>122</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>123</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;ANY&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>124</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtAny;</pre></td></tr>
+<tr class="nocodegen"><td>125</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;DELETE&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>126</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtDelete;</pre></td></tr>
+<tr class="nocodegen"><td>127</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;GET&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>128</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtGet;</pre></td></tr>
+<tr class="nocodegen"><td>129</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;HEAD&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>130</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtHead;</pre></td></tr>
+<tr class="nocodegen"><td>131</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;PATCH&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>132</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtPatch;</pre></td></tr>
+<tr class="nocodegen"><td>133</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;POST&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>134</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtPost;</pre></td></tr>
+<tr class="nocodegen"><td>135</td><td><pre style="display:inline;"> &nbsp;if ACommand = &apos;PUT&apos; then</pre></td></tr>
+<tr class="nocodegen"><td>136</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;Result := TMethodType.mtPut;</pre></td></tr>
+<tr class="nocodegen"><td>137</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>138</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>139</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>140</td><td><pre style="display:inline;">{ THTTPStatusHelper }</pre></td></tr>
+<tr class="nocodegen"><td>141</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>142</td><td><pre style="display:inline;">function THTTPStatusHelper.ToInteger: Integer;</pre></td></tr>
+<tr class="nocodegen"><td>143</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>144</td><td><pre style="display:inline;"> &nbsp;Result := Ord(Self);</pre></td></tr>
+<tr class="covered"><td>145</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>146</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>147</td><td><pre style="display:inline;">{ TMimeTypesHelper }</pre></td></tr>
+<tr class="nocodegen"><td>148</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>149</td><td><pre style="display:inline;">function TMimeTypesHelper.ToString: string;</pre></td></tr>
+<tr class="notcovered"><td>150</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>151</td><td><pre style="display:inline;"> &nbsp;case Self of</pre></td></tr>
+<tr class="nocodegen"><td>152</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationJSON:</pre></td></tr>
+<tr class="notcovered"><td>153</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/json&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>154</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationOctetStream:</pre></td></tr>
+<tr class="notcovered"><td>155</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/octet-stream&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>156</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationXML:</pre></td></tr>
+<tr class="notcovered"><td>157</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/xml&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>158</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationJavaScript:</pre></td></tr>
+<tr class="notcovered"><td>159</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/javascript&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>160</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationPDF:</pre></td></tr>
+<tr class="notcovered"><td>161</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/pdf&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>162</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationTypeScript:</pre></td></tr>
+<tr class="notcovered"><td>163</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/typescript&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>164</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ApplicationZIP:</pre></td></tr>
+<tr class="notcovered"><td>165</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;application/zip&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>166</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.TextPlain:</pre></td></tr>
+<tr class="notcovered"><td>167</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;text/plain&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>168</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.TextCSS:</pre></td></tr>
+<tr class="notcovered"><td>169</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;text/css&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>170</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.TextCSV:</pre></td></tr>
+<tr class="notcovered"><td>171</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;text/csv&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>172</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.TextHTML:</pre></td></tr>
+<tr class="notcovered"><td>173</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;text/html&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>174</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ImageJPEG:</pre></td></tr>
+<tr class="notcovered"><td>175</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;image/jpeg&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>176</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ImagePNG:</pre></td></tr>
+<tr class="notcovered"><td>177</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;image/png&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>178</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;TMimeTypes.ImageGIF:</pre></td></tr>
+<tr class="notcovered"><td>179</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Result := &apos;image/gif&apos;;</pre></td></tr>
+<tr class="nocodegen"><td>180</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="notcovered"><td>181</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>182</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>183</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

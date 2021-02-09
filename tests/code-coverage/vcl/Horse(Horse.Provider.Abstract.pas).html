@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>Delphi CodeCoverage Coverage Report</title>
+<style type="text/css">
+table {border-spacing:0; border-collapse:collapse;}
+table, td, th {border: 1px solid black;}
+td, th {background: white; margin: 0; padding: 2px 0.5em 2px 0.5em}
+td {border-width: 0 1px 0 0;}
+th {border-width: 1px 1px 1px 0;}
+p, h1, h2, h3, th {font-family: verdana,arial,sans-serif; font-size: 10pt;}
+td {font-family: courier,monospace; font-size: 10pt;}
+th {background: #CCCCCC;}
+table.o tr td:nth-child(1) {font-weight: bold;}
+table.o tr td:nth-child(2) {text-align: right;}
+table.o tr td {border-width: 1px;}
+table.s {width: 100%;}
+table.s tr td {padding: 0 0.25em 0 0.25em;}
+table.s tr td:first-child {text-align: right; font-weight: bold;}
+table.s tr.notcovered td {background: #DDDDFF;}
+table.s tr.nocodegen td {background: #FFFFEE;}
+table.s tr.covered td {background: #CCFFCC;}
+table.s tr.covered td:first-child {color: green;}
+table.s {border-width: 1px 0 1px 1px;}
+table.sum tr td {border-width: 1px;}
+table.sum tr th {text-align:right;}
+table.sum tr th:first-child {text-align:center;}
+table.sum tr td {text-align:right;}
+table.sum tr td:first-child {text-align:left;}
+</style>
+</head>
+<body>
+<p>Coverage report for <strong>Horse (D:\Repositórios\horse\src\Horse.Provider.Abstract.pas)</strong>.</p>
+<p> Generated at 08/12/2020 18:48:30 by <a href="http://code.google.com/p/delphi-code-coverage/" title="Code Coverage for Delphi 5+">DelphiCodeCoverage</a> - an open source tool for Delphi Code Coverage.</p>
+<p> Statistics for D:\Repositórios\horse\src\Horse.Provider.Abstract.pas </p>
+<table  class="o"><tr><td>Number of lines covered</td><td>6</td></tr><tr><td>Number of lines with code gen</td><td>9</td></tr><tr><td>Line coverage</td><td>66%</td></tr></table>
+<br /><br />
+<table  class="s">
+<tr class="nocodegen"><td>1</td><td><pre style="display:inline;">unit Horse.Provider.Abstract;</pre></td></tr>
+<tr class="nocodegen"><td>2</td><td><pre style="display:inline;">{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>3</td><td><pre style="display:inline;"> &nbsp;{$MODE DELPHI}{$H+}</pre></td></tr>
+<tr class="nocodegen"><td>4</td><td><pre style="display:inline;">{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>5</td><td><pre style="display:inline;">interface</pre></td></tr>
+<tr class="nocodegen"><td>6</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>7</td><td><pre style="display:inline;">uses</pre></td></tr>
+<tr class="nocodegen"><td>8</td><td><pre style="display:inline;"> &nbsp;{$IF DEFINED(FPC)}</pre></td></tr>
+<tr class="nocodegen"><td>9</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;SysUtils, Horse.Proc,</pre></td></tr>
+<tr class="nocodegen"><td>10</td><td><pre style="display:inline;"> &nbsp;{$ELSE}</pre></td></tr>
+<tr class="nocodegen"><td>11</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;System.SysUtils,</pre></td></tr>
+<tr class="nocodegen"><td>12</td><td><pre style="display:inline;"> &nbsp;{$ENDIF}</pre></td></tr>
+<tr class="nocodegen"><td>13</td><td><pre style="display:inline;"> &nbsp;&nbsp;Horse.Core, Horse.Core.RouterTree;</pre></td></tr>
+<tr class="nocodegen"><td>14</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>15</td><td><pre style="display:inline;">type</pre></td></tr>
+<tr class="nocodegen"><td>16</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>17</td><td><pre style="display:inline;"> &nbsp;THorseProviderAbstract&lt;T: class{$IF DEFINED(FPC)}, constructor{$ENDIF}&gt; = class(THorseCore)</pre></td></tr>
+<tr class="nocodegen"><td>18</td><td><pre style="display:inline;"> &nbsp;private</pre></td></tr>
+<tr class="nocodegen"><td>19</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class var FOnListen: TProc&lt;T&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>20</td><td><pre style="display:inline;"> &nbsp;protected</pre></td></tr>
+<tr class="nocodegen"><td>21</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure SetOnListen(const Value: TProc&lt;T&gt;); static;</pre></td></tr>
+<tr class="nocodegen"><td>22</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class function GetOnListen: TProc&lt;T&gt;; static;</pre></td></tr>
+<tr class="nocodegen"><td>23</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure DoOnListen;</pre></td></tr>
+<tr class="nocodegen"><td>24</td><td><pre style="display:inline;"> &nbsp;public</pre></td></tr>
+<tr class="nocodegen"><td>25</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure Listen; virtual; abstract;</pre></td></tr>
+<tr class="nocodegen"><td>26</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class procedure StopListen; virtual;</pre></td></tr>
+<tr class="nocodegen"><td>27</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;class property OnListen: TProc&lt;T&gt; read GetOnListen write SetOnListen;</pre></td></tr>
+<tr class="nocodegen"><td>28</td><td><pre style="display:inline;"> &nbsp;end;</pre></td></tr>
+<tr class="nocodegen"><td>29</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>30</td><td><pre style="display:inline;">implementation</pre></td></tr>
+<tr class="nocodegen"><td>31</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>32</td><td><pre style="display:inline;">{ THorseProviderAbstract }</pre></td></tr>
+<tr class="nocodegen"><td>33</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>34</td><td><pre style="display:inline;">class procedure THorseProviderAbstract&lt;T&gt;.DoOnListen;</pre></td></tr>
+<tr class="covered"><td>35</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>36</td><td><pre style="display:inline;"> &nbsp;if Assigned(FOnListen) then</pre></td></tr>
+<tr class="notcovered"><td>37</td><td><pre style="display:inline;"> &nbsp;&nbsp;&nbsp;FOnListen({$IF DEFINED(FPC)}T(GetInstance){$ELSE}GetInstance{$ENDIF});</pre></td></tr>
+<tr class="covered"><td>38</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>39</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>40</td><td><pre style="display:inline;">class function THorseProviderAbstract&lt;T&gt;.GetOnListen: TProc&lt;T&gt;;</pre></td></tr>
+<tr class="nocodegen"><td>41</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="nocodegen"><td>42</td><td><pre style="display:inline;"> &nbsp;Result := FOnListen;</pre></td></tr>
+<tr class="nocodegen"><td>43</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>44</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>45</td><td><pre style="display:inline;">class procedure THorseProviderAbstract&lt;T&gt;.SetOnListen(const Value: TProc&lt;T&gt;);</pre></td></tr>
+<tr class="covered"><td>46</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="covered"><td>47</td><td><pre style="display:inline;"> &nbsp;FOnListen := Value;</pre></td></tr>
+<tr class="covered"><td>48</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>49</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>50</td><td><pre style="display:inline;">class procedure THorseProviderAbstract&lt;T&gt;.StopListen;</pre></td></tr>
+<tr class="nocodegen"><td>51</td><td><pre style="display:inline;">begin</pre></td></tr>
+<tr class="notcovered"><td>52</td><td><pre style="display:inline;"> &nbsp;raise Exception.Create(&apos;StopListen not implemented&apos;);</pre></td></tr>
+<tr class="notcovered"><td>53</td><td><pre style="display:inline;">end;</pre></td></tr>
+<tr class="nocodegen"><td>54</td><td><pre style="display:inline;"></pre></td></tr>
+<tr class="nocodegen"><td>55</td><td><pre style="display:inline;">end.</pre></td></tr>
+</table>
+</body>
+</html>

@@ -1,14 +1,14 @@
-unit Horse.Provider.FPCCGIApplication;
+unit Horse.Provider.FPC.CGI;
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
-{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC) }
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
 uses
-
   SysUtils, Classes, fpCGI, fphttp, httpdefs,
   Horse.Provider.Abstract, Horse.Proc;
 
@@ -38,10 +38,9 @@ var
 
 implementation
 
-{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC) }
+{$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
 uses
-
   Horse.WebModule;
 
 { THorseProvider<T> }

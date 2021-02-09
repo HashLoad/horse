@@ -38,7 +38,7 @@ var
 
 implementation
 
-uses Horse.HTTP, Horse.Exception, Web.WebConst;
+uses Horse.HTTP, Horse.Exception;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$IF DEFINED(FPC)}
@@ -72,11 +72,7 @@ begin
   LResponse := THorseResponse.Create(Response);
   try
     try
-      if not FHorse.Routes.Execute(LRequest, LResponse) then
-      begin
-        Response.Content := 'Not Found';
-        {$IF DEFINED(FPC)}Response.Code{$ELSE}  Response.StatusCode {$ENDIF} := THTTPStatus.NotFound.ToInteger;
-      end;
+      FHorse.Routes.Execute(LRequest, LResponse)
     except
       on E: Exception do
         if not E.InheritsFrom(EHorseCallbackInterrupted) then

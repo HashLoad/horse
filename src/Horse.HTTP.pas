@@ -11,6 +11,9 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
+  {$IFDEF VER320_UP}
+  Web.ReqMulti,
+  {$ENDIF}
 {$ENDIF}
   Horse.Commons;
 
@@ -31,10 +34,15 @@ type
     procedure InitializeContentFields;
     procedure InitializeCookie;
     function GetHeaders(AIndex: string): string;
+    function IsMultipartForm: Boolean;
+    function IsFormURLEncoded: Boolean;
+    function CanLoadContentFields: Boolean;
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
-    function Session<T: class>: T;
+    function Body(ABody: TObject): THorseRequest; overload;
+    function Session<T: class>: T; overload;
+    function Session(ASession: TObject): THorseRequest; overload;
     function Query: THorseList;
     function Params: THorseList;
     function Cookie: THorseList;
@@ -90,36 +98,51 @@ begin
   Result := FWebRequest.Content;
 end;
 
+function THorseRequest.Body(ABody: TObject): THorseRequest;
+begin
+  Result := Self;
+  FBody := ABody;
+end;
+
 function THorseRequest.Body<T>: T;
 begin
   Result := T(FBody);
 end;
 
+function THorseRequest.CanLoadContentFields: Boolean;
+begin
+  Result := IsMultipartForm or IsFormURLEncoded;
+end;
+
 function THorseRequest.ContentFields: THorseList;
 begin
+  if not Assigned(FContentFields) then
+    InitializeContentFields;
   Result := FContentFields;
 end;
 
 function THorseRequest.Cookie: THorseList;
 begin
+  if not Assigned(FCookie) then
+    InitializeCookie;
   Result := FCookie;
 end;
 
 constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
-  InitializeQuery;
-  InitializeParams;
-  InitializeContentFields;
-  InitializeCookie;
 end;
 
 destructor THorseRequest.Destroy;
 begin
-  FQuery.Free;
-  FParams.Free;
-  FContentFields.Free;
-  FCookie.Free;
+  if Assigned(FQuery) then
+    FreeAndNil(FQuery);
+  if Assigned(FParams) then
+    FreeAndNil(FParams);
+  if Assigned(FContentFields) then
+    FreeAndNil(FContentFields);
+  if Assigned(FCookie) then
+    FreeAndNil(FCookie);
   if Assigned(FBody) then
     FBody.Free;
   inherited;
@@ -132,14 +155,15 @@ end;
 
 procedure THorseRequest.InitializeContentFields;
 var
-  LItem: string;
-  LParam: TArray<string>;
+  I: Integer;
 begin
   FContentFields := THorseList.Create;
-  for LItem in FWebRequest.ContentFields do
+  if (not CanLoadContentFields) then
+    Exit;
+  for I := 0 to Pred(FWebRequest.ContentFields.Count) do
   begin
-    LParam := LItem.Split(['=']);
-    FContentFields.Add(LParam[KEY], LParam[VALUE]);
+    FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
+      FWebRequest.ContentFields.ValueFromIndex[I]);
   end;
 end;
 
@@ -178,6 +202,18 @@ begin
   end;
 end;
 
+function THorseRequest.IsFormURLEncoded: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString),
+    Length(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString)) = 0;
+end;
+
+function THorseRequest.IsMultipartForm: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.MultiPartFormData.ToString),
+    Length(TMimeTypes.MultiPartFormData.ToString)) = 0;
+end;
+
 function THorseRequest.MethodType: TMethodType;
 begin
   Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command){$ELSE}FWebRequest.MethodType;{$ENDIF}
@@ -185,17 +221,27 @@ end;
 
 function THorseRequest.Params: THorseList;
 begin
+  if not Assigned(FParams) then
+    InitializeParams;
   Result := FParams;
 end;
 
 function THorseRequest.Query: THorseList;
 begin
+  if not Assigned(FQuery) then
+    InitializeQuery;
   Result := FQuery;
 end;
 
 function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
+end;
+
+function THorseRequest.Session(ASession: TObject): THorseRequest;
+begin
+  Result := Self;
+  FSession := ASession;
 end;
 
 function THorseRequest.Session<T>: T;
