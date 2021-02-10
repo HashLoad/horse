@@ -11,9 +11,9 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
-{$ENDIF}
 {$IF (CompilerVersion > 28.0)}
   Web.ReqMulti,
+{$ENDIF}
 {$ENDIF}
   Horse.Commons;
 
