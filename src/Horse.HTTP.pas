@@ -11,7 +11,7 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
-  {$IFDEF VER320_UP}
+  {$IFDEF CompilerVersion > 32.0}
   Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
