@@ -27,26 +27,26 @@ end;
 
 procedure DoGetApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 var
-  LLista: TJSONArray;
-  LObjeto01: TJSONObject;
-  LObjeto02: TJSONObject;
-  LObjeto03: TJSONObject;
+  LList: TJSONArray;
+  LObject01: TJSONObject;
+  LObject02: TJSONObject;
+  LObject03: TJSONObject;
 begin
-  LLista := TJSONArray.Create;
+  LList := TJSONArray.Create;
 
-  LObjeto01 := TJSONObject.Create;
-  LObjeto01.AddPair(TJSONPair.Create('value', 'teste01'));
-  LLista.AddElement(LObjeto01);
+  LObject01 := TJSONObject.Create;
+  LObject01.AddPair(TJSONPair.Create('value', 'test01'));
+  LList.AddElement(LObject01);
 
-  LObjeto02 := TJSONObject.Create;
-  LObjeto02.AddPair(TJSONPair.Create('value', 'teste02'));
-  LLista.AddElement(LObjeto02);
+  LObject02 := TJSONObject.Create;
+  LObject02.AddPair(TJSONPair.Create('value', 'test02'));
+  LList.AddElement(LObject02);
 
-  LObjeto03 := TJSONObject.Create;
-  LObjeto03.AddPair(TJSONPair.Create('value', 'teste03'));
-  LLista.AddElement(LObjeto03);
+  LObject03 := TJSONObject.Create;
+  LObject03.AddPair(TJSONPair.Create('value', 'test03'));
+  LList.AddElement(LObject03);
 
-  Res.Send(LLista.ToString);
+  Res.Send(LList.ToString);
 end;
 
 procedure DoPostApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);

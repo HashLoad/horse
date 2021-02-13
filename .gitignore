@@ -43,3 +43,8 @@ src/*.~*
 #FPC/Laz
 lib/
 backup/
+
+# Code coverage reports
+**/console/
+**/vcl/
+dunitx-results.xml
