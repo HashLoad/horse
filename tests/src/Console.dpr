@@ -36,8 +36,9 @@ uses
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
   DUnitX.TestFramework,
-  Tests.Api in 'tests\Tests.Api.pas',
-  Controllers.Api in 'controllers\Controllers.Api.pas';
+  Tests.Api.Console in 'tests\Tests.Api.Console.pas',
+  Controllers.Api in 'controllers\Controllers.Api.pas',
+  Tests.Commons in 'tests\Tests.Commons.pas';
 
 var
   Runner: ITestRunner;
