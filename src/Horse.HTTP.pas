@@ -216,7 +216,7 @@ end;
 
 function THorseRequest.MethodType: TMethodType;
 begin
-  Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command){$ELSE}FWebRequest.MethodType;{$ENDIF}
+  Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method);{$ELSE}FWebRequest.MethodType;{$ENDIF}
 end;
 
 function THorseRequest.Params: THorseList;
