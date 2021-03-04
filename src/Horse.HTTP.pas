@@ -56,10 +56,10 @@ type
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class';
-    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class';
-    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class';
-    procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class';
+    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class. Use RawWebRequest method of THorseRequest class';
+    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class. Use Params method of THorseRequest class';
+    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class. Use Body method of THorseRequest class';
+    procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class. Use Session method of THorseRequest class';
   end;
 
   THorseResponse = class
@@ -82,9 +82,9 @@ type
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class';
-    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class';
-    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class';
+    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class. Use RawWebResponse method of THorseResponse class';
+    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
+    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
   end;
 
 implementation
