@@ -65,6 +65,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)                             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [dliocode/query](https://github.com/dliocode/horse-query)                                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [CarlosHe/healthcheck](https://github.com/CarlosHe/horse-healthcheck)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [CarlosHe/staticfiles](https://github.com/CarlosHe/horse-staticfiles)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [CachopaWeb/horse-server-static](https://github.com/CachopaWeb/horse-server-static)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 ## ⚠️ License
