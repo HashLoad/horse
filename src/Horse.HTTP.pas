@@ -18,7 +18,7 @@ uses
   Horse.Commons;
 
 type
-  THorseList = {$IF DEFINED(FPC)}TDictionary<string, string>{$ELSE}TDictionary<string, string>{$ENDIF};
+  THorseList = TDictionary<string, string>;
 
   THorseRequest = class
   private
