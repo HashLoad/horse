@@ -67,6 +67,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [CarlosHe/healthcheck](https://github.com/CarlosHe/horse-healthcheck)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [CarlosHe/staticfiles](https://github.com/CarlosHe/horse-staticfiles)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [CachopaWeb/horse-server-static](https://github.com/CachopaWeb/horse-server-static)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [arvanus/horse-exception-logger](https://github.com/arvanus/horse-exception-logger)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 ## ⚠️ License
 
