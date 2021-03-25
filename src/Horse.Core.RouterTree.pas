@@ -240,7 +240,10 @@ var
 begin
   Result := TQueue<string>.Create;
   if AUsePrefix then
-    APath := FPrefix + APath;
+    if not APath.StartsWith('/') then
+      APath := (FPrefix + '/' + APath)
+    else
+      APath := (FPrefix + APath);
   LSplitedPath := APath.Split(['/']);
   for LPart in LSplitedPath do
   begin
