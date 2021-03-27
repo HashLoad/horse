@@ -12,6 +12,11 @@ uses Classes, SysUtils;
 {$ENDIF}
 
 type
+  TSession = class
+  end;
+
+  TSessionClass = class of TSession;
+
 {$IF DEFINED(FPC)}
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
 {$ENDIF}
