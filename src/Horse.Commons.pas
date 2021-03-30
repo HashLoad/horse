@@ -83,6 +83,8 @@ type
     NetworkConnectTimeoutError = 599);
 
   TMimeTypes = (
+    MultiPartFormData,
+    ApplicationXWWWFormURLEncoded,
     ApplicationJSON,
     ApplicationOctetStream,
     ApplicationXML,
@@ -149,6 +151,10 @@ end;
 function TMimeTypesHelper.ToString: string;
 begin
   case Self of
+    TMimeTypes.MultiPartFormData:
+      Result := 'multipart/form-data';
+    TMimeTypes.ApplicationXWWWFormURLEncoded:
+      Result := 'application/x-www-form-urlencoded';
     TMimeTypes.ApplicationJSON:
       Result := 'application/json';
     TMimeTypes.ApplicationOctetStream:

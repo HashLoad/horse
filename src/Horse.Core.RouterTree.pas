@@ -174,7 +174,7 @@ var
 begin
   LQueue := GetQueuePath({$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF}, False);
   try
-    Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(THorseHackRequest(ARequest).GetWebRequest.Method)
+    Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method)
       {$ELSE} ARequest.RawWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
   finally
     LQueue.Free;
@@ -187,6 +187,7 @@ var
   LNextCaller: TNextCaller;
   LFound: Boolean;
 begin
+  LFound := False;
   LNextCaller := TNextCaller.Create;
   try
     LNextCaller.SetCallback(FCallBack);
@@ -239,7 +240,10 @@ var
 begin
   Result := TQueue<string>.Create;
   if AUsePrefix then
-    APath := FPrefix + APath;
+    if not APath.StartsWith('/') then
+      APath := (FPrefix + '/' + APath)
+    else
+      APath := (FPrefix + APath);
   LSplitedPath := APath.Split(['/']);
   for LPart in LSplitedPath do
   begin
@@ -387,17 +391,16 @@ begin
             raise;
           end;
         end;
-
         Next;
       end;
     end
-    else if FCallBack.Count > 0 then
-      FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
     else
-      FResponse.Send('Not Found').Status(THTTPStatus.NotFound)
+      FFound^ := False
   end
   else
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
+  if not FFound^ then
+    FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
 
 function TNextCaller.SetCallback(ACallback: TObjectDictionary < TMethodType, TList < THorseCallback >> ): TNextCaller;

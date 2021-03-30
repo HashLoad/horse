@@ -11,11 +11,14 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
+  {$IFDEF CompilerVersion > 32.0}
+  Web.ReqMulti,
+  {$ENDIF}
 {$ENDIF}
   Horse.Commons;
 
 type
-  THorseList = {$IF DEFINED(FPC)}TDictionary<string, string>{$ELSE}TDictionary<string, string>{$ENDIF};
+  THorseList = TDictionary<string, string>;
 
   THorseRequest = class
   private
@@ -31,6 +34,9 @@ type
     procedure InitializeContentFields;
     procedure InitializeCookie;
     function GetHeaders(AIndex: string): string;
+    function IsMultipartForm: Boolean;
+    function IsFormURLEncoded: Boolean;
+    function CanLoadContentFields: Boolean;
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
@@ -50,10 +56,10 @@ type
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class';
-    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class';
-    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class';
-    procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class';
+    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class. Use RawWebRequest method of THorseRequest class';
+    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class. Use Params method of THorseRequest class';
+    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class. Use Body method of THorseRequest class';
+    procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class. Use Session method of THorseRequest class';
   end;
 
   THorseResponse = class
@@ -76,9 +82,9 @@ type
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class';
-    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class';
-    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class';
+    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class. Use RawWebResponse method of THorseResponse class';
+    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
+    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
   end;
 
 implementation
@@ -103,31 +109,40 @@ begin
   Result := T(FBody);
 end;
 
+function THorseRequest.CanLoadContentFields: Boolean;
+begin
+  Result := IsMultipartForm or IsFormURLEncoded;
+end;
+
 function THorseRequest.ContentFields: THorseList;
 begin
+  if not Assigned(FContentFields) then
+    InitializeContentFields;
   Result := FContentFields;
 end;
 
 function THorseRequest.Cookie: THorseList;
 begin
+  if not Assigned(FCookie) then
+    InitializeCookie;
   Result := FCookie;
 end;
 
 constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
-  InitializeQuery;
-  InitializeParams;
-  InitializeContentFields;
-  InitializeCookie;
 end;
 
 destructor THorseRequest.Destroy;
 begin
-  FQuery.Free;
-  FParams.Free;
-  FContentFields.Free;
-  FCookie.Free;
+  if Assigned(FQuery) then
+    FreeAndNil(FQuery);
+  if Assigned(FParams) then
+    FreeAndNil(FParams);
+  if Assigned(FContentFields) then
+    FreeAndNil(FContentFields);
+  if Assigned(FCookie) then
+    FreeAndNil(FCookie);
   if Assigned(FBody) then
     FBody.Free;
   inherited;
@@ -143,6 +158,8 @@ var
   I: Integer;
 begin
   FContentFields := THorseList.Create;
+  if (not CanLoadContentFields) then
+    Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
   begin
     FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
@@ -185,18 +202,34 @@ begin
   end;
 end;
 
+function THorseRequest.IsFormURLEncoded: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString),
+    Length(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString)) = 0;
+end;
+
+function THorseRequest.IsMultipartForm: Boolean;
+begin
+  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.MultiPartFormData.ToString),
+    Length(TMimeTypes.MultiPartFormData.ToString)) = 0;
+end;
+
 function THorseRequest.MethodType: TMethodType;
 begin
-  Result := {$IF DEFINED(FPC)} StringCommandToMethodType(FWebRequest.Command){$ELSE}FWebRequest.MethodType;{$ENDIF}
+  Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method);{$ELSE}FWebRequest.MethodType;{$ENDIF}
 end;
 
 function THorseRequest.Params: THorseList;
 begin
+  if not Assigned(FParams) then
+    InitializeParams;
   Result := FParams;
 end;
 
 function THorseRequest.Query: THorseList;
 begin
+  if not Assigned(FQuery) then
+    InitializeQuery;
   Result := FQuery;
 end;
 

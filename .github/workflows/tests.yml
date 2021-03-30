@@ -1,0 +1,19 @@
+name: tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Launch Console Tests
+      run: ./tests/Console.exe
+    - name: Launch VCL Tests
+      run: ./tests/VCL.exe

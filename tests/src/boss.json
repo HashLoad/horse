@@ -1,0 +1,12 @@
+{
+	"name": "src",
+	"description": "",
+	"version": "1.0.0",
+	"homepage": "",
+	"mainsrc": "./",
+	"projects": [],
+	"dependencies": {
+		"github.com/hashload/jhonson": "^1.1.1",
+		"github.com/viniciussanchez/restrequest4delphi": "^v2.2.6"
+	}
+}

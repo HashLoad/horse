@@ -46,24 +46,33 @@ For a more _maintainable_ middleware _ecosystem_, we've put official [middleware
 |  [horse/stream](https://github.com/HashLoad/horse-octet-stream)     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [horse/jwt](https://github.com/HashLoad/horse-jwt)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [horse/exception](https://github.com/HashLoad/handle-exception)    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [horse/logger](https://github.com/HashLoad/horse-logger)           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [horse/compression](https://github.com/HashLoad/horse-compression) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [horse/logger](https://github.com/HashLoad/horse-logger)           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [horse/compression](https://github.com/HashLoad/horse-compression) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 ## 🌱 Third Party Middlewares
 
 This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
 
 | Middleware | Delphi | Lazarus |
-| ---------------------------------------------------------------------------------- | -------------------- | --------------------------- |
-|  [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [gabrielbaltazar/gbswagger](https://github.com/gabrielbaltazar/gbswagger)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [dliocode/query](https://github.com/dliocode/horse-query)                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| ------------------------------------------------------------------------------------------------ | -------------------- | --------------------------- |
+|  [bittencourtthulio/etag](https://github.com/bittencourtthulio/Horse-ETag)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [bittencourtthulio/cachecontrol](https://github.com/bittencourtthulio/horse-cachecontrol)       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [gabrielbaltazar/gbswagger](https://github.com/gabrielbaltazar/gbswagger)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)                             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)                                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)                             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [dliocode/query](https://github.com/dliocode/horse-query)                                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [CarlosHe/healthcheck](https://github.com/CarlosHe/horse-healthcheck)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [CarlosHe/staticfiles](https://github.com/CarlosHe/horse-staticfiles)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [CachopaWeb/horse-server-static](https://github.com/CachopaWeb/horse-server-static)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [arvanus/horse-exception-logger](https://github.com/arvanus/horse-exception-logger)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 ## ⚠️ License
 
 `Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE). 
+
+## 📐 Tests
+
+![tests](https://github.com/GlerystonMatos/horse/workflows/tests/badge.svg) ![Console Coverage ](https://img.shields.io/badge/console%20coverage-45%25-blue) ![VCL Coverage ](https://img.shields.io/badge/vcl%20coverage-43%25-blue)
