@@ -237,10 +237,7 @@ begin
     FRunning := True;
     DoOnListen;
   except
-    on E: Exception do
-    begin
-      raise E;
-    end;
+    raise;
   end;
 end;
 
