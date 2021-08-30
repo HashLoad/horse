@@ -283,13 +283,10 @@ begin
         if FHorseProviderIOHandleSSL <> nil then
           InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
         LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
-        if FHost <> GetDefaultHost then
-        begin
-          LIdHTTPWebBrokerBridge.Bindings.Clear;
-          LIdHTTPWebBrokerBridge.Bindings.Add;
-          LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-          LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
-        end;
+        LIdHTTPWebBrokerBridge.Bindings.Clear;
+        LIdHTTPWebBrokerBridge.Bindings.Add;
+        LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
+        LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
         LIdHTTPWebBrokerBridge.DefaultPort := FPort;
         LIdHTTPWebBrokerBridge.Active := True;
         LIdHTTPWebBrokerBridge.StartListening;
@@ -297,7 +294,6 @@ begin
         DoOnListen;
 
         Syslog(LOG_INFO, Format(START_RUNNING, [FHost, FPort]));
-
       except
         on E: Exception do
           Syslog(LOG_ERR, E.ClassName + ': ' + E.Message);
@@ -320,7 +316,6 @@ begin
   finally
     FEvent.Free;
   end;
-
 end;
 
 class procedure THorseProvider<T>.InternalStopListen;

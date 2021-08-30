@@ -3,9 +3,8 @@ unit Horse.Provider.Console;
 interface
 
 {$IF NOT DEFINED(FPC)}
-uses
-  Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
-  System.Classes, System.SyncObjs, System.SysUtils;
+uses Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext, System.Classes, System.SyncObjs,
+  System.SysUtils;
 
 type
   THorseProviderIOHandleSSL = class;
@@ -93,9 +92,7 @@ implementation
 
 {$IF NOT DEFINED(FPC)}
 
-uses
-  Web.WebReq, Horse.WebModule,
-  IdCustomTCPServer;
+uses Web.WebReq, Horse.WebModule, IdCustomTCPServer;
 
 { THorseProvider<T> }
 
@@ -205,8 +202,10 @@ begin
   inherited;
   if FPort <= 0 then
     FPort := GetDefaultPort;
+
   if FHost.IsEmpty then
     FHost := GetDefaultHost;
+
   LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
@@ -215,19 +214,17 @@ begin
       WebRequestHandler.MaxConnections := FMaxConnections;
       GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
     end;
+
     if FListenQueue = 0 then
       FListenQueue := IdListenQueueDefault;
 
     if FHorseProviderIOHandleSSL <> nil then
       InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
-    if FHost <> GetDefaultHost then
-    begin
-      LIdHTTPWebBrokerBridge.Bindings.Clear;
-      LIdHTTPWebBrokerBridge.Bindings.Add;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
-    end;
+    LIdHTTPWebBrokerBridge.Bindings.Clear;
+    LIdHTTPWebBrokerBridge.Bindings.Add;
+    LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
+    LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
     LIdHTTPWebBrokerBridge.Active := True;
     LIdHTTPWebBrokerBridge.StartListening;
