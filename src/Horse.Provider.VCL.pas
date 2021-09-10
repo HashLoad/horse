@@ -223,10 +223,14 @@ begin
       InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
 
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
+    
     LIdHTTPWebBrokerBridge.Bindings.Clear;
-    LIdHTTPWebBrokerBridge.Bindings.Add;
-    LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-    LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+    if FHost <> GetDefaultHost then
+    begin
+      LIdHTTPWebBrokerBridge.Bindings.Add;
+      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
+      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+    end;
 
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
     LIdHTTPWebBrokerBridge.Active := True;
@@ -243,6 +247,7 @@ begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
+    GetDefaultHTTPWebBroker.Active := False;    
     FRunning := False;
     if FEvent <> nil then
       GetDefaultEvent.SetEvent;
