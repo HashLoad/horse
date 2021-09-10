@@ -373,7 +373,8 @@ begin
     if (FMiddleware.Count > FIndex) then
       Next;
   end
-  else if (FPath.Count = 0) and assigned(FCallBack) then
+  else
+  if (FPath.Count = 0) and assigned(FCallBack) then
   begin
     inc(FIndexCallback);
     if FCallBack.TryGetValue(FHTTPType, LCallback) then
@@ -395,10 +396,19 @@ begin
       end;
     end
     else
-      FFound^ := False
+    begin
+      if FCallBack.Count > 0 then
+      begin
+        FFound^ := True;
+        FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+      end
+      else
+        FResponse.Send('Not Found').Status(THTTPStatus.NotFound)
+    end;
   end
   else
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
+
   if not FFound^ then
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
