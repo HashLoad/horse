@@ -162,7 +162,7 @@ begin
     Exit;
 
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
-    FContentFields.AddOrSetValue(FWebRequest.ContentFields.Names[I]), FWebRequest.ContentFields.ValueFromIndex[I]);
+    FContentFields.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
 end;
 
 procedure THorseRequest.InitializeCookie;
