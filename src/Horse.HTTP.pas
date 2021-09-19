@@ -160,11 +160,9 @@ begin
   FContentFields := THorseList.Create;
   if (not CanLoadContentFields) then
     Exit;
+
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
-  begin
-    FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
-      FWebRequest.ContentFields.ValueFromIndex[I]);
-  end;
+    FContentFields.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
 end;
 
 procedure THorseRequest.InitializeCookie;
