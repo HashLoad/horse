@@ -14,7 +14,6 @@ uses
   Horse.Exception;
 
 type
-
   { THTTPServerThread }
 
   THTTPServerThread = class(TThread)
