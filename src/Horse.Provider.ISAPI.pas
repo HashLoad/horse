@@ -9,7 +9,6 @@ uses
   Web.Win.ISAPIApp;
 
 type
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class procedure InternalListen; static;

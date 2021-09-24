@@ -4,12 +4,10 @@ interface
 
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
-
 uses
   Horse.Provider.Abstract, System.SysUtils, Web.HTTPD24Impl;
 
 type
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FHandlerName: string;

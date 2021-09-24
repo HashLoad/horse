@@ -16,7 +16,6 @@ uses
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
-
   { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)

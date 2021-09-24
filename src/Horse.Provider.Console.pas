@@ -3,39 +3,12 @@ unit Horse.Provider.Console;
 interface
 
 {$IF NOT DEFINED(FPC)}
-uses Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext, System.Classes, System.SyncObjs,
-  System.SysUtils;
+uses
+  Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL,
+  IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+  System.Classes, System.SyncObjs, System.SysUtils;
 
 type
-  THorseProviderIOHandleSSL = class;
-  THorseProvider<T: class> = class;
-
-  THorseProviderIOHandleSSL = class
-  private
-    FKeyFile: string;
-    FRootCertFile: string;
-    FCertFile: string;
-    FOnGetPassword: TPasswordEvent;
-    FActive: Boolean;
-    procedure SetCertFile(const Value: string);
-    procedure SetKeyFile(const Value: string);
-    procedure SetRootCertFile(const Value: string);
-    procedure SetOnGetPassword(const Value: TPasswordEvent);
-    procedure SetActive(const Value: Boolean);
-    function GetCertFile: string;
-    function GetKeyFile: string;
-    function GetRootCertFile: string;
-    function GetOnGetPassword: TPasswordEvent;
-    function GetActive: Boolean;
-  public
-    constructor Create;
-    property Active: Boolean read GetActive write SetActive default True;
-    property CertFile: string read GetCertFile write SetCertFile;
-    property RootCertFile: string read GetRootCertFile write SetRootCertFile;
-    property KeyFile: string read GetKeyFile write SetKeyFile;
-    property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;
-  end;
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
@@ -188,8 +161,10 @@ var
 begin
   LIOHandleSSL := TIdServerIOHandlerSSLOpenSSL.Create(AIdHTTPWebBrokerBridge);
   LIOHandleSSL.SSLOptions.CertFile := FHorseProviderIOHandleSSL.CertFile;
-  LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.FRootCertFile;
+  LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.RootCertFile;
   LIOHandleSSL.SSLOptions.KeyFile := FHorseProviderIOHandleSSL.KeyFile;
+  LIOHandleSSL.SSLOptions.Method := FHorseProviderIOHandleSSL.Method;
+  LIOHandleSSL.SSLOptions.SSLVersions := FHorseProviderIOHandleSSL.SSLVersions;
   LIOHandleSSL.OnGetPassword := FHorseProviderIOHandleSSL.OnGetPassword;
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
@@ -359,63 +334,6 @@ begin
     FreeAndNil(FEvent);
   if FHorseProviderIOHandleSSL <> nil then
     FreeAndNil(FHorseProviderIOHandleSSL);
-end;
-
-{ THorseProviderIOHandleSSL }
-
-constructor THorseProviderIOHandleSSL.Create;
-begin
-  FActive := True;
-end;
-
-function THorseProviderIOHandleSSL.GetActive: Boolean;
-begin
-  Result := FActive;
-end;
-
-function THorseProviderIOHandleSSL.GetCertFile: string;
-begin
-  Result := FCertFile;
-end;
-
-function THorseProviderIOHandleSSL.GetKeyFile: string;
-begin
-  Result := FKeyFile;
-end;
-
-function THorseProviderIOHandleSSL.GetOnGetPassword: TPasswordEvent;
-begin
-  Result := FOnGetPassword;
-end;
-
-function THorseProviderIOHandleSSL.GetRootCertFile: string;
-begin
-  Result := FRootCertFile;
-end;
-
-procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);
-begin
-  FActive := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);
-begin
-  FCertFile := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetKeyFile(const Value: string);
-begin
-  FKeyFile := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetOnGetPassword(const Value: TPasswordEvent);
-begin
-  FOnGetPassword := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
-begin
-  FRootCertFile := Value;
 end;
 
 {$ENDIF}

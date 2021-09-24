@@ -8,7 +8,6 @@ uses
   Horse.Provider.Abstract, System.SysUtils;
 
 type
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class procedure InternalListen; static;
@@ -52,7 +51,6 @@ class procedure THorseProvider<T>.Start;
 begin
   Listen;
 end;
-
 
 {$ENDIF}
 
