@@ -42,15 +42,19 @@ uses Horse.HTTP, Horse.Exception;
 
 {%CLASSGROUP 'System.Classes.TPersistent'}
 {$IF DEFINED(FPC)}
-{$R Horse.WebModule.lfm}
+  {$R Horse.WebModule.lfm}
 {$ELSE}
-{$R *.dfm}
+  {$R *.dfm}
 {$ENDIF}
 
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
+{$IF DEFINED(FPC)}
+  inherited CreateNew(AOwner, 0);
+{$ELSE}
   inherited;
+{$ENDIF}
   FHorse := THorseCore.GetInstance;
 end;
 
