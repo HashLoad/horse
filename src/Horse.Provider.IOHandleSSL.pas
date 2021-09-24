@@ -2,8 +2,6 @@ unit Horse.Provider.IOHandleSSL;
 
 interface
 
-{$IF NOT DEFINED(FPC)}
-
 uses
   IdSSLOpenSSL;
 
@@ -42,11 +40,7 @@ type
     property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;
   end;
 
-{$ENDIF}
-
 implementation
-
-{$IF NOT DEFINED(FPC)}
 
 { THorseProviderIOHandleSSL }
 
@@ -114,7 +108,5 @@ procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
 begin
   FRootCertFile := Value;
 end;
-
-{$ENDIF}
 
 end.
