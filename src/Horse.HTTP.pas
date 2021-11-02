@@ -20,8 +20,6 @@ uses
   Horse.Commons;
 
 type
-  THorseList = TDictionary<string, string>;
-
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};

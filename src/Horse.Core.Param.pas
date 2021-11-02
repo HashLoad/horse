@@ -1,5 +1,9 @@
 unit Horse.Core.Param;
 
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
 interface
 
 uses
@@ -12,15 +16,19 @@ uses
   Horse.Commons;
 
 type
+  THorseList = TDictionary<string, string>;
+
   THorseCoreParam = class
   private
-    FParams: TDictionary<String, String>;
+    FParams: THorseList;
+    FContent: TStrings;
 
     function GetItem(const Key: String): String;
     function GetCount: Integer;
 
     procedure RaiseHorseException(const AMessage: String); overload;
     procedure RaiseHorseException(const AMessage: String; const Args: array of const); overload;
+    function GetContent: TStrings;
 
   public
     function AsBoolean(const Key: String; bRequired: Boolean = True; TrueValue: string = 'true'): Boolean;
@@ -37,11 +45,11 @@ type
     function ContainsValue(const Value: String): Boolean;
     function ToArray: TArray<TPair<String, String>>;
 
+    property Content: TStrings read GetContent;
     property Count: Integer read GetCount;
-
     property Items[const Key: String]: String read GetItem; default;
 
-    constructor create(AParams: TDictionary<String, String>);
+    constructor create(AParams: THorseList);
     destructor Destroy; override;
 end;
 
@@ -79,7 +87,9 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
+      {$IF NOT DEFINED(FPC)}
       LFormat := TFormatSettings.Create;
+      {$ENDIF}
       LFormat.ShortDateFormat := DateFormat;
       result := StrToDate(Copy(LStrParam, 1, Length(DateFormat)), LFormat);
     end;
@@ -99,7 +109,9 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
+      {$IF NOT DEFINED(FPC)}
       LFormat := TFormatSettings.Create;
+      {$ENDIF}
       LFormat.ShortDateFormat := DateFormat;
       LFormat.ShortTimeFormat := TimeFormat;
       result := StrToDateTime(LStrParam, LFormat);
@@ -160,7 +172,9 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
+      {$IF NOT DEFINED(FPC)}
       LFormat := TFormatSettings.Create;
+      {$ENDIF}
       LFormat.ShortTimeFormat := TimeFormat;
       result := StrToDateTime(Copy(LStrParam, 1, Length(TimeFormat)), LFormat);
     end;
@@ -180,7 +194,7 @@ begin
   result := FParams.ContainsValue(Value);
 end;
 
-constructor THorseCoreParam.create(AParams: TDictionary<String, String>);
+constructor THorseCoreParam.create(AParams: THorseList);
 begin
   FParams := AParams;
 end;
@@ -188,7 +202,27 @@ end;
 destructor THorseCoreParam.Destroy;
 begin
   FParams.Free;
+  FContent.Free;
   inherited;
+end;
+
+function THorseCoreParam.GetContent: TStrings;
+var
+  LKey: string;
+begin
+  if not Assigned(FContent) then
+  begin
+    FContent := TStringList.Create;
+    try
+      for LKey in FParams.Keys do
+        FContent.Add(Format('%s=%s', [LKey, FParams[LKey]]));
+    except
+      FreeAndNil(FContent);
+      raise;
+    end;
+  end;
+
+  result := FContent;
 end;
 
 function THorseCoreParam.GetCount: Integer;
