@@ -15,6 +15,7 @@ uses
   Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
+  Horse.Core.Param,
   Horse.Core.Param.Header,
   Horse.Commons;
 
@@ -24,7 +25,7 @@ type
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-    FHeaders: THorseList;
+    FHeaders: THorseCoreParam;
     FQuery: THorseList;
     FParams: THorseList;
     FContentFields: THorseList;
@@ -44,7 +45,7 @@ type
     function Body(ABody: TObject): THorseRequest; overload;
     function Session<T: class>: T; overload;
     function Session(ASession: TObject): THorseRequest; overload;
-    function Headers: THorseList;
+    function Headers: THorseCoreParam;
     function Query: THorseList;
     function Params: THorseList;
     function Cookie: THorseList;
@@ -151,10 +152,15 @@ begin
   inherited;
 end;
 
-function THorseRequest.Headers: THorseList;
+function THorseRequest.Headers: THorseCoreParam;
+var
+  LParam: THorseList;
 begin
   if not Assigned(FHeaders) then
-    FHeaders := THorseCoreParamHeader.GetHeaders(FWebRequest);
+  begin
+    LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
+    FHeaders := THorseCoreParam.create(LParam);
+  end;
   result := FHeaders;
 end;
 
