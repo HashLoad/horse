@@ -25,10 +25,11 @@ type
 
     function GetItem(const Key: String): String;
     function GetCount: Integer;
+    function GetContent: TStrings;
+    function GetFormatSettings(const DateFormat, TimeFormat: String): TFormatSettings;
 
     procedure RaiseHorseException(const AMessage: String); overload;
     procedure RaiseHorseException(const AMessage: String; const Args: array of const); overload;
-    function GetContent: TStrings;
 
   public
     function AsBoolean(const Key: String; bRequired: Boolean = True; TrueValue: string = 'true'): Boolean;
@@ -87,10 +88,7 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
-      {$IF NOT DEFINED(FPC)}
-      LFormat := TFormatSettings.Create;
-      {$ENDIF}
-      LFormat.ShortDateFormat := DateFormat;
+      LFormat := GetFormatSettings(DateFormat, EmptyStr);
       result := StrToDate(Copy(LStrParam, 1, Length(DateFormat)), LFormat);
     end;
   except
@@ -109,11 +107,7 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
-      {$IF NOT DEFINED(FPC)}
-      LFormat := TFormatSettings.Create;
-      {$ENDIF}
-      LFormat.ShortDateFormat := DateFormat;
-      LFormat.ShortTimeFormat := TimeFormat;
+      LFormat := GetFormatSettings(DateFormat, TimeFormat);
       result := StrToDateTime(LStrParam, LFormat);
     end;
   except
@@ -172,10 +166,7 @@ begin
   try
     if LStrParam <> EmptyStr then
     begin
-      {$IF NOT DEFINED(FPC)}
-      LFormat := TFormatSettings.Create;
-      {$ENDIF}
-      LFormat.ShortTimeFormat := TimeFormat;
+      LFormat := GetFormatSettings(EmptyStr, TimeFormat);
       result := StrToDateTime(Copy(LStrParam, 1, Length(TimeFormat)), LFormat);
     end;
   except
@@ -228,6 +219,15 @@ end;
 function THorseCoreParam.GetCount: Integer;
 begin
   result := FParams.Count;
+end;
+
+function THorseCoreParam.GetFormatSettings(const DateFormat, TimeFormat: String): TFormatSettings;
+begin
+{$IF NOT DEFINED(FPC)}
+  result := TFormatSettings.Create;
+{$ENDIF}
+  result.ShortDateFormat := DateFormat;
+  result.ShortTimeFormat := TimeFormat;
 end;
 
 function THorseCoreParam.GetItem(const Key: String): String;
