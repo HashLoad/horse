@@ -3,9 +3,8 @@ unit Horse.Provider.Console;
 interface
 
 {$IF NOT DEFINED(FPC)}
-uses
-  Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL,
-  IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+
+uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
 
 type
@@ -48,8 +47,8 @@ type
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
-    class procedure Listen; overload; override;
     class procedure StopListen; override;
+    class procedure Listen; overload; override;
     class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;

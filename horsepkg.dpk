@@ -58,6 +58,7 @@ contains
   Horse.Provider.FPC.CGI in 'src\Horse.Provider.FPC.CGI.pas',
   Horse.Provider.FPC.Daemon in 'src\Horse.Provider.FPC.Daemon.pas',
   Horse.Provider.FPC.FastCGI in 'src\Horse.Provider.FPC.FastCGI.pas',
-  Horse.Provider.FPC.HTTPApplication in 'src\Horse.Provider.FPC.HTTPApplication.pas';
+  Horse.Provider.FPC.HTTPApplication in 'src\Horse.Provider.FPC.HTTPApplication.pas',
+  Horse.Provider.IOHandleSSL in 'src\Horse.Provider.IOHandleSSL.pas';
 
 end.

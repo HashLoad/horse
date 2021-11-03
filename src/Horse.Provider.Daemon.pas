@@ -4,11 +4,8 @@ interface
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
 
-uses
-  Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL,
-  IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
-  System.SyncObjs, System.SysUtils,
-  Posix.SysTypes;
+uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+  System.SyncObjs, System.SysUtils, Posix.SysTypes;
 
 type
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
@@ -47,17 +44,16 @@ type
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
-    class procedure Listen; overload; override;
     class procedure StopListen; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen; overload; override;
+    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
     class destructor UnInitialize;
   end;
-
 
 var
   FEvent: TEvent;
@@ -77,10 +73,8 @@ implementation
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
 
-
-uses
-  Web.WebReq, Horse.WebModule, IdCustomTCPServer,
-  Posix.Stdlib, Posix.SysStat, Posix.Unistd, Posix.Signal, Posix.Fcntl, ThirdParty.Posix.Syslog;
+uses Web.WebReq, Horse.WebModule, IdCustomTCPServer, Posix.Stdlib, Posix.SysStat, Posix.Unistd, Posix.Signal, Posix.Fcntl,
+  ThirdParty.Posix.Syslog;
 
 procedure HandleSignals(SigNum: Integer); cdecl;
 begin
@@ -233,7 +227,6 @@ begin
     end;
 
     try
-
       if FPort <= 0 then
         FPort := GetDefaultPort;
       if FHost.IsEmpty then
@@ -241,12 +234,12 @@ begin
       LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;
       WebRequestHandler.WebModuleClass := WebModuleClass;
       try
-
         if FMaxConnections > 0 then
         begin
           WebRequestHandler.MaxConnections := FMaxConnections;
           GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
         end;
+
         if FListenQueue = 0 then
           FListenQueue := IdListenQueueDefault;
 
@@ -298,7 +291,8 @@ begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
-    GetDefaultHTTPWebBroker.Active := False;    
+    GetDefaultHTTPWebBroker.Active := False;
+    DoOnStopListen;
     FRunning := False;
     if FEvent <> nil then
       FEvent.SetEvent;
@@ -335,27 +329,28 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
+  SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, AHost, ACallback);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, FHost, ACallback);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(APort, FHost, ACallback);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProvider<T>.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);

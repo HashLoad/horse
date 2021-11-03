@@ -3,9 +3,8 @@ unit Horse.Provider.VCL;
 interface
 
 {$IF DEFINED(HORSE_VCL)}
-uses
-  Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL,
-  IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+
+uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
 
 type
@@ -48,12 +47,12 @@ type
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
-    class procedure Listen; overload; override;
     class procedure StopListen; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen; overload; override;
+    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
     class function IsRunning: Boolean;
@@ -65,8 +64,7 @@ implementation
 
 {$IF DEFINED(HORSE_VCL)}
 
-uses
-  Web.WebReq, Horse.WebModule, IdCustomTCPServer;
+uses Web.WebReq, Horse.WebModule, IdCustomTCPServer;
 
 { THorseProvider<T> }
 
@@ -221,7 +219,8 @@ begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
-    GetDefaultHTTPWebBroker.Active := False;    
+    GetDefaultHTTPWebBroker.Active := False;
+    DoOnStopListen;
     FRunning := False;
     if FEvent <> nil then
       GetDefaultEvent.SetEvent;
@@ -250,27 +249,28 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
+  SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, AHost, ACallback);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, FHost, ACallback);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(APort, FHost, ACallback);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProvider<T>.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
