@@ -3,40 +3,11 @@ unit Horse.Provider.VCL;
 interface
 
 {$IF DEFINED(HORSE_VCL)}
-uses
-  Horse.Provider.Abstract, Horse.Constants, IdHTTPWebBrokerBridge, IdSSLOpenSSL,
-  IdContext, System.Classes, System.SyncObjs, System.SysUtils;
+
+uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+  System.Classes, System.SyncObjs, System.SysUtils;
 
 type
-  THorseProviderIOHandleSSL = class;
-  THorseProvider<T: class> = class;
-
-  THorseProviderIOHandleSSL = class
-  private
-    FKeyFile: string;
-    FRootCertFile: string;
-    FCertFile: string;
-    FOnGetPassword: TPasswordEvent;
-    FActive: Boolean;
-    procedure SetCertFile(const Value: string);
-    procedure SetKeyFile(const Value: string);
-    procedure SetRootCertFile(const Value: string);
-    procedure SetOnGetPassword(const Value: TPasswordEvent);
-    procedure SetActive(const Value: Boolean);
-    function GetCertFile: string;
-    function GetKeyFile: string;
-    function GetRootCertFile: string;
-    function GetOnGetPassword: TPasswordEvent;
-    function GetActive: Boolean;
-  public
-    constructor Create;
-    property Active: Boolean read GetActive write SetActive default True;
-    property CertFile: string read GetCertFile write SetCertFile;
-    property RootCertFile: string read GetRootCertFile write SetRootCertFile;
-    property KeyFile: string read GetKeyFile write SetKeyFile;
-    property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;
-  end;
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
@@ -76,12 +47,12 @@ type
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
-    class procedure Listen; overload; override;
     class procedure StopListen; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen; overload; override;
+    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class procedure Stop; deprecated 'Use StopListen instead';
     class function IsRunning: Boolean;
@@ -93,8 +64,7 @@ implementation
 
 {$IF DEFINED(HORSE_VCL)}
 
-uses
-  Web.WebReq, Horse.WebModule, IdCustomTCPServer;
+uses Web.WebReq, Horse.WebModule, IdCustomTCPServer;
 
 { THorseProvider<T> }
 
@@ -190,8 +160,10 @@ var
 begin
   LIOHandleSSL := TIdServerIOHandlerSSLOpenSSL.Create(AIdHTTPWebBrokerBridge);
   LIOHandleSSL.SSLOptions.CertFile := FHorseProviderIOHandleSSL.CertFile;
-  LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.FRootCertFile;
+  LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.RootCertFile;
   LIOHandleSSL.SSLOptions.KeyFile := FHorseProviderIOHandleSSL.KeyFile;
+  LIOHandleSSL.SSLOptions.Method := FHorseProviderIOHandleSSL.Method;
+  LIOHandleSSL.SSLOptions.SSLVersions := FHorseProviderIOHandleSSL.SSLVersions;
   LIOHandleSSL.OnGetPassword := FHorseProviderIOHandleSSL.OnGetPassword;
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
@@ -223,9 +195,10 @@ begin
       InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
 
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
+    
+    LIdHTTPWebBrokerBridge.Bindings.Clear;
     if FHost <> GetDefaultHost then
     begin
-      LIdHTTPWebBrokerBridge.Bindings.Clear;
       LIdHTTPWebBrokerBridge.Bindings.Add;
       LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
       LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
@@ -237,10 +210,7 @@ begin
     FRunning := True;
     DoOnListen;
   except
-    on E: Exception do
-    begin
-      raise E;
-    end;
+    raise;
   end;
 end;
 
@@ -249,6 +219,8 @@ begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
+    GetDefaultHTTPWebBroker.Active := False;
+    DoOnStopListen;
     FRunning := False;
     if FEvent <> nil then
       GetDefaultEvent.SetEvent;
@@ -277,27 +249,28 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
+  SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, AHost, ACallback);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, FHost, ACallback);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(APort, FHost, ACallback);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProvider<T>.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
@@ -337,63 +310,6 @@ begin
     FreeAndNil(FEvent);
   if FHorseProviderIOHandleSSL <> nil then
     FreeAndNil(FHorseProviderIOHandleSSL);
-end;
-
-{ THorseProviderIOHandleSSL }
-
-constructor THorseProviderIOHandleSSL.Create;
-begin
-  FActive := True;
-end;
-
-function THorseProviderIOHandleSSL.GetActive: Boolean;
-begin
-  Result := FActive;
-end;
-
-function THorseProviderIOHandleSSL.GetCertFile: string;
-begin
-  Result := FCertFile;
-end;
-
-function THorseProviderIOHandleSSL.GetKeyFile: string;
-begin
-  Result := FKeyFile;
-end;
-
-function THorseProviderIOHandleSSL.GetOnGetPassword: TPasswordEvent;
-begin
-  Result := FOnGetPassword;
-end;
-
-function THorseProviderIOHandleSSL.GetRootCertFile: string;
-begin
-  Result := FRootCertFile;
-end;
-
-procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);
-begin
-  FActive := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);
-begin
-  FCertFile := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetKeyFile(const Value: string);
-begin
-  FKeyFile := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetOnGetPassword(const Value: TPasswordEvent);
-begin
-  FOnGetPassword := Value;
-end;
-
-procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
-begin
-  FRootCertFile := Value;
 end;
 
 {$ENDIF}

@@ -7,10 +7,10 @@ uses Winapi.Windows, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls
 
 type
   TFrmVCL = class(TForm)
-    lbStatus: TLabel;
-    lbPorta: TLabel;
     btnStop: TBitBtn;
     btnStart: TBitBtn;
+    Label1: TLabel;
+    edtPort: TEdit;
     procedure btnStopClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btnStartClick(Sender: TObject);
@@ -43,23 +43,14 @@ begin
       Res.Send('pong');
     end);
 
-  THorse.Listen(9000);
+  THorse.Listen(StrToInt(edtPort.Text));
 end;
 
 procedure TFrmVCL.Status;
 begin
   btnStop.Enabled := THorse.IsRunning;
   btnStart.Enabled := not THorse.IsRunning;
-  if THorse.IsRunning then
-  begin
-    lbStatus.Caption := 'Status: Online';
-    lbPorta.Caption := 'Port: ' + IntToStr(THorse.Port);
-  end
-  else
-  begin
-    lbStatus.Caption := 'Status: Offline';
-    lbPorta.Caption := 'Port: ';
-  end;
+  edtPort.Enabled := not THorse.IsRunning;
 end;
 
 procedure TFrmVCL.Stop;

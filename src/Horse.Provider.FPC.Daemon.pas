@@ -1,34 +1,27 @@
 unit Horse.Provider.FPC.Daemon;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(HORSE_DAEMON)}
 
-uses
-  SysUtils, Classes, httpdefs, fpHTTP, fphttpserver, Horse.HTTP, HOrse.Core,
-  Horse.Provider.Abstract, Horse.Constants, Horse.Proc, Horse.Commons,
-  Horse.Exception;
+uses SysUtils, Classes, httpdefs, fpHTTP, fphttpserver, Horse.HTTP, HOrse.Core, Horse.Provider.Abstract, Horse.Constants,
+  Horse.Proc, Horse.Commons, Horse.Exception;
 
 type
-
-  { THTTPServerThread }
-
   THTTPServerThread = class(TThread)
   private
-    FStarServer : Boolean;
+    FStartServer: Boolean;
     FHost: String;
     FPort: Integer;
     FListenQueue: Word;
     FServer: TFPHTTPServer;
-    FHorse : THorseCore;
-
+    FHorse: THorseCore;
   public
-    constructor Create(CreateSuspended: Boolean;
-                       const StackSize: SizeUInt = DefaultStackSize);
+    constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt = DefaultStackSize);
     destructor Destroy; override;
     procedure StartServer;
     procedure StopServer;
@@ -36,12 +29,8 @@ type
     property Host: String read FHost write FHost;
     property ListenQueue: Word read FListenQueue write FListenQueue;
     procedure Execute; override;
-    procedure OnRequest(Sender: TObject;
-                        var ARequest: TFPHTTPConnectionRequest;
-                        var AResponse : TFPHTTPConnectionResponse);
+    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse : TFPHTTPConnectionResponse);
   end;
-
-  { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
@@ -70,10 +59,10 @@ type
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Start; deprecated 'Use Listen instead';
     class destructor UnInitialize;
     class function IsRunning: Boolean;
@@ -85,8 +74,7 @@ implementation
 
 {$IF DEFINED(HORSE_DAEMON) AND DEFINED(FPC)}
 
-uses
-  Horse.WebModule;
+uses Horse.WebModule;
 
 { THorseProvider<T> }
 
@@ -178,27 +166,28 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
+  SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, AHost, ACallback);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(FPort, FHost, ACallback);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
-  Listen(APort, FHost, ACallback);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProvider<T>.SetHost(const Value: string);
@@ -226,8 +215,8 @@ begin
   if not HTTPServerThreadIsNil then
   begin
     GetDefaultHTTPServerThread.StopServer;
+    DoOnStopListen;
     FRunning := False;
-    DoOnListen;
   end
   else
     raise Exception.Create('Horse not listen');
@@ -235,9 +224,7 @@ end;
 
 { THTTPServerThread }
 
-procedure THTTPServerThread.OnRequest(Sender: TObject;
-  var ARequest: TFPHTTPConnectionRequest;
-  var AResponse: TFPHTTPConnectionResponse);
+procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
 var
   LRequest: THorseHackRequest;
   LResponse: THorseHackResponse;
@@ -264,15 +251,13 @@ begin
   end;
 end;
 
-constructor THTTPServerThread.Create(CreateSuspended: Boolean;
-  const StackSize: SizeUInt = DefaultStackSize);
+constructor THTTPServerThread.Create(CreateSuspended: Boolean; const StackSize: SizeUInt = DefaultStackSize);
 begin
   inherited Create(CreateSuspended, StackSize);
   FreeOnTerminate := True;
-  FStarServer := False;
+  FStartServer := False;
   FServer := TFPHttpServer.Create(Nil);
   FServer.OnRequest := OnRequest;
-  //
   FHorse := THorseCore.GetInstance;
 end;
 
@@ -287,20 +272,20 @@ end;
 procedure THTTPServerThread.StartServer;
 begin
   Start;
-  FStarServer := True;
+  FStartServer := True;
 end;
 
 procedure THTTPServerThread.StopServer;
 begin
-  FStarServer := False;
-  FServer.Active := FStarServer;
+  FStartServer := False;
+  FServer.Active := FStartServer;
 end;
 
 procedure THTTPServerThread.Execute;
 begin
   while not Terminated do
   begin
-    if FStarServer then
+    if FStartServer then
     begin
       FServer.HostName := FHost;
       FServer.Port := FPort;

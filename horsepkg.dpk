@@ -53,6 +53,12 @@ contains
   Horse.Provider.VCL in 'src\Horse.Provider.VCL.pas',
   Horse.Provider.ISAPI in 'src\Horse.Provider.ISAPI.pas',
   Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
-  Horse.Proc in 'src\Horse.Proc.pas';
+  Horse.Proc in 'src\Horse.Proc.pas',
+  Horse.Provider.FPC.Apache in 'src\Horse.Provider.FPC.Apache.pas',
+  Horse.Provider.FPC.CGI in 'src\Horse.Provider.FPC.CGI.pas',
+  Horse.Provider.FPC.Daemon in 'src\Horse.Provider.FPC.Daemon.pas',
+  Horse.Provider.FPC.FastCGI in 'src\Horse.Provider.FPC.FastCGI.pas',
+  Horse.Provider.FPC.HTTPApplication in 'src\Horse.Provider.FPC.HTTPApplication.pas',
+  Horse.Provider.IOHandleSSL in 'src\Horse.Provider.IOHandleSSL.pas';
 
 end.

@@ -13,7 +13,6 @@ uses
   Horse.Provider.Abstract, Horse.Proc;
 
 type
-
   { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)

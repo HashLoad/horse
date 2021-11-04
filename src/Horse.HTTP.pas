@@ -11,7 +11,7 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
-  {$IFDEF CompilerVersion > 32.0}
+  {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
@@ -179,10 +179,7 @@ begin
   if (not CanLoadContentFields) then
     Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
-  begin
-    FContentFields.AddOrSetValue(LowerCase(FWebRequest.ContentFields.Names[I]),
-      FWebRequest.ContentFields.ValueFromIndex[I]);
-  end;
+    FContentFields.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
 end;
 
 procedure THorseRequest.InitializeCookie;
@@ -194,7 +191,7 @@ begin
   for LItem in FWebRequest.CookieFields do
   begin
     LParam := LItem.Split(['=']);
-    FCookie.Add(LParam[KEY], LParam[VALUE]);
+    FCookie.AddOrSetValue(LParam[KEY], LParam[VALUE]);
   end;
 end;
 
@@ -208,7 +205,7 @@ var
   LItem: string;
   LKey: string;
   LValue: string;
-  LEqualFirstPos : Integer;  
+  LEqualFirstPos: Integer;
 begin
   FQuery := THorseList.Create;
   for LItem in FWebRequest.QueryFields do
@@ -216,7 +213,7 @@ begin
     LEqualFirstPos := Pos('=', Litem);
     LKey := Copy(Litem, 1, LEqualFirstPos - 1);
     LValue := Copy(Litem, LEqualFirstPos + 1, Length(LItem));
-    FQuery.Add(LKey, LValue);
+    FQuery.AddOrSetValue(LKey, LValue);
   end;
 end;
 

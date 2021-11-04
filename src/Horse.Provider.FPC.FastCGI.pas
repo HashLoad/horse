@@ -13,7 +13,6 @@ uses
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
-
   { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
@@ -110,8 +109,7 @@ begin
   LFastCGIApplication := GetDefaultFastCGIApplication;
   LFastCGIApplication.AllowDefaultModule := True;
   LFastCGIApplication.OnGetModule := DoGetModule;
-  if FPort > 0 then
-    LFastCGIApplication.Port := FPort;
+  LFastCGIApplication.Port := FPort;
   LFastCGIApplication.LegacyRouting := True;
   LFastCGIApplication.Address := FHost;
   LFastCGIApplication.Initialize;

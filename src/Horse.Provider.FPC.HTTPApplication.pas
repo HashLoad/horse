@@ -13,7 +13,6 @@ uses
   Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
-
   { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
@@ -119,21 +118,20 @@ begin
     FPort := GetDefaultPort;
   if FHost.IsEmpty then
     FHost := GetDefaultHost;
-
-    if FListenQueue = 0 then
-      FListenQueue := 15;
-    LHTTPApplication := GetDefaultHTTPApplication;
-    LHTTPApplication.AllowDefaultModule:= True;
-    LHTTPApplication.OnGetModule:= DoGetModule;
-    LHTTPApplication.Threaded:= True;
-    LHTTPApplication.QueueSize:= FListenQueue;
-    LHTTPApplication.Port := FPort;
-    LHTTPApplication.LegacyRouting := True;
-    LHTTPApplication.Address := FHost;
-    LHTTPApplication.Initialize;
-    FRunning := True;
-    DoOnListen;
-    LHTTPApplication.Run;
+  if FListenQueue = 0 then
+    FListenQueue := 15;
+  LHTTPApplication := GetDefaultHTTPApplication;
+  LHTTPApplication.AllowDefaultModule:= True;
+  LHTTPApplication.OnGetModule:= DoGetModule;
+  LHTTPApplication.Threaded:= True;
+  LHTTPApplication.QueueSize:= FListenQueue;
+  LHTTPApplication.Port := FPort;
+  LHTTPApplication.LegacyRouting := True;
+  LHTTPApplication.Address := FHost;
+  LHTTPApplication.Initialize;
+  FRunning := True;
+  DoOnListen;
+  LHTTPApplication.Run;
 end;
 
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
