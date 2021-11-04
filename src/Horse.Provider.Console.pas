@@ -224,7 +224,7 @@ begin
         Read(LAttach);
       end
       else
-        raise;
+        raise AcquireExceptionObject;
     end;
   end;
 end;

@@ -20,6 +20,19 @@ uses
 type
   THorseList = TDictionary<string, string>;
 
+  THorseSessions = class
+  private
+    FSessions: TObjectDictionary<TSessionClass, TSession>;
+    function GetSession(const ASessionClass: TSessionClass): TSession; overload;
+    function GetObject(const ASessionClass: TSessionClass): TObject; overload;
+  public
+    function SetSession(const ASessionClass: TSessionClass; AInstance: TSession): THorseSessions;
+    property Session[const SessionClass: TSessionClass]: TSession read GetSession;
+    property &Object[const SessionClass: TSessionClass]: TObject read GetObject;
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
@@ -29,6 +42,7 @@ type
     FCookie: THorseList;
     FBody: TObject;
     FSession: TObject;
+    FSessions: THorseSessions;
     procedure InitializeQuery;
     procedure InitializeParams;
     procedure InitializeContentFields;
@@ -49,6 +63,7 @@ type
     function ContentFields: THorseList;
     function MethodType: TMethodType;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+    property Sessions: THorseSessions read FSessions;
     property Headers[index: string]: string read GetHeaders;
     constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
@@ -131,6 +146,7 @@ end;
 constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
+  FSessions := THorseSessions.Create;
 end;
 
 destructor THorseRequest.Destroy;
@@ -145,6 +161,8 @@ begin
     FreeAndNil(FCookie);
   if Assigned(FBody) then
     FBody.Free;
+  if Assigned(FSessions) then
+    FSessions.Free;
   inherited;
 end;
 
@@ -349,6 +367,38 @@ end;
 procedure THorseHackResponse.SetContent(AContent: TObject);
 begin
   FContent := AContent;
+end;
+
+{ THorseSessions }
+
+constructor THorseSessions.Create;
+begin
+  FSessions := TObjectDictionary<TSessionClass, TSession>.Create([doOwnsValues]);
+end;
+
+destructor THorseSessions.Destroy;
+begin
+  FSessions.Free;
+  inherited Destroy;
+end;
+
+function THorseSessions.GetObject(const ASessionClass: TSessionClass): TObject;
+begin
+  Result := FSessions.Items[ASessionClass];
+end;
+
+function THorseSessions.GetSession(const ASessionClass: TSessionClass): TSession;
+begin
+  Result := FSessions.Items[ASessionClass];
+end;
+
+function THorseSessions.SetSession(const ASessionClass: TSessionClass;
+  AInstance: TSession): THorseSessions;
+begin
+  Result := Self;
+  if not ASessionClass.InheritsFrom(AInstance.ClassType) then
+    raise Exception.CreateFmt('SessionClass differs from of instance[%s].', [AInstance.ClassType.ClassName]);
+  FSessions.AddOrSetValue(ASessionClass, AInstance);
 end;
 
 end.
