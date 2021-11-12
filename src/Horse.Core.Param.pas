@@ -8,9 +8,9 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
+  SysUtils, Classes, DateUtils, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
 {$ELSE}
-  System.Classes, System.SysUtils, System.Generics.Collections,
+  System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
 {$ENDIF}
   Horse.Exception,
   Horse.Commons;
@@ -23,32 +23,37 @@ type
     FParams: THorseList;
     FContent: TStrings;
 
-    function GetItem(const Key: String): String;
+    function GetItem(const AKey: String): String;
+    function GetList: THorseList;
     function GetCount: Integer;
     function GetContent: TStrings;
-    function GetFormatSettings(const DateFormat, TimeFormat: String): TFormatSettings;
+    function GetFormatSettings(const ADateFormat, ATimeFormat: String): TFormatSettings;
 
     procedure RaiseHorseException(const AMessage: String); overload;
     procedure RaiseHorseException(const AMessage: String; const Args: array of const); overload;
 
   public
-    function AsBoolean(const Key: String; bRequired: Boolean = True; TrueValue: string = 'true'): Boolean;
-    function AsString(const Key: String; bRequired: Boolean = True): string;
-    function AsInteger(const Key: String; bRequired: Boolean = True): Integer;
-    function AsFloat(const Key: String; bRequired: Boolean = True): Double;
-    function AsCurrency(const Key: String; bRequired: Boolean = True): Currency;
-    function AsDate(const Key: string; bRequired: Boolean = True; DateFormat: string = 'yyyy-MM-dd'): TDateTime;
-    function AsDateTime(const Key: string; bRequired: Boolean = True; DateFormat: string = 'yyyy-MM-dd'; TimeFormat: String = 'hh:mm:ss'): TDateTime;
-    function AsTime(const Key: string; bRequired: Boolean = True; TimeFormat: string = 'hh:mm:ss'): TTime;
+    function AsBoolean(const AKey: String; ARequired: Boolean = True; ATrueValue: string = 'true'): Boolean;
+    function AsCurrency(const AKey: String; ARequired: Boolean = True): Currency;
+    function AsDate(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'): TDateTime;
+    function AsDateTime(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'; ATimeFormat: String = 'hh:mm:ss'): TDateTime;
+    function AsExtended(const AKey: String; ARequired: Boolean = True): Extended;
+    function AsFloat(const AKey: String; ARequired: Boolean = True): Double;
+    function AsInteger(const AKey: String; ARequired: Boolean = True): Integer;
+    function AsInt64(const AKey: String; ARequired: Boolean = True): Int64;
+    function AsISO8601DateTime(const AKey: string; ARequired: Boolean = True; AReturnUTC: Boolean = True): TDateTime;
+    function AsString(const AKey: String; ARequired: Boolean = True): string;
+    function AsTime(const AKey: string; ARequired: Boolean = True; ATimeFormat: string = 'hh:mm:ss'): TTime;
 
-    function TryGetValue(const Key: String; var Value: String): Boolean;
-    function ContainsKey(const Key: String): Boolean;
-    function ContainsValue(const Value: String): Boolean;
+    function ContainsKey(const AKey: String): Boolean;
+    function ContainsValue(const AValue: String): Boolean;
     function ToArray: TArray<TPair<String, String>>;
+    function TryGetValue(const AKey: String; var AValue: String): Boolean;
 
     property Content: TStrings read GetContent;
     property Count: Integer read GetCount;
-    property Items[const Key: String]: String read GetItem; default;
+    property Items[const AKey: String]: String read GetItem; default;
+    property List: THorseList read GetList;
 
     constructor create(AParams: THorseList);
     destructor Destroy; override;
@@ -58,131 +63,158 @@ implementation
 
 { THorseCoreParam }
 
-function THorseCoreParam.AsBoolean(const Key: String; bRequired: Boolean; TrueValue: String): Boolean;
+function THorseCoreParam.AsBoolean(const AKey: String; ARequired: Boolean; ATrueValue: String): Boolean;
 var
   LStrParam: String;
 begin
   result := False;
-  LStrParam := AsString(Key, bRequired);
-  try
-    if LStrParam <> EmptyStr then
-      result := LowerCase(LStrParam) = LowerCase(TrueValue);
-  except
-    on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a numeric type.', [Key, LStrParam]);
+  LStrParam := AsString(AKey, ARequired);
+  if LStrParam <> EmptyStr then
+    result := LowerCase(LStrParam) = LowerCase(ATrueValue);
+end;
+
+function THorseCoreParam.AsCurrency(const AKey: String; ARequired: Boolean): Currency;
+begin
+  result := AsFloat(AKey, ARequired);
+end;
+
+function THorseCoreParam.AsExtended(const AKey: String; ARequired: Boolean): Extended;
+begin
+  result := AsFloat(AKey, ARequired);
+end;
+
+function THorseCoreParam.AsISO8601DateTime(const AKey: string; ARequired: Boolean = True; AReturnUTC: Boolean = True): TDateTime;
+var
+  LStrParam: String;
+begin
+  LStrParam := AsString(AKey, ARequired);
+  if LStrParam <> EmptyStr then
+  begin
+    if not TryISO8601ToDate(LStrParam, Result, AReturnUTC) then
+      RaiseHorseException('The %s param ''%s'' is not valid a ISO8601 date.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.AsCurrency(const Key: String; bRequired: Boolean): Currency;
-begin
-  result := AsFloat(Key, bRequired);
-end;
-
-function THorseCoreParam.AsDate(const Key: string; bRequired: Boolean; DateFormat: string): TDateTime;
+function THorseCoreParam.AsDate(const AKey: string; ARequired: Boolean; ADateFormat: string): TDateTime;
 var
   LStrParam: String;
   LFormat: TFormatSettings;
 begin
   result := 0;
-  LStrParam := AsString(Key, bRequired);
+  LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
     begin
-      LFormat := GetFormatSettings(DateFormat, EmptyStr);
-      result := StrToDate(Copy(LStrParam, 1, Length(DateFormat)), LFormat);
+      LFormat := GetFormatSettings(ADateFormat, EmptyStr);
+      result := StrToDate(Copy(LStrParam, 1, Length(ADateFormat)), LFormat);
     end;
   except
     on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a date type.', [Key, LStrParam]);
+      RaiseHorseException('The %s param ''%s'' is not valid a date type.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.AsDateTime(const Key: string; bRequired: Boolean; DateFormat: string; TimeFormat: String): TDateTime;
+function THorseCoreParam.AsDateTime(const AKey: string; ARequired: Boolean; ADateFormat: string; ATimeFormat: String): TDateTime;
 var
   LStrParam: String;
   LFormat: TFormatSettings;
 begin
   result := 0;
-  LStrParam := AsString(Key, bRequired);
+  LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
     begin
-      LFormat := GetFormatSettings(DateFormat, TimeFormat);
+      LFormat := GetFormatSettings(ADateFormat, ATimeFormat);
       result := StrToDateTime(LStrParam, LFormat);
     end;
   except
     on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a date type.', [Key, LStrParam]);
+      RaiseHorseException('The %s param ''%s'' is not valid a date type.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.AsFloat(const Key: String; bRequired: Boolean): Double;
+function THorseCoreParam.AsFloat(const AKey: String; ARequired: Boolean): Double;
 var
   LStrParam: String;
 begin
   result := 0;
-  LStrParam := AsString(Key, bRequired);
+  LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
       result := StrToFloat(LStrParam);
   except
     on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a numeric type.', [Key, LStrParam]);
+      RaiseHorseException('The %s param ''%s'' is not valid a numeric type.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.AsInteger(const Key: String; bRequired: Boolean): Integer;
+function THorseCoreParam.AsInt64(const AKey: String; ARequired: Boolean): Int64;
 var
   LStrParam: String;
 begin
   result := 0;
-  LStrParam := AsString(Key, bRequired);
+  LStrParam := AsString(AKey, ARequired);
+  try
+    if LStrParam <> EmptyStr then
+      result := StrToInt64(LStrParam);
+  except
+    on e: EConvertError do
+      RaiseHorseException('The %s param ''%s'' is not valid a int64 type.', [AKey, LStrParam]);
+  end;
+end;
+
+function THorseCoreParam.AsInteger(const AKey: String; ARequired: Boolean): Integer;
+var
+  LStrParam: String;
+begin
+  result := 0;
+  LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
       result := StrToInt(LStrParam);
   except
     on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a integer type.', [Key, LStrParam]);
+      RaiseHorseException('The %s param ''%s'' is not valid a integer type.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.AsString(const Key: String; bRequired: Boolean): string;
+function THorseCoreParam.AsString(const AKey: String; ARequired: Boolean): string;
 begin
   result := EmptyStr;
-  if ContainsKey(Key) then
-    result := FParams[Key]
+  if ContainsKey(AKey) then
+    result := FParams[AKey]
   else
-  if bRequired then
-    RaiseHorseException('The %s param is required.', [Key]);
+  if ARequired then
+    RaiseHorseException('The %s param is required.', [AKey]);
 end;
 
-function THorseCoreParam.AsTime(const Key: string; bRequired: Boolean; TimeFormat: string): TTime;
+function THorseCoreParam.AsTime(const AKey: string; ARequired: Boolean; ATimeFormat: string): TTime;
 var
   LStrParam: String;
   LFormat: TFormatSettings;
 begin
   result := 0;
-  LStrParam := AsString(Key, bRequired);
+  LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
     begin
-      LFormat := GetFormatSettings(EmptyStr, TimeFormat);
-      result := StrToDateTime(Copy(LStrParam, 1, Length(TimeFormat)), LFormat);
+      LFormat := GetFormatSettings(EmptyStr, ATimeFormat);
+      result := StrToDateTime(Copy(LStrParam, 1, Length(ATimeFormat)), LFormat);
     end;
   except
     on e: EConvertError do
-      RaiseHorseException('The %s param ''%s'' is not valid a time type.', [Key, LStrParam]);
+      RaiseHorseException('The %s param ''%s'' is not valid a time type.', [AKey, LStrParam]);
   end;
 end;
 
-function THorseCoreParam.ContainsKey(const Key: String): Boolean;
+function THorseCoreParam.ContainsKey(const AKey: String): Boolean;
 begin
-  result := FParams.ContainsKey(Key);
+  result := FParams.ContainsKey(AKey);
 end;
 
-function THorseCoreParam.ContainsValue(const Value: String): Boolean;
+function THorseCoreParam.ContainsValue(const AValue: String): Boolean;
 begin
-  result := FParams.ContainsValue(Value);
+  result := FParams.ContainsValue(AValue);
 end;
 
 constructor THorseCoreParam.create(AParams: THorseList);
@@ -221,18 +253,27 @@ begin
   result := FParams.Count;
 end;
 
-function THorseCoreParam.GetFormatSettings(const DateFormat, TimeFormat: String): TFormatSettings;
+function THorseCoreParam.GetFormatSettings(const ADateFormat, ATimeFormat: String): TFormatSettings;
 begin
-{$IF NOT DEFINED(FPC)}
+{$IF DEFINED(FPC)}
+  result := DefaultFormatSettings;
+  if ADateFormat.IndexOf('-') > 0 then
+    result.DateSeparator := '-';
+{$ELSE}
   result := TFormatSettings.Create;
 {$ENDIF}
-  result.ShortDateFormat := DateFormat;
-  result.ShortTimeFormat := TimeFormat;
+  result.ShortDateFormat := ADateFormat;
+  result.ShortTimeFormat := ATimeFormat;
 end;
 
-function THorseCoreParam.GetItem(const Key: String): String;
+function THorseCoreParam.GetItem(const AKey: String): String;
 begin
-  result := FParams[Key];
+  result := FParams[AKey];
+end;
+
+function THorseCoreParam.GetList: THorseList;
+begin
+  Result := FParams;
 end;
 
 procedure THorseCoreParam.RaiseHorseException(const AMessage: String; const Args: array of const);
@@ -255,9 +296,9 @@ begin
   result := FParams.ToArray;
 end;
 
-function THorseCoreParam.TryGetValue(const Key: String; var Value: String): Boolean;
+function THorseCoreParam.TryGetValue(const AKey: String; var AValue: String): Boolean;
 begin
-  result := FParams.TryGetValue(Key, Value);
+  result := FParams.TryGetValue(AKey, AValue);
 end;
 
 end.

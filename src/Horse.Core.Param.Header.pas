@@ -1,5 +1,9 @@
 unit Horse.Core.Param.Header;
 
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
 interface
 
 uses
@@ -9,18 +13,17 @@ uses
   System.Classes, System.SysUtils, System.Generics.Collections,
   Web.HTTPApp, IdCustomHTTPServer, IdHeaderList, Horse.Rtti,
 {$ENDIF}
-  Horse.Commons;
+  Horse.Core.Param;
 
 type
   THorseStrings = {$IF DEFINED(FPC)} TStrings {$ELSE} TIdHeaderList {$ENDIF};
-  THorseSpecializeList = {$IF DEFINED(FPC)} specialize {$ENDIF} TDictionary<String, String>;
 
   THorseCoreParamHeader = class
   private
     class function GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseStrings;
 
   public
-    class function GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseSpecializeList;
+    class function GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 
   end;
 
@@ -28,14 +31,14 @@ implementation
 
 { THorseCoreParamHeader }
 
-class function THorseCoreParamHeader.GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseSpecializeList;
+class function THorseCoreParamHeader.GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var
   I: Integer;
   LName: String;
   LValue: String;
   LHeaders: THorseStrings;
 begin
-  Result := THorseSpecializeList.create;
+  Result := THorseList.create;
   try
     LHeaders := GetHeadersList(AWebRequest);
     for I := 0 to Pred(LHeaders.Count) do
