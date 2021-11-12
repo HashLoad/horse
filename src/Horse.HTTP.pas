@@ -15,6 +15,7 @@ uses
   Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
+  Horse.Core.Param.Header,
   Horse.Commons;
 
 type
@@ -23,6 +24,7 @@ type
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+    FHeaders: THorseList;
     FQuery: THorseList;
     FParams: THorseList;
     FContentFields: THorseList;
@@ -33,7 +35,6 @@ type
     procedure InitializeParams;
     procedure InitializeContentFields;
     procedure InitializeCookie;
-    function GetHeaders(AIndex: string): string;
     function IsMultipartForm: Boolean;
     function IsFormURLEncoded: Boolean;
     function CanLoadContentFields: Boolean;
@@ -43,13 +44,13 @@ type
     function Body(ABody: TObject): THorseRequest; overload;
     function Session<T: class>: T; overload;
     function Session(ASession: TObject): THorseRequest; overload;
+    function Headers: THorseList;
     function Query: THorseList;
     function Params: THorseList;
     function Cookie: THorseList;
     function ContentFields: THorseList;
     function MethodType: TMethodType;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-    property Headers[index: string]: string read GetHeaders;
     constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
   end;
@@ -135,6 +136,8 @@ end;
 
 destructor THorseRequest.Destroy;
 begin
+  if Assigned(FHeaders) then
+    FreeAndNil(FHeaders);
   if Assigned(FQuery) then
     FreeAndNil(FQuery);
   if Assigned(FParams) then
@@ -148,9 +151,11 @@ begin
   inherited;
 end;
 
-function THorseRequest.GetHeaders(AIndex: string): string;
+function THorseRequest.Headers: THorseList;
 begin
-  Result := FWebRequest.GetFieldByName(AIndex);
+  if not Assigned(FHeaders) then
+    FHeaders := THorseCoreParamHeader.GetHeaders(FWebRequest);
+  result := FHeaders;
 end;
 
 procedure THorseRequest.InitializeContentFields;
