@@ -34,11 +34,11 @@ type
 
   public
     function AsBoolean(const AKey: String; ARequired: Boolean = True; ATrueValue: string = 'true'): Boolean;
-    function AsCurrency(const AKey: String; ARequired: Boolean = True): Currency;
+    function AsCurrency(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Currency;
     function AsDate(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'): TDateTime;
     function AsDateTime(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'; ATimeFormat: String = 'hh:mm:ss'): TDateTime;
     function AsExtended(const AKey: String; ARequired: Boolean = True): Extended;
-    function AsFloat(const AKey: String; ARequired: Boolean = True): Double;
+    function AsFloat(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Double;
     function AsInteger(const AKey: String; ARequired: Boolean = True): Integer;
     function AsInt64(const AKey: String; ARequired: Boolean = True): Int64;
     function AsISO8601DateTime(const AKey: string; ARequired: Boolean = True; AReturnUTC: Boolean = True): TDateTime;
@@ -73,7 +73,7 @@ begin
     result := LowerCase(LStrParam) = LowerCase(ATrueValue);
 end;
 
-function THorseCoreParam.AsCurrency(const AKey: String; ARequired: Boolean): Currency;
+function THorseCoreParam.AsCurrency(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Currency;
 begin
   result := AsFloat(AKey, ARequired);
 end;
@@ -87,6 +87,7 @@ function THorseCoreParam.AsISO8601DateTime(const AKey: string; ARequired: Boolea
 var
   LStrParam: String;
 begin
+  Result := 0;
   LStrParam := AsString(AKey, ARequired);
   if LStrParam <> EmptyStr then
   begin
@@ -133,7 +134,7 @@ begin
   end;
 end;
 
-function THorseCoreParam.AsFloat(const AKey: String; ARequired: Boolean): Double;
+function THorseCoreParam.AsFloat(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Double;
 var
   LStrParam: String;
 begin
@@ -141,7 +142,7 @@ begin
   LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
-      result := StrToFloat(LStrParam);
+      result := StrToFloat(LStrParam.Replace(',', ADecimalSeparator).Replace('.', ADecimalSeparator));
   except
     on e: EConvertError do
       RaiseHorseException('The %s param ''%s'' is not valid a numeric type.', [AKey, LStrParam]);
@@ -236,13 +237,8 @@ begin
   if not Assigned(FContent) then
   begin
     FContent := TStringList.Create;
-    try
-      for LKey in FParams.Keys do
-        FContent.Add(Format('%s=%s', [LKey, FParams[LKey]]));
-    except
-      FreeAndNil(FContent);
-      raise;
-    end;
+    for LKey in FParams.Keys do
+      FContent.Add(Format('%s=%s', [LKey, FParams[LKey]]));
   end;
 
   result := FContent;

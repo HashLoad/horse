@@ -50,11 +50,13 @@ var
   NunitLogger: ITestLogger;
 
 begin
+  ReportMemoryLeaksOnShutdown := True;
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
   exit;
 {$ENDIF}
   try
+    IsConsole := False;
     TDUnitX.CheckCommandLine;
 
     Runner := TDUnitX.CreateRunner;
