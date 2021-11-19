@@ -24,7 +24,7 @@ type
     FContent: TStrings;
 
     function GetItem(const AKey: String): String;
-    function GetList: THorseList;
+    function GetDictionary: THorseList;
     function GetCount: Integer;
     function GetContent: TStrings;
     function GetFormatSettings(const ADateFormat, ATimeFormat: String): TFormatSettings;
@@ -53,7 +53,7 @@ type
     property Content: TStrings read GetContent;
     property Count: Integer read GetCount;
     property Items[const AKey: String]: String read GetItem; default;
-    property List: THorseList read GetList;
+    property Dictionary: THorseList read GetDictionary;
 
     constructor create(AParams: THorseList);
     destructor Destroy; override;
@@ -267,7 +267,7 @@ begin
   result := FParams[AKey];
 end;
 
-function THorseCoreParam.GetList: THorseList;
+function THorseCoreParam.GetDictionary: THorseList;
 begin
   Result := FParams;
 end;

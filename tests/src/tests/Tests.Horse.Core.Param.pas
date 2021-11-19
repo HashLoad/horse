@@ -714,7 +714,7 @@ begin
   FParams.AddOrSetValue('Key2', 'Value2');
 
   Assert.AreEqual(2, FHorseParam.Count);
-  Assert.AreEqual(FParams, FHorseParam.List);
+  Assert.AreEqual(FParams, FHorseParam.Dictionary);
 end;
 
 procedure TTestHorseCoreParam.NotContainsKey;
