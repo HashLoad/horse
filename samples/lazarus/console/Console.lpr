@@ -9,11 +9,8 @@ uses
   Horse, SysUtils, DateUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
-var
-  LDate: TDateTime;
 begin
-  LDate := Req.Headers.AsISO8601DateTime('data');
-  Res.Send(FormatDateTime('yyyy-MM-dd hh:mm:ss', LDate));
+  Res.Send('pong');
 end;
 
 procedure OnListen(Horse: THorse);
