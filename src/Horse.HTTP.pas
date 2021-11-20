@@ -15,12 +15,11 @@ uses
   Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
+  Horse.Core.Param,
   Horse.Core.Param.Header,
   Horse.Commons;
 
 type
-  THorseList = TDictionary<string, string>;
-
   THorseSessions = class
   private
     FSessions: TObjectDictionary<TSessionClass, TSession>;
@@ -37,11 +36,11 @@ type
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-    FHeaders: THorseList;
-    FQuery: THorseList;
-    FParams: THorseList;
-    FContentFields: THorseList;
-    FCookie: THorseList;
+    FHeaders: THorseCoreParam;
+    FQuery: THorseCoreParam;
+    FParams: THorseCoreParam;
+    FContentFields: THorseCoreParam;
+    FCookie: THorseCoreParam;
     FBody: TObject;
     FSession: TObject;
     FSessions: THorseSessions;
@@ -58,11 +57,11 @@ type
     function Body(ABody: TObject): THorseRequest; overload;
     function Session<T: class>: T; overload;
     function Session(ASession: TObject): THorseRequest; overload;
-    function Headers: THorseList;
-    function Query: THorseList;
-    function Params: THorseList;
-    function Cookie: THorseList;
-    function ContentFields: THorseList;
+    function Headers: THorseCoreParam;
+    function Query: THorseCoreParam;
+    function Params: THorseCoreParam;
+    function Cookie: THorseCoreParam;
+    function ContentFields: THorseCoreParam;
     function MethodType: TMethodType;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Sessions: THorseSessions read FSessions;
@@ -130,14 +129,14 @@ begin
   Result := IsMultipartForm or IsFormURLEncoded;
 end;
 
-function THorseRequest.ContentFields: THorseList;
+function THorseRequest.ContentFields: THorseCoreParam;
 begin
   if not Assigned(FContentFields) then
     InitializeContentFields;
   Result := FContentFields;
 end;
 
-function THorseRequest.Cookie: THorseList;
+function THorseRequest.Cookie: THorseCoreParam;
 begin
   if not Assigned(FCookie) then
     InitializeCookie;
@@ -169,10 +168,15 @@ begin
   inherited;
 end;
 
-function THorseRequest.Headers: THorseList;
+function THorseRequest.Headers: THorseCoreParam;
+var
+  LParam: THorseList;
 begin
   if not Assigned(FHeaders) then
-    FHeaders := THorseCoreParamHeader.GetHeaders(FWebRequest);
+  begin
+    LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
+    FHeaders := THorseCoreParam.create(LParam);
+  end;
   result := FHeaders;
 end;
 
@@ -180,11 +184,11 @@ procedure THorseRequest.InitializeContentFields;
 var
   I: Integer;
 begin
-  FContentFields := THorseList.Create;
+  FContentFields := THorseCoreParam.create(THorseList.Create);
   if (not CanLoadContentFields) then
     Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
-    FContentFields.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
+    FContentFields.Dictionary.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
 end;
 
 procedure THorseRequest.InitializeCookie;
@@ -192,17 +196,17 @@ var
   LParam: TArray<string>;
   LItem: string;
 begin
-  FCookie := THorseList.Create;
+  FCookie := THorseCoreParam.create(THorseList.Create);
   for LItem in FWebRequest.CookieFields do
   begin
     LParam := LItem.Split(['=']);
-    FCookie.AddOrSetValue(LParam[KEY], LParam[VALUE]);
+    FCookie.Dictionary.AddOrSetValue(LParam[KEY], LParam[VALUE]);
   end;
 end;
 
 procedure THorseRequest.InitializeParams;
 begin
-  FParams := THorseList.Create;
+  FParams := THorseCoreParam.create(THorseList.Create);
 end;
 
 procedure THorseRequest.InitializeQuery;
@@ -212,13 +216,13 @@ var
   LValue: string;
   LEqualFirstPos: Integer;
 begin
-  FQuery := THorseList.Create;
+  FQuery := THorseCoreParam.create(THorseList.Create);
   for LItem in FWebRequest.QueryFields do
   begin
     LEqualFirstPos := Pos('=', Litem);
     LKey := Copy(Litem, 1, LEqualFirstPos - 1);
     LValue := Copy(Litem, LEqualFirstPos + 1, Length(LItem));
-    FQuery.AddOrSetValue(LKey, LValue);
+    FQuery.Dictionary.AddOrSetValue(LKey, LValue);
   end;
 end;
 
@@ -239,14 +243,14 @@ begin
   Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method);{$ELSE}FWebRequest.MethodType;{$ENDIF}
 end;
 
-function THorseRequest.Params: THorseList;
+function THorseRequest.Params: THorseCoreParam;
 begin
   if not Assigned(FParams) then
     InitializeParams;
   Result := FParams;
 end;
 
-function THorseRequest.Query: THorseList;
+function THorseRequest.Query: THorseCoreParam;
 begin
   if not Assigned(FQuery) then
     InitializeQuery;
@@ -344,7 +348,7 @@ end;
 
 function THorseHackRequest.GetParams: THorseList;
 begin
-  Result := FParams;
+  Result := FParams.Dictionary;
 end;
 
 function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};

@@ -4,7 +4,7 @@ program Console;
 {$R *.res}
 
 uses
-  Horse, System.SysUtils;
+  Horse, System.SysUtils, System.DateUtils;
 
 begin
   THorse.Get('/ping',
