@@ -6,11 +6,14 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Horse, SysUtils;
+  Horse, SysUtils, DateUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+var
+  LDate: TDateTime;
 begin
-  Res.Send('Pong');
+  LDate := Req.Headers.AsISO8601DateTime('data');
+  Res.Send(FormatDateTime('yyyy-MM-dd hh:mm:ss', LDate));
 end;
 
 procedure OnListen(Horse: THorse);

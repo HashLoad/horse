@@ -4,13 +4,16 @@ program Console;
 {$R *.res}
 
 uses
-  Horse, System.SysUtils;
+  Horse, System.SysUtils, System.DateUtils;
 
 begin
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    var
+      LDate: TDateTime;
     begin
-      Res.Send('pong');
+      LDate := Req.Headers.AsDateTime('data');
+      Res.Send(LDate.ToISO8601);
     end);
 
   THorse.Listen(9000,
