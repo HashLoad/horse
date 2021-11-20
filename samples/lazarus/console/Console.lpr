@@ -6,11 +6,11 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Horse, SysUtils, DateUtils;
+  Horse, SysUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
-  Res.Send('pong');
+  Res.Send('Pong');
 end;
 
 procedure OnListen(Horse: THorse);
