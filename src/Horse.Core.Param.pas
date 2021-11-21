@@ -32,6 +32,8 @@ type
     procedure RaiseHorseException(const AMessage: String); overload;
     procedure RaiseHorseException(const AMessage: String; const Args: array of const); overload;
 
+    function TryISO8601ToDate(const AISODate: string; out Value: TDateTime; AReturnUTC: Boolean = True): Boolean;
+
   public
     function AsBoolean(const AKey: String; ARequired: Boolean = True; ATrueValue: string = 'true'): Boolean;
     function AsCurrency(const AKey: String; ARequired: Boolean = True): Currency;
@@ -300,6 +302,16 @@ end;
 function THorseCoreParam.TryGetValue(const AKey: String; var AValue: String): Boolean;
 begin
   result := FParams.TryGetValue(AKey, AValue);
+end;
+
+function THorseCoreParam.TryISO8601ToDate(const AISODate: string; out Value: TDateTime; AReturnUTC: Boolean = True): Boolean;
+begin
+  Result := False;
+  try
+    Value := ISO8601ToDate(AISODate, AReturnUTC);
+    Result := True
+  except
+  end;
 end;
 
 end.
