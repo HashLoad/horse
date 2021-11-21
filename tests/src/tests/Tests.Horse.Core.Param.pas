@@ -300,7 +300,7 @@ begin
   FData := EncodeDate(2021, 11, 13);
   FParams.Add('Key', '2021-11-13 10:25:32');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsDate('Key').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsDate('Key')));
 end;
 
 procedure TTestHorseCoreParam.AsDateChangeFormat;
@@ -308,7 +308,7 @@ begin
   FData := EncodeDate(2021, 11, 13);
   FParams.Add('Key', '13/11/2021');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsDate('Key', True, 'dd/MM/yyyy').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsDate('Key', True, 'dd/MM/yyyy')));
 end;
 
 procedure TTestHorseCoreParam.AsDateInvalidFormat;
@@ -345,7 +345,7 @@ begin
   FData := EncodeDateTime(2021, 11, 13, 10, 25, 32, 0);
   FParams.Add('Key', '2021-11-13 10:25:32');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsDateTime('Key').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsDateTime('Key')));
 end;
 
 procedure TTestHorseCoreParam.AsDateTimeChangeFormat;
@@ -353,7 +353,7 @@ begin
   FData := EncodeDateTime(2021, 11, 13, 10, 25, 32, 0);
   FParams.Add('Key', '13/11/2021 10:25:32');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsDateTime('Key', True, 'dd/MM/yyyy').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsDateTime('Key', True, 'dd/MM/yyyy')));
 end;
 
 procedure TTestHorseCoreParam.AsDateTimeInvalidFormat;
@@ -379,7 +379,7 @@ begin
   FData := EncodeDate(2021, 11, 13);
   FParams.Add('Key', '2021-11-13');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsDateTime('Key').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsDateTime('Key')));
 end;
 
 procedure TTestHorseCoreParam.AsDateTimeRequired;
@@ -546,7 +546,7 @@ begin
   FData := EncodeDateTime(2021, 11, 13, 10, 21, 22, 0);
   FParams.AddOrSetValue('Key', '2021-11-13T10:21:22');
 
-  Assert.AreEqual(FData.ToString, FHorseParam.AsISO8601DateTime('Key').ToString);
+  Assert.AreEqual(DateToStr(FData), DateToStr(FHorseParam.AsISO8601DateTime('Key')));
 end;
 
 procedure TTestHorseCoreParam.AsISO8601DateTimeErrorFormat;
@@ -571,7 +571,7 @@ begin
   FData := EncodeDateTime(2021, 11, 13, 10, 21, 22, 0);
   FParams.AddOrSetValue('Key', '2021-11-13');
 
-  Assert.AreEqual(FormatDateTime('dd/MM/yyyy', FData), FHorseParam.AsISO8601DateTime('Key').ToString);
+  Assert.AreEqual(FormatDateTime('dd/MM/yyyy', FData), FormatDateTime('dd/MM/yyyy', FHorseParam.AsISO8601DateTime('Key')));
 end;
 
 procedure TTestHorseCoreParam.AsISO8601DateTimeRequired;

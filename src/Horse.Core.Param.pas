@@ -34,11 +34,11 @@ type
 
   public
     function AsBoolean(const AKey: String; ARequired: Boolean = True; ATrueValue: string = 'true'): Boolean;
-    function AsCurrency(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Currency;
+    function AsCurrency(const AKey: String; ARequired: Boolean = True): Currency;
     function AsDate(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'): TDateTime;
     function AsDateTime(const AKey: string; ARequired: Boolean = True; ADateFormat: string = 'yyyy-MM-dd'; ATimeFormat: String = 'hh:mm:ss'): TDateTime;
     function AsExtended(const AKey: String; ARequired: Boolean = True): Extended;
-    function AsFloat(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Double;
+    function AsFloat(const AKey: String; ARequired: Boolean = True): Double;
     function AsInteger(const AKey: String; ARequired: Boolean = True): Integer;
     function AsInt64(const AKey: String; ARequired: Boolean = True): Int64;
     function AsISO8601DateTime(const AKey: string; ARequired: Boolean = True; AReturnUTC: Boolean = True): TDateTime;
@@ -73,7 +73,7 @@ begin
     result := LowerCase(LStrParam) = LowerCase(ATrueValue);
 end;
 
-function THorseCoreParam.AsCurrency(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Currency;
+function THorseCoreParam.AsCurrency(const AKey: String; ARequired: Boolean = True): Currency;
 begin
   result := AsFloat(AKey, ARequired);
 end;
@@ -134,7 +134,7 @@ begin
   end;
 end;
 
-function THorseCoreParam.AsFloat(const AKey: String; ARequired: Boolean = True; ADecimalSeparator: String = ','): Double;
+function THorseCoreParam.AsFloat(const AKey: String; ARequired: Boolean = True): Double;
 var
   LStrParam: String;
 begin
@@ -142,7 +142,12 @@ begin
   LStrParam := AsString(AKey, ARequired);
   try
     if LStrParam <> EmptyStr then
-      result := StrToFloat(LStrParam.Replace(',', ADecimalSeparator).Replace('.', ADecimalSeparator));
+    begin
+      LStrParam := LStrParam.Replace(',', FormatSettings.DecimalSeparator)
+                            .Replace('.', FormatSettings.DecimalSeparator);
+
+      result := StrToFloat(LStrParam);
+    end;
   except
     on e: EConvertError do
       RaiseHorseException('The %s param ''%s'' is not valid a numeric type.', [AKey, LStrParam]);
@@ -200,7 +205,7 @@ begin
     if LStrParam <> EmptyStr then
     begin
       LFormat := GetFormatSettings(EmptyStr, ATimeFormat);
-      result := StrToDateTime(Copy(LStrParam, 1, Length(ATimeFormat)), LFormat);
+      result := StrToTime(Copy(LStrParam, 1, Length(ATimeFormat)), LFormat);
     end;
   except
     on e: EConvertError do
@@ -253,11 +258,11 @@ function THorseCoreParam.GetFormatSettings(const ADateFormat, ATimeFormat: Strin
 begin
 {$IF DEFINED(FPC)}
   result := DefaultFormatSettings;
-  if ADateFormat.IndexOf('-') > 0 then
-    result.DateSeparator := '-';
 {$ELSE}
   result := TFormatSettings.Create;
 {$ENDIF}
+  if ADateFormat.IndexOf('-') > 0 then
+    result.DateSeparator := '-';
   result.ShortDateFormat := ADateFormat;
   result.ShortTimeFormat := ATimeFormat;
 end;
