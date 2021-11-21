@@ -18,6 +18,7 @@ type
     FHorseParam: THorseCoreParam;
     FData: TDateTime;
     FTime: TTime;
+    FFormatSettings: TFormatSettings;
 
     function RequiredMessage(const AKey: String): string;
     function ConvertErrorMessage(const AKey, AValue, AType: String): string;
@@ -258,13 +259,13 @@ end;
 procedure TTestHorseCoreParam.AsCurrency;
 begin
   FParams.AddOrSetValue('Key1', '5.5');
-  Assert.AreEqual('5,5', CurrToStr( FHorseParam.AsCurrency('Key1')));
+  Assert.AreEqual('5,5', CurrToStr( FHorseParam.AsCurrency('Key1'), FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsCurrencyDecimalSeparator;
 begin
   FParams.AddOrSetValue('Key1', '5,5');
-  Assert.AreEqual('5,5', CurrToStr( FHorseParam.AsCurrency('Key1')));
+  Assert.AreEqual('5,5', CurrToStr( FHorseParam.AsCurrency('Key1'), FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsCurrencyErrorFormat;
@@ -396,13 +397,13 @@ end;
 procedure TTestHorseCoreParam.AsExtended;
 begin
   FParams.AddOrSetValue('Key1', '5.5');
-  Assert.AreEqual('5,5', FHorseParam.AsExtended('Key1').ToString);
+  Assert.AreEqual('5,5', FHorseParam.AsExtended('Key1').ToString(FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsExtendedDecimalSeparator;
 begin
   FParams.AddOrSetValue('Key1', '5,5');
-  Assert.AreEqual('5,5', FHorseParam.AsExtended('Key1').ToString);
+  Assert.AreEqual('5,5', FHorseParam.AsExtended('Key1').ToString(FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsExtendedErrorFormat;
@@ -436,13 +437,13 @@ end;
 procedure TTestHorseCoreParam.AsFloat;
 begin
   FParams.AddOrSetValue('Key1', '5.5');
-  Assert.AreEqual('5,5', FHorseParam.AsFloat('Key1').ToString);
+  Assert.AreEqual('5,5', FHorseParam.AsFloat('Key1').ToString(FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsFloatDecimalSeparator;
 begin
   FParams.AddOrSetValue('Key1', '5,5');
-  Assert.AreEqual('5,5', FHorseParam.AsFloat('Key1').ToString);
+  Assert.AreEqual('5,5', FHorseParam.AsFloat('Key1').ToString(FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsFloatErrorFormat;
@@ -738,6 +739,8 @@ procedure TTestHorseCoreParam.Setup;
 begin
   FParams := TDictionary<String, String>.Create;
   FHorseParam := THorseCoreParam.create(FParams);
+  FFormatSettings := TFormatSettings.Create;
+  FFormatSettings.DecimalSeparator := ',';
   FData := 0;
   FTime := 0;
 end;
