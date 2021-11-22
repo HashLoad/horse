@@ -33,20 +33,23 @@ var
   LObject03: TJSONObject;
 begin
   LList := TJSONArray.Create;
+  try
+    LObject01 := TJSONObject.Create;
+    LObject01.AddPair(TJSONPair.Create('value', 'test01'));
+    LList.AddElement(LObject01);
 
-  LObject01 := TJSONObject.Create;
-  LObject01.AddPair(TJSONPair.Create('value', 'test01'));
-  LList.AddElement(LObject01);
+    LObject02 := TJSONObject.Create;
+    LObject02.AddPair(TJSONPair.Create('value', 'test02'));
+    LList.AddElement(LObject02);
 
-  LObject02 := TJSONObject.Create;
-  LObject02.AddPair(TJSONPair.Create('value', 'test02'));
-  LList.AddElement(LObject02);
+    LObject03 := TJSONObject.Create;
+    LObject03.AddPair(TJSONPair.Create('value', 'test03'));
+    LList.AddElement(LObject03);
 
-  LObject03 := TJSONObject.Create;
-  LObject03.AddPair(TJSONPair.Create('value', 'test03'));
-  LList.AddElement(LObject03);
-
-  Res.Send(LList.ToString);
+    Res.Send(LList.ToString);
+  finally
+    LList.Free;
+  end;
 end;
 
 procedure DoPostApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -57,14 +60,21 @@ var
 begin
   LValue := '';
   LRequest := TJSONObject.ParseJSONValue(Req.Body) as TJSONObject;
+  try
+    if (not LRequest.GetValue('value').Null) then
+      LValue := LRequest.GetValue('value').value;
 
-  if (not LRequest.GetValue('value').Null) then
-    LValue := LRequest.GetValue('value').value;
+    LResponse := TJSONObject.Create;
+    try
+      LResponse.AddPair(TJSONPair.Create('value', LValue));
 
-  LResponse := TJSONObject.Create;
-  LResponse.AddPair(TJSONPair.Create('value', LValue));
-
-  Res.Send(LResponse.ToString).Status(THTTPStatus.Created);
+      Res.Send(LResponse.ToString).Status(THTTPStatus.Created);
+    finally
+      LResponse.Free;
+    end;
+  finally
+    LRequest.Free;
+  end;
 end;
 
 procedure DoPutApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -75,14 +85,21 @@ var
 begin
   LValue := '';
   LRequest := TJSONObject.ParseJSONValue(Req.Body) as TJSONObject;
+  try
+    if (not LRequest.GetValue('value').Null) then
+      LValue := LRequest.GetValue('value').value;
 
-  if (not LRequest.GetValue('value').Null) then
-    LValue := LRequest.GetValue('value').value;
+    LResponse := TJSONObject.Create;
+    try
+      LResponse.AddPair(TJSONPair.Create('value', LValue));
 
-  LResponse := TJSONObject.Create;
-  LResponse.AddPair(TJSONPair.Create('value', LValue));
-
-  Res.Send(LResponse.ToString);
+      Res.Send(LResponse.ToString);
+    finally
+      LResponse.Free;
+    end;
+  finally
+    LRequest.Free;
+  end;
 end;
 
 procedure DoDeleteApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -93,9 +110,13 @@ begin
   LValue := Req.Params['id'];
 
   LResponse := TJSONObject.Create;
-  LResponse.AddPair(TJSONPair.Create('value', LValue));
+  try
+    LResponse.AddPair(TJSONPair.Create('value', LValue));
 
-  Res.Send(LResponse.ToString);
+    Res.Send(LResponse.ToString);
+  finally
+    LResponse.Free;
+  end;
 end;
 
 end.

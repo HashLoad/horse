@@ -13,14 +13,15 @@ uses
 {$ELSE}
   System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPI, Horse.Provider.Apache, Horse.Provider.CGI, Horse.Provider.VCL,
 {$ENDIF}
-  Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
+  Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.Param, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
 
 type
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
   TProc = Horse.Proc.TProc;
   TNextProc = Horse.Proc.TNextProc;
-  THorseList = Horse.HTTP.THorseList;
+  THorseList = Horse.Core.Param.THorseList;
+  THorseCoreParam = Horse.Core.Param.THorseCoreParam;
   THorseRequest = Horse.HTTP.THorseRequest;
   THorseHackRequest = Horse.HTTP.THorseHackRequest;
   THorseResponse = Horse.HTTP.THorseResponse;

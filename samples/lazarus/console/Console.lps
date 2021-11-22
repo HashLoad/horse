@@ -4,12 +4,13 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="18">
+    <Units Count="22">
       <Unit0>
         <Filename Value="Console.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="19" Y="11"/>
-        <UsageCount Value="52"/>
+        <IsVisibleTab Value="True"/>
+        <CursorPos X="41" Y="15"/>
+        <UsageCount Value="54"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -21,9 +22,9 @@
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="10"/>
         <CursorPos X="26" Y="171"/>
-        <UsageCount Value="25"/>
+        <UsageCount Value="26"/>
         <Loaded Value="True"/>
       </Unit2>
       <Unit3>
@@ -48,9 +49,9 @@
       </Unit5>
       <Unit6>
         <Filename Value="..\..\..\src\Horse.pas"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="4"/>
         <CursorPos X="49" Y="11"/>
-        <UsageCount Value="24"/>
+        <UsageCount Value="25"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
@@ -62,10 +63,10 @@
       </Unit7>
       <Unit8>
         <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="9"/>
         <TopLine Value="184"/>
         <CursorPos X="32" Y="202"/>
-        <UsageCount Value="24"/>
+        <UsageCount Value="25"/>
         <Loaded Value="True"/>
       </Unit8>
       <Unit9>
@@ -104,130 +105,191 @@
       </Unit13>
       <Unit14>
         <Filename Value="..\..\..\src\Horse.Proc.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="5"/>
         <CursorPos X="51" Y="23"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="6"/>
         <TopLine Value="24"/>
         <CursorPos X="33" Y="41"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="..\..\..\src\Horse.Provider.Abstract.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
-        <CursorPos X="68" Y="24"/>
-        <UsageCount Value="10"/>
+        <EditorIndex Value="7"/>
+        <CursorPos X="11" Y="14"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit16>
       <Unit17>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\rtl-generics\src\generics.collections.pas"/>
         <UnitName Value="Generics.Collections"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="8"/>
         <TopLine Value="126"/>
         <CursorPos X="52" Y="144"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit17>
+      <Unit18>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\rtl-objpas\src\inc\dateutils.pp"/>
+        <UnitName Value="DateUtils"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="21"/>
+        <UsageCount Value="10"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\rtl\win\sysutils.pp"/>
+        <UnitName Value="SysUtils"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="10"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="242"/>
+        <CursorPos Y="261"/>
+        <UsageCount Value="11"/>
+        <Bookmarks Count="1">
+          <Item0 Y="259" ID="1"/>
+        </Bookmarks>
+        <Loaded Value="True"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="C:\lazarus\fpc\3.2.0\source\rtl\objpas\sysutils\sysinth.inc"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="45"/>
+        <CursorPos X="18" Y="63"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit21>
     </Units>
-    <JumpHistory Count="23" HistoryIndex="22">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="21" Column="25"/>
+        <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
+        <Caret Line="41" Column="33" TopLine="24"/>
       </Position1>
       <Position2>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="14" Column="33"/>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="16"/>
       </Position2>
       <Position3>
-        <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
-        <Caret Line="63" Column="22" TopLine="46"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="94" Column="16" TopLine="68"/>
       </Position3>
       <Position4>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="10" Column="37"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="11" Column="32"/>
       </Position4>
       <Position5>
         <Filename Value="Console.lpr"/>
-        <Caret Line="23" Column="10"/>
+        <Caret Line="15" Column="35"/>
       </Position5>
       <Position6>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="66" Column="33" TopLine="29"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="40" Column="23" TopLine="22"/>
       </Position6>
       <Position7>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="21" Column="29"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="123" TopLine="116"/>
       </Position7>
       <Position8>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="13"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="124" TopLine="116"/>
       </Position8>
       <Position9>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="24" Column="36"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="183" TopLine="165"/>
       </Position9>
       <Position10>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="20" Column="36"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="184" TopLine="165"/>
       </Position10>
       <Position11>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="13" Column="58"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="125" TopLine="107"/>
       </Position11>
       <Position12>
-        <Filename Value="Console.lpr"/>
-        <Caret Line="11" Column="19"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="126" TopLine="107"/>
       </Position12>
       <Position13>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="12" Column="3"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="31" Column="23" TopLine="7"/>
       </Position13>
       <Position14>
-        <Filename Value="..\..\..\src\Horse.pas"/>
-        <Caret Line="11" Column="49"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="260" Column="25" TopLine="257"/>
       </Position14>
       <Position15>
-        <Filename Value="..\..\..\src\Horse.Proc.pas"/>
-        <Caret Line="23" Column="51"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="259" TopLine="257"/>
       </Position15>
       <Position16>
-        <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
-        <Caret Line="41" Column="35" TopLine="24"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="112" Column="20" TopLine="96"/>
       </Position16>
       <Position17>
-        <Filename Value="..\..\..\src\Horse.Provider.Abstract.pas"/>
-        <Caret Line="14" Column="15"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="31" Column="26" TopLine="13"/>
       </Position17>
       <Position18>
-        <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\rtl-generics\src\generics.collections.pas"/>
-        <Caret Line="144" Column="52" TopLine="126"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="264" Column="42" TopLine="257"/>
       </Position18>
       <Position19>
-        <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <Caret Line="202" Column="32" TopLine="184"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="40" Column="19" TopLine="13"/>
       </Position19>
       <Position20>
-        <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <Caret Line="177" Column="86" TopLine="159"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="128" Column="57" TopLine="110"/>
       </Position20>
       <Position21>
-        <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <Caret Line="178" Column="15" TopLine="160"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="30" Column="22" TopLine="21"/>
       </Position21>
       <Position22>
-        <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <Caret Line="202" Column="32" TopLine="184"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="260" Column="6" TopLine="253"/>
       </Position22>
       <Position23>
-        <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
-        <Caret Line="41" Column="33" TopLine="24"/>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="261" TopLine="253"/>
       </Position23>
+      <Position24>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="262" Column="39" TopLine="253"/>
+      </Position24>
+      <Position25>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="15" Column="62"/>
+      </Position25>
+      <Position26>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="260" Column="29" TopLine="242"/>
+      </Position26>
+      <Position27>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="258" Column="44" TopLine="242"/>
+      </Position27>
+      <Position28>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="30" Column="29" TopLine="7"/>
+      </Position28>
+      <Position29>
+        <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Caret Line="261" Column="31" TopLine="256"/>
+      </Position29>
+      <Position30>
+        <Filename Value="Console.lpr"/>
+        <Caret Line="15" Column="41"/>
+      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -235,7 +297,7 @@
     </RunParams>
   </ProjectSession>
   <Debugging>
-    <BreakPoints Count="3">
+    <BreakPoints Count="4">
       <Item1>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
@@ -248,15 +310,22 @@
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="Console.lpr"/>
-        <Line Value="26"/>
+        <Line Value="29"/>
       </Item2>
       <Item3>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="Console.lpr"/>
-        <Line Value="28"/>
+        <Line Value="31"/>
       </Item3>
+      <Item4>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\..\src\Horse.Core.Param.pas"/>
+        <Line Value="261"/>
+      </Item4>
     </BreakPoints>
     <Watches Count="1">
       <Item1>
