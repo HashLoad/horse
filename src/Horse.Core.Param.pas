@@ -316,7 +316,8 @@ end;
 
 function THorseCoreParam.TryGetValue(const AKey: String; var AValue: String): Boolean;
 begin
-  result := FParams.TryGetValue(AKey, AValue);
+  AValue := AsString(AKey, False);
+  result := ContainsKey(AKey);
 end;
 
 function THorseCoreParam.TryISO8601ToDate(const AISODate: string; out Value: TDateTime; AReturnUTC: Boolean = True): Boolean;

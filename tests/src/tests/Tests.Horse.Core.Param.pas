@@ -37,6 +37,9 @@ type
     procedure NotContainsKey;
 
     [Test]
+    procedure ContainsKeyDiferentCase;
+
+    [Test]
     procedure ContainsValue;
 
     [Test]
@@ -52,6 +55,9 @@ type
     procedure TryGetValueFalse;
 
     [Test]
+    procedure TryGetValueDiferentCase;
+
+    [Test]
     procedure Content;
 
     [Test]
@@ -65,6 +71,9 @@ type
 
     [Test]
     procedure IndexNotFound;
+
+    [Test]
+    procedure IndexDiferentCase;
 
     [Test]
     procedure AsBoolean;
@@ -668,6 +677,12 @@ begin
   Assert.IsTrue(FHorseParam.ContainsKey('Key'));
 end;
 
+procedure TTestHorseCoreParam.ContainsKeyDiferentCase;
+begin
+  FParams.AddOrSetValue('key', 'Value');
+  Assert.IsTrue(FHorseParam.ContainsKey('KEY'));
+end;
+
 procedure TTestHorseCoreParam.ContainsValue;
 begin
   FParams.AddOrSetValue('Key', 'Value');
@@ -703,6 +718,12 @@ procedure TTestHorseCoreParam.Index;
 begin
   FParams.AddOrSetValue('Key1', 'Value1');
   Assert.AreEqual('Value1', FHorseParam['Key1']);
+end;
+
+procedure TTestHorseCoreParam.IndexDiferentCase;
+begin
+  FParams.AddOrSetValue('KEY1', 'Value1');
+  Assert.AreEqual('Value1', FHorseParam['key1']);
 end;
 
 procedure TTestHorseCoreParam.IndexNotFound;
@@ -773,6 +794,15 @@ begin
   Assert.AreEqual('Value1', LPairs[0].Value);
   Assert.AreEqual('Key2', LPairs[1].Key);
   Assert.AreEqual('Value2', LPairs[1].Value);
+end;
+
+procedure TTestHorseCoreParam.TryGetValueDiferentCase;
+var
+  LValue: String;
+begin
+  FParams.AddOrSetValue('KEY1', 'Value1');
+  Assert.IsTrue(FHorseParam.TryGetValue('key1', LValue));
+  Assert.AreEqual('Value1', LValue);
 end;
 
 procedure TTestHorseCoreParam.TryGetValueFalse;
