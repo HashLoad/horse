@@ -190,7 +190,7 @@ function THorseCoreParam.AsString(const AKey: String; ARequired: Boolean): strin
 begin
   result := EmptyStr;
   if ContainsKey(AKey) then
-    result := FParams[AKey]
+    result := GetItem(AKey)
   else
   if ARequired then
     RaiseHorseException('The %s param is required.', [AKey]);
@@ -216,8 +216,15 @@ begin
 end;
 
 function THorseCoreParam.ContainsKey(const AKey: String): Boolean;
+var
+  LKey: String;
 begin
-  result := FParams.ContainsKey(AKey);
+  result := False;
+  for LKey in FParams.Keys do
+  begin
+    if AnsiCompareText(LKey, AKey) = 0 then
+      Exit(True);
+  end;
 end;
 
 function THorseCoreParam.ContainsValue(const AValue: String): Boolean;
@@ -270,8 +277,16 @@ begin
 end;
 
 function THorseCoreParam.GetItem(const AKey: String): String;
+var
+  LKey: String;
 begin
-  result := FParams[AKey];
+  for LKey in FParams.Keys do
+  begin
+    if AnsiCompareText(LKey, AKey) = 0 then
+      Exit(FParams[LKey]);
+  end;
+
+  raise EListError.CreateFmt('Item %s not found', [AKey]);
 end;
 
 function THorseCoreParam.GetDictionary: THorseList;

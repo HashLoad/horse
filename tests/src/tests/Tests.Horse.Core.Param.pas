@@ -209,6 +209,9 @@ type
     procedure AsStringNotRequired;
 
     [Test]
+    procedure AsStringDiferentCase;
+
+    [Test]
     procedure AsTime;
 
     [Test]
@@ -592,6 +595,12 @@ begin
   Assert.AreEqual('Value', FHorseParam.AsString('Key'));
 end;
 
+procedure TTestHorseCoreParam.AsStringDiferentCase;
+begin
+  FParams.AddOrSetValue('key', 'Value');
+  Assert.AreEqual('Value', FHorseParam.AsString('KEY'));
+end;
+
 procedure TTestHorseCoreParam.AsStringNotRequired;
 begin
   Assert.IsEmpty(FHorseParam.AsString('Key', False));
@@ -705,7 +714,7 @@ begin
       Assert.AreEqual('Value1', FHorseParam['Value1']);
     end,
     EListError,
-    'Item not found');
+    'Item Value1 not found');
 
 end;
 
