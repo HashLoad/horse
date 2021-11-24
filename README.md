@@ -19,7 +19,7 @@ $ boss install horse
 ```
 * (Optional) Install [**wizard**](https://github.com/HashLoad/horse-wizard)
 
-## ⚡️ Quickstart
+## ⚡️ Quickstart Delphi
 ```delphi
 uses Horse;
 
@@ -32,6 +32,23 @@ begin
 
   THorse.Listen(9000);
 end.
+```
+
+## ⚡️ Quickstart Lazarus
+```delphi
+{$MODE DELPHI}{$H+}
+
+uses Horse;
+
+procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+begin
+  Res.Send('Pong');
+end;
+
+begin
+  THorse.Get('/ping', GetPing);
+  THorse.Listen(9000);
+end. 
 ```
 
 ## 🧬 Official Middlewares
