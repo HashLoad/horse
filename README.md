@@ -15,7 +15,7 @@
 ## ⚙️ Installation
 Installation is done using the [`boss install`](https://github.com/HashLoad/boss) command:
 ``` sh
-$ boss install horse
+boss install horse
 ```
 * (Optional) Install [**wizard**](https://github.com/HashLoad/horse-wizard)
 
