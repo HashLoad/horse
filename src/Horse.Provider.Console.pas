@@ -224,7 +224,11 @@ begin
         Read(LAttach);
       end
       else
+      {$IF CompilerVersion >= 32.0}
         raise AcquireExceptionObject;
+      {$ELSE}
+        raise;
+      {$ENDIF}
     end;
   end;
 end;
