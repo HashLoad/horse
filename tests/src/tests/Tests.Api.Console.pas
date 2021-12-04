@@ -10,6 +10,9 @@ type
   [TestFixture]
   TApiTest = class(TObject)
   private
+    FJSONObject: TJSONObject;
+    FJSONArray: TJSONArray;
+
     procedure CreateApi;
     procedure StartApiListen;
     procedure StartApiListenPort;
@@ -19,6 +22,9 @@ type
     procedure StopApiListen;
     procedure StopApi;
   public
+    [TearDown]
+    procedure TearDown;
+
     [Test]
     procedure TestGet;
     [Test]
@@ -145,27 +151,24 @@ end;
 procedure TApiTest.TestGet;
 var
   LResponse: IResponse;
-  LContent: TJSONArray;
 begin
   StartApiListen;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
     .Get;
 
-  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
-
+  FJSONArray := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
   Assert.AreEqual(9000, THorse.Port);
   Assert.AreEqual('0.0.0.0', THorse.Host);
   Assert.AreEqual(10, THorse.MaxConnections);
   Assert.AreEqual(LResponse.StatusCode, 200);
-  Assert.AreEqual(LContent.Count, 3);
+  Assert.AreEqual(FJSONArray.Count, 3);
   StopApiListen;
 end;
 
 procedure TApiTest.TestPost(const AValue: string);
 var
   LResponse: IResponse;
-  LContent: TJSONObject;
 begin
   StartApiListenPort;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
@@ -173,11 +176,11 @@ begin
     .AddBody('{"value": "' + AValue + '"}')
     .Post;
 
-  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  FJSONObject := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
   Assert.AreEqual(LResponse.StatusCode, 201);
 
-  if (not LContent.GetValue('value').Null) then
-    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
+  if (not FJSONObject.GetValue('value').Null) then
+    Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not without correct format.');
   StopApiListen;
@@ -186,7 +189,6 @@ end;
 procedure TApiTest.TestPut(const AValue: string);
 var
   LResponse: IResponse;
-  LContent: TJSONObject;
 begin
   StartApiListenHost;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
@@ -194,11 +196,11 @@ begin
     .AddBody('{"value": "' + AValue + '"}')
     .Put;
 
-  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  FJSONObject := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
   Assert.AreEqual(LResponse.StatusCode, 200);
 
-  if (not LContent.GetValue('value').Null) then
-    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
+  if (not FJSONObject.GetValue('value').Null) then
+    Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not in the correct format.');
   StopApiListen;
@@ -207,18 +209,17 @@ end;
 procedure TApiTest.TestDelete(const AValue: string);
 var
   LResponse: IResponse;
-  LContent: TJSONObject;
 begin
   StartApiListens;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test/' + AValue)
     .Accept('application/json')
     .Delete;
 
-  LContent := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  FJSONObject := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
   Assert.AreEqual(LResponse.StatusCode, 200);
 
-  if (not LContent.GetValue('value').Null) then
-    Assert.AreEqual(AValue, LContent.GetValue('value').Value)
+  if (not FJSONObject.GetValue('value').Null) then
+    Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not in the correct format.');
   StopApiListen;
@@ -230,6 +231,12 @@ begin
   {$WARNINGS OFF}
   THorse.Create;
   {$WARNINGS ON}
+end;
+
+procedure TApiTest.TearDown;
+begin
+  FreeAndNil(FJSONObject);
+  FreeAndNil(FJSONArray);
 end;
 
 procedure TApiTest.TestCreateApi;

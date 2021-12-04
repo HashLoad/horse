@@ -37,7 +37,4 @@ begin
   Assert.AreEqual('image/gif', TMimeTypes.ImageGIF.ToString);
 end;
 
-initialization
-  TDUnitX.RegisterTestFixture(TCommonsTest);
-
 end.

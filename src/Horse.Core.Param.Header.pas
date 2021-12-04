@@ -1,10 +1,10 @@
 unit Horse.Core.Param.Header;
 
-interface
-
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
+interface
 
 uses
   {$IF DEFINED(FPC)}
@@ -13,11 +13,11 @@ uses
     System.Classes, System.SysUtils, System.Generics.Collections,
     Web.HTTPApp, IdCustomHTTPServer, IdHeaderList, Horse.Rtti,
   {$ENDIF}
+  Horse.Core.Param,
   Horse.Commons;
 
 type
   THorseStrings = {$IF DEFINED(FPC)} TStrings {$ELSE} TIdHeaderList {$ENDIF};
-  THorseList = TDictionary<String, String>;
 
   THorseCoreParamHeader = class
   private
