@@ -1,18 +1,18 @@
 unit Horse.Core.Param.Header;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
-  {$IF DEFINED(FPC)}
-    SysUtils, Classes, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
-  {$ELSE}
-    System.Classes, System.SysUtils, System.Generics.Collections,
-    Web.HTTPApp, IdCustomHTTPServer, IdHeaderList, Horse.Rtti,
-  {$ENDIF}
+{$IF DEFINED(FPC)}
+  SysUtils, Classes, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
+{$ELSE}
+  System.Classes, System.SysUtils, System.Generics.Collections,
+  Web.HTTPApp, IdCustomHTTPServer, IdHeaderList, Horse.Rtti,
+{$ENDIF}
   Horse.Core.Param,
   Horse.Commons;
 
@@ -22,10 +22,8 @@ type
   THorseCoreParamHeader = class
   private
     class function GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseStrings;
-
   public
     class function GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
-
   end;
 
 implementation
@@ -48,6 +46,14 @@ begin
       LValue := LHeaders.Values[LName];
       Result.AddOrSetValue(LName, LValue);
     end;
+{$IF DEFINED(FPC)}
+    for I := Integer(Low(THeader)) to Integer(High(THeader)) do
+    begin
+      LName := HTTPHeaderNames[THeader(I)];
+      LValue := AWebRequest.GetHeader(THeader(I));
+      Result.AddOrSetValue(LName, LValue);
+    end;
+{$ENDIF}
   except
     Result.Free;
     raise;
@@ -57,28 +63,27 @@ end;
 class function THorseCoreParamHeader.GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseStrings;
 var
   LRequest: {$IF DEFINED(FPC)} TFPHTTPConnectionRequest {$ELSE} TIdHTTPRequestInfo {$ENDIF};
-  {$IF NOT DEFINED(FPC)}
+{$IF NOT DEFINED(FPC)}
   LObject: TObject;
-  {$ENDIF}
+{$ENDIF}
 begin
   Result := nil;
-  {$IF DEFINED(FPC)}
-    if AWebRequest is TFPHTTPConnectionRequest then
-    begin
-      LRequest := TFPHTTPConnectionRequest(AWebRequest);
-      Result := LRequest.CustomHeaders;
-    end;
-  {$ELSE}
-    LObject := THorseRtti.GetInstance.GetType(AWebRequest.ClassType)
-                  .FieldValueAsObject(AWebRequest, 'FRequestInfo');
+{$IF DEFINED(FPC)}
+  if AWebRequest is TFPHTTPConnectionRequest then
+  begin
+    LRequest := TFPHTTPConnectionRequest(AWebRequest);
+    Result := LRequest.CustomHeaders;
+  end;
+{$ELSE}
+  LObject := THorseRtti.GetInstance.GetType(AWebRequest.ClassType)
+    .FieldValueAsObject(AWebRequest, 'FRequestInfo');
 
-    if (Assigned(LObject)) and (LObject is TIdHTTPRequestInfo) then
-    begin
-      LRequest := TIdHTTPRequestInfo(LObject);
-      Result := LRequest.RawHeaders;
-    end;
-  {$ENDIF}
+  if (Assigned(LObject)) and (LObject is TIdHTTPRequestInfo) then
+  begin
+    LRequest := TIdHTTPRequestInfo(LObject);
+    Result := LRequest.RawHeaders;
+  end;
+{$ENDIF}
 end;
 
 end.
-
