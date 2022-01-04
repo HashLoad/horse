@@ -23,9 +23,11 @@ type
     procedure HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
   private
     FHorse: THorseCore;
+    class var FInstance: THorseWebModule;	
   public
     property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
+	class function GetInstance: THorseWebModule;
   end;
 
 var
@@ -47,6 +49,10 @@ uses Horse.HTTP, Horse.Exception;
   {$R *.dfm}
 {$ENDIF}
 
+class function THorseWebModule.GetInstance: THorseWebModule;
+begin
+  Result := FInstance;
+end;
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
@@ -56,6 +62,8 @@ begin
   inherited;
 {$ENDIF}
   FHorse := THorseCore.GetInstance;
+  
+  FInstance := Self;  
 end;
 
 {$IF DEFINED(FPC)}
