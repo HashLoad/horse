@@ -8,7 +8,9 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, Classes, httpdefs, fpHTTP, fpWeb,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp,
+  System.SysUtils, System.Classes,
+  Web.HTTPApp,{$IF DEFINED(HORSE_ISAPI)}Web.Win.IsapiHTTP,{$ENDIF}
+
 {$ENDIF}
   Horse.Core, Horse.Commons;
 
@@ -20,10 +22,13 @@ type
 {$ELSE}
   THorseWebModule = class(TWebModule)
 {$ENDIF}
-    procedure HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
+    procedure HandlerAction(Sender: TObject;
+    Request: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+    Response: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
+    var Handled: Boolean);
   private
     FHorse: THorseCore;
-    class var FInstance: THorseWebModule;	
+    class var FInstance: THorseWebModule;
   public
     property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
@@ -67,14 +72,16 @@ begin
 end;
 
 {$IF DEFINED(FPC)}
-procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
+procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
 begin
   HandlerAction(Self, ARequest, AResponse, AHandled);
 end;
 {$ENDIF}
 
-procedure THorseWebModule.HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
-  Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
+procedure THorseWebModule.HandlerAction(Sender: TObject;
+  Request: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+  Response: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
+  var Handled: Boolean);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
