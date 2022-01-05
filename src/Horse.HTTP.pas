@@ -336,7 +336,6 @@ begin
   Result := Status(AStatus);
 end;
 
-
 function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
 begin
   {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
