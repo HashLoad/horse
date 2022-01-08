@@ -11,7 +11,6 @@ uses
   SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
-{$IF DEFINED(HORSE_ISAPI)}Web.Win.IsapiHTTP,{$ENDIF}
   {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
   {$ENDIF}
@@ -36,7 +35,7 @@ type
 
   THorseRequest = class
   private
-    FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+    FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     FHeaders: THorseCoreParam;
     FQuery: THorseCoreParam;
     FParams: THorseCoreParam;
@@ -64,15 +63,15 @@ type
     function Cookie: THorseCoreParam;
     function ContentFields: THorseCoreParam;
     function MethodType: TMethodType;
-    function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+    function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Sessions: THorseSessions read FSessions;
-    constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF});
+    constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
   end;
 
   THorseHackRequest = class(THorseRequest)
   public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class. Use RawWebRequest method of THorseRequest class';
+    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class. Use RawWebRequest method of THorseRequest class';
     function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class. Use Params method of THorseRequest class';
     procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class. Use Body method of THorseRequest class';
     procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class. Use Session method of THorseRequest class';
@@ -80,7 +79,7 @@ type
 
   THorseResponse = class
   private
-    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
+    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
   public
     function Send(AContent: string): THorseResponse; overload;
@@ -91,14 +90,14 @@ type
     function Content: TObject; overload;
     function Content(AContent: TObject): THorseResponse; overload;
     function ContentType(AContentType: string): THorseResponse;
-    function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
-    constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF});
+    function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
+    constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
     destructor Destroy; override;
   end;
 
   THorseHackResponse = class(THorseResponse)
   public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class. Use RawWebResponse method of THorseResponse class';
+    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class. Use RawWebResponse method of THorseResponse class';
     function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
     procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
   end;
@@ -144,7 +143,7 @@ begin
   Result := FCookie;
 end;
 
-constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF});
+constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
   FSessions := THorseSessions.Create;
@@ -178,8 +177,7 @@ begin
     LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
     FHeaders := THorseCoreParam.create(LParam);
   end;
-
-  Result := FHeaders;
+  result := FHeaders;
 end;
 
 procedure THorseRequest.InitializeContentFields;
@@ -259,7 +257,7 @@ begin
   Result := FQuery;
 end;
 
-function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
 end;
@@ -294,7 +292,7 @@ begin
   Result := Self;
 end;
 
-constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF});
+constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 begin
   FWebResponse := AWebResponse;
   {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
@@ -307,7 +305,7 @@ begin
   inherited;
 end;
 
-function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
+function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
   Result := FWebResponse;
 end;
@@ -353,7 +351,7 @@ begin
   Result := FParams.Dictionary;
 end;
 
-function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIRequest{$ELSE}TWebRequest{$ENDIF};
+function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
   Result := FWebRequest;
 end;
@@ -370,7 +368,7 @@ end;
 
 { THorseHackResponse }
 
-function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSEIF DEFINED(HORSE_ISAPI)}TISAPIResponse{$ELSE}TWebResponse{$ENDIF};
+function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
   Result := FWebResponse;
 end;
