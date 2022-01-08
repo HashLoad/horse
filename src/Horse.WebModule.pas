@@ -62,7 +62,6 @@ begin
   inherited;
 {$ENDIF}
   FHorse := THorseCore.GetInstance;
-
   FInstance := Self;
 end;
 
