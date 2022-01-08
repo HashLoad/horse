@@ -63,10 +63,12 @@ begin
 end;
 
 class function THorseCoreParamHeader.GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): TStrings;
+{$IF NOT DEFINED(HORSE_ISAPI)}
 var
   LRequest: {$IF DEFINED(FPC)} TFPHTTPConnectionRequest {$ELSE} TIdHTTPRequestInfo {$ENDIF};
 {$IF NOT DEFINED(FPC)}
   LObject: TObject;
+{$ENDIF}
 {$ENDIF}
 begin
   Result := TStringList.Create;
