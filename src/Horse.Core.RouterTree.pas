@@ -387,7 +387,10 @@ begin
         except
           on E: Exception do
           begin
-            if (not(E is EHorseCallbackInterrupted)) and (not(E is EHorseException)) then
+            if (not(E is EHorseCallbackInterrupted)) and
+               (not(E is EHorseException)) and
+               (FResponse.Status < Integer(THTTPStatus.BadRequest))
+            then
               FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
             raise;
           end;
