@@ -27,6 +27,8 @@ type
     FCode: Integer;
     FTitle: string;
     FType: TMessageType;
+    procedure SetStatus(const Value: THTTPStatus);
+
   public
     constructor Create; overload;
     constructor Create(const AError: string); overload;
@@ -49,7 +51,7 @@ type
       const AType: TMessageType); overload;
     constructor Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer); overload;
     constructor Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer; const AType: TMessageType); overload;
-    property Status: THTTPStatus read FStatus;
+    property Status: THTTPStatus read FStatus write SetStatus;
     property Error: string read FError;
     property &Unit: string read FUnit;
     property Code: Integer read FCode;
@@ -77,7 +79,8 @@ end;
 constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: string);
 begin
   Create(AError);
-  FStatus := AStatus;
+  //FStatus := AStatus;
+  Self.Status := AStatus;
 end;
 
 constructor EHorseException.Create(const AStatus: THTTPStatus; const ATitle, AError: string);
@@ -144,6 +147,12 @@ constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: str
 begin
   Create(AStatus, AError, ACode);
   FType := AType;
+end;
+
+procedure EHorseException.SetStatus(const Value: THTTPStatus);
+begin
+  FStatus := Value;
+  FCode := FStatus.ToInteger;
 end;
 
 constructor EHorseException.Create(const AError: string; const ACode: Integer; const AType: TMessageType);
