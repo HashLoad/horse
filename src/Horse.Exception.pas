@@ -79,7 +79,6 @@ end;
 constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: string);
 begin
   Create(AError);
-  //FStatus := AStatus;
   Self.Status := AStatus;
 end;
 
