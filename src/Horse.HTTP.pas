@@ -84,6 +84,8 @@ type
   public
     function Send(AContent: string): THorseResponse; overload;
     function Send<T: class>(AContent: T): THorseResponse; overload;
+    function RedirectTo(ALocation: string): THorseResponse; overload;
+    function RedirectTo(ALocation: string; AStatus: THTTPStatus): THorseResponse; overload;
     function Status(AStatus: Integer): THorseResponse; overload;
     function Status(AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
@@ -320,6 +322,18 @@ function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
   FContent := AContent;
   Result := Self;
+end;
+
+function THorseResponse.RedirectTo(ALocation: string): THorseResponse;
+begin
+  FWebResponse.SetCustomHeader('Location', ALocation);
+  Result := Status(THTTPStatus.SeeOther);
+end;
+
+function THorseResponse.RedirectTo(ALocation: string; AStatus: THTTPStatus): THorseResponse;
+begin
+  FWebResponse.SetCustomHeader('Location', ALocation);
+  Result := Status(AStatus);
 end;
 
 function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
