@@ -20,167 +20,117 @@ type
   end;
 
   EHorseException = class(Exception)
-  private
+  strict private
     FError: string;
-    FStatus: THTTPStatus;
     FUnit: string;
-    FCode: Integer;
     FTitle: string;
+    FCode: Integer;
+    FStatus: THTTPStatus;
     FType: TMessageType;
+    constructor Create; reintroduce;
   public
-    constructor Create; overload;
-    constructor Create(const AError: string); overload;
-    constructor Create(const AError: string; const ACode: Integer); overload;
-    constructor Create(const AError: string; const ACode: Integer; const AType: TMessageType); overload;
-    constructor Create(const ATitle: string; const AError: string); overload;
-    constructor Create(const ATitle: string; const AError: string; const AUnit: string); overload;
-    constructor Create(const ATitle: string; const AError: string; const AUnit: string; const ACode: Integer); overload;
-    constructor Create(const ATitle: string; const AError: string; const AUnit: string; const ACode: Integer; const AType: TMessageType); overload;
-    constructor Create(const ATitle: string; const AError: string; const ACode: Integer); overload;
-    constructor Create(const ATitle: string; const AError: string; const ACode: Integer; const AType: TMessageType); overload;
-    constructor Create(const AStatus: THTTPStatus; const AError: string); overload;
-    constructor Create(const AStatus: THTTPStatus; const ATitle: string; const AError: string); overload;
-    constructor Create(const AStatus: THTTPStatus; const ATitle: string; const AError: string; const AUnit: string); overload;
-    constructor Create(const AStatus: THTTPStatus; const ATitle: string; const AError: string; const AUnit: string; const ACode: Integer); overload;
-    constructor Create(const AStatus: THTTPStatus; const ATitle: string; const AError: string; const AUnit: string; const ACode: Integer;
-      const AType: TMessageType); overload;
-    constructor Create(const AStatus: THTTPStatus; const AError: string; const AUnit: string; const ACode: Integer); overload;
-    constructor Create(const AStatus: THTTPStatus; const AError: string; const AUnit: string; const ACode: Integer;
-      const AType: TMessageType); overload;
-    constructor Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer); overload;
-    constructor Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer; const AType: TMessageType); overload;
-    property Status: THTTPStatus read FStatus;
-    property Error: string read FError;
-    property &Unit: string read FUnit;
-    property Code: Integer read FCode;
-    property Title: string read FTitle;
-    property &Type: TMessageType read FType;
+    class function New: EHorseException;
+    function Error(const AValue: string): EHorseException; overload;
+    function Error: string; overload;
+    function Title(const AValue: string): EHorseException; overload;
+    function Title: string; overload;
+    function &Unit(const AValue: string): EHorseException; overload;
+    function &Unit: string; overload;
+    function Code(const AValue: Integer): EHorseException; overload;
+    function Code: Integer; overload;
+    function Status(const AValue: THTTPStatus): EHorseException; overload;
+    function Status: THTTPStatus; overload;
+    function &Type(const AValue: TMessageType): EHorseException; overload;
+    function &Type: TMessageType; overload;
   end;
 
 implementation
-
-{ EHorseException }
-
-constructor EHorseException.Create;
-begin
-  FError := EmptyStr;
-  FStatus := THTTPStatus.BadRequest;
-  FCode := 0;
-end;
-
-constructor EHorseException.Create(const AError: string);
-begin
-  FError := AError;
-  FStatus := THTTPStatus.BadRequest;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: string);
-begin
-  Create(AError);
-  FStatus := AStatus;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const ATitle, AError: string);
-begin
-  Create(AStatus, AError);
-  FTitle := ATitle;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const ATitle, AError, AUnit: string);
-begin
-  Create(AStatus, ATitle, AError);
-  FUnit := AUnit;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const ATitle, AError, AUnit: string; const ACode: Integer);
-begin
-  Create(AStatus, ATitle, AError, AUnit);
-  FCode := ACode;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const ATitle, AError, AUnit: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(AStatus, ATitle, AError, AUnit, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const ATitle, AError: string);
-begin
-  Create(AError);
-  FTitle := ATitle;
-end;
-
-constructor EHorseException.Create(const ATitle, AError, AUnit: string);
-begin
-  Create(ATitle, AError);
-  FUnit := AUnit;
-end;
-
-constructor EHorseException.Create(const ATitle, AError, AUnit: string; const ACode: Integer);
-begin
-  Create(ATitle, AError, AUnit);
-  FCode := ACode;
-end;
-
-constructor EHorseException.Create(const ATitle, AError, AUnit: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(ATitle, AError, AUnit, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const AError, AUnit: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(AStatus, AError, AUnit, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const AError, AUnit: string; const ACode: Integer);
-begin
-  Create(AStatus, AError, AUnit);
-  FCode := ACode;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(AStatus, AError, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const AError: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(AError, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const AError: string; const ACode: Integer);
-begin
-  Create(AError);
-  FCode := ACode;
-end;
-
-constructor EHorseException.Create(const ATitle, AError: string; const ACode: Integer; const AType: TMessageType);
-begin
-  Create(ATitle, AError, ACode);
-  FType := AType;
-end;
-
-constructor EHorseException.Create(const ATitle, AError: string; const ACode: Integer);
-begin
-  Create(ATitle, AError);
-  FCode := ACode;
-end;
-
-constructor EHorseException.Create(const AStatus: THTTPStatus; const AError: string; const ACode: Integer);
-begin
-  Create(AStatus, AError);
-  FCode := ACode;
-end;
 
 { EHorseCallbackInterrupted }
 
 constructor EHorseCallbackInterrupted.Create;
 begin
   inherited Create(EmptyStr);
+end;
+
+{ EHorseException }
+
+function EHorseException.Code(const AValue: Integer): EHorseException;
+begin
+  FCode := AValue;
+  Result := Self;
+end;
+
+function EHorseException.&Type: TMessageType;
+begin
+  Result := FType;
+end;
+
+function EHorseException.&Type(const AValue: TMessageType): EHorseException;
+begin
+  FType := AValue;
+  Result := Self;
+end;
+
+function EHorseException.Code: Integer;
+begin
+  Result := FCode;
+end;
+
+function EHorseException.&Unit: string;
+begin
+  Result := FUnit;
+end;
+
+function EHorseException.&Unit(const AValue: string): EHorseException;
+begin
+  FUnit := AValue;
+  Result := Self;
+end;
+
+constructor EHorseException.Create;
+begin
+  FError := EmptyStr;
+  FStatus := THTTPStatus.InternalServerError;
+  FCode := 0;
+end;
+
+function EHorseException.Error: string;
+begin
+  Result := FError;
+end;
+
+function EHorseException.Error(const AValue: string): EHorseException;
+begin
+  FError := AValue;
+  Result := Self;
+end;
+
+class function EHorseException.New: EHorseException;
+begin
+  Result := EHorseException.Create;
+end;
+
+function EHorseException.Status: THTTPStatus;
+begin
+  Result := FStatus;
+end;
+
+function EHorseException.Status(const AValue: THTTPStatus): EHorseException;
+begin
+  FStatus := AValue;
+  Result := Self;
+end;
+
+function EHorseException.Title(const AValue: string): EHorseException;
+begin
+  FTitle := AValue;
+  Result := Self;
+end;
+
+function EHorseException.Title: string;
+begin
+  Result := FTitle;
 end;
 
 end.
