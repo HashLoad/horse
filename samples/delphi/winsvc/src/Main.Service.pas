@@ -2,8 +2,8 @@ unit Main.Service;
 
 interface
 
-uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.SvcMgr, Vcl.Dialogs;
+uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.SvcMgr, Vcl.Dialogs;
 
 type
   TMainService = class(TService)
@@ -19,8 +19,7 @@ var
 
 implementation
 
-uses
-  Horse;
+uses Horse;
 
 {$R *.dfm}
 
@@ -45,7 +44,7 @@ end;
 
 procedure TMainService.ServiceStart(Sender: TService; var Started: Boolean);
 begin
-  THorse.Listen(9000);
+  THorse.Listen;
   Started := True;
 end;
 

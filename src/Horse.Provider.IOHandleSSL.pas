@@ -2,8 +2,7 @@ unit Horse.Provider.IOHandleSSL;
 
 interface
 
-uses
-  IdSSLOpenSSL;
+uses IdSSLOpenSSL;
 
 type
   THorseProviderIOHandleSSL = class
@@ -50,26 +49,32 @@ begin
   FMethod := DEF_SSLVERSION;
   FSSLVersions := DEF_SSLVERSIONS;
 end;
+
 function THorseProviderIOHandleSSL.GetActive: Boolean;
 begin
   Result := FActive;
 end;
+
 function THorseProviderIOHandleSSL.GetCertFile: string;
 begin
   Result := FCertFile;
 end;
+
 function THorseProviderIOHandleSSL.GetKeyFile: string;
 begin
   Result := FKeyFile;
 end;
+
 function THorseProviderIOHandleSSL.GetOnGetPassword: TPasswordEvent;
 begin
   Result := FOnGetPassword;
 end;
+
 function THorseProviderIOHandleSSL.GetRootCertFile: string;
 begin
   Result := FRootCertFile;
 end;
+
 function THorseProviderIOHandleSSL.GetMethod: TIdSSLVersion;
 begin
   Result := FMethod;
@@ -79,14 +84,17 @@ function THorseProviderIOHandleSSL.GetSSLVersions: TIdSSLVersions;
 begin
   Result := FSSLVersions;
 end;
+
 procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);
 begin
   FActive := Value;
 end;
+
 procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);
 begin
   FCertFile := Value;
 end;
+
 procedure THorseProviderIOHandleSSL.SetSSLVersions(const Value: TIdSSLVersions);
 begin
   FSSLVersions := Value;
@@ -96,14 +104,17 @@ procedure THorseProviderIOHandleSSL.SetMethod(const Value: TIdSSLVersion);
 begin
   FMethod := Value;
 end;
+
 procedure THorseProviderIOHandleSSL.SetKeyFile(const Value: string);
 begin
   FKeyFile := Value;
 end;
+
 procedure THorseProviderIOHandleSSL.SetOnGetPassword(const Value: TPasswordEvent);
 begin
   FOnGetPassword := Value;
 end;
+
 procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
 begin
   FRootCertFile := Value;

@@ -2,14 +2,14 @@
 <CONFIG>
   <ProjectSession>
     <PathDelim Value="\"/>
-    <Version Value="11"/>
+    <Version Value="12"/>
     <BuildModes Active="Default"/>
     <Units Count="22">
       <Unit0>
         <Filename Value="Console.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="41" Y="15"/>
+        <CursorPos X="5" Y="14"/>
         <UsageCount Value="54"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -22,7 +22,7 @@
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\src\Horse.HTTP.pas"/>
-        <EditorIndex Value="10"/>
+        <EditorIndex Value="7"/>
         <CursorPos X="26" Y="171"/>
         <UsageCount Value="26"/>
         <Loaded Value="True"/>
@@ -49,7 +49,7 @@
       </Unit5>
       <Unit6>
         <Filename Value="..\..\..\src\Horse.pas"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="2"/>
         <CursorPos X="49" Y="11"/>
         <UsageCount Value="25"/>
         <Loaded Value="True"/>
@@ -63,7 +63,7 @@
       </Unit7>
       <Unit8>
         <Filename Value="..\..\..\src\Horse.Core.RouterTree.pas"/>
-        <EditorIndex Value="9"/>
+        <EditorIndex Value="6"/>
         <TopLine Value="184"/>
         <CursorPos X="32" Y="202"/>
         <UsageCount Value="25"/>
@@ -105,14 +105,14 @@
       </Unit13>
       <Unit14>
         <Filename Value="..\..\..\src\Horse.Proc.pas"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="3"/>
         <CursorPos X="51" Y="23"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\..\..\src\Horse.WebModule.pas"/>
-        <EditorIndex Value="6"/>
+        <EditorIndex Value="4"/>
         <TopLine Value="24"/>
         <CursorPos X="33" Y="41"/>
         <UsageCount Value="11"/>
@@ -120,7 +120,7 @@
       </Unit15>
       <Unit16>
         <Filename Value="..\..\..\src\Horse.Provider.Abstract.pas"/>
-        <EditorIndex Value="7"/>
+        <EditorIndex Value="5"/>
         <CursorPos X="11" Y="14"/>
         <UsageCount Value="11"/>
         <Loaded Value="True"/>
@@ -128,11 +128,10 @@
       <Unit17>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\rtl-generics\src\generics.collections.pas"/>
         <UnitName Value="Generics.Collections"/>
-        <EditorIndex Value="8"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="126"/>
         <CursorPos X="52" Y="144"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit17>
       <Unit18>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\packages\rtl-objpas\src\inc\dateutils.pp"/>
@@ -144,10 +143,9 @@
       <Unit19>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\rtl\win\sysutils.pp"/>
         <UnitName Value="SysUtils"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="10"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\..\..\src\Horse.Core.Param.pas"/>
@@ -162,11 +160,10 @@
       </Unit20>
       <Unit21>
         <Filename Value="C:\lazarus\fpc\3.2.0\source\rtl\objpas\sysutils\sysinth.inc"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="45"/>
         <CursorPos X="18" Y="63"/>
         <UsageCount Value="11"/>
-        <Loaded Value="True"/>
       </Unit21>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
@@ -293,44 +290,44 @@
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="0" ActiveMode=""/>
+      <Modes ActiveMode=""/>
     </RunParams>
   </ProjectSession>
   <Debugging>
-    <BreakPoints Count="4">
-      <Item1>
+    <BreakPoints>
+      <Item>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\..\..\horse-octet-stream\src\Horse.OctetStream.pas"/>
         <Line Value="45"/>
-      </Item1>
-      <Item2>
+      </Item>
+      <Item>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="Console.lpr"/>
-        <Line Value="29"/>
-      </Item2>
-      <Item3>
+        <Line Value="23"/>
+      </Item>
+      <Item>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="Console.lpr"/>
-        <Line Value="31"/>
-      </Item3>
-      <Item4>
+        <Line Value="25"/>
+      </Item>
+      <Item>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
         <Source Value="..\..\..\src\Horse.Core.Param.pas"/>
         <Line Value="261"/>
-      </Item4>
+      </Item>
     </BreakPoints>
-    <Watches Count="1">
-      <Item1>
+    <Watches>
+      <Item>
         <Expression Value="LWebRequest.ContentType"/>
-      </Item1>
+      </Item>
     </Watches>
   </Debugging>
 </CONFIG>

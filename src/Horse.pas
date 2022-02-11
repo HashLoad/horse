@@ -1,7 +1,7 @@
 unit Horse;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -11,7 +11,8 @@ uses
   SysUtils, Horse.Provider.FPC.HTTPApplication, Horse.Provider.FPC.Apache, Horse.Provider.FPC.CGI, Horse.Provider.FPC.FastCGI,
   Horse.Provider.FPC.Daemon,
 {$ELSE}
-  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPI, Horse.Provider.Apache, Horse.Provider.CGI, Horse.Provider.VCL,
+  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPI, Horse.Provider.Apache, Horse.Provider.CGI,
+  Horse.Provider.VCL,
 {$ENDIF}
   Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.Param, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
 
@@ -23,15 +24,12 @@ type
   THorseList = Horse.Core.Param.THorseList;
   THorseCoreParam = Horse.Core.Param.THorseCoreParam;
   THorseRequest = Horse.HTTP.THorseRequest;
-  THorseHackRequest = Horse.HTTP.THorseHackRequest;
   THorseResponse = Horse.HTTP.THorseResponse;
-  THorseHackResponse = Horse.HTTP.THorseHackResponse;
   THorseCallback = Horse.Core.RouterTree.THorseCallback;
   THTTPStatus = Horse.Commons.THTTPStatus;
   TMimeTypes = Horse.Commons.TMimeTypes;
   TMessageType = Horse.Commons.TMessageType;
   THorseModule = Horse.Core.THorseModule;
-
   PHorseModule = Horse.Core.PHorseModule;
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;

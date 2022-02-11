@@ -36,6 +36,7 @@ src/*.~*
 *.~*
 *.a
 *.stat
+*.skincfg
 
 # Mac
 *.DS_Store

@@ -1,20 +1,16 @@
 unit Horse.Provider.FPC.FastCGI;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
 
-uses
-  SysUtils, Classes, fpFCGI, httpdefs, fpHTTP,
-  Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+uses SysUtils, Classes, fpFCGI, httpdefs, fpHTTP, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
-  { THorseProvider }
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
@@ -33,7 +29,6 @@ type
     class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
-    constructor Create(APort: Integer); reintroduce; overload; deprecated 'Use Port method to set port';
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
@@ -41,7 +36,6 @@ type
     class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Start; deprecated 'Use Listen instead';
     class destructor UnInitialize;
   end;
 
@@ -51,8 +45,7 @@ implementation
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
 
-uses
-  Horse.WebModule;
+uses Horse.WebModule;
 
 { THorseProvider<T> }
 
@@ -66,12 +59,6 @@ end;
 class function THorseProvider<T>.FastCGIApplicationIsNil: Boolean;
 begin
   Result := FFastCGIApplication = nil;
-end;
-
-constructor THorseProvider<T>.Create(APort: Integer);
-begin
-  inherited Create;
-  SetPort(APort);
 end;
 
 constructor THorseProvider<T>.Create;
@@ -121,11 +108,6 @@ end;
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass := THorseWebModule;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 class procedure THorseProvider<T>.Listen;

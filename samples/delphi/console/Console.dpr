@@ -3,8 +3,7 @@ program Console;
 {$APPTYPE CONSOLE}
 {$R *.res}
 
-uses
-  Horse, System.SysUtils;
+uses Horse, System.SysUtils;
 
 begin
   {$IFDEF MSWINDOWS}

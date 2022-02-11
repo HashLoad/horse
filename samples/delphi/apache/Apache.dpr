@@ -20,8 +20,7 @@ library Apache;
 
 // Declare exported variable so that Apache can access this module.
 
-uses
-  Horse, Web.HTTPD24Impl;
+uses Horse, Web.HTTPD24Impl;
 
 var
   ApacheModuleData: TApacheModuleData;

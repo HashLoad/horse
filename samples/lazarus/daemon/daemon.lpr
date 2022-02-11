@@ -6,9 +6,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, Horse
-  { you can add units after this };
-  { add your program here }
+  Classes, SysUtils, Horse;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
@@ -24,8 +22,8 @@ begin
 end;
 
 var
-  sCMD : String;
-  bTerminated : Boolean;
+  sCMD: string;
+  bTerminated: Boolean;
 begin
   THorse.Get('/ping', @GetPing);
   bTerminated := False;

@@ -1,15 +1,17 @@
 unit Horse.Core.Route;
+
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
 
 uses
-  {$IF DEFINED(FPC)}
-    SysUtils,
-  {$ELSE}
-    System.SysUtils,
-  {$ENDIF}
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
   Horse.Core.Route.Contract, Horse.Core.RouterTree;
 
 type
@@ -66,8 +68,7 @@ type
 
 implementation
 
-uses
-  Horse.Core;
+uses Horse.Core;
 
 { THorseCoreRoute }
 

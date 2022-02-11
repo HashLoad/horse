@@ -38,7 +38,6 @@ type
     class procedure InitServerIOHandlerSSLOpenSSL(AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
   public
     constructor Create; reintroduce; overload;
-    constructor Create(APort: Integer); reintroduce; overload; deprecated 'Use Port or Listen(PortValue) method to set port';
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
@@ -50,8 +49,6 @@ type
     class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Start; deprecated 'Use Listen instead';
-    class procedure Stop; deprecated 'Use StopListen instead';
     class destructor UnInitialize;
   end;
 
@@ -112,12 +109,6 @@ end;
 class procedure THorseProvider<T>.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
   VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
-end;
-
-constructor THorseProvider<T>.Create(APort: Integer);
-begin
-  inherited Create;
-  SetPort(APort);
 end;
 
 constructor THorseProvider<T>.Create;
@@ -299,24 +290,6 @@ begin
   end
   else
     raise Exception.Create('Horse not listen');
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  SetOnListen(
-    procedure(Sender: T)
-    begin
-      Writeln(Format(START_RUNNING, [FHost, FPort]));
-      Write('Press return to stop ...');
-      ReadLn;
-      StopListen;
-    end);
-  Listen;
-end;
-
-class procedure THorseProvider<T>.Stop;
-begin
-  StopListen;
 end;
 
 class procedure THorseProvider<T>.StopListen;

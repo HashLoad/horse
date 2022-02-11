@@ -2,8 +2,7 @@ program CGI;
 
 {$MODE DELPHI}{$H+}
 
-uses
-  Horse, SysUtils;
+uses Horse, SysUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
@@ -12,6 +11,5 @@ end;
 
 begin
   THorse.Get('/ping', GetPing);
-
   THorse.Listen;
 end.

@@ -1,8 +1,8 @@
 unit Horse.Commons;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
-{$MODESWITCH TypeHelpers}
+  {$MODE DELPHI}{$H+}
+  {$MODESWITCH TypeHelpers}
 {$ENDIF}
 
 interface
@@ -124,7 +124,6 @@ function StringCommandToMethodType(ACommand: string): TMethodType;
 implementation
 
 {$IF DEFINED(FPC)}
-
 function StringCommandToMethodType(ACommand: string): TMethodType;
 begin
   if ACommand = 'ANY' then

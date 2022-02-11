@@ -3,8 +3,7 @@ program CGI;
 {$APPTYPE CONSOLE}
 {$R *.res}
 
-uses
-  Horse;
+uses Horse;
 
 begin
   THorse.Get('/ping',

@@ -1,6 +1,7 @@
 unit Horse.Core.Group;
+
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -69,8 +70,7 @@ type
 
 implementation
 
-uses
-  Horse.Core;
+uses Horse.Core;
 
 { THorseCoreGroup }
 

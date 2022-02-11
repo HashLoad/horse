@@ -24,7 +24,6 @@ begin
 end;
 
 begin
-
   THorse.Get('/ping', GetPing);
 
   THorse.DefaultModule := @ApacheModuleData;
@@ -32,6 +31,5 @@ begin
   THorse.ModuleName := ModuleName;
 
   THorse.Listen;
-
 end.
 

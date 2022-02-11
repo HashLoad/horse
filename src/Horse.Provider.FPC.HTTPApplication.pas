@@ -1,20 +1,16 @@
 unit Horse.Provider.FPC.HTTPApplication;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(FPC)}
 
-uses
-  SysUtils, Classes, httpdefs, fpHTTP, fphttpapp,
-  Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+uses SysUtils, Classes, httpdefs, fpHTTP, fphttpapp, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
-  { THorseProvider }
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
@@ -36,7 +32,6 @@ type
     class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
-    constructor Create(APort: Integer); reintroduce; overload; deprecated 'Use Port method to set port';
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
@@ -45,7 +40,6 @@ type
     class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
     class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Start; deprecated 'Use Listen instead';
     class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
@@ -56,8 +50,7 @@ implementation
 
 {$IF DEFINED(FPC)}
 
-uses
-  Horse.WebModule;
+uses Horse.WebModule;
 
 { THorseProvider<T> }
 
@@ -71,12 +64,6 @@ end;
 class function THorseProvider<T>.HTTPApplicationIsNil: Boolean;
 begin
   Result := FHTTPApplication = nil;
-end;
-
-constructor THorseProvider<T>.Create(APort: Integer);
-begin
-  inherited Create;
-  SetPort(APort);
 end;
 
 constructor THorseProvider<T>.Create;
@@ -137,11 +124,6 @@ end;
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass :=  THorseWebModule;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 class function THorseProvider<T>.IsRunning: Boolean;

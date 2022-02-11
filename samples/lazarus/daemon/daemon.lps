@@ -2,14 +2,15 @@
 <CONFIG>
   <ProjectSession>
     <PathDelim Value="\"/>
-    <Version Value="11"/>
+    <Version Value="12"/>
     <BuildModes Active="Release"/>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="daemon.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos X="97" Y="22"/>
+        <TopLine Value="11"/>
+        <CursorPos X="14" Y="30"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -28,11 +29,18 @@
         <CursorPos X="96" Y="248"/>
         <UsageCount Value="10"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\src\Horse.Provider.FPC.Daemon.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="223"/>
+        <CursorPos X="58" Y="239"/>
+        <UsageCount Value="10"/>
+      </Unit3>
     </Units>
     <OtherDefines Count="1">
       <Define0 Value="HORSE_DAEMON"/>
     </OtherDefines>
-    <JumpHistory Count="18" HistoryIndex="17">
+    <JumpHistory Count="19" HistoryIndex="18">
       <Position1>
         <Filename Value="daemon.lpr"/>
         <Caret Line="30" Column="12"/>
@@ -105,10 +113,14 @@
         <Filename Value="daemon.lpr"/>
         <Caret Line="42" Column="33" TopLine="8"/>
       </Position18>
+      <Position19>
+        <Filename Value="daemon.lpr"/>
+        <Caret Line="13" Column="47"/>
+      </Position19>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="0" ActiveMode=""/>
+      <Modes ActiveMode=""/>
     </RunParams>
   </ProjectSession>
 </CONFIG>

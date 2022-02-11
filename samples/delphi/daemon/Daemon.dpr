@@ -3,8 +3,7 @@ program Daemon;
 {$APPTYPE CONSOLE}
 {$R *.res}
 
-uses
-  Horse, System.SysUtils;
+uses Horse, System.SysUtils;
 
 begin
   THorse.Get('/ping',
@@ -13,5 +12,5 @@ begin
       Res.Send('pong');
     end);
 
-  THorse.Listen(9000);
+  THorse.Listen;
 end.

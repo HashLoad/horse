@@ -7,27 +7,22 @@ unit Horse.Rtti;
 interface
 
 uses
-  {$IF DEFINED(FPC)}
-    SysUtils, RTTI,
-  {$ELSE}
-    System.SysUtils, System.Rtti,
-  {$ENDIF}
+{$IF DEFINED(FPC)}
+  SysUtils, RTTI,
+{$ELSE}
+  System.SysUtils, System.Rtti,
+{$ENDIF}
   Horse.Commons;
 
 type
   THorseRtti = class
   private
-    { private declarations }
     class var FHorseRtti: THorseRtti;
-
     FContext: TRttiContext;
-
   protected
     class function GetDefaultHorseRtti: THorseRtti;
-
   public
     function GetType (AClass: TClass): TRttiType;
-
     constructor Create; virtual;
     class destructor UnInitialize; {$IFNDEF FPC} virtual; {$ENDIF}
     class function GetInstance: THorseRtti;
@@ -35,9 +30,9 @@ type
 
   THorseRttiTypeHelper = class helper for TRttiType
   public
-    {$IF NOT DEFINED(FPC)}
+  {$IF NOT DEFINED(FPC)}
     function FieldValueAsObject(AInstance: Pointer; const AFieldName: String): TObject;
-    {$ENDIF}
+  {$ENDIF}
   end;
 
 implementation
@@ -48,7 +43,6 @@ constructor THorseRtti.Create;
 begin
   if FHorseRtti <> nil then
     raise Exception.Create('The Horse Rtti instance has already been created');
-
   FContext := TRttiContext.Create;
   FHorseRtti := Self;
 end;
@@ -67,7 +61,7 @@ end;
 
 function THorseRtti.GetType(AClass: TClass): TRttiType;
 begin
-  result := FContext.GetType(AClass);
+  Result := FContext.GetType(AClass);
 end;
 
 class destructor THorseRtti.UnInitialize;
@@ -83,10 +77,10 @@ function THorseRttiTypeHelper.FieldValueAsObject(AInstance: Pointer; const AFiel
 var
   LField: TRttiField;
 begin
-  result := nil;
+  Result := nil;
   LField := GetField(AFieldName);
   if Assigned(LField) then
-    result := LField.GetValue(AInstance).AsObject;
+    Result := LField.GetValue(AInstance).AsObject;
 end;
 {$ENDIF}
 

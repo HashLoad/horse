@@ -1,14 +1,15 @@
 unit Horse.Core.Route.Contract;
+
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
 
-uses
-  Horse.Core.RouterTree;
+uses Horse.Core.RouterTree;
 
 type
-   IHorseCoreRoute<T: class> = interface
+  IHorseCoreRoute<T: class> = interface
     ['{8D593D98-44B3-4FD2-A21B-BA29F784B3AA}']
     function All(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;

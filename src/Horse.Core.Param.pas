@@ -39,7 +39,7 @@ type
     function AsInteger(const AKey: string; ARequired: Boolean = True): Integer;
     function AsInt64(const AKey: string; ARequired: Boolean = True): Int64;
     function AsISO8601DateTime(const AKey: string; ARequired: Boolean = True; AReturnUTC: Boolean = True): TDateTime;
-    function Asstring(const AKey: string; ARequired: Boolean = True): string;
+    function AsString(const AKey: string; ARequired: Boolean = True): string;
     function AsTime(const AKey: string; ARequired: Boolean = True; ATimeFormat: string = 'hh:mm:ss'): TTime;
     function ContainsKey(const AKey: string): Boolean;
     function ContainsValue(const AValue: string): Boolean;
@@ -176,7 +176,7 @@ begin
   end;
 end;
 
-function THorseCoreParam.Asstring(const AKey: string; ARequired: Boolean): string;
+function THorseCoreParam.AsString(const AKey: string; ARequired: Boolean): string;
 begin
   Result := EmptyStr;
   if ContainsKey(AKey) then
@@ -309,13 +309,8 @@ end;
 
 function THorseCoreParam.TryISO8601ToDate(const AISODate: string; out Value: TDateTime; AReturnUTC: Boolean = True): Boolean;
 begin
-  Result := False;
-  try
-    Value := ISO8601ToDate(AISODate, AReturnUTC);
-    Result := True
-  except
-
-  end;
+  Value := ISO8601ToDate(AISODate, AReturnUTC);
+  Result := True
 end;
 
 end.

@@ -1,20 +1,16 @@
 unit Horse.Provider.FPC.CGI;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
-uses
-  SysUtils, Classes, fpCGI, fphttp, httpdefs,
-  Horse.Provider.Abstract, Horse.Proc;
+uses SysUtils, Classes, fpCGI, fphttp, httpdefs, Horse.Provider.Abstract, Horse.Proc;
 
 type
-  { THorseProvider }
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FCGIApplication: TCGIApplication;
@@ -26,7 +22,6 @@ type
     constructor Create; reintroduce; overload;
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Start; deprecated 'Use Listen instead';
     class destructor UnInitialize;
   end;
 
@@ -39,8 +34,7 @@ implementation
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
 
-uses
-  Horse.WebModule;
+uses Horse.WebModule;
 
 { THorseProvider<T> }
 
@@ -78,11 +72,6 @@ end;
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass :=  THorseWebModule;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 class procedure THorseProvider<T>.Listen;

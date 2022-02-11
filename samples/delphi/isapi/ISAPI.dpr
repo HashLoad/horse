@@ -2,8 +2,7 @@ library ISAPI;
 
 {$R *.res}
 
-uses
-  Horse;
+uses Horse;
 
 begin
   THorse.Get('/ping',

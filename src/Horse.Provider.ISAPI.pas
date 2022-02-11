@@ -4,27 +4,24 @@ interface
 
 {$IF DEFINED(HORSE_ISAPI) AND NOT DEFINED(FPC)}
 
-uses
-  Horse.Provider.Abstract, System.SysUtils,
-  Web.Win.ISAPIApp;
+uses Horse.Provider.Abstract, System.SysUtils, Web.Win.ISAPIApp;
 
 type
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class procedure InternalListen; static;
   public
-    class procedure Start; deprecated 'Use Listen instead';
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
   end;
+
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_ISAPI) AND NOT DEFINED(FPC)}
 
-uses
-  Web.WebBroker, System.Win.ComObj, Winapi.ActiveX, Horse.WebModule;
+uses Web.WebBroker, System.Win.ComObj, Winapi.ActiveX, Horse.WebModule;
 
 exports
   GetExtensionVersion,
@@ -53,11 +50,6 @@ begin
   inherited;
   SetOnListen(ACallback);
   InternalListen;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 {$ENDIF}

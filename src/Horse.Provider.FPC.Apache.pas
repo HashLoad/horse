@@ -1,7 +1,7 @@
 unit Horse.Provider.FPC.Apache;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -12,12 +12,10 @@ uses
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-  fphttp, httpdefs, httpd24, fpApache24, custapache24, SysUtils, Classes,
-  Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+  fphttp, httpdefs, httpd24, fpApache24, custapache24, SysUtils, Classes, Horse.Provider.Abstract,
+  Horse.Constants, Horse.Proc;
 
 type
-  { THorseProvider }
-
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FApacheApplication: TCustomApacheApplication;
@@ -41,7 +39,6 @@ type
     class property DefaultModule: pmodule read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Start; deprecated 'Use Listen instead';
     class destructor UnInitialize;
   end;
 
@@ -51,8 +48,7 @@ implementation
 
 {$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC)}
 
-uses
-  Horse.WebModule;
+uses Horse.WebModule;
 
 { THorseProvider<T> }
 
@@ -122,11 +118,6 @@ end;
 class procedure THorseProvider<T>.SetHandlerName(const Value: string);
 begin
   FHandlerName := Value;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 class procedure THorseProvider<T>.Listen;

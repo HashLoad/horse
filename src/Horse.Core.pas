@@ -1,7 +1,7 @@
 unit Horse.Core;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -12,8 +12,7 @@ uses
 {$ELSE}
   System.SysUtils, Web.HTTPApp,
 {$ENDIF}
-  Horse.Core.RouterTree, Horse.Commons,
-  Horse.Core.Group.Contract, Horse.Core.Route.Contract;
+  Horse.Core.RouterTree, Horse.Commons, Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
   THorseCore = class;
@@ -35,7 +34,6 @@ type
 
   THorseCore = class
   private
-    { private declarations }
     class var FRoutes: THorseRouterTree;
     class function RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;
     class var FDefaultHorse: THorseCore;
@@ -50,10 +48,10 @@ type
   protected
     class function GetDefaultHorse: THorseCore;
   public
-    { public declarations }
     class function ToModule: THorseModule;
     constructor Create; virtual;
     class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
+
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
     class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;
@@ -96,14 +94,12 @@ type
     {$IFEND}
 
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
-
     class function GetInstance: THorseCore;
   end;
 
 implementation
 
-uses
-  Horse.Core.Route, Horse.Core.Group;
+uses Horse.Core.Route, Horse.Core.Group;
 
 { THorseCore }
 

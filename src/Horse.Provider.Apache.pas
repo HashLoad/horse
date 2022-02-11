@@ -4,8 +4,7 @@ interface
 
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
-uses
-  Horse.Provider.Abstract, System.SysUtils, Web.HTTPD24Impl;
+uses Horse.Provider.Abstract, System.SysUtils, Web.HTTPD24Impl;
 
 type
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
@@ -20,7 +19,6 @@ type
   public
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property DefaultModule: Pointer read GetDefaultModule write SetDefaultModule;
-    class procedure Start; deprecated 'Use Listen instead';
     class procedure Listen; overload; override;
     class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
   end;
@@ -31,7 +29,6 @@ implementation
 
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
 
-
 uses Web.WebBroker, Web.ApacheApp, {$IFDEF MSWINDOWS} Winapi.ActiveX, System.Win.ComObj, {$ENDIF } Horse.WebModule;
 
 { THorseProvider<T:class> }
@@ -41,7 +38,7 @@ begin
 {$IFDEF MSWINDOWS}
   CoInitFlags := COINIT_MULTITHREADED;
 {$ENDIF}
-  Web.ApacheApp.InitApplication(FDefaultModule, FHandlerName);
+  Web.ApacheApp.InitApplication(FDefaultModule, UTF8String(FHandlerName));
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
   DoOnListen;
@@ -59,11 +56,6 @@ begin
   inherited;
   SetOnListen(ACallback);
   InternalListen;
-end;
-
-class procedure THorseProvider<T>.Start;
-begin
-  Listen;
 end;
 
 class function THorseProvider<T>.GetHandlerName: string;

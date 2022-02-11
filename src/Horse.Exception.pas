@@ -7,11 +7,11 @@ unit Horse.Exception;
 interface
 
 uses
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}
   SysUtils,
-  {$ELSE}
+{$ELSE}
   System.SysUtils,
-  {$ENDIF}
+{$ENDIF}
   Horse.Commons;
 
 type

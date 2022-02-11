@@ -12,12 +12,10 @@ uses
 {$ELSE}
   System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
   {$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
+    Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
-  Horse.Core.Param,
-  Horse.Core.Param.Header,
-  Horse.Commons;
+  Horse.Core.Param, Horse.Core.Param.Header, Horse.Commons;
 
 type
   THorseSessions = class
@@ -69,14 +67,6 @@ type
     destructor Destroy; override;
   end;
 
-  THorseHackRequest = class(THorseRequest)
-  public
-    function GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; deprecated 'Dont use the THorseHackRequest class. Use RawWebRequest method of THorseRequest class';
-    function GetParams: THorseList; deprecated 'Dont use the THorseHackRequest class. Use Params method of THorseRequest class';
-    procedure SetBody(ABody: TObject); deprecated 'Dont use the THorseHackRequest class. Use Body method of THorseRequest class';
-    procedure SetSession(ASession: TObject); deprecated 'Dont use the THorseHackRequest class. Use Session method of THorseRequest class';
-  end;
-
   THorseResponse = class
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
@@ -95,13 +85,6 @@ type
     function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
     destructor Destroy; override;
-  end;
-
-  THorseHackResponse = class(THorseResponse)
-  public
-    function GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; deprecated 'Dont use the THorseHackResponse class. Use RawWebResponse method of THorseResponse class';
-    function GetContent: TObject; deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
-    procedure SetContent(AContent: TObject); deprecated 'Dont use the THorseHackResponse class. Use Content method of THorseResponse class';
   end;
 
 implementation
@@ -213,9 +196,7 @@ end;
 
 procedure THorseRequest.InitializeQuery;
 var
-  LItem: string;
-  LKey: string;
-  LValue: string;
+  LItem, LKey, LValue: string;
   LEqualFirstPos: Integer;
 begin
   FQuery := THorseCoreParam.create(THorseList.Create);
@@ -353,45 +334,6 @@ begin
   Result := Self;
 end;
 
-{ THorseHackRequest }
-
-function THorseHackResponse.GetContent: TObject;
-begin
-  Result := FContent;
-end;
-
-function THorseHackRequest.GetParams: THorseList;
-begin
-  Result := FParams.Dictionary;
-end;
-
-function THorseHackRequest.GetWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-begin
-  Result := FWebRequest;
-end;
-
-procedure THorseHackRequest.SetBody(ABody: TObject);
-begin
-  FBody := ABody;
-end;
-
-procedure THorseHackRequest.SetSession(ASession: TObject);
-begin
-  FSession := ASession;
-end;
-
-{ THorseHackResponse }
-
-function THorseHackResponse.GetWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-begin
-  Result := FWebResponse;
-end;
-
-procedure THorseHackResponse.SetContent(AContent: TObject);
-begin
-  FContent := AContent;
-end;
-
 { THorseSessions }
 
 constructor THorseSessions.Create;
@@ -415,8 +357,7 @@ begin
   Result := FSessions.Items[ASessionClass];
 end;
 
-function THorseSessions.SetSession(const ASessionClass: TSessionClass;
-  AInstance: TSession): THorseSessions;
+function THorseSessions.SetSession(const ASessionClass: TSessionClass; AInstance: TSession): THorseSessions;
 begin
   Result := Self;
   if not ASessionClass.InheritsFrom(AInstance.ClassType) then
