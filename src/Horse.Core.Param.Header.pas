@@ -48,7 +48,8 @@ begin
       begin
         LName := HTTPHeaderNames[THeader(I)];
         LValue := AWebRequest.GetHeader(THeader(I));
-        Result.AddOrSetValue(LName, LValue);
+        if not LValue.Trim.IsEmpty then
+          Result.AddOrSetValue(LName, LValue);
       end;
       {$ENDIF}
     finally

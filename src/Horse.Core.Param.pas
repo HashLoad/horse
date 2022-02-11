@@ -49,7 +49,7 @@ type
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
-    constructor create(AParams: THorseList);
+    constructor Create(AParams: THorseList);
     destructor Destroy; override;
   end;
 
@@ -222,7 +222,7 @@ begin
   Result := FParams.ContainsValue(AValue);
 end;
 
-constructor THorseCoreParam.create(AParams: THorseList);
+constructor THorseCoreParam.Create(AParams: THorseList);
 begin
   FParams := AParams;
 end;
