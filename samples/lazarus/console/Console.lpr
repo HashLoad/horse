@@ -6,7 +6,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Horse, SysUtils, Generics.Collections, fpjson;
+  Horse;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
