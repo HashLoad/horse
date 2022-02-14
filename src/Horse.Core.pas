@@ -12,7 +12,7 @@ uses
 {$ELSE}
   System.SysUtils, Web.HTTPApp,
 {$ENDIF}
-  Horse.Core.RouterTree, Horse.Commons,
+  Horse.Core.RouterTree, Horse.Commons, Horse.HTTP,
   Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
@@ -47,6 +47,11 @@ type
     class function GetRoutes: THorseRouterTree; static;
     class procedure SetRoutes(const Value: THorseRouterTree); static;
     class function MakeHorseModule: THorseModule;
+
+    class function GetCallback(ACallbackRequest: THorseCallbackAlt): THorseCallback; overload;
+    class function GetCallback(ACallbackRequest: THorseCallbackRequest): THorseCallback; overload;
+    class function GetCallback(ACallbackResponse: THorseCallbackResponse): THorseCallback; overload;
+
   protected
     class function GetDefaultHorse: THorseCore;
   public
@@ -61,6 +66,9 @@ type
     class function Use(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Use(ACallbacks: array of THorseCallback): THorseCore; overload;
 
+    class function Get(APath: string; ACallback: THorseCallbackAlt): THorseCore; overload;
+    class function Get(APath: string; ACallback: THorseCallbackRequest): THorseCore; overload;
+    class function Get(APath: string; ACallback: THorseCallbackResponse): THorseCore; overload;
     class function Get(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Get(APath: string; AMiddleware, ACallback: THorseCallback): THorseCore; overload;
     class function Get(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
@@ -377,6 +385,49 @@ begin
   for LCallback in ACallbacks do
     Get(APath, LCallback);
   Get(APath, ACallback);
+end;
+
+class function THorseCore.Get(APath: string; ACallback: THorseCallbackRequest): THorseCore;
+begin
+  result := RegisterRoute(mtGet, APath, GetCallback(ACallback));
+end;
+
+class function THorseCore.GetCallback(ACallbackRequest: THorseCallbackAlt): THorseCallback;
+begin
+  result :=
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      ACallbackRequest(Req, Res);
+    end;
+end;
+
+class function THorseCore.GetCallback(ACallbackResponse: THorseCallbackResponse): THorseCallback;
+begin
+  result :=
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      ACallbackResponse(Res);
+    end;
+end;
+
+class function THorseCore.GetCallback(ACallbackRequest: THorseCallbackRequest): THorseCallback;
+begin
+  result :=
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      Res.Status(THTTPStatus.NoContent);
+      ACallbackRequest(Req);
+    end;
+end;
+
+class function THorseCore.Get(APath: string; ACallback: THorseCallbackResponse): THorseCore;
+begin
+  Result := RegisterRoute(mtGet, APath, GetCallback(ACallback));
+end;
+
+class function THorseCore.Get(APath: string; ACallback: THorseCallbackAlt): THorseCore;
+begin
+  Result := RegisterRoute(mtGet, APath, GetCallback(ACallback));
 end;
 
 class function THorseCore.Post(APath: string; ACallbacks: array of THorseCallback; ACallback: THorseCallback): THorseCore;

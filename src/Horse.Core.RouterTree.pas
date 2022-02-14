@@ -19,6 +19,9 @@ type
   THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
   TCallNextPath = function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean of object;
 {$ELSE}
+  THorseCallbackRequest = reference to procedure(AReq: THorseRequest);
+  THorseCallbackResponse = reference to procedure(ARes: THorseResponse);
+  THorseCallbackAlt = reference to procedure(AReq: THorseRequest; ARes: THorseResponse);
   THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
   TCallNextPath = reference to function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
 {$ENDIF}
