@@ -24,43 +24,21 @@ type
 
     function This: IHorseCoreRoute<T>;
 
+    function AddCallback(ACallback: THorseCallback): IHorseCoreRoute<T>;
+
     function All(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
     function All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
 
-    function Get(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Get(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Get(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Get(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-
-    function Put(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Put(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Put(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Put(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Get(ACallback: THorseCallback): IHorseCoreRoute<T>;
+    function Put(ACallback: THorseCallback): IHorseCoreRoute<T>;
+    function Head(ACallback: THorseCallback): IHorseCoreRoute<T>;
+    function Post(ACallback: THorseCallback): IHorseCoreRoute<T>;
 
     {$IF (defined(fpc) or (CompilerVersion > 27.0))}
-    function Patch(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Patch(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Patch(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Patch(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    {$IFEND}
-
-    function Head(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Head(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Head(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Head(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-
-    function Post(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Post(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Post(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Post(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-
-    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
-    function Delete(ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Delete(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    function Delete(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function Delete(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Patch(ACallback: THorseCallback): IHorseCoreRoute<T>;
+    function Delete(ACallback: THorseCallback): IHorseCoreRoute<T>;
     {$IFEND}
 
     function &End: T;
@@ -106,6 +84,12 @@ begin
   Result := FHorseCore as T;
 end;
 
+function THorseCoreRoute<T>.AddCallback(ACallback: THorseCallback): IHorseCoreRoute<T>;
+begin
+  result := Self;
+  THorseCore(FHorseCore).AddCallback(ACallback);
+end;
+
 function THorseCoreRoute<T>.All(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
@@ -114,71 +98,17 @@ begin
 end;
 
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}
-function THorseCoreRoute<T>.Delete(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Delete(FPath, ACallbacks);
-end;
-
-function THorseCoreRoute<T>.Delete(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Delete(FPath, AMiddleware, ACallback);
-end;
-
 function THorseCoreRoute<T>.Delete(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
   THorseCore(FHorseCore).Delete(FPath, ACallback);
 end;
-
-function THorseCoreRoute<T>.Delete(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Delete(FPath, ACallbacks, ACallback);
-end;
 {$IFEND}
-
-function THorseCoreRoute<T>.Get(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Get(FPath, AMiddleware, ACallback);
-end;
 
 function THorseCoreRoute<T>.Get(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
   THorseCore(FHorseCore).Get(FPath, ACallback);
-end;
-
-function THorseCoreRoute<T>.Get(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Get(FPath, ACallbacks);
-end;
-
-function THorseCoreRoute<T>.Get(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Get(FPath, ACallbacks, ACallback);
-end;
-
-function THorseCoreRoute<T>.Head(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Head(FPath, ACallbacks);
-end;
-
-function THorseCoreRoute<T>.Head(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Head(FPath, ACallbacks, ACallback);
-end;
-
-function THorseCoreRoute<T>.Head(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Head(FPath, AMiddleware, ACallback);
 end;
 
 function THorseCoreRoute<T>.Head(ACallback: THorseCallback): IHorseCoreRoute<T>;
@@ -188,24 +118,6 @@ begin
 end;
 
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}
-function THorseCoreRoute<T>.Patch(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Patch(FPath, ACallbacks, ACallback);
-end;
-
-function THorseCoreRoute<T>.Patch(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Patch(FPath, ACallbacks);
-end;
-
-function THorseCoreRoute<T>.Patch(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Patch(FPath, AMiddleware, ACallback);
-end;
-
 function THorseCoreRoute<T>.Patch(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
@@ -219,46 +131,10 @@ begin
   THorseCore(FHorseCore).Post(FPath, ACallback);
 end;
 
-function THorseCoreRoute<T>.Post(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Post(FPath, AMiddleware, ACallback);
-end;
-
-function THorseCoreRoute<T>.Post(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Post(FPath, ACallbacks);
-end;
-
-function THorseCoreRoute<T>.Post(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Post(FPath, ACallbacks, ACallback);
-end;
-
 function THorseCoreRoute<T>.Put(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
   THorseCore(FHorseCore).Put(FPath, ACallback);
-end;
-
-function THorseCoreRoute<T>.Put(AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Put(FPath, AMiddleware, ACallback);
-end;
-
-function THorseCoreRoute<T>.Put(ACallbacks: array of THorseCallback; ACallback: THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Put(FPath, ACallbacks, ACallback);
-end;
-
-function THorseCoreRoute<T>.Put(ACallbacks: array of THorseCallback): IHorseCoreRoute<T>;
-begin
-  Result := Self;
-  THorseCore(FHorseCore).Put(FPath, ACallbacks);
 end;
 
 end.
