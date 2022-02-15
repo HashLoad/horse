@@ -41,7 +41,7 @@ begin
       begin
         LName := LHeaders.Names[I];
         LValue := LHeaders.Values[LName];
-        Result.AddOrSetValue(LName, LValue);
+        Result.AddOrSetValue(LName, Trim(LValue));
       end;
       {$IF DEFINED(FPC)}
       for I := Integer(Low(THeader)) to Integer(High(THeader)) do

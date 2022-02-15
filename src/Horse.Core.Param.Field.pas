@@ -23,7 +23,7 @@ type
     FRequiredMessage: string;
     FInvalidFormatMessage: string;
     FDateFormat: string;
-    FTimeFormat: String;
+    FTimeFormat: string;
     FReturnUTC: Boolean;
     FTrueValue: string;
     FValue: string;
@@ -32,16 +32,15 @@ type
     procedure RaiseHorseException(const AMessage: string); overload;
     procedure RaiseHorseException(const AMessage: string; const Args: array of const); overload;
     function TryISO8601ToDate(const AValue: string; out Value: TDateTime): Boolean;
-
   public
-    function DateFormat(const AValue: String): THorseCoreParamField;
-    function InvalidFormatMessage(const AValue: String): THorseCoreParamField;
+    function DateFormat(const AValue: string): THorseCoreParamField;
+    function InvalidFormatMessage(const AValue: string): THorseCoreParamField;
     function Required: THorseCoreParamField; overload;
     function Required(const AValue: Boolean): THorseCoreParamField; overload;
-    function RequiredMessage(const AValue: String): THorseCoreParamField;
+    function RequiredMessage(const AValue: string): THorseCoreParamField;
     function ReturnUTC(const AValue: Boolean): THorseCoreParamField;
-    function TimeFormat(const AValue: String): THorseCoreParamField;
-    function TrueValue(const AValue: String): THorseCoreParamField;
+    function TimeFormat(const AValue: string): THorseCoreParamField;
+    function TrueValue(const AValue: string): THorseCoreParamField;
 
     function AsBoolean: Boolean;
     function AsCurrency: Currency;
@@ -52,11 +51,11 @@ type
     function AsInteger: Integer;
     function AsInt64: Int64;
     function AsISO8601DateTime: TDateTime;
-    function AsString: string;
+    function Asstring: string;
     function AsTime: TTime;
 
-    constructor create(const AParams: TDictionary<string, string>; const AFieldName: String);
-end;
+    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+  end;
 
 implementation
 
@@ -67,14 +66,14 @@ var
   LStrParam: string;
 begin
   Result := False;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   if LStrParam <> EmptyStr then
-    result := LowerCase(LStrParam) = LowerCase(FTrueValue);
+    Result := LowerCase(LStrParam) = LowerCase(FTrueValue);
 end;
 
 function THorseCoreParamField.AsCurrency: Currency;
 begin
-  result := AsFloat;
+  Result := AsFloat;
 end;
 
 function THorseCoreParamField.AsDate: TDateTime;
@@ -83,7 +82,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -102,7 +101,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -117,7 +116,7 @@ end;
 
 function THorseCoreParamField.AsExtended: Extended;
 begin
-  result := AsFloat;
+  Result := AsFloat;
 end;
 
 function THorseCoreParamField.AsFloat: Double;
@@ -143,7 +142,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt64(LStrParam);
@@ -158,7 +157,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt(LStrParam);
@@ -173,7 +172,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   if LStrParam <> EmptyStr then
   begin
     if not TryISO8601ToDate(LStrParam, Result) then
@@ -181,7 +180,7 @@ begin
   end;
 end;
 
-function THorseCoreParamField.AsString: string;
+function THorseCoreParamField.Asstring: string;
 begin
   Result := EmptyStr;
   if FContains then
@@ -197,7 +196,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Asstring;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -210,7 +209,7 @@ begin
   end;
 end;
 
-constructor THorseCoreParamField.create(const AParams: TDictionary<string, string>; const AFieldName: String);
+constructor THorseCoreParamField.Create(const AParams: TDictionary<string, string>; const AFieldName: string);
 var
   LKey: string;
 begin
@@ -232,9 +231,9 @@ begin
     FValue := AParams.Items[LKey];
 end;
 
-function THorseCoreParamField.DateFormat(const AValue: String): THorseCoreParamField;
+function THorseCoreParamField.DateFormat(const AValue: string): THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FDateFormat := AValue;
 end;
 
@@ -247,13 +246,13 @@ begin
 {$ENDIF}
   if FDateFormat.IndexOf('-') > 0 then
     Result.DateSeparator := '-';
-  result.ShortDateFormat := FDateFormat;
-  result.ShortTimeFormat := FTimeFormat;
+  Result.ShortDateFormat := FDateFormat;
+  Result.ShortTimeFormat := FTimeFormat;
 end;
 
-function THorseCoreParamField.InvalidFormatMessage(const AValue: String): THorseCoreParamField;
+function THorseCoreParamField.InvalidFormatMessage(const AValue: string): THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FInvalidFormatMessage := AValue;
 end;
 
@@ -279,11 +278,11 @@ end;
 
 function THorseCoreParamField.Required: THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FRequired := True;
 end;
 
-function THorseCoreParamField.RequiredMessage(const AValue: String): THorseCoreParamField;
+function THorseCoreParamField.RequiredMessage(const AValue: string): THorseCoreParamField;
 begin
   Result := Self;
   FRequiredMessage := AValue;
@@ -291,19 +290,19 @@ end;
 
 function THorseCoreParamField.ReturnUTC(const AValue: Boolean): THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FReturnUTC := AValue;
 end;
 
-function THorseCoreParamField.TimeFormat(const AValue: String): THorseCoreParamField;
+function THorseCoreParamField.TimeFormat(const AValue: string): THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FTimeFormat := AValue;
 end;
 
-function THorseCoreParamField.TrueValue(const AValue: String): THorseCoreParamField;
+function THorseCoreParamField.TrueValue(const AValue: string): THorseCoreParamField;
 begin
-  result := Self;
+  Result := Self;
   FTrueValue := AValue;
 end;
 

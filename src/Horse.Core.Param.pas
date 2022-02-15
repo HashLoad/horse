@@ -22,34 +22,32 @@ type
     class var FInstance: THorseCoreParamConfig;
 
     FRequiredMessage: string;
-    FInvalidFormatMessage: String;
-    FDateFormat: String;
-    FTimeFormat: String;
+    FInvalidFormatMessage: string;
+    FDateFormat: string;
+    FTimeFormat: string;
     FReturnUTC: Boolean;
     FTrueValue: string;
 
-    constructor createPrivate;
-
+    constructor Create;
   public
-    function RequiredMessage(const AValue: String): THorseCoreParamConfig; overload;
+    function RequiredMessage(const AValue: string): THorseCoreParamConfig; overload;
     function RequiredMessage: string; overload;
 
-    function InvalidFormatMessage(const AValue: String): THorseCoreParamConfig; overload;
+    function InvalidFormatMessage(const AValue: string): THorseCoreParamConfig; overload;
     function InvalidFormatMessage: string; overload;
 
-    function DateFormat(const AValue: String): THorseCoreParamConfig; overload;
+    function DateFormat(const AValue: string): THorseCoreParamConfig; overload;
     function DateFormat: string; overload;
 
-    function TimeFormat(const AValue: String): THorseCoreParamConfig; overload;
+    function TimeFormat(const AValue: string): THorseCoreParamConfig; overload;
     function TimeFormat: string; overload;
 
     function ReturnUTC(const AValue: Boolean): THorseCoreParamConfig; overload;
     function ReturnUTC: Boolean; overload;
 
-    function TrueValue(const AValue: String): THorseCoreParamConfig; overload;
-    function TrueValue: String; overload;
+    function TrueValue(const AValue: string): THorseCoreParamConfig; overload;
+    function TrueValue: string; overload;
 
-    constructor Create;
     destructor Destroy; override;
 
     class function GetInstance: THorseCoreParamConfig;
@@ -59,7 +57,7 @@ type
   THorseCoreParam = class
   private
     FParams: THorseList;
-    FFields: TDictionary<String, THorseCoreParamField>;
+    FFields: TDictionary<string, THorseCoreParamField>;
     FContent: TStrings;
     FRequired: Boolean;
 
@@ -69,13 +67,10 @@ type
     function GetContent: TStrings;
 
     procedure ClearFields;
-
-    function AsString(const AKey: String): String;
-
+    function AsString(const AKey: string): string;
   public
     function Required(const AValue: Boolean): THorseCoreParam;
-    function Field(const AKey: String): THorseCoreParamField;
-
+    function Field(const AKey: string): THorseCoreParamField;
     function ContainsKey(const AKey: string): Boolean;
     function ContainsValue(const AValue: string): Boolean;
     function ToArray: TArray<TPair<string, string>>;
@@ -84,7 +79,7 @@ type
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
-    constructor Create(AParams: THorseList);   //
+    constructor Create(AParams: THorseList);
     destructor Destroy; override;
   end;
 
@@ -123,20 +118,20 @@ begin
   inherited;
 end;
 
-function THorseCoreParam.Field(const AKey: String): THorseCoreParamField;
+function THorseCoreParam.Field(const AKey: string): THorseCoreParamField;
 var
   LFieldName: string;
 begin
   if not Assigned(FFields) then
-    FFields := TDictionary<String, THorseCoreParamField>.Create;
+    FFields := TDictionary<string, THorseCoreParamField>.Create;
 
   LFieldName := AKey.ToLower;
   if FFields.ContainsKey(LFieldName) then
     Exit( FFields.Items[LFieldName] );
 
-  result := THorseCoreParamField.create(FParams, AKey);
+  Result := THorseCoreParamField.create(FParams, AKey);
   try
-    result
+    Result
       .Required(FRequired)
       .DateFormat(THorseCoreParamConfig.GetInstance.DateFormat)
       .InvalidFormatMessage(THorseCoreParamConfig.GetInstance.InvalidFormatMessage)
@@ -145,18 +140,18 @@ begin
       .TimeFormat(THorseCoreParamConfig.GetInstance.TimeFormat)
       .TrueValue(THorseCoreParamConfig.GetInstance.TrueValue);
 
-    FFields.AddOrSetValue(LFieldName, result);
+    FFields.AddOrSetValue(LFieldName, Result);
   except
-    result.Free;
+    Result.Free;
     raise;
   end;
 end;
 
-function THorseCoreParam.AsString(const AKey: String): String;
+function THorseCoreParam.AsString(const AKey: string): string;
 var
   LKey: string;
 begin
-  result := EmptyStr;
+  Result := EmptyStr;
   for LKey in FParams.Keys do
   begin
     if AnsiCompareText(LKey, AKey) = 0 then
@@ -166,7 +161,7 @@ end;
 
 procedure THorseCoreParam.ClearFields;
 var
-  LKey: String;
+  LKey: string;
 begin
   if Assigned(FFields) then
   begin
@@ -204,12 +199,12 @@ begin
     if AnsiCompareText(LKey, AKey) = 0 then
       Exit(FParams[LKey]);
   end;
-  raise EListError.CreateFmt('Item %s not found', [AKey]);
+  Result := EmptyStr;
 end;
 
 function THorseCoreParam.Required(const AValue: Boolean): THorseCoreParam;
 begin
-  result := Self;
+  Result := Self;
   FRequired := AValue;
 end;
 
@@ -226,18 +221,13 @@ end;
 function THorseCoreParam.TryGetValue(const AKey: string; var AValue: string): Boolean;
 begin
   Result := ContainsKey(AKey);
-  if result then
-    AValue := Asstring(AKey);
+  if Result then
+    AValue := AsString(AKey);
 end;
 
 { THorseCoreParamConfig }
 
 constructor THorseCoreParamConfig.Create;
-begin
-  raise Exception.Create('Invoke the GetInstance Method.');
-end;
-
-constructor THorseCoreParamConfig.createPrivate;
 begin
   FReturnUTC := True;
   FDateFormat := 'yyyy-MM-dd';
@@ -247,15 +237,15 @@ begin
   FInvalidFormatMessage := 'The %0:s param ''%1:s'' is not valid a %2:s type.';
 end;
 
-function THorseCoreParamConfig.DateFormat(const AValue: String): THorseCoreParamConfig;
+function THorseCoreParamConfig.DateFormat(const AValue: string): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FDateFormat := AValue;
 end;
 
 function THorseCoreParamConfig.DateFormat: string;
 begin
-  result := FDateFormat;
+  Result := FDateFormat;
 end;
 
 destructor THorseCoreParamConfig.Destroy;
@@ -267,65 +257,63 @@ end;
 class function THorseCoreParamConfig.GetInstance: THorseCoreParamConfig;
 begin
   if not Assigned(FInstance) then
-  begin
-    FInstance := THorseCoreParamConfig.createPrivate;
-  end;
+    FInstance := THorseCoreParamConfig.Create;
   Result := FInstance;
 end;
 
 function THorseCoreParamConfig.InvalidFormatMessage: string;
 begin
-  result := FInvalidFormatMessage;
+  Result := FInvalidFormatMessage;
 end;
 
-function THorseCoreParamConfig.InvalidFormatMessage(const AValue: String): THorseCoreParamConfig;
+function THorseCoreParamConfig.InvalidFormatMessage(const AValue: string): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FInvalidFormatMessage := AValue;
 end;
 
-function THorseCoreParamConfig.RequiredMessage(const AValue: String): THorseCoreParamConfig;
+function THorseCoreParamConfig.RequiredMessage(const AValue: string): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FRequiredMessage := AValue;
 end;
 
 function THorseCoreParamConfig.RequiredMessage: string;
 begin
-  result := FRequiredMessage;
+  Result := FRequiredMessage;
 end;
 
 function THorseCoreParamConfig.ReturnUTC(const AValue: Boolean): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FReturnUTC := AValue;
 end;
 
 function THorseCoreParamConfig.ReturnUTC: Boolean;
 begin
-  result := FReturnUTC;
+  Result := FReturnUTC;
 end;
 
 function THorseCoreParamConfig.TimeFormat: string;
 begin
-  result := FTimeFormat;
+  Result := FTimeFormat;
 end;
 
-function THorseCoreParamConfig.TimeFormat(const AValue: String): THorseCoreParamConfig;
+function THorseCoreParamConfig.TimeFormat(const AValue: string): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FTimeFormat := AValue;
 end;
 
-function THorseCoreParamConfig.TrueValue(const AValue: String): THorseCoreParamConfig;
+function THorseCoreParamConfig.TrueValue(const AValue: string): THorseCoreParamConfig;
 begin
-  result := Self;
+  Result := Self;
   FTrueValue := AValue;
 end;
 
-function THorseCoreParamConfig.TrueValue: String;
+function THorseCoreParamConfig.TrueValue: string;
 begin
-  result := FTrueValue;
+  Result := FTrueValue;
 end;
 
 class destructor THorseCoreParamConfig.UnInitialize;
