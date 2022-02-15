@@ -160,7 +160,7 @@ begin
   if not Assigned(FHeaders) then
   begin
     LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
-    FHeaders := THorseCoreParam.Create(LParam);
+    FHeaders := THorseCoreParam.Create(LParam).Required(False);
   end;
   result := FHeaders;
 end;
@@ -169,7 +169,7 @@ procedure THorseRequest.InitializeContentFields;
 var
   I: Integer;
 begin
-  FContentFields := THorseCoreParam.Create(THorseList.Create);
+  FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
   if (not CanLoadContentFields) then
     Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
@@ -181,7 +181,7 @@ var
   LParam: TArray<string>;
   LItem: string;
 begin
-  FCookie := THorseCoreParam.Create(THorseList.Create);
+  FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
   for LItem in FWebRequest.CookieFields do
   begin
     LParam := LItem.Split(['=']);
@@ -191,7 +191,7 @@ end;
 
 procedure THorseRequest.InitializeParams;
 begin
-  FParams := THorseCoreParam.Create(THorseList.Create);
+  FParams := THorseCoreParam.Create(THorseList.Create).Required(True);
 end;
 
 procedure THorseRequest.InitializeQuery;
@@ -199,7 +199,7 @@ var
   LItem, LKey, LValue: string;
   LEqualFirstPos: Integer;
 begin
-  FQuery := THorseCoreParam.Create(THorseList.Create);
+  FQuery := THorseCoreParam.Create(THorseList.Create).Required(False);
   for LItem in FWebRequest.QueryFields do
   begin
     LEqualFirstPos := Pos('=', Litem);
