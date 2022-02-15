@@ -138,7 +138,7 @@ procedure TApiTest.StopApi;
 begin
   // Warnings have been disabled for this segment as the stop has been depreciated.
   {$WARNINGS OFF}
-  THorse.Stop;
+  THorse.StopListen;
   {$WARNINGS ON}
 end;
 

@@ -148,6 +148,7 @@
         <DCCReference Include="..\..\src\ThirdParty.Posix.Syslog.pas"/>
         <DCCReference Include="..\..\src\Web.WebConst.pas"/>
         <DCCReference Include="tests\Tests.Horse.Core.Param.pas"/>
+        <DCCReference Include="..\..\src\Horse.Core.Param.Field.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -174,13 +175,12 @@
                 </Source>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="..\VCL.exe" Configuration="CI" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>VCL.exe</RemoteName>
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\VCL.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\VCL.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>VCL.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -191,13 +191,14 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="OSX32">
+                <DeployFile LocalName="..\VCL.exe" Configuration="CI" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>VCL.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="OSX32">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

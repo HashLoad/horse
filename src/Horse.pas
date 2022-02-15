@@ -23,6 +23,7 @@ type
   TNextProc = Horse.Proc.TNextProc;
   THorseList = Horse.Core.Param.THorseList;
   THorseCoreParam = Horse.Core.Param.THorseCoreParam;
+  THorseCoreParamConfig = Horse.Core.Param.THorseCoreParamConfig;
   THorseRequest = Horse.HTTP.THorseRequest;
   THorseResponse = Horse.HTTP.THorseResponse;
   THorseCallback = Horse.Core.RouterTree.THorseCallback;

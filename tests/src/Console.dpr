@@ -41,7 +41,8 @@ uses
   Horse.Core.Param.Header in '..\..\src\Horse.Core.Param.Header.pas',
   Horse.Rtti in '..\..\src\Horse.Rtti.pas',
   Horse.Provider.IOHandleSSL in '..\..\src\Horse.Provider.IOHandleSSL.pas',
-  Tests.Horse.Core.Param in 'tests\Tests.Horse.Core.Param.pas';
+  Tests.Horse.Core.Param in 'tests\Tests.Horse.Core.Param.pas',
+  Horse.Core.Param.Field in '..\..\src\Horse.Core.Param.Field.pas';
 
 var
   Runner: ITestRunner;

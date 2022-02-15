@@ -40,7 +40,8 @@ uses
   Horse.Rtti in '..\..\src\Horse.Rtti.pas',
   ThirdParty.Posix.Syslog in '..\..\src\ThirdParty.Posix.Syslog.pas',
   Web.WebConst in '..\..\src\Web.WebConst.pas',
-  Tests.Horse.Core.Param in 'tests\Tests.Horse.Core.Param.pas';
+  Tests.Horse.Core.Param in 'tests\Tests.Horse.Core.Param.pas',
+  Horse.Core.Param.Field in '..\..\src\Horse.Core.Param.Field.pas';
 
 var
   runner: ITestRunner;
