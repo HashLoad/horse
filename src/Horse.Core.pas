@@ -12,7 +12,7 @@ uses
 {$ELSE}
   System.SysUtils, System.Generics.Collections, Web.HTTPApp,
 {$ENDIF}
-  Horse.Core.RouterTree, Horse.Commons, Horse.HTTP,
+  Horse.Core.RouterTree, Horse.Commons, Horse.HTTP, Horse.Constants,
   Horse.Core.Group.Contract, Horse.Core.Route.Contract;
 
 type
@@ -35,7 +35,6 @@ type
 
   THorseCore = class
   private
-    { private declarations }
     class var FRoutes: THorseRouterTree;
     class var FCallbacks: TList<THorseCallback>;
     class function RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;
@@ -54,13 +53,13 @@ type
     class function GetCallback(ACallbackRequest: THorseCallbackRequest): THorseCallback; overload;
     class function GetCallback(ACallbackResponse: THorseCallbackResponse): THorseCallback; overload;
     {$ENDIF}
-    class function GetCallbacks: TArray<THorseCallback>;
 
+    class function GetCallbacks: TArray<THorseCallback>;
   protected
     class function GetDefaultHorse: THorseCore;
   public
-    class function ToModule: THorseModule;
     constructor Create; virtual;
+    class function ToModule: THorseModule;
     class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
     class function AddCallback(ACallback: THorseCallback): THorseCore;
     class function Group(): IHorseCoreGroup<THorseCore>;
@@ -87,9 +86,9 @@ type
     {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     class function Patch(APath: string; ACallback: THorseCallback): THorseCore; overload;
       {$IFNDEF FPC}
-    class function Patch(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore; overload;
-    class function Patch(APath: string; ACallback: THorseCallbackRequest): THorseCore; overload;
-    class function Patch(APath: string; ACallback: THorseCallbackResponse): THorseCore; overload;
+      class function Patch(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore; overload;
+      class function Patch(APath: string; ACallback: THorseCallbackRequest): THorseCore; overload;
+      class function Patch(APath: string; ACallback: THorseCallbackResponse): THorseCore; overload;
       {$IFEND}
     {$IFEND}
 
@@ -110,14 +109,15 @@ type
     {$IF (defined(fpc) or (CompilerVersion > 27.0))}
     class function Delete(APath: string; ACallback: THorseCallback): THorseCore; overload;
       {$IFNDEF FPC}
-    class function Delete(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore; overload;
-    class function Delete(APath: string; ACallback: THorseCallbackRequest): THorseCore; overload;
-    class function Delete(APath: string; ACallback: THorseCallbackResponse): THorseCore; overload;
+      class function Delete(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore; overload;
+      class function Delete(APath: string; ACallback: THorseCallbackRequest): THorseCore; overload;
+      class function Delete(APath: string; ACallback: THorseCallbackResponse): THorseCore; overload;
       {$IFEND}
     {$IFEND}
 
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
     class function GetInstance: THorseCore;
+    class function Version: string;
   end;
 
 implementation
@@ -340,6 +340,11 @@ begin
   Result := GetDefaultHorse;
   for LCallback in ACallbacks do
     Use(LCallback);
+end;
+
+class function THorseCore.Version: string;
+begin
+  Result := HORSE_VERSION;
 end;
 
 class function THorseCore.Use(APath: string; ACallbacks: array of THorseCallback): THorseCore;
