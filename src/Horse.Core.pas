@@ -61,7 +61,10 @@ type
     constructor Create; virtual;
     class function ToModule: THorseModule;
     class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
+
     class function AddCallback(ACallback: THorseCallback): THorseCore;
+    class function AddCallbacks(ACallbacks: TArray<THorseCallback>): THorseCore;
+
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
     class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;
@@ -128,10 +131,19 @@ uses Horse.Core.Route, Horse.Core.Group;
 
 class function THorseCore.AddCallback(ACallback: THorseCallback): THorseCore;
 begin
-  result := GetDefaultHorse;
+  Result := GetDefaultHorse;
   if FCallbacks = nil then
-    FCallbacks := TList<THorseCallback>.create;
+    FCallbacks := TList<THorseCallback>.Create;
   FCallbacks.Add(ACallback);
+end;
+
+class function THorseCore.AddCallbacks(ACallbacks: TArray<THorseCallback>): THorseCore;
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    AddCallback(LCallback);
+  Result := GetDefaultHorse;
 end;
 
 constructor THorseCore.Create;
