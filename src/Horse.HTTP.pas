@@ -162,7 +162,7 @@ begin
     LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
     FHeaders := THorseCoreParam.Create(LParam).Required(False);
   end;
-  result := FHeaders;
+  Result := FHeaders;
 end;
 
 procedure THorseRequest.InitializeContentFields;

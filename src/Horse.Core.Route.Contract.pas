@@ -23,7 +23,7 @@ type
     function Head(ACallback: THorseCallback): IHorseCoreRoute<T>;
     function Post(ACallback: THorseCallback): IHorseCoreRoute<T>;
 
-    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    {$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
     function Patch(ACallback: THorseCallback): IHorseCoreRoute<T>;
     function Delete(ACallback: THorseCallback): IHorseCoreRoute<T>;
     {$IFEND}

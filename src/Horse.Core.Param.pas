@@ -75,6 +75,7 @@ type
     function ContainsValue(const AValue: string): Boolean;
     function ToArray: TArray<TPair<string, string>>;
     function TryGetValue(const AKey: string; var AValue: string): Boolean;
+    function AddOrSetValue(const AKey: string; const AValue: string): THorseCoreParam;
     property Content: TStrings read GetContent;
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
@@ -145,6 +146,12 @@ begin
     Result.Free;
     raise;
   end;
+end;
+
+function THorseCoreParam.AddOrSetValue(const AKey: string; const AValue: string): THorseCoreParam;
+begin
+  Result := Self;
+  FParams.AddOrSetValue(AKey, AValue);
 end;
 
 function THorseCoreParam.AsString(const AKey: string): string;

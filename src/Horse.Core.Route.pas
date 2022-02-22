@@ -36,7 +36,7 @@ type
     function Head(ACallback: THorseCallback): IHorseCoreRoute<T>;
     function Post(ACallback: THorseCallback): IHorseCoreRoute<T>;
 
-    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    {$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
     function Patch(ACallback: THorseCallback): IHorseCoreRoute<T>;
     function Delete(ACallback: THorseCallback): IHorseCoreRoute<T>;
     {$IFEND}
@@ -86,7 +86,7 @@ end;
 
 function THorseCoreRoute<T>.AddCallback(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
-  result := Self;
+  Result := Self;
   THorseCore(FHorseCore).AddCallback(ACallback);
 end;
 
@@ -97,7 +97,7 @@ begin
   THorseCore(FHorseCore).Use(FPath, [ACallback]);
 end;
 
-{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+{$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
 function THorseCoreRoute<T>.Delete(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;
@@ -117,7 +117,7 @@ begin
   THorseCore(FHorseCore).Head(FPath, ACallback);
 end;
 
-{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+{$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
 function THorseCoreRoute<T>.Patch(ACallback: THorseCallback): IHorseCoreRoute<T>;
 begin
   Result := Self;

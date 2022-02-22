@@ -51,6 +51,8 @@ type
     function CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
     function HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
   public
+    function GetCallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    function GetRouter: TObjectDictionary<string, THorseRouterTree>;
     function CreateRouter(APath: string): THorseRouterTree;
     function GetPrefix(): string;
     procedure Prefix(APrefix: string);
@@ -226,6 +228,11 @@ begin
   FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
+function THorseRouterTree.GetCallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+begin
+  Result := FCallBack;
+end;
+
 function THorseRouterTree.GetPrefix(): string;
 begin
   Result := FPrefix;
@@ -249,6 +256,11 @@ begin
       Continue;
     Result.Enqueue(LPart);
   end;
+end;
+
+function THorseRouterTree.GetRouter: TObjectDictionary<string, THorseRouterTree>;
+begin
+  Result := FRoute;
 end;
 
 function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
