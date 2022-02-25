@@ -169,10 +169,10 @@ end;
 
 class function THorseCore.GetCallbacks: TArray<THorseCallback>;
 begin
-  result := [];
+  Result := [];
   if Assigned(FCallbacks) then
   begin
-    result := FCallbacks.ToArray;
+    Result := FCallbacks.ToArray;
     FCallbacks.Clear;
   end;
 end;
@@ -251,17 +251,17 @@ end;
   {$IFNDEF FPC}
 class function THorseCore.Delete(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Delete(APath, GetCallback(ACallback));
+  Result := Delete(APath, GetCallback(ACallback));
 end;
 
 class function THorseCore.Delete(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Delete(APath, GetCallback(ACallback));
+  Result := Delete(APath, GetCallback(ACallback));
 end;
 
 class function THorseCore.Delete(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Delete(APath, GetCallback(ACallback));
+  Result := Delete(APath, GetCallback(ACallback));
 end;
   {$IFEND}
 
@@ -310,17 +310,17 @@ end;
   {$IFNDEF FPC}
 class function THorseCore.Patch(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Patch(APath, GetCallback(ACallback));
+  Result := Patch(APath, GetCallback(ACallback));
 end;
 
 class function THorseCore.Patch(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Patch(APath, GetCallback(ACallback));
+  Result := Patch(APath, GetCallback(ACallback));
 end;
 
 class function THorseCore.Patch(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Patch(APath, GetCallback(ACallback));
+  Result := Patch(APath, GetCallback(ACallback));
 end;
   {$IFEND}
 
@@ -384,35 +384,35 @@ end;
 {$IFNDEF FPC}
 class function THorseCore.Head(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Head(APath, GetCallback(ACallback));
+  Result := Head(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Head(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Head(APath, GetCallback(ACallback));
+  Result := Head(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Head(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Head(APath, GetCallback(ACallback));
+  Result := Head(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Get(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Get(APath, GetCallback(ACallback));
+  Result := Get(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.GetCallback(ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
 begin
-  result :=
+  Result :=
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       ACallbackRequest(Req, Res);
@@ -423,7 +423,7 @@ end;
 {$IFNDEF FPC}
 class function THorseCore.GetCallback(ACallbackResponse: THorseCallbackResponse): THorseCallback;
 begin
-  result :=
+  Result :=
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       ACallbackResponse(Res);
@@ -434,7 +434,7 @@ end;
 {$IFNDEF FPC}
 class function THorseCore.GetCallback(ACallbackRequest: THorseCallbackRequest): THorseCallback;
 begin
-  result :=
+  Result :=
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       Res.Status(THTTPStatus.NoContent);
@@ -446,56 +446,56 @@ end;
 {$IFNDEF FPC}
 class function THorseCore.Get(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Get(APath, GetCallback(ACallback));
+  Result := Get(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Get(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Get(APath, GetCallback(ACallback));
+  Result := Get(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Post(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Post(APath, GetCallback(ACallback));
+  Result := Post(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Post(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Post(APath, GetCallback(ACallback));
+  Result := Post(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Post(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Post(APath, GetCallback(ACallback));
+  Result := Post(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Put(APath: string; ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
-  result := Put(APath, GetCallback(ACallback));
+  Result := Put(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Put(APath: string; ACallback: THorseCallbackRequest): THorseCore;
 begin
-  result := Put(APath, GetCallback(ACallback));
+  Result := Put(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
 {$IFNDEF FPC}
 class function THorseCore.Put(APath: string; ACallback: THorseCallbackResponse): THorseCore;
 begin
-  result := Put(APath, GetCallback(ACallback));
+  Result := Put(APath, GetCallback(ACallback));
 end;
 {$IFEND}
 
