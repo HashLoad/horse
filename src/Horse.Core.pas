@@ -56,8 +56,6 @@ type
 
     class function GetCallbacks: TArray<THorseCallback>;
     class function RegisterCallbacksRoute(const AMethod: TMethodType; const APath: string): THorseCore;
-  protected
-    class function GetDefaultHorse: THorseCore;
   public
     constructor Create; virtual;
     class function ToModule: THorseModule;
@@ -133,7 +131,7 @@ uses Horse.Core.Route, Horse.Core.Group;
 
 class function THorseCore.AddCallback(ACallback: THorseCallback): THorseCore;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   if FCallbacks = nil then
     FCallbacks := TList<THorseCallback>.Create;
   FCallbacks.Add(ACallback);
@@ -145,7 +143,7 @@ var
 begin
   for LCallback in ACallbacks do
     AddCallback(LCallback);
-  Result := GetDefaultHorse;
+  Result := GetInstance;
 end;
 
 constructor THorseCore.Create;
@@ -157,16 +155,11 @@ begin
   FDefaultHorse := Self
 end;
 
-class function THorseCore.GetDefaultHorse: THorseCore;
+class function THorseCore.GetInstance: THorseCore;
 begin
   if FDefaultHorse = nil then
     FDefaultHorse := THorseCore.Create;
   Result := FDefaultHorse;
-end;
-
-class function THorseCore.GetInstance: THorseCore;
-begin
-  Result := GetDefaultHorse;
 end;
 
 class function THorseCore.GetCallbacks: TArray<THorseCallback>;
@@ -183,26 +176,26 @@ class function THorseCore.RegisterCallbacksRoute(const AMethod: TMethodType; con
 var
   LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   for LCallback in GetCallbacks do
     RegisterRoute(AMethod, APath, LCallback);
 end;
 
 class function THorseCore.GetRoutes: THorseRouterTree;
 begin
-  Result := GetDefaultHorse.InternalGetRoutes;
+  Result := GetInstance.InternalGetRoutes;
 end;
 
 class function THorseCore.Group: IHorseCoreGroup<THorseCore>;
 begin
-  Result := GetDefaultHorse.InternalGroup();
+  Result := GetInstance.InternalGroup();
 end;
 
 class function THorseCore.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback): THorseCore;
 var
   LDefaultHorse: THorseCore;
 begin
-  LDefaultHorse := GetDefaultHorse;
+  LDefaultHorse := GetInstance;
   Result := LDefaultHorse;
   APath := '/' + APath.Trim(['/']);
   LDefaultHorse.GetRoutes.RegisterRoute(AHTTPType, APath, ACallback);
@@ -210,17 +203,17 @@ end;
 
 class function THorseCore.Route(APath: string): IHorseCoreRoute<THorseCore>;
 begin
-  Result := GetDefaultHorse.InternalRoute(APath);
+  Result := GetInstance.InternalRoute(APath);
 end;
 
 class procedure THorseCore.SetRoutes(const Value: THorseRouterTree);
 begin
-  GetDefaultHorse.InternalSetRoutes(Value);
+  GetInstance.InternalSetRoutes(Value);
 end;
 
 class function THorseCore.ToModule: THorseModule;
 begin
-  Result := GetDefaultHorse.MakeHorseModule;
+  Result := GetInstance.MakeHorseModule;
 end;
 
 function THorseCore.InternalGetRoutes: THorseRouterTree;
@@ -336,7 +329,7 @@ class function THorseCore.Use(ACallbacks: array of THorseCallback): THorseCore;
 var
   LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   for LCallback in ACallbacks do
     Use(LCallback);
 end;
@@ -350,20 +343,20 @@ class function THorseCore.Use(APath: string; ACallbacks: array of THorseCallback
 var
   LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   for LCallback in ACallbacks do
     Use(APath, LCallback);
 end;
 
 class function THorseCore.Use(ACallback: THorseCallback): THorseCore;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   Result.Routes.RegisterMiddleware('/', ACallback);
 end;
 
 class function THorseCore.Use(APath: string; ACallback: THorseCallback): THorseCore;
 begin
-  Result := GetDefaultHorse;
+  Result := GetInstance;
   APath := '/' + APath.Trim(['/']);
   Result.Routes.RegisterMiddleware(APath, ACallback);
 end;
