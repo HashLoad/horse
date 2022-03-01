@@ -55,6 +55,7 @@ type
     {$ENDIF}
 
     class function GetCallbacks: TArray<THorseCallback>;
+    class function RegisterCallbacksRoute(const AMethod: TMethodType; const APath: string): THorseCore;
   protected
     class function GetDefaultHorse: THorseCore;
   public
@@ -67,6 +68,7 @@ type
 
     class function Group(): IHorseCoreGroup<THorseCore>;
     class function Route(APath: string): IHorseCoreRoute<THorseCore>;
+
     class function Use(APath: string; ACallback: THorseCallback): THorseCore; overload;
     class function Use(ACallback: THorseCallback): THorseCore; overload;
     class function Use(APath: string; ACallbacks: array of THorseCallback): THorseCore; overload;
@@ -177,6 +179,15 @@ begin
   end;
 end;
 
+class function THorseCore.RegisterCallbacksRoute(const AMethod: TMethodType; const APath: string): THorseCore;
+var
+  LCallback: THorseCallback;
+begin
+  Result := GetDefaultHorse;
+  for LCallback in GetCallbacks do
+    RegisterRoute(AMethod, APath, LCallback);
+end;
+
 class function THorseCore.GetRoutes: THorseRouterTree;
 begin
   Result := GetDefaultHorse.InternalGetRoutes;
@@ -266,43 +277,27 @@ end;
   {$IFEND}
 
 class function THorseCore.Delete(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtDelete, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtDelete, APath);
   RegisterRoute(mtDelete, APath, ACallback);
 end;
 {$IFEND}
 
 class function THorseCore.Head(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtHead, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtHead, APath);
   RegisterRoute(mtHead, APath, ACallback);
 end;
 
 class function THorseCore.Get(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtGet, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtGet, APath);
   RegisterRoute(mtGet, APath, ACallback);
 end;
 
 class function THorseCore.Post(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtPost, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtPost, APath);
   RegisterRoute(mtPost, APath, ACallback);
 end;
 
@@ -325,23 +320,15 @@ end;
   {$IFEND}
 
 class function THorseCore.Patch(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtPatch, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtPatch, APath);
   RegisterRoute(mtPatch, APath, ACallback);
 end;
 {$IFEND}
 
 class function THorseCore.Put(APath: string; ACallback: THorseCallback): THorseCore;
-var
-  LCallback: THorseCallback;
 begin
-  Result := GetDefaultHorse;
-  for LCallback in GetCallbacks do
-    RegisterRoute(mtPut, APath, LCallback);
+  Result := RegisterCallbacksRoute(mtPut, APath);
   RegisterRoute(mtPut, APath, ACallback);
 end;
 
