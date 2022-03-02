@@ -15,6 +15,7 @@ type
     function Route(const APath: string): IHorseCoreRoute<T>;
 
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
+    function AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreGroup<T>;
 
     function Use(const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;

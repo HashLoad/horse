@@ -20,12 +20,6 @@ type
     FHorseCore: TObject;
     FPrefix: string;
     function NormalizePath(const APath: string): string;
-
-    {$IFNDEF FPC}
-    function GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback; overload;
-    function GetCallback(const ACallbackRequest: THorseCallbackRequest): THorseCallback; overload;
-    function GetCallback(const ACallbackResponse: THorseCallbackResponse): THorseCallback; overload;
-    {$ENDIF}
   public
     constructor Create;
 
@@ -33,6 +27,7 @@ type
     function Route(const APath: string): IHorseCoreRoute<T>;
 
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
+    function AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreGroup<T>;
 
     function Use(const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
@@ -95,92 +90,76 @@ begin
 end;
 
 {$IFNDEF FPC}
-function THorseCoreGroup<T>.GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
-begin
-  Result :=
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
-    begin
-      ACallbackRequest(Req, Res);
-    end;
-end;
-
-function THorseCoreGroup<T>.GetCallback(const ACallbackRequest: THorseCallbackRequest): THorseCallback;
-begin
-  Result :=
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
-    begin
-      Res.Status(THTTPStatus.NoContent);
-      ACallbackRequest(Req);
-    end;
-end;
-
-function THorseCoreGroup<T>.GetCallback(const ACallbackResponse: THorseCallbackResponse): THorseCallback;
-begin
-  Result :=
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
-    begin
-      ACallbackResponse(Res);
-    end;
-end;
-
 function THorseCoreGroup<T>.Get(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
-  Result := Get(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Get(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
 begin
-  Result := Get(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Get(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
 begin
-  Result := Get(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Get(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Post(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
-  Result := Post(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Post(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
 begin
-  Result := Post(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Post(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
 begin
-  Result := Post(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Put(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
 begin
-  Result := Put(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Put(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
 begin
-  Result := Put(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Put(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
-  Result := Put(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Put(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Head(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
 begin
-  Result := Head(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Head(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
 begin
-  Result := Head(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 
 function THorseCoreGroup<T>.Head(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
-  Result := Head(APath, GetCallback(ACallback));
+  THorseCore(FHorseCore).Head(NormalizePath(APath), ACallback);
+  Result := Self;
 end;
 {$IFEND}
 
@@ -188,6 +167,15 @@ function THorseCoreGroup<T>.AddCallback(const ACallback: THorseCallback): IHorse
 begin
   Result := Self;
   THorseCore(FHorseCore).AddCallback(ACallback);
+end;
+
+function THorseCoreGroup<T>.AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreGroup<T>;
+var
+  LCallback: THorseCallback;
+begin
+  for LCallback in ACallbacks do
+    AddCallback(LCallback);
+  Result := Self;
 end;
 
 constructor THorseCoreGroup<T>.Create;
@@ -259,32 +247,38 @@ end;
   {$IFNDEF FPC}
   function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
   begin
-    Result := Patch(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
 
   function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
   begin
-    Result := Patch(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
 
   function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
   begin
-    Result := Patch(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
 
   function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
   begin
-    Result := Delete(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
 
   function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
   begin
-    Result := Delete(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
 
   function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
   begin
-    Result := Delete(APath, GetCallback(ACallback));
+    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+    Result := Self;
   end;
   {$IFEND}
 {$IFEND}
