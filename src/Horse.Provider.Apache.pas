@@ -3,7 +3,6 @@ unit Horse.Provider.Apache;
 interface
 
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
-
 uses Horse.Provider.Abstract, System.SysUtils, Web.HTTPD24Impl;
 
 type
@@ -12,26 +11,27 @@ type
     class var FHandlerName: string;
     class var FDefaultModule: Pointer;
     class procedure InternalListen; static;
-    class procedure SetHandlerName(const Value: string); static;
+    class procedure SetHandlerName(const AValue: string); static;
     class function GetHandlerName: string; static;
     class function GetDefaultModule: Pointer; static;
-    class procedure SetDefaultModule(const Value: Pointer); static;
+    class procedure SetDefaultModule(const AValue: Pointer); static;
   public
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property DefaultModule: Pointer read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
   end;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_APACHE) AND NOT DEFINED(FPC)}
-
-uses Web.WebBroker, Web.ApacheApp, {$IFDEF MSWINDOWS} Winapi.ActiveX, System.Win.ComObj, {$ENDIF } Horse.WebModule;
-
-{ THorseProvider<T:class> }
+uses
+  Web.WebBroker, Web.ApacheApp,
+{$IFDEF MSWINDOWS}
+  Winapi.ActiveX, System.Win.ComObj,
+{$ENDIF}
+  Horse.WebModule;
 
 class procedure THorseProvider<T>.InternalListen;
 begin
@@ -51,7 +51,7 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
 begin
   inherited;
   SetOnListen(ACallback);
@@ -63,9 +63,9 @@ begin
   Result := FHandlerName;
 end;
 
-class procedure THorseProvider<T>.SetHandlerName(const Value: string);
+class procedure THorseProvider<T>.SetHandlerName(const AValue: string);
 begin
-  FHandlerName := Value;
+  FHandlerName := AValue;
 end;
 
 class function THorseProvider<T>.GetDefaultModule: Pointer;
@@ -73,11 +73,10 @@ begin
   Result := FDefaultModule;
 end;
 
-class procedure THorseProvider<T>.SetDefaultModule(const Value: Pointer);
+class procedure THorseProvider<T>.SetDefaultModule(const AValue: Pointer);
 begin
-  FDefaultModule := Value;
+  FDefaultModule := AValue;
 end;
-
 {$ENDIF}
 
 end.

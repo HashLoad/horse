@@ -7,7 +7,6 @@ unit Horse.Provider.FPC.FastCGI;
 interface
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-
 uses SysUtils, Classes, fpFCGI, httpdefs, fpHTTP, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
@@ -19,8 +18,8 @@ type
     class var FFastCGIApplication: TFCGIApplication;
     class function GetDefaultFastCGIApplication: TFCGIApplication;
     class function FastCGIApplicationIsNil: Boolean;
-    class procedure SetPort(const Value: Integer); static;
-    class procedure SetHost(const Value: string); static;
+    class procedure SetPort(const AValue: Integer); static;
+    class procedure SetHost(const AValue: string); static;
     class function GetPort: Integer; static;
     class function GetDefaultPort: Integer; static;
     class function GetDefaultHost: string; static;
@@ -28,26 +27,20 @@ type
     class procedure InternalListen; virtual;
     class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
-    constructor Create; reintroduce; overload;
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class destructor UnInitialize;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
   end;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-
 uses Horse.WebModule;
-
-{ THorseProvider<T> }
 
 class function THorseProvider<T>.GetDefaultFastCGIApplication: TFCGIApplication;
 begin
@@ -59,11 +52,6 @@ end;
 class function THorseProvider<T>.FastCGIApplicationIsNil: Boolean;
 begin
   Result := FFastCGIApplication = nil;
-end;
-
-constructor THorseProvider<T>.Create;
-begin
-  inherited Create;
 end;
 
 class function THorseProvider<T>.GetDefaultHost: string;
@@ -115,7 +103,7 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallback: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -123,36 +111,30 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const AHost: string; const ACallback: TProc<T>);
 begin
   Listen(FPort, AHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
 begin
   Listen(FPort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallback: TProc<T>);
 begin
   Listen(APort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.SetHost(const Value: string);
+class procedure THorseProvider<T>.SetHost(const AValue: string);
 begin
-  FHost := Value;
+  FHost := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const Value: Integer);
+class procedure THorseProvider<T>.SetPort(const AValue: Integer);
 begin
-  FPort := Value;
+  FPort := AValue;
 end;
-
-class destructor THorseProvider<T>.UnInitialize;
-begin
-
-end;
-
 {$ENDIF}
 
 end.

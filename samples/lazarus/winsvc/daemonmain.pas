@@ -8,16 +8,10 @@ uses
   Classes, SysUtils, DaemonApp;
 
 type
-
-  { TDaemon_Main }
-
   TDaemon_Main = class(TDaemon)
     procedure DataModuleCreate(Sender: TObject);
     procedure DataModuleShutDown(Sender: TCustomDaemon);
     procedure DataModuleStart(Sender: TCustomDaemon; var OK: Boolean);
-  private
-
-  public
   end;
 
 var
@@ -64,5 +58,6 @@ end;
 
 initialization
   RegisterDaemon;
+
 end.
 

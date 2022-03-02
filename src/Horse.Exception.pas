@@ -15,10 +15,6 @@ uses
   Horse.Commons;
 
 type
-  EHorseCallbackInterrupted = class(Exception)
-    constructor Create; reintroduce;
-  end;
-
   EHorseException = class(Exception)
   strict private
     FError: string;
@@ -45,15 +41,6 @@ type
   end;
 
 implementation
-
-{ EHorseCallbackInterrupted }
-
-constructor EHorseCallbackInterrupted.Create;
-begin
-  inherited Create(EmptyStr);
-end;
-
-{ EHorseException }
 
 function EHorseException.Code(const AValue: Integer): EHorseException;
 begin

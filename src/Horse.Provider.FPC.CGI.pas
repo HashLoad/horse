@@ -7,7 +7,6 @@ unit Horse.Provider.FPC.CGI;
 interface
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
-
 uses SysUtils, Classes, fpCGI, fphttp, httpdefs, Horse.Provider.Abstract, Horse.Proc;
 
 type
@@ -17,26 +16,21 @@ type
     class function GetDefaultCGIApplication: TCGIApplication;
     class function CGIApplicationIsNil: Boolean;
     class procedure InternalListen; virtual;
-    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
+    class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
     class procedure Listen; overload; override;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
-    class destructor UnInitialize;
+    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
   end;
 
 var
   ShowCleanUpErrors: Boolean = False;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
-
 uses Horse.WebModule;
-
-{ THorseProvider<T> }
 
 class function THorseProvider<T>.GetDefaultCGIApplication: TCGIApplication;
 begin
@@ -61,8 +55,8 @@ var
 begin
   inherited;
   LCGIApplication := GetDefaultCGIApplication;
-  LCGIApplication.AllowDefaultModule:= True;
-  LCGIApplication.OnGetModule:= DoGetModule;
+  LCGIApplication.AllowDefaultModule := True;
+  LCGIApplication.OnGetModule := DoGetModule;
   LCGIApplication.LegacyRouting := True;
   LCGIApplication.Initialize;
   DoOnListen;
@@ -71,7 +65,7 @@ end;
 
 class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
-  ModuleClass :=  THorseWebModule;
+  ModuleClass := THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.Listen;
@@ -79,17 +73,11 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
 begin
   SetOnListen(ACallback);
   InternalListen;
 end;
-
-class destructor THorseProvider<T>.UnInitialize;
-begin
-
-end;
-
 {$ENDIF}
 
 end.

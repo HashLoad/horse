@@ -22,22 +22,13 @@ type
   protected
     class function GetDefaultHorseRtti: THorseRtti;
   public
-    function GetType (AClass: TClass): TRttiType;
+    function GetType(const AClass: TClass): TRttiType;
     constructor Create; virtual;
-    class destructor UnInitialize; {$IFNDEF FPC} virtual; {$ENDIF}
+    class destructor UnInitialize; {$IFNDEF FPC}virtual;{$ENDIF}
     class function GetInstance: THorseRtti;
   end;
 
-  THorseRttiTypeHelper = class helper for TRttiType
-  public
-  {$IF NOT DEFINED(FPC)}
-    function FieldValueAsObject(AInstance: Pointer; const AFieldName: String): TObject;
-  {$ENDIF}
-  end;
-
 implementation
-
-{ THorseRtti }
 
 constructor THorseRtti.Create;
 begin
@@ -59,7 +50,7 @@ begin
   Result := GetDefaultHorseRtti;
 end;
 
-function THorseRtti.GetType(AClass: TClass): TRttiType;
+function THorseRtti.GetType(const AClass: TClass): TRttiType;
 begin
   Result := FContext.GetType(AClass);
 end;
@@ -69,20 +60,6 @@ begin
   if FHorseRtti <> nil then
     FreeAndNil(FHorseRtti);
 end;
-
-{ THorseRttiTypeHelper }
-
-{$IF NOT DEFINED(FPC)}
-function THorseRttiTypeHelper.FieldValueAsObject(AInstance: Pointer; const AFieldName: String): TObject;
-var
-  LField: TRttiField;
-begin
-  Result := nil;
-  LField := GetField(AFieldName);
-  if Assigned(LField) then
-    Result := LField.GetValue(AInstance).AsObject;
-end;
-{$ENDIF}
 
 end.
 

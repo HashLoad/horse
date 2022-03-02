@@ -7,7 +7,6 @@ unit Horse.Provider.FPC.HTTPApplication;
 interface
 
 {$IF DEFINED(FPC)}
-
 uses SysUtils, Classes, httpdefs, fpHTTP, fphttpapp, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
 
 type
@@ -20,39 +19,33 @@ type
     class var FHTTPApplication: THTTPApplication;
     class function GetDefaultHTTPApplication: THTTPApplication;
     class function HTTPApplicationIsNil: Boolean;
-    class procedure SetListenQueue(const Value: Integer); static;
-    class procedure SetPort(const Value: Integer); static;
-    class procedure SetHost(const Value: string); static;
+    class procedure SetListenQueue(const AValue: Integer); static;
+    class procedure SetPort(const AValue: Integer); static;
+    class procedure SetHost(const AValue: string); static;
     class function GetListenQueue: Integer; static;
     class function GetPort: Integer; static;
     class function GetDefaultPort: Integer; static;
     class function GetDefaultHost: string; static;
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
-    class procedure DoGetModule(Sender : TObject; ARequest : TRequest; var ModuleClass : TCustomHTTPModuleClass);
+    class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
-    constructor Create; reintroduce; overload;
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class procedure Listen; overload; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
     class function IsRunning: Boolean;
-    class destructor UnInitialize;
   end;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(FPC)}
-
 uses Horse.WebModule;
-
-{ THorseProvider<T> }
 
 class function THorseProvider<T>.GetDefaultHTTPApplication: THTTPApplication;
 begin
@@ -64,11 +57,6 @@ end;
 class function THorseProvider<T>.HTTPApplicationIsNil: Boolean;
 begin
   Result := FHTTPApplication = nil;
-end;
-
-constructor THorseProvider<T>.Create;
-begin
-  inherited Create;
 end;
 
 class function THorseProvider<T>.GetDefaultHost: string;
@@ -108,10 +96,10 @@ begin
   if FListenQueue = 0 then
     FListenQueue := 15;
   LHTTPApplication := GetDefaultHTTPApplication;
-  LHTTPApplication.AllowDefaultModule:= True;
-  LHTTPApplication.OnGetModule:= DoGetModule;
-  LHTTPApplication.Threaded:= True;
-  LHTTPApplication.QueueSize:= FListenQueue;
+  LHTTPApplication.AllowDefaultModule := True;
+  LHTTPApplication.OnGetModule := DoGetModule;
+  LHTTPApplication.Threaded := True;
+  LHTTPApplication.QueueSize := FListenQueue;
   LHTTPApplication.Port := FPort;
   LHTTPApplication.LegacyRouting := True;
   LHTTPApplication.Address := FHost;
@@ -136,7 +124,7 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallback: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -144,41 +132,35 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const AHost: string; const ACallback: TProc<T>);
 begin
   Listen(FPort, AHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
 begin
   Listen(FPort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallback: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallback: TProc<T>);
 begin
   Listen(APort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.SetHost(const Value: string);
+class procedure THorseProvider<T>.SetHost(const AValue: string);
 begin
-  FHost := Value;
+  FHost := AValue;
 end;
 
-class procedure THorseProvider<T>.SetListenQueue(const Value: Integer);
+class procedure THorseProvider<T>.SetListenQueue(const AValue: Integer);
 begin
-  FListenQueue := Value;
+  FListenQueue := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const Value: Integer);
+class procedure THorseProvider<T>.SetPort(const AValue: Integer);
 begin
-  FPort := Value;
+  FPort := AValue;
 end;
-
-class destructor THorseProvider<T>.UnInitialize;
-begin
-
-end;
-
 {$ENDIF}
 
 end.

@@ -1,4 +1,4 @@
-unit Horse.HTTP;
+unit Horse.Request;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -8,29 +8,16 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections, fpHTTP, HTTPDefs,
+  SysUtils, Classes, fpHTTP, HTTPDefs,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp, System.Generics.Collections,
+  System.SysUtils, System.Classes, Web.HTTPApp,
   {$IF CompilerVersion > 32.0}
     Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
-  Horse.Core.Param, Horse.Core.Param.Header, Horse.Commons;
+  Horse.Core.Param, Horse.Core.Param.Header, Horse.Commons, Horse.Session;
 
 type
-  THorseSessions = class
-  private
-    FSessions: TObjectDictionary<TSessionClass, TSession>;
-    function GetSession(const ASessionClass: TSessionClass): TSession; overload;
-    function GetObject(const ASessionClass: TSessionClass): TObject; overload;
-  public
-    function SetSession(const ASessionClass: TSessionClass; AInstance: TSession): THorseSessions;
-    property Session[const SessionClass: TSessionClass]: TSession read GetSession;
-    property &Object[const SessionClass: TSessionClass]: TObject read GetObject;
-    constructor Create;
-    destructor Destroy; override;
-  end;
-
   THorseRequest = class
   private
     FWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
@@ -52,9 +39,9 @@ type
   public
     function Body: string; overload;
     function Body<T: class>: T; overload;
-    function Body(ABody: TObject): THorseRequest; overload;
+    function Body(const ABody: TObject): THorseRequest; overload;
     function Session<T: class>: T; overload;
-    function Session(ASession: TObject): THorseRequest; overload;
+    function Session(const ASession: TObject): THorseRequest; overload;
     function Headers: THorseCoreParam;
     function Query: THorseCoreParam;
     function Params: THorseCoreParam;
@@ -63,42 +50,18 @@ type
     function MethodType: TMethodType;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Sessions: THorseSessions read FSessions;
-    constructor Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
-    destructor Destroy; override;
-  end;
-
-  THorseResponse = class
-  private
-    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-    FContent: TObject;
-  public
-    function Send(AContent: string): THorseResponse; overload;
-    function Send<T: class>(AContent: T): THorseResponse; overload;
-    function RedirectTo(ALocation: string): THorseResponse; overload;
-    function RedirectTo(ALocation: string; AStatus: THTTPStatus): THorseResponse; overload;
-    function Status(AStatus: Integer): THorseResponse; overload;
-    function Status(AStatus: THTTPStatus): THorseResponse; overload;
-    function Status: Integer; overload;
-    function Content: TObject; overload;
-    function Content(AContent: TObject): THorseResponse; overload;
-    function ContentType(AContentType: string): THorseResponse;
-    function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-    constructor Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
+    constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
   end;
 
 implementation
-
-const
-  KEY = 0;
-  VALUE = 1;
 
 function THorseRequest.Body: string;
 begin
   Result := FWebRequest.Content;
 end;
 
-function THorseRequest.Body(ABody: TObject): THorseRequest;
+function THorseRequest.Body(const ABody: TObject): THorseRequest;
 begin
   Result := Self;
   FBody := ABody;
@@ -128,7 +91,7 @@ begin
   Result := FCookie;
 end;
 
-constructor THorseRequest.Create(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
+constructor THorseRequest.Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
   FSessions := THorseSessions.Create;
@@ -177,6 +140,9 @@ begin
 end;
 
 procedure THorseRequest.InitializeCookie;
+const
+  KEY = 0;
+  VALUE = 1;
 var
   LParam: TArray<string>;
   LItem: string;
@@ -245,7 +211,7 @@ begin
   Result := FWebRequest;
 end;
 
-function THorseRequest.Session(ASession: TObject): THorseRequest;
+function THorseRequest.Session(const ASession: TObject): THorseRequest;
 begin
   Result := Self;
   FSession := ASession;
@@ -254,115 +220,6 @@ end;
 function THorseRequest.Session<T>: T;
 begin
   Result := T(FSession);
-end;
-
-{ THorseResponse }
-
-function THorseResponse.Content(AContent: TObject): THorseResponse;
-begin
-  Result := Self;
-  FContent := AContent;
-end;
-
-function THorseResponse.Content: TObject;
-begin
-  Result := FContent;
-end;
-
-function THorseResponse.ContentType(AContentType: string): THorseResponse;
-begin
-  FWebResponse.ContentType := AContentType;
-  Result := Self;
-end;
-
-constructor THorseResponse.Create(AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
-begin
-  FWebResponse := AWebResponse;
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
-end;
-
-destructor THorseResponse.Destroy;
-begin
-  if Assigned(FContent) then
-    FContent.Free;
-  inherited;
-end;
-
-function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-begin
-  Result := FWebResponse;
-end;
-
-function THorseResponse.Send(AContent: string): THorseResponse;
-begin
-  FWebResponse.Content := AContent;
-  Result := Self;
-end;
-
-function THorseResponse.Send<T>(AContent: T): THorseResponse;
-begin
-  FContent := AContent;
-  Result := Self;
-end;
-
-function THorseResponse.RedirectTo(ALocation: string): THorseResponse;
-begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
-  Result := Status(THTTPStatus.SeeOther);
-end;
-
-function THorseResponse.RedirectTo(ALocation: string; AStatus: THTTPStatus): THorseResponse;
-begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
-  Result := Status(AStatus);
-end;
-
-function THorseResponse.Status(AStatus: THTTPStatus): THorseResponse;
-begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
-  Result := Self;
-end;
-
-function THorseResponse.Status: Integer;
-begin
-  Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF};
-end;
-
-function THorseResponse.Status(AStatus: Integer): THorseResponse;
-begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
-  Result := Self;
-end;
-
-{ THorseSessions }
-
-constructor THorseSessions.Create;
-begin
-  FSessions := TObjectDictionary<TSessionClass, TSession>.Create([doOwnsValues]);
-end;
-
-destructor THorseSessions.Destroy;
-begin
-  FSessions.Free;
-  inherited Destroy;
-end;
-
-function THorseSessions.GetObject(const ASessionClass: TSessionClass): TObject;
-begin
-  Result := FSessions.Items[ASessionClass];
-end;
-
-function THorseSessions.GetSession(const ASessionClass: TSessionClass): TSession;
-begin
-  Result := FSessions.Items[ASessionClass];
-end;
-
-function THorseSessions.SetSession(const ASessionClass: TSessionClass; AInstance: TSession): THorseSessions;
-begin
-  Result := Self;
-  if not ASessionClass.InheritsFrom(AInstance.ClassType) then
-    raise Exception.CreateFmt('SessionClass differs from of instance[%s].', [AInstance.ClassType.ClassName]);
-  FSessions.AddOrSetValue(ASessionClass, AInstance);
 end;
 
 end.

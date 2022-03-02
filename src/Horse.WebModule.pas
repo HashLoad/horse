@@ -21,7 +21,7 @@ type
 {$ELSE}
   THorseWebModule = class(TWebModule)
 {$ENDIF}
-    procedure HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
+    procedure HandlerAction(const Sender: TObject; const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; const Response: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; var Handled: Boolean);
   private
     FHorse: THorseCore;
     class var FInstance: THorseWebModule;
@@ -40,9 +40,7 @@ var
 
 implementation
 
-uses Horse.HTTP, Horse.Exception;
-
-{%CLASSGROUP 'System.Classes.TPersistent'}
+uses Horse.Request, Horse.Response, Horse.Exception, Horse.Exception.Interrupted;
 
 {$IF DEFINED(FPC)}
   {$R Horse.WebModule.lfm}
@@ -73,13 +71,13 @@ begin
 end;
 {$ENDIF}
 
-procedure THorseWebModule.HandlerAction(Sender: TObject; Request: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
-  Response: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var Handled: Boolean);
+procedure THorseWebModule.HandlerAction(const Sender: TObject; const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+  const Response: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; var Handled: Boolean);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
 begin
-  Handled := true;
+  Handled := True;
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try

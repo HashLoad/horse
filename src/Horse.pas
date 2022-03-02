@@ -8,25 +8,45 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Horse.Provider.FPC.HTTPApplication, Horse.Provider.FPC.Apache, Horse.Provider.FPC.CGI, Horse.Provider.FPC.FastCGI,
+  SysUtils,
+  Horse.Provider.FPC.HTTPApplication,
+  Horse.Provider.FPC.Apache,
+  Horse.Provider.FPC.CGI,
+  Horse.Provider.FPC.FastCGI,
   Horse.Provider.FPC.Daemon,
 {$ELSE}
-  System.SysUtils, Horse.Provider.Console, Horse.Provider.Daemon, Horse.Provider.ISAPI, Horse.Provider.Apache, Horse.Provider.CGI,
+  System.SysUtils,
+  Horse.Provider.Console,
+  Horse.Provider.Daemon,
+  Horse.Provider.ISAPI,
+  Horse.Provider.Apache,
+  Horse.Provider.CGI,
   Horse.Provider.VCL,
 {$ENDIF}
-  Horse.Core, Horse.Proc, Horse.HTTP, Horse.Commons, Horse.Core.Param, Horse.Core.RouterTree, Horse.Exception, Horse.Provider.Abstract;
+  Horse.Core,
+  Horse.Proc,
+  Horse.Request,
+  Horse.Response,
+  Horse.Commons,
+  Horse.Core.Param,
+  Horse.Core.RouterTree,
+  Horse.Exception,
+  Horse.Exception.Interrupted,
+  Horse.Provider.Abstract,
+  Horse.Core.Param.Config,
+  Horse.Callback;
 
 type
   EHorseException = Horse.Exception.EHorseException;
-  EHorseCallbackInterrupted = Horse.Exception.EHorseCallbackInterrupted;
+  EHorseCallbackInterrupted = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
   TProc = Horse.Proc.TProc;
   TNextProc = Horse.Proc.TNextProc;
   THorseList = Horse.Core.Param.THorseList;
   THorseCoreParam = Horse.Core.Param.THorseCoreParam;
-  THorseCoreParamConfig = Horse.Core.Param.THorseCoreParamConfig;
-  THorseRequest = Horse.HTTP.THorseRequest;
-  THorseResponse = Horse.HTTP.THorseResponse;
-  THorseCallback = Horse.Core.RouterTree.THorseCallback;
+  THorseCoreParamConfig = Horse.Core.Param.Config.THorseCoreParamConfig;
+  THorseRequest = Horse.Request.THorseRequest;
+  THorseResponse = Horse.Response.THorseResponse;
+  THorseCallback = Horse.Callback.THorseCallback;
   THTTPStatus = Horse.Commons.THTTPStatus;
   TMimeTypes = Horse.Commons.TMimeTypes;
   TMessageType = Horse.Commons.TMessageType;
@@ -42,21 +62,21 @@ type
 {$ELSEIF DEFINED(HORSE_APACHE)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-      Horse.Provider.FPC.Apache.THorseProvider<THorse>
-    {$ELSE}
-      Horse.Provider.Apache.THorseProvider<THorse>
+    Horse.Provider.FPC.Apache.THorseProvider<THorse>
+  {$ELSE}
+    Horse.Provider.Apache.THorseProvider<THorse>
   {$ENDIF};
 {$ELSEIF DEFINED(HORSE_CGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-      Horse.Provider.FPC.CGI.THorseProvider<THorse>
-    {$ELSE}
-      Horse.Provider.CGI.THorseProvider<THorse>
+    Horse.Provider.FPC.CGI.THorseProvider<THorse>
+  {$ELSE}
+    Horse.Provider.CGI.THorseProvider<THorse>
   {$ENDIF};
 {$ELSEIF DEFINED(HORSE_FCGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-      Horse.Provider.FPC.FastCGI.THorseProvider<THorse>;
+    Horse.Provider.FPC.FastCGI.THorseProvider<THorse>;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_DAEMON)}
   THorseProvider =
@@ -70,9 +90,9 @@ type
 {$ELSE}
   THorseProvider =
   {$IF DEFINED(FPC)}
-      Horse.Provider.FPC.HTTPApplication.THorseProvider<THorse>
-    {$ELSE}
-      Horse.Provider.Console.THorseProvider<THorse>
+    Horse.Provider.FPC.HTTPApplication.THorseProvider<THorse>
+  {$ELSE}
+    Horse.Provider.Console.THorseProvider<THorse>
   {$ENDIF};
 {$ENDIF}
 

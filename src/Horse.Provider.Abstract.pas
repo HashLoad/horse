@@ -22,8 +22,8 @@ type
     class function GetOnStopListen: TProc<T>; static;
   protected
     class function GetOnListen: TProc<T>; static;
-    class procedure SetOnListen(const Value: TProc<T>); static;
-    class procedure SetOnStopListen(const Value: TProc<T>); static;
+    class procedure SetOnListen(const AValue: TProc<T>); static;
+    class procedure SetOnStopListen(const AValue: TProc<T>); static;
     class procedure DoOnListen;
     class procedure DoOnStopListen;
   public
@@ -34,8 +34,6 @@ type
   end;
 
 implementation
-
-{ THorseProviderAbstract }
 
 class procedure THorseProviderAbstract<T>.DoOnListen;
 begin
@@ -59,14 +57,14 @@ begin
   Result := FOnStopListen;
 end;
 
-class procedure THorseProviderAbstract<T>.SetOnListen(const Value: TProc<T>);
+class procedure THorseProviderAbstract<T>.SetOnListen(const AValue: TProc<T>);
 begin
-  FOnListen := Value;
+  FOnListen := AValue;
 end;
 
-class procedure THorseProviderAbstract<T>.SetOnStopListen(const Value: TProc<T>);
+class procedure THorseProviderAbstract<T>.SetOnStopListen(const AValue: TProc<T>);
 begin
-  FOnStopListen := Value;
+  FOnStopListen := AValue;
 end;
 
 class procedure THorseProviderAbstract<T>.StopListen;

@@ -12,11 +12,6 @@ uses Classes, SysUtils;
 {$ENDIF}
 
 type
-  TSession = class
-  end;
-
-  TSessionClass = class of TSession;
-
 {$IF DEFINED(FPC)}
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
 {$ENDIF}
@@ -118,13 +113,13 @@ type
   end;
 
 {$IF DEFINED(FPC)}
-function StringCommandToMethodType(ACommand: string): TMethodType;
+function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(FPC)}
-function StringCommandToMethodType(ACommand: string): TMethodType;
+function StringCommandToMethodType(const ACommand: string): TMethodType;
 begin
   if ACommand = 'ANY' then
     Result := TMethodType.mtAny;

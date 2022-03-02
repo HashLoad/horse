@@ -14,13 +14,13 @@ type
     FSSLVersions: TIdSSLVersions;
     FOnGetPassword: TPasswordEvent;
     FActive: Boolean;
-    procedure SetCertFile(const Value: string);
-    procedure SetKeyFile(const Value: string);
-    procedure SetRootCertFile(const Value: string);
-    procedure SetMethod(const Value: TIdSSLVersion);
-    procedure SetSSLVersions(const Value: TIdSSLVersions);
-    procedure SetOnGetPassword(const Value: TPasswordEvent);
-    procedure SetActive(const Value: Boolean);
+    procedure SetCertFile(const AValue: string);
+    procedure SetKeyFile(const AValue: string);
+    procedure SetRootCertFile(const AValue: string);
+    procedure SetMethod(const AValue: TIdSSLVersion);
+    procedure SetSSLVersions(const AValue: TIdSSLVersions);
+    procedure SetOnGetPassword(const AValue: TPasswordEvent);
+    procedure SetActive(const AValue: Boolean);
     function GetCertFile: string;
     function GetKeyFile: string;
     function GetRootCertFile: string;
@@ -40,8 +40,6 @@ type
   end;
 
 implementation
-
-{ THorseProviderIOHandleSSL }
 
 constructor THorseProviderIOHandleSSL.Create;
 begin
@@ -85,39 +83,39 @@ begin
   Result := FSSLVersions;
 end;
 
-procedure THorseProviderIOHandleSSL.SetActive(const Value: Boolean);
+procedure THorseProviderIOHandleSSL.SetActive(const AValue: Boolean);
 begin
-  FActive := Value;
+  FActive := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetCertFile(const Value: string);
+procedure THorseProviderIOHandleSSL.SetCertFile(const AValue: string);
 begin
-  FCertFile := Value;
+  FCertFile := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetSSLVersions(const Value: TIdSSLVersions);
+procedure THorseProviderIOHandleSSL.SetSSLVersions(const AValue: TIdSSLVersions);
 begin
-  FSSLVersions := Value;
+  FSSLVersions := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetMethod(const Value: TIdSSLVersion);
+procedure THorseProviderIOHandleSSL.SetMethod(const AValue: TIdSSLVersion);
 begin
-  FMethod := Value;
+  FMethod := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetKeyFile(const Value: string);
+procedure THorseProviderIOHandleSSL.SetKeyFile(const AValue: string);
 begin
-  FKeyFile := Value;
+  FKeyFile := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetOnGetPassword(const Value: TPasswordEvent);
+procedure THorseProviderIOHandleSSL.SetOnGetPassword(const AValue: TPasswordEvent);
 begin
-  FOnGetPassword := Value;
+  FOnGetPassword := AValue;
 end;
 
-procedure THorseProviderIOHandleSSL.SetRootCertFile(const Value: string);
+procedure THorseProviderIOHandleSSL.SetRootCertFile(const AValue: string);
 begin
-  FRootCertFile := Value;
+  FRootCertFile := AValue;
 end;
 
 end.

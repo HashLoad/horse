@@ -7,21 +7,20 @@ unit Horse.Provider.FPC.Daemon;
 interface
 
 {$IF DEFINED(HORSE_DAEMON)}
-
-uses SysUtils, Classes, httpdefs, fpHTTP, fphttpserver, Horse.HTTP, HOrse.Core, Horse.Provider.Abstract, Horse.Constants,
+uses SysUtils, Classes, httpdefs, fpHTTP, fphttpserver, Horse.Request, Horse.Response, Horse.Core, Horse.Provider.Abstract, Horse.Constants,
   Horse.Proc, Horse.Commons, Horse.Exception;
 
 type
   THTTPServerThread = class(TThread)
   private
     FStartServer: Boolean;
-    FHost: String;
+    FHost: string;
     FPort: Integer;
     FListenQueue: Word;
     FServer: TFPHTTPServer;
     FHorse: THorseCore;
   public
-    constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt = DefaultStackSize);
+    constructor Create(const ACreateSuspended: Boolean; const AStackSize: SizeUInt = DefaultStackSize);
     destructor Destroy; override;
     procedure StartServer;
     procedure StopServer;
@@ -29,21 +28,21 @@ type
     property Host: String read FHost write FHost;
     property ListenQueue: Word read FListenQueue write FListenQueue;
     procedure Execute; override;
-    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse : TFPHTTPConnectionResponse);
+    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
   end;
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
     class var FPort: Integer;
     class var FHost: string;
-    class var FRunning : Boolean;
+    class var FRunning: Boolean;
     class var FListenQueue: Integer;
     class var FHTTPServerThread: THTTPServerThread;
     class function GetDefaultHTTPServerThread: THTTPServerThread;
     class function HTTPServerThreadIsNil: Boolean;
-    class procedure SetListenQueue(const Value: Integer); static;
-    class procedure SetPort(const Value: Integer); static;
-    class procedure SetHost(const Value: string); static;
+    class procedure SetListenQueue(const AValue: Integer); static;
+    class procedure SetPort(const AValue: Integer); static;
+    class procedure SetHost(const AValue: string); static;
     class function GetListenQueue: Integer; static;
     class function GetPort: Integer; static;
     class function GetDefaultPort: Integer; static;
@@ -52,29 +51,24 @@ type
     class procedure InternalListen; virtual;
     class procedure InternalStopListen; virtual;
   public
-    constructor Create; reintroduce; overload;
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class destructor UnInitialize;
     class function IsRunning: Boolean;
   end;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_DAEMON) AND DEFINED(FPC)}
-
-uses Horse.WebModule;
-
-{ THorseProvider<T> }
+uses Horse.WebModule, Horse.Exception.Interrupted;
 
 class function THorseProvider<T>.GetDefaultHTTPServerThread: THTTPServerThread;
 begin
@@ -96,11 +90,6 @@ end;
 class procedure THorseProvider<T>.StopListen;
 begin
   InternalStopListen;
-end;
-
-constructor THorseProvider<T>.Create;
-begin
-  inherited Create;
 end;
 
 class function THorseProvider<T>.GetDefaultHost: string;
@@ -153,7 +142,7 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -162,34 +151,34 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.SetHost(const Value: string);
+class procedure THorseProvider<T>.SetHost(const AValue: string);
 begin
-  FHost := Value;
+  FHost := AValue;
 end;
 
-class procedure THorseProvider<T>.SetListenQueue(const Value: Integer);
+class procedure THorseProvider<T>.SetListenQueue(const AValue: Integer);
 begin
-  FListenQueue := Value;
+  FListenQueue := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const Value: Integer);
+class procedure THorseProvider<T>.SetPort(const AValue: Integer);
 begin
-  FPort := Value;
+  FPort := AValue;
 end;
 
 class destructor THorseProvider<T>.UnInitialize;
@@ -208,8 +197,6 @@ begin
   else
     raise Exception.Create('Horse not listen');
 end;
-
-{ THTTPServerThread }
 
 procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
 var
@@ -238,9 +225,9 @@ begin
   end;
 end;
 
-constructor THTTPServerThread.Create(CreateSuspended: Boolean; const StackSize: SizeUInt = DefaultStackSize);
+constructor THTTPServerThread.Create(const ACreateSuspended: Boolean; const AStackSize: SizeUInt = DefaultStackSize);
 begin
-  inherited Create(CreateSuspended, StackSize);
+  inherited Create(ACreateSuspended, AStackSize);
   FreeOnTerminate := True;
   FStartServer := False;
   FServer := TFPHttpServer.Create(Nil);
@@ -282,7 +269,6 @@ begin
     end;
   end;
 end;
-
 {$ENDIF}
 
 end.

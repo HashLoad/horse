@@ -13,21 +13,19 @@ uses
   System.Classes, System.SysUtils, System.Generics.Collections,
   Web.HTTPApp, IdCustomHTTPServer, IdHeaderList, Horse.Rtti,
 {$ENDIF}
-  Horse.Core.Param, Horse.Commons;
+  Horse.Core.Param, Horse.Commons, Horse.Rtti.Helper;
 
 type
   THorseCoreParamHeader = class
   private
-    class function GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): TStrings;
+    class function GetHeadersList(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): TStrings;
   public
-    class function GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
+    class function GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
   end;
 
 implementation
 
-{ THorseCoreParamHeader }
-
-class function THorseCoreParamHeader.GetHeaders(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
+class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var
   I: Integer;
   LName, LValue: string;
@@ -61,7 +59,7 @@ begin
   end;
 end;
 
-class function THorseCoreParamHeader.GetHeadersList(AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): TStrings;
+class function THorseCoreParamHeader.GetHeadersList(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): TStrings;
 {$IF NOT DEFINED(HORSE_ISAPI)}
 var
   LRequest: {$IF DEFINED(FPC)} TFPHTTPConnectionRequest {$ELSE} TIdHTTPRequestInfo {$ENDIF};

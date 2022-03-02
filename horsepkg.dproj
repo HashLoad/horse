@@ -82,18 +82,22 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="src\Horse.Callback.pas"/>
         <DCCReference Include="src\Horse.Commons.pas"/>
         <DCCReference Include="src\Horse.Constants.pas"/>
         <DCCReference Include="src\Horse.Core.Group.Contract.pas"/>
         <DCCReference Include="src\Horse.Core.Group.pas"/>
+        <DCCReference Include="src\Horse.Core.Param.Config.pas"/>
+        <DCCReference Include="src\Horse.Core.Param.Field.pas"/>
         <DCCReference Include="src\Horse.Core.Param.Header.pas"/>
         <DCCReference Include="src\Horse.Core.Param.pas"/>
         <DCCReference Include="src\Horse.Core.pas"/>
         <DCCReference Include="src\Horse.Core.Route.Contract.pas"/>
         <DCCReference Include="src\Horse.Core.Route.pas"/>
+        <DCCReference Include="src\Horse.Core.RouterTree.NextCaller.pas"/>
         <DCCReference Include="src\Horse.Core.RouterTree.pas"/>
+        <DCCReference Include="src\Horse.Exception.Interrupted.pas"/>
         <DCCReference Include="src\Horse.Exception.pas"/>
-        <DCCReference Include="src\Horse.HTTP.pas"/>
         <DCCReference Include="src\Horse.pas"/>
         <DCCReference Include="src\Horse.Proc.pas"/>
         <DCCReference Include="src\Horse.Provider.Abstract.pas"/>
@@ -109,7 +113,11 @@
         <DCCReference Include="src\Horse.Provider.IOHandleSSL.pas"/>
         <DCCReference Include="src\Horse.Provider.ISAPI.pas"/>
         <DCCReference Include="src\Horse.Provider.VCL.pas"/>
+        <DCCReference Include="src\Horse.Request.pas"/>
+        <DCCReference Include="src\Horse.Response.pas"/>
+        <DCCReference Include="src\Horse.Rtti.Helper.pas"/>
         <DCCReference Include="src\Horse.Rtti.pas"/>
+        <DCCReference Include="src\Horse.Session.pas"/>
         <DCCReference Include="src\Horse.WebModule.pas">
             <Form>HorseWebModule</Form>
             <FormType>dfm</FormType>
@@ -148,6 +156,12 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>horsepkg.bpl</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
                     <Platform Name="OSX64">
                         <Overwrite>true</Overwrite>
@@ -170,12 +184,6 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx32\libcgsqlite3.dylib" Class="DependencyModule">
                     <Platform Name="OSX32">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\..\..\Public\Documents\Embarcadero\Studio\20.0\Bpl\horsepkg.bpl" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>horsepkg.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

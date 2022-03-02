@@ -12,31 +12,17 @@ uses
 {$ELSE}
   System.SysUtils, System.NetEncoding, Web.HTTPApp, System.Generics.Collections,
 {$ENDIF}
-  Horse.HTTP, Horse.Proc, Horse.Commons;
+  Horse.Request, Horse.Response, Horse.Proc, Horse.Commons, Horse.Callback;
 
 type
-{$IF DEFINED(FPC)}
-  THorseCallbackRequest = procedure(AReq: THorseRequest);
-  THorseCallbackResponse = procedure(ARes: THorseResponse);
-  THorseCallbackRequestResponse = procedure(AReq: THorseRequest; ARes: THorseResponse);
-  THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
-  TCallNextPath = function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean of object;
-{$ELSE}
-  THorseCallbackRequest = reference to procedure(AReq: THorseRequest);
-  THorseCallbackResponse = reference to procedure(ARes: THorseResponse);
-  THorseCallbackRequestResponse = reference to procedure(AReq: THorseRequest; ARes: THorseResponse);
-  THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
-  TCallNextPath = reference to function(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
-{$ENDIF}
-
   PHorseRouterTree = ^THorseRouterTree;
 
   THorseRouterTree = class
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
-    function GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<string>;
-    function ForcePath(APath: string): THorseRouterTree;
+    function GetQueuePath(APath: string; const AUsePrefix: Boolean = True): TQueue<string>;
+    function ForcePath(const APath: string): THorseRouterTree;
   private
     FPart: string;
     FTag: string;
@@ -45,61 +31,28 @@ type
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
-    procedure RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
-    procedure RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
-    function ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
-    function CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
-    function HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
+    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback);
+    procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
+    function ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
+    function CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+    function HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
   public
-    function CreateRouter(APath: string): THorseRouterTree;
-    function GetPrefix(): string;
-    procedure Prefix(APrefix: string);
-    procedure RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
-    procedure RegisterMiddleware(APath: string; AMiddleware: THorseCallback); overload;
-    procedure RegisterMiddleware(AMiddleware: THorseCallback); overload;
-    function Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
+    function CreateRouter(const APath: string): THorseRouterTree;
+    function GetPrefix: string;
+    procedure Prefix(const APrefix: string);
+    procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+    procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
+    procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
+    function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     constructor Create;
     destructor Destroy; override;
   end;
 
-  TNextCaller = class
-  private
-    FIndex: Integer;
-    FIndexCallback: Integer;
-    FPath: TQueue<string>;
-    FHTTPType: TMethodType;
-    FRequest: THorseRequest;
-    FResponse: THorseResponse;
-    FMiddleware: TList<THorseCallback>;
-    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
-    FCallNextPath: TCallNextPath;
-    FIsGroup: Boolean;
-    FTag: string;
-    FIsRegex: Boolean;
-    FFound: ^Boolean;
-  public
-    function Init: TNextCaller;
-    function SetCallback(ACallback: TObjectDictionary < TMethodType, TList < THorseCallback >> ): TNextCaller;
-    function SetPath(APath: TQueue<string>): TNextCaller;
-    function SetHTTPType(AHTTPType: TMethodType): TNextCaller;
-    function SetRequest(ARequest: THorseRequest): TNextCaller;
-    function SetResponse(AResponse: THorseResponse): TNextCaller;
-    function SetIsGroup(AIsGroup: Boolean): TNextCaller;
-    function SetMiddleware(AMiddleware: TList<THorseCallback>): TNextCaller;
-    function SetTag(ATag: string): TNextCaller;
-    function SetIsRegex(AIsRegex: Boolean): TNextCaller;
-    function SetOnCallNextPath(ACallNextPath: TCallNextPath): TNextCaller;
-    function SetFound(var AFound: Boolean): TNextCaller;
-    procedure Next;
-  end;
-
 implementation
 
-{ THorseRouterTree }
+uses Horse.Exception, Horse.Core.RouterTree.NextCaller;
 
-uses Horse.Exception;
-
-procedure THorseRouterTree.RegisterRoute(AHTTPType: TMethodType; APath: string; ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
 begin
@@ -111,8 +64,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.CallNextPath(var APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse): Boolean;
+function THorseRouterTree.CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+  const AResponse: THorseResponse): Boolean;
 var
   LCurrent, LKey: string;
   LAcceptable: THorseRouterTree;
@@ -166,7 +119,7 @@ begin
   inherited;
 end;
 
-function THorseRouterTree.Execute(ARequest: THorseRequest; AResponse: THorseResponse): Boolean;
+function THorseRouterTree.Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 var
   LQueue: TQueue<string>;
 begin
@@ -179,8 +132,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.ExecuteInternal(APath: TQueue<string>; AHTTPType: TMethodType; ARequest: THorseRequest;
-  AResponse: THorseResponse; AIsGroup: Boolean = False): Boolean;
+function THorseRouterTree.ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+  const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
 var
   LNextCaller: TNextCaller;
   LFound: Boolean;
@@ -207,7 +160,7 @@ begin
   end;
 end;
 
-function THorseRouterTree.ForcePath(APath: string): THorseRouterTree;
+function THorseRouterTree.ForcePath(const APath: string): THorseRouterTree;
 begin
   if not FRoute.TryGetValue(APath, Result) then
   begin
@@ -216,22 +169,22 @@ begin
   end;
 end;
 
-function THorseRouterTree.CreateRouter(APath: string): THorseRouterTree;
+function THorseRouterTree.CreateRouter(const APath: string): THorseRouterTree;
 begin
   Result := ForcePath(APath);
 end;
 
-procedure THorseRouterTree.Prefix(APrefix: string);
+procedure THorseRouterTree.Prefix(const APrefix: string);
 begin
   FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
-function THorseRouterTree.GetPrefix(): string;
+function THorseRouterTree.GetPrefix: string;
 begin
   Result := FPrefix;
 end;
 
-function THorseRouterTree.GetQueuePath(APath: string; AUsePrefix: Boolean = True): TQueue<string>;
+function THorseRouterTree.GetQueuePath(APath: string; const AUsePrefix: Boolean = True): TQueue<string>;
 var
   LPart: string;
   LSplitedPath: TArray<string>;
@@ -251,7 +204,7 @@ begin
   end;
 end;
 
-function THorseRouterTree.HasNext(AMethod: TMethodType; APaths: TArray<string>; AIndex: Integer = 0): Boolean;
+function THorseRouterTree.HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
 var
   LNext, LKey: string;
   LNextRoute: THorseRouterTree;
@@ -263,7 +216,7 @@ begin
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
 
   LNext := APaths[AIndex + 1];
-  inc(AIndex);
+  Inc(AIndex);
   if FRoute.TryGetValue(LNext, LNextRoute) then
   begin
     Result := LNextRoute.HasNext(AMethod, APaths, AIndex);
@@ -278,7 +231,7 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterInternal(AHTTPType: TMethodType; var APath: TQueue<string>; ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback);
 var
   LNextPart: string;
   LCallbacks: TList<THorseCallback>;
@@ -312,12 +265,12 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterMiddleware(AMiddleware: THorseCallback);
+procedure THorseRouterTree.RegisterMiddleware(const AMiddleware: THorseCallback);
 begin
   FMiddleware.Add(AMiddleware);
 end;
 
-procedure THorseRouterTree.RegisterMiddleware(APath: string; AMiddleware: THorseCallback);
+procedure THorseRouterTree.RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback);
 var
   LPathChain: TQueue<string>;
 begin
@@ -329,149 +282,13 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>; AMiddleware: THorseCallback);
+procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
 begin
   APath.Dequeue;
   if APath.Count = 0 then
     FMiddleware.Add(AMiddleware)
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
-end;
-
-{ TNextCaller }
-
-function TNextCaller.Init: TNextCaller;
-var
-  LCurrent: string;
-begin
-  Result := Self;
-  if not FIsGroup then
-    LCurrent := FPath.Dequeue;
-  FIndex := -1;
-  FIndexCallback := -1;
-  if FIsRegex then
-    FRequest.Params.Dictionary.Add(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF});
-end;
-
-procedure TNextCaller.Next;
-var
-  LCallback: TList<THorseCallback>;
-begin
-  inc(FIndex);
-  if (FMiddleware.Count > FIndex) then
-  begin
-    FFound^ := True;
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
-    if (FMiddleware.Count > FIndex) then
-      Next;
-  end
-  else
-  if (FPath.Count = 0) and assigned(FCallBack) then
-  begin
-    inc(FIndexCallback);
-    if FCallBack.TryGetValue(FHTTPType, LCallback) then
-    begin
-      if (LCallback.Count > FIndexCallback) then
-      begin
-        try
-          FFound^ := True;
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
-        except
-          on E: Exception do
-          begin
-            if (not(E is EHorseCallbackInterrupted)) and
-               (not(E is EHorseException)) and
-               (FResponse.Status < Integer(THTTPStatus.BadRequest))
-            then
-              FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
-            raise;
-          end;
-        end;
-        Next;
-      end;
-    end
-    else
-    begin
-      if FCallBack.Count > 0 then
-      begin
-        FFound^ := True;
-        FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
-      end
-      else
-        FResponse.Send('Not Found').Status(THTTPStatus.NotFound)
-    end;
-  end
-  else
-    FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
-
-  if not FFound^ then
-    FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
-end;
-
-function TNextCaller.SetCallback(ACallback: TObjectDictionary < TMethodType, TList < THorseCallback >> ): TNextCaller;
-begin
-  FCallBack := ACallback;
-  Result := Self;
-end;
-
-function TNextCaller.SetFound(var AFound: Boolean): TNextCaller;
-begin
-  FFound := @AFound;
-  Result := Self;
-end;
-
-function TNextCaller.SetHTTPType(AHTTPType: TMethodType): TNextCaller;
-begin
-  FHTTPType := AHTTPType;
-  Result := Self;
-end;
-
-function TNextCaller.SetIsGroup(AIsGroup: Boolean): TNextCaller;
-begin
-  FIsGroup := AIsGroup;
-  Result := Self;
-end;
-
-function TNextCaller.SetIsRegex(AIsRegex: Boolean): TNextCaller;
-begin
-  FIsRegex := AIsRegex;
-  Result := Self;
-end;
-
-function TNextCaller.SetMiddleware(AMiddleware: TList<THorseCallback>): TNextCaller;
-begin
-  FMiddleware := AMiddleware;
-  Result := Self;
-end;
-
-function TNextCaller.SetOnCallNextPath(ACallNextPath: TCallNextPath): TNextCaller;
-begin
-  FCallNextPath := ACallNextPath;
-  Result := Self;
-end;
-
-function TNextCaller.SetPath(APath: TQueue<string>): TNextCaller;
-begin
-  FPath := APath;
-  Result := Self;
-end;
-
-function TNextCaller.SetRequest(ARequest: THorseRequest): TNextCaller;
-begin
-  FRequest := ARequest;
-  Result := Self;
-end;
-
-function TNextCaller.SetResponse(AResponse: THorseResponse): TNextCaller;
-begin
-  FResponse := AResponse;
-  Result := Self;
-end;
-
-function TNextCaller.SetTag(ATag: string): TNextCaller;
-begin
-  FTag := ATag;
-  Result := Self;
 end;
 
 end.

@@ -3,7 +3,6 @@ unit Horse.Provider.Daemon;
 interface
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
-
 uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
   System.SyncObjs, System.SysUtils, Posix.SysTypes;
 
@@ -21,11 +20,11 @@ type
     class function HTTPWebBrokerIsNil: Boolean;
     class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
-    class procedure SetListenQueue(const Value: Integer); static;
-    class procedure SetMaxConnections(const Value: Integer); static;
-    class procedure SetPort(const Value: Integer); static;
-    class procedure SetIOHandleSSL(const Value: THorseProviderIOHandleSSL); static;
-    class procedure SetHost(const Value: string); static;
+    class procedure SetListenQueue(const AValue: Integer); static;
+    class procedure SetMaxConnections(const AValue: Integer); static;
+    class procedure SetPort(const AValue: Integer); static;
+    class procedure SetIOHandleSSL(const AValue: THorseProviderIOHandleSSL); static;
+    class procedure SetHost(const AValue: string); static;
     class function GetListenQueue: Integer; static;
     class function GetMaxConnections: Integer; static;
     class function GetPort: Integer; static;
@@ -35,9 +34,8 @@ type
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
     class procedure InternalStopListen; virtual;
-    class procedure InitServerIOHandlerSSLOpenSSL(AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
+    class procedure InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
   public
-    constructor Create; reintroduce; overload;
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
@@ -45,10 +43,10 @@ type
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(APort: Integer; const AHost: string = '0.0.0.0'; ACallbackListen: TProc<T> = nil; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(APort: Integer; ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(ACallbackListen: TProc<T>; ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class destructor UnInitialize;
   end;
 
@@ -63,13 +61,11 @@ const
   EXIT_SUCCESS = 0;
 
 procedure HandleSignals(SigNum: Integer); cdecl;
-
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
-
 uses Web.WebReq, Horse.WebModule, IdCustomTCPServer, Posix.Stdlib, Posix.SysStat, Posix.Unistd, Posix.Signal, Posix.Fcntl,
   ThirdParty.Posix.Syslog;
 
@@ -87,8 +83,6 @@ begin
       end;
   end;
 end;
-
-{ THorseProvider<T> }
 
 class function THorseProvider<T>.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
@@ -109,11 +103,6 @@ end;
 class procedure THorseProvider<T>.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
   VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
-end;
-
-constructor THorseProvider<T>.Create;
-begin
-  inherited Create;
 end;
 
 class function THorseProvider<T>.GetDefaultHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;
@@ -158,17 +147,17 @@ begin
   Result := FPort;
 end;
 
-class procedure THorseProvider<T>.InitServerIOHandlerSSLOpenSSL(AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
+class procedure THorseProvider<T>.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
 var
   LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;
 begin
   LIOHandleSSL := TIdServerIOHandlerSSLOpenSSL.Create(AIdHTTPWebBrokerBridge);
-  LIOHandleSSL.SSLOptions.CertFile := FHorseProviderIOHandleSSL.CertFile;
-  LIOHandleSSL.SSLOptions.RootCertFile := FHorseProviderIOHandleSSL.RootCertFile;
-  LIOHandleSSL.SSLOptions.KeyFile := FHorseProviderIOHandleSSL.KeyFile;
-  LIOHandleSSL.SSLOptions.Method := FHorseProviderIOHandleSSL.Method;
-  LIOHandleSSL.SSLOptions.SSLVersions := FHorseProviderIOHandleSSL.SSLVersions;
-  LIOHandleSSL.OnGetPassword := FHorseProviderIOHandleSSL.OnGetPassword;
+  LIOHandleSSL.SSLOptions.CertFile := AHorseProviderIOHandleSSL.CertFile;
+  LIOHandleSSL.SSLOptions.RootCertFile := AHorseProviderIOHandleSSL.RootCertFile;
+  LIOHandleSSL.SSLOptions.KeyFile := AHorseProviderIOHandleSSL.KeyFile;
+  LIOHandleSSL.SSLOptions.Method := AHorseProviderIOHandleSSL.Method;
+  LIOHandleSSL.SSLOptions.SSLVersions := AHorseProviderIOHandleSSL.SSLVersions;
+  LIOHandleSSL.OnGetPassword := AHorseProviderIOHandleSSL.OnGetPassword;
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
 
@@ -302,7 +291,7 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; const AHost: string; ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -311,17 +300,17 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(APort: Integer; ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc<T>);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
@@ -331,29 +320,29 @@ begin
   VHandled := True;
 end;
 
-class procedure THorseProvider<T>.SetHost(const Value: string);
+class procedure THorseProvider<T>.SetHost(const AValue: string);
 begin
-  FHost := Value.Trim;
+  FHost := AValue.Trim;
 end;
 
-class procedure THorseProvider<T>.SetIOHandleSSL(const Value: THorseProviderIOHandleSSL);
+class procedure THorseProvider<T>.SetIOHandleSSL(const AValue: THorseProviderIOHandleSSL);
 begin
-  FHorseProviderIOHandleSSL := Value;
+  FHorseProviderIOHandleSSL := AValue;
 end;
 
-class procedure THorseProvider<T>.SetListenQueue(const Value: Integer);
+class procedure THorseProvider<T>.SetListenQueue(const AValue: Integer);
 begin
-  FListenQueue := Value;
+  FListenQueue := AValue;
 end;
 
-class procedure THorseProvider<T>.SetMaxConnections(const Value: Integer);
+class procedure THorseProvider<T>.SetMaxConnections(const AValue: Integer);
 begin
-  FMaxConnections := Value;
+  FMaxConnections := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const Value: Integer);
+class procedure THorseProvider<T>.SetPort(const AValue: Integer);
 begin
-  FPort := Value;
+  FPort := AValue;
 end;
 
 class destructor THorseProvider<T>.UnInitialize;
@@ -362,7 +351,6 @@ begin
   if FHorseProviderIOHandleSSL <> nil then
     FreeAndNil(FHorseProviderIOHandleSSL);
 end;
-
 {$ENDIF}
 
 end.
