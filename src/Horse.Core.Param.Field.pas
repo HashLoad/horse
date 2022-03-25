@@ -314,10 +314,7 @@ begin
   end;
 
   if FContains then
-  begin
     FValue := AParams.Items[LKey];
-    Exit;
-  end;
 
   if ACheckLhsBrackets then
   begin
