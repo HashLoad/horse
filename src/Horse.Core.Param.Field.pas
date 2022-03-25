@@ -30,9 +30,9 @@ type
     Flike: string; //Like
     FTypes: TLhsBrackets;
   public
-    property eq: string read Feq write Feq ;
-    property ne: string read Fne write Fne;
-    property lt: string read Flt write Flt;
+    property eq: string read Feq;
+    property ne: string read Fne;
+    property lt: string read Flt;
     property lte: string read Flte;
     property gt: string read Fgt;
     property gte: string read Fgte;
