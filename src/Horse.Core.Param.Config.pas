@@ -7,6 +7,9 @@ unit Horse.Core.Param.Config;
 interface
 
 type
+
+  { THorseCoreParamConfig }
+
   THorseCoreParamConfig = class
   private
     class var FInstance: THorseCoreParamConfig;
@@ -16,6 +19,7 @@ type
     FTimeFormat: string;
     FReturnUTC: Boolean;
     FTrueValue: string;
+    FCheckLhsBrackets: Boolean;
     constructor Create;
   public
     function RequiredMessage(const AValue: string): THorseCoreParamConfig; overload;
@@ -30,6 +34,8 @@ type
     function ReturnUTC: Boolean; overload;
     function TrueValue(const AValue: string): THorseCoreParamConfig; overload;
     function TrueValue: string; overload;
+    function CheckLhsBrackets(const AValue: Boolean): THorseCoreParamConfig; overload;
+    function CheckLhsBrackets: Boolean; overload;
     class function GetInstance: THorseCoreParamConfig;
     class destructor UnInitialize;
   end;
@@ -51,6 +57,7 @@ begin
   FTrueValue := 'true';
   FRequiredMessage := 'The %s param is required.';
   FInvalidFormatMessage := 'The %0:s param ''%1:s'' is not valid a %2:s type.';
+  FCheckLhsBrackets := False;
 end;
 
 function THorseCoreParamConfig.DateFormat(const AValue: string): THorseCoreParamConfig;
@@ -124,6 +131,18 @@ end;
 function THorseCoreParamConfig.TrueValue: string;
 begin
   Result := FTrueValue;
+end;
+
+function THorseCoreParamConfig.CheckLhsBrackets(const AValue: Boolean
+  ): THorseCoreParamConfig;
+begin
+  Result := Self;
+  FCheckLhsBrackets := AValue;
+end;
+
+function THorseCoreParamConfig.CheckLhsBrackets: Boolean;
+begin
+  Result := FCheckLhsBrackets;
 end;
 
 class destructor THorseCoreParamConfig.UnInitialize;

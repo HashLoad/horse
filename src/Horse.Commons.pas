@@ -7,14 +7,20 @@ unit Horse.Commons;
 
 interface
 
+uses
 {$IF DEFINED(FPC)}
-uses Classes, SysUtils;
+  Classes, SysUtils
+{$ELSE}
+  System.Classes, System.SysUtils
 {$ENDIF}
+ ;
 
 type
 {$IF DEFINED(FPC)}
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
 {$ENDIF}
+  TLhsBracketsType = (lbteq, lbtne, lbtlt, lbtlte, lbtgt, lbtgte, lbtrange, lbtlike);
+  TLhsBrackets = set of TLhsBracketsType;
 
 {$SCOPEDENUMS ON}
   THTTPStatus = (
@@ -112,6 +118,11 @@ type
     function ToString: string;
   end;
 
+  TLhsBracketsTypeHelper  = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
+  for TLhsBracketsType
+    function ToString: string;
+  end;
+
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
@@ -136,6 +147,31 @@ begin
   if ACommand = 'PUT' then
     Result := TMethodType.mtPut;
 end;
+
+{ TLhsBracketsTypeHelper }
+
+function TLhsBracketsTypeHelper.ToString: string;
+begin
+  case Self of
+    TLhsBracketsType.lbteq:
+      Result := '[eq]';
+    TLhsBracketsType.lbtne:
+      Result := '[ne]';
+    TLhsBracketsType.lbtlt:
+      Result := '[lt]';
+    TLhsBracketsType.lbtlte:
+      Result := '[lte]';
+    TLhsBracketsType.lbtgt:
+      Result := '[gt]';
+    TLhsBracketsType.lbtgte:
+      Result := '[gte]';
+    TLhsBracketsType.lbtrange:
+      Result := '[range]';
+    TLhsBracketsType.lbtlike:
+      Result := '[like]';
+  end;
+end;
+
 {$ENDIF}
 
 { THTTPStatusHelper }

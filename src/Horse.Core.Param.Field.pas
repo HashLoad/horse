@@ -15,6 +15,37 @@ uses
   Horse.Exception, Horse.Commons;
 
 type
+
+  { THorseCoreParamFieldLhsBrackets }
+
+  THorseCoreParamFieldLhsBrackets = class
+  private
+    Feq: string; //Equal
+    Fne: string; //NotEqual
+    Flt: string; //LessThan
+    Flte: string; //LessThanOrEqual
+    Fgt: string; //GreaterThan
+    Fgte: string; //GreaterThanOrEqual
+    Frange: string; //Range
+    Flike: string; //Like
+    FTypes: TLhsBrackets;
+  public
+    property eq: string read Feq write Feq ;
+    property ne: string read Fne write Fne;
+    property lt: string read Flt write Flt;
+    property lte: string read Flte;
+    property gt: string read Fgt;
+    property gte: string read Fgte;
+    property range: string read Frange;
+    property like: string read Flike;
+    property Types: TLhsBrackets read FTypes write FTypes;
+
+    procedure SetValue(AType: TLhsBracketsType; AValue: string);
+    function GetValue(AType: TLhsBracketsType): string;
+  end;
+
+  { THorseCoreParamField }
+
   THorseCoreParamField = class
   private
     FContains: Boolean;
@@ -27,6 +58,7 @@ type
     FReturnUTC: Boolean;
     FTrueValue: string;
     FValue: string;
+    FLhsBrackets: THorseCoreParamFieldLhsBrackets;
 
     function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
@@ -54,10 +86,61 @@ type
     function Asstring: string;
     function AsTime: TTime;
 
-    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+    property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
+
+    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string; ACheckLhsBrackets: Boolean);
+    destructor Destroy; override;
   end;
 
 implementation
+
+{ THorseCoreParamFieldLhsBrackets }
+
+procedure THorseCoreParamFieldLhsBrackets.SetValue(AType: TLhsBracketsType;
+  AValue: string);
+begin
+  case AType of
+    lbteq:
+      Feq := AValue;
+    lbtne:
+      Fne := AValue;
+    lbtlt:
+      Flt := AValue;
+    lbtlte:
+      Flte := AValue;
+    lbtgt:
+      Fgt := AValue;
+    lbtgte:
+      Fgte := AValue;
+    lbtrange:
+      Frange := AValue;
+    lbtlike:
+      Flike := AValue;
+  end;
+end;
+
+function THorseCoreParamFieldLhsBrackets.GetValue(AType: TLhsBracketsType
+  ): string;
+begin
+  case AType of
+    lbteq:
+      Result := Feq;
+    lbtne:
+      Result := Fne;
+    lbtlt:
+      Result := Flt;
+    lbtlte:
+      Result := Flte;
+    lbtgt:
+      Result := Fgt;
+    lbtgte:
+      Result := Fgte;
+    lbtrange:
+      Result := Frange;
+    lbtlike:
+      Result := Flike;
+  end;
+end;
 
 { THorseCoreParamField }
 
@@ -209,14 +292,17 @@ begin
   end;
 end;
 
-constructor THorseCoreParamField.Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+constructor THorseCoreParamField.Create(const AParams: TDictionary<string,
+  string>; const AFieldName: string; ACheckLhsBrackets: Boolean);
 var
   LKey: string;
+  LLhsBracketType: TLhsBracketsType;
 begin
   FContains := False;
   FFieldName := AFieldName;
   FValue := EmptyStr;
   FRequired := False;
+  FLhsBrackets := THorseCoreParamFieldLhsBrackets.Create;
 
   for LKey in AParams.Keys do
   begin
@@ -228,7 +314,28 @@ begin
   end;
 
   if FContains then
+  begin
     FValue := AParams.Items[LKey];
+    Exit;
+  end;
+
+  if ACheckLhsBrackets then
+  begin
+    for LLhsBracketType in TLhsBracketsType do
+    begin
+      if AParams.ContainsKey(FFieldName+LLhsBracketType.ToString) then
+      begin
+        FLhsBrackets.SetValue(LLhsBracketType, AParams.Items[FFieldName+LLhsBracketType.ToString]);
+        FLhsBrackets.Types := FLhsBrackets.Types + [LLhsBracketType];
+      end;
+    end;
+  end;
+end;
+
+destructor THorseCoreParamField.Destroy;
+begin
+  FLhsBrackets.Free;
+  inherited Destroy;
 end;
 
 function THorseCoreParamField.DateFormat(const AValue: string): THorseCoreParamField;
