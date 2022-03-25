@@ -19,8 +19,6 @@ type
 {$IF DEFINED(FPC)}
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
 {$ENDIF}
-  TLhsBracketsType = (lbteq, lbtne, lbtlt, lbtlte, lbtgt, lbtgte, lbtrange, lbtlike);
-  TLhsBrackets = set of TLhsBracketsType;
 
 {$SCOPEDENUMS ON}
   THTTPStatus = (
@@ -107,7 +105,10 @@ type
     ImageGIF);
 
   TMessageType = (Default, Error, Warning, Information);
+
+  TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
 {$SCOPEDENUMS OFF}
+  TLhsBrackets = set of TLhsBracketsType;
 
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
@@ -153,21 +154,21 @@ end;
 function TLhsBracketsTypeHelper.ToString: string;
 begin
   case Self of
-    TLhsBracketsType.lbteq:
+    TLhsBracketsType.Equal:
       Result := '[eq]';
-    TLhsBracketsType.lbtne:
+    TLhsBracketsType.NotEqual:
       Result := '[ne]';
-    TLhsBracketsType.lbtlt:
+    TLhsBracketsType.LessThan:
       Result := '[lt]';
-    TLhsBracketsType.lbtlte:
+    TLhsBracketsType.LessThanOrEqual:
       Result := '[lte]';
-    TLhsBracketsType.lbtgt:
+    TLhsBracketsType.GreaterThan:
       Result := '[gt]';
-    TLhsBracketsType.lbtgte:
+    TLhsBracketsType.GreaterThanOrEqual:
       Result := '[gte]';
-    TLhsBracketsType.lbtrange:
+    TLhsBracketsType.Range:
       Result := '[range]';
-    TLhsBracketsType.lbtlike:
+    TLhsBracketsType.Like:
       Result := '[like]';
   end;
 end;

@@ -12,38 +12,9 @@ uses
 {$ELSE}
   System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
 {$ENDIF}
-  Horse.Exception, Horse.Commons;
+  Horse.Exception, Horse.Commons, Horse.Core.Param.Field.Brackets;
 
 type
-
-  { THorseCoreParamFieldLhsBrackets }
-
-  THorseCoreParamFieldLhsBrackets = class
-  private
-    Feq: string; //Equal
-    Fne: string; //NotEqual
-    Flt: string; //LessThan
-    Flte: string; //LessThanOrEqual
-    Fgt: string; //GreaterThan
-    Fgte: string; //GreaterThanOrEqual
-    Frange: string; //Range
-    Flike: string; //Like
-    FTypes: TLhsBrackets;
-  public
-    property eq: string read Feq;
-    property ne: string read Fne;
-    property lt: string read Flt;
-    property lte: string read Flte;
-    property gt: string read Fgt;
-    property gte: string read Fgte;
-    property range: string read Frange;
-    property like: string read Flike;
-    property Types: TLhsBrackets read FTypes write FTypes;
-
-    procedure SetValue(AType: TLhsBracketsType; AValue: string);
-    function GetValue(AType: TLhsBracketsType): string;
-  end;
-
   { THorseCoreParamField }
 
   THorseCoreParamField = class
@@ -88,59 +59,11 @@ type
 
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
 
-    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string; ACheckLhsBrackets: Boolean);
+    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string; const ACheckLhsBrackets: Boolean);
     destructor Destroy; override;
   end;
 
 implementation
-
-{ THorseCoreParamFieldLhsBrackets }
-
-procedure THorseCoreParamFieldLhsBrackets.SetValue(AType: TLhsBracketsType;
-  AValue: string);
-begin
-  case AType of
-    lbteq:
-      Feq := AValue;
-    lbtne:
-      Fne := AValue;
-    lbtlt:
-      Flt := AValue;
-    lbtlte:
-      Flte := AValue;
-    lbtgt:
-      Fgt := AValue;
-    lbtgte:
-      Fgte := AValue;
-    lbtrange:
-      Frange := AValue;
-    lbtlike:
-      Flike := AValue;
-  end;
-end;
-
-function THorseCoreParamFieldLhsBrackets.GetValue(AType: TLhsBracketsType
-  ): string;
-begin
-  case AType of
-    lbteq:
-      Result := Feq;
-    lbtne:
-      Result := Fne;
-    lbtlt:
-      Result := Flt;
-    lbtlte:
-      Result := Flte;
-    lbtgt:
-      Result := Fgt;
-    lbtgte:
-      Result := Fgte;
-    lbtrange:
-      Result := Frange;
-    lbtlike:
-      Result := Flike;
-  end;
-end;
 
 { THorseCoreParamField }
 
@@ -293,7 +216,7 @@ begin
 end;
 
 constructor THorseCoreParamField.Create(const AParams: TDictionary<string,
-  string>; const AFieldName: string; ACheckLhsBrackets: Boolean);
+  string>; const AFieldName: string; const ACheckLhsBrackets: Boolean);
 var
   LKey: string;
   LLhsBracketType: TLhsBracketsType;
