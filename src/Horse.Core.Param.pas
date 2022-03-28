@@ -90,7 +90,7 @@ begin
   if FFields.ContainsKey(LFieldName) then
     Exit(FFields.Items[LFieldName]);
 
-  Result := THorseCoreParamField.create(FParams, AKey);
+  Result := THorseCoreParamField.create(FParams, AKey, THorseCoreParamConfig.GetInstance.CheckLhsBrackets);
   try
     Result
       .Required(FRequired)

@@ -7,9 +7,13 @@ unit Horse.Commons;
 
 interface
 
+uses
 {$IF DEFINED(FPC)}
-uses Classes, SysUtils;
+  Classes, SysUtils
+{$ELSE}
+  System.Classes, System.SysUtils
 {$ENDIF}
+ ;
 
 type
 {$IF DEFINED(FPC)}
@@ -101,7 +105,10 @@ type
     ImageGIF);
 
   TMessageType = (Default, Error, Warning, Information);
+
+  TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
 {$SCOPEDENUMS OFF}
+  TLhsBrackets = set of TLhsBracketsType;
 
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
@@ -109,6 +116,11 @@ type
 
   TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
   for TMimeTypes
+    function ToString: string;
+  end;
+
+  TLhsBracketsTypeHelper  = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
+  for TLhsBracketsType
     function ToString: string;
   end;
 
@@ -136,6 +148,31 @@ begin
   if ACommand = 'PUT' then
     Result := TMethodType.mtPut;
 end;
+
+{ TLhsBracketsTypeHelper }
+
+function TLhsBracketsTypeHelper.ToString: string;
+begin
+  case Self of
+    TLhsBracketsType.Equal:
+      Result := '[eq]';
+    TLhsBracketsType.NotEqual:
+      Result := '[ne]';
+    TLhsBracketsType.LessThan:
+      Result := '[lt]';
+    TLhsBracketsType.LessThanOrEqual:
+      Result := '[lte]';
+    TLhsBracketsType.GreaterThan:
+      Result := '[gt]';
+    TLhsBracketsType.GreaterThanOrEqual:
+      Result := '[gte]';
+    TLhsBracketsType.Range:
+      Result := '[range]';
+    TLhsBracketsType.Like:
+      Result := '[like]';
+  end;
+end;
+
 {$ENDIF}
 
 { THTTPStatusHelper }

@@ -12,9 +12,11 @@ uses
 {$ELSE}
   System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
 {$ENDIF}
-  Horse.Exception, Horse.Commons;
+  Horse.Exception, Horse.Commons, Horse.Core.Param.Field.Brackets;
 
 type
+  { THorseCoreParamField }
+
   THorseCoreParamField = class
   private
     FContains: Boolean;
@@ -27,6 +29,7 @@ type
     FReturnUTC: Boolean;
     FTrueValue: string;
     FValue: string;
+    FLhsBrackets: THorseCoreParamFieldLhsBrackets;
 
     function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
@@ -54,7 +57,10 @@ type
     function Asstring: string;
     function AsTime: TTime;
 
-    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+    property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
+
+    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string; const ACheckLhsBrackets: Boolean);
+    destructor Destroy; override;
   end;
 
 implementation
@@ -209,14 +215,17 @@ begin
   end;
 end;
 
-constructor THorseCoreParamField.Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+constructor THorseCoreParamField.Create(const AParams: TDictionary<string,
+  string>; const AFieldName: string; const ACheckLhsBrackets: Boolean);
 var
   LKey: string;
+  LLhsBracketType: TLhsBracketsType;
 begin
   FContains := False;
   FFieldName := AFieldName;
   FValue := EmptyStr;
   FRequired := False;
+  FLhsBrackets := THorseCoreParamFieldLhsBrackets.Create;
 
   for LKey in AParams.Keys do
   begin
@@ -229,6 +238,24 @@ begin
 
   if FContains then
     FValue := AParams.Items[LKey];
+
+  if ACheckLhsBrackets then
+  begin
+    for LLhsBracketType in TLhsBracketsType do
+    begin
+      if AParams.ContainsKey(FFieldName+LLhsBracketType.ToString) then
+      begin
+        FLhsBrackets.SetValue(LLhsBracketType, AParams.Items[FFieldName+LLhsBracketType.ToString]);
+        FLhsBrackets.Types := FLhsBrackets.Types + [LLhsBracketType];
+      end;
+    end;
+  end;
+end;
+
+destructor THorseCoreParamField.Destroy;
+begin
+  FLhsBrackets.Free;
+  inherited Destroy;
 end;
 
 function THorseCoreParamField.DateFormat(const AValue: string): THorseCoreParamField;
