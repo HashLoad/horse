@@ -187,12 +187,12 @@ end;
 
 function THorseCoreParamField.AsStream: TStream;
 begin
-  result := nil;
+  Result := nil;
   if FContains then
   begin
-    result := FStream;
-    if Assigned(result) then
-      result.Position := 0;
+    Result := FStream;
+    if Assigned(Result) then
+      Result.Position := 0;
   end
   else
   if FRequired then

@@ -117,7 +117,7 @@ end;
 
 function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
 begin
-  result := Self;
+  Result := Self;
   if not Assigned(FFiles) then
     FFiles := TDictionary<String, TStream>.Create;
 
@@ -189,13 +189,13 @@ begin
     begin
       if AnsiSameText(LKey, AKey) then
       begin
-        result := THorseCoreParamField.Create(FFiles.Items[LKey], AKey);
+        Result := THorseCoreParamField.Create(FFiles.Items[LKey], AKey);
         Exit;
       end;
     end;
   end;
 
-  result := THorseCoreParamField.create(FParams, AKey);
+  Result := THorseCoreParamField.create(FParams, AKey);
 end;
 
 function THorseCoreParam.Required(const AValue: Boolean): THorseCoreParam;
