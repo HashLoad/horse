@@ -30,6 +30,7 @@ type
     FTrueValue: string;
     FValue: string;
     FLhsBrackets: THorseCoreParamFieldLhsBrackets;
+    FStream: TStream;
 
     function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
@@ -45,6 +46,8 @@ type
     function TimeFormat(const AValue: string): THorseCoreParamField;
     function TrueValue(const AValue: string): THorseCoreParamField;
 
+    procedure SaveToFile(const AFileName: String);
+
     function AsBoolean: Boolean;
     function AsCurrency: Currency;
     function AsDate: TDateTime;
@@ -54,7 +57,8 @@ type
     function AsInteger: Integer;
     function AsInt64: Int64;
     function AsISO8601DateTime: TDateTime;
-    function Asstring: string;
+    function AsStream: TStream;
+    function AsString: string;
     function AsTime: TTime;
 
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
@@ -72,7 +76,7 @@ var
   LStrParam: string;
 begin
   Result := False;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   if LStrParam <> EmptyStr then
     Result := LowerCase(LStrParam) = LowerCase(FTrueValue);
 end;
@@ -88,7 +92,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -107,7 +111,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -130,7 +134,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -148,7 +152,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt64(LStrParam);
@@ -163,7 +167,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt(LStrParam);
@@ -178,7 +182,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   if LStrParam <> EmptyStr then
   begin
     if not TryISO8601ToDate(LStrParam, Result) then
@@ -186,7 +190,21 @@ begin
   end;
 end;
 
-function THorseCoreParamField.Asstring: string;
+function THorseCoreParamField.AsStream: TStream;
+begin
+  Result := nil;
+  if FContains then
+  begin
+    Result := FStream;
+    if Assigned(Result) then
+      Result.Position := 0;
+  end
+  else
+  if FRequired then
+    RaiseHorseException(FRequiredMessage, [FFieldName]);
+end;
+
+function THorseCoreParamField.AsString: string;
 begin
   Result := EmptyStr;
   if FContains then
@@ -202,7 +220,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -319,6 +337,23 @@ function THorseCoreParamField.ReturnUTC(const AValue: Boolean): THorseCoreParamF
 begin
   Result := Self;
   FReturnUTC := AValue;
+end;
+
+procedure THorseCoreParamField.SaveToFile(const AFileName: String);
+var
+  LMemoryStream: TMemoryStream;
+begin
+  if AsStream = nil then
+    Exit;
+
+  LMemoryStream := TMemoryStream.Create;
+  try
+    LMemoryStream.LoadFromStream(AsStream);
+    LMemoryStream.Position := 0;
+    LMemoryStream.SaveToFile(AFileName);
+  finally
+    LMemoryStream.Free;
+  end;
 end;
 
 function THorseCoreParamField.TimeFormat(const AValue: string): THorseCoreParamField;
