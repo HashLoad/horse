@@ -148,6 +148,7 @@ begin
   if ACommand = 'PUT' then
     Result := TMethodType.mtPut;
 end;
+{$ENDIF}
 
 { TLhsBracketsTypeHelper }
 
@@ -172,8 +173,6 @@ begin
       Result := '[like]';
   end;
 end;
-
-{$ENDIF}
 
 { THTTPStatusHelper }
 

@@ -135,6 +135,10 @@ begin
   FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
   if (not CanLoadContentFields) then
     Exit;
+
+  for I := 0 to Pred(FWebRequest.Files.Count) do
+    FContentFields.AddStream(FWebRequest.Files[I].FieldName, FWebRequest.Files[I].Stream);
+
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
     FContentFields.Dictionary.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
 end;
