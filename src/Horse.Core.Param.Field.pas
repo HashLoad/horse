@@ -43,6 +43,8 @@ type
     function TimeFormat(const AValue: string): THorseCoreParamField;
     function TrueValue(const AValue: string): THorseCoreParamField;
 
+    procedure SaveToFile(const AFileName: String);
+
     function AsBoolean: Boolean;
     function AsCurrency: Currency;
     function AsDate: TDateTime;
@@ -318,6 +320,23 @@ function THorseCoreParamField.ReturnUTC(const AValue: Boolean): THorseCoreParamF
 begin
   Result := Self;
   FReturnUTC := AValue;
+end;
+
+procedure THorseCoreParamField.SaveToFile(const AFileName: String);
+var
+  LMemoryStream: TMemoryStream;
+begin
+  if AsStream = nil then
+    Exit;
+
+  LMemoryStream := TMemoryStream.Create;
+  try
+    LMemoryStream.LoadFromStream(AsStream);
+    LMemoryStream.Position := 0;
+    LMemoryStream.SaveToFile(AFileName);
+  finally
+    LMemoryStream.Free;
+  end;
 end;
 
 function THorseCoreParamField.TimeFormat(const AValue: string): THorseCoreParamField;

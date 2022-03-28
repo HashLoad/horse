@@ -7,6 +7,7 @@ uses
   Horse.Exception,
   Horse.Core.Param,
   System.Generics.Collections,
+  System.Classes,
   System.DateUtils,
   System.SysUtils;
 
@@ -19,6 +20,7 @@ type
     FData: TDateTime;
     FTime: TTime;
     FFormatSettings: TFormatSettings;
+    FStream: TStream;
 
     function RequiredMessage(const AKey: String): string;
     function ConvertErrorMessage(const AKey, AValue, AType: String): string;
@@ -207,6 +209,21 @@ type
 
     [Test]
     procedure AsISO8601DateTimeErrorFormat;
+
+    [Test]
+    procedure AsStream;
+
+    [Test]
+    procedure AsStreamNotFoundNotRequired;
+
+    [Test]
+    procedure AsStreamNotFoundRequired;
+
+    [Test]
+    procedure AsStreamSaveToFile;
+
+    [Test]
+    procedure AsStreamNotFoundSaveToFile;
 
     [Test]
     procedure AsString;
@@ -598,6 +615,57 @@ begin
     RequiredMessage('Key1'));
 end;
 
+procedure TTestHorseCoreParam.AsStream;
+begin
+  FStream := TStringStream.Create('1234');
+  FHorseParam.AddStream('Key1', FStream);
+
+  Assert.IsNotNull(FHorseParam.Field('Key1').AsStream);
+  Assert.AreEqual<Int64>(0, FHorseParam.Field('Key1').AsStream.Position);
+end;
+
+procedure TTestHorseCoreParam.AsStreamNotFoundNotRequired;
+begin
+  Assert.IsNull(FHorseParam.Field('Key1').AsStream);
+end;
+
+procedure TTestHorseCoreParam.AsStreamNotFoundRequired;
+begin
+  Assert.WillRaiseWithMessage(
+    procedure
+    begin
+      FHorseParam.Field('Key1').Required(True).AsStream
+    end,
+    EHorseException,
+    RequiredMessage('Key1'));
+end;
+
+procedure TTestHorseCoreParam.AsStreamNotFoundSaveToFile;
+var
+  LFile: String;
+begin
+  LFile := 'test.txt';
+  Assert.IsFalse(FileExists(LFile));
+
+  FHorseParam.Field('Key1').SaveToFile(LFile);
+  Assert.IsFalse(FileExists(LFile));
+end;
+
+procedure TTestHorseCoreParam.AsStreamSaveToFile;
+var
+  LFile: String;
+begin
+  LFile := 'test.txt';
+  Assert.IsFalse(FileExists(LFile));
+
+  FStream := TStringStream.Create('1234');
+  FHorseParam.AddStream('Key1', FStream);
+
+  FHorseParam.Field('Key1').SaveToFile(LFile);
+  Assert.IsTrue(FileExists(LFile));
+  DeleteFile(LFile);
+end;
+
 procedure TTestHorseCoreParam.AsString;
 begin
   FParams.AddOrSetValue('Key1', 'Value');
@@ -728,15 +796,8 @@ end;
 
 procedure TTestHorseCoreParam.IndexNotFound;
 begin
-  Assert.WillRaiseWithMessage(
-    procedure
-    begin
-      FParams.AddOrSetValue('Key1', 'Value1');
-      Assert.AreEqual('Value1', FHorseParam['Value1']);
-    end,
-    EListError,
-    'Item Value1 not found');
-
+  FParams.AddOrSetValue('Key1', 'Value1');
+  Assert.IsEmpty(FHorseParam.Items['Value1']);
 end;
 
 procedure TTestHorseCoreParam.List;
@@ -778,6 +839,7 @@ end;
 procedure TTestHorseCoreParam.TearDown;
 begin
   FreeAndNil(FHorseParam);
+  FreeAndNil(FStream);
 end;
 
 procedure TTestHorseCoreParam.ToArray;
