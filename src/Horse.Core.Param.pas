@@ -11,6 +11,7 @@ uses
   SysUtils, Classes, DateUtils, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
 {$ELSE}
   System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
+  Web.HTTPApp,
 {$ENDIF}
   Horse.Exception, Horse.Commons, Horse.Core.Param.Field;
 
@@ -20,6 +21,7 @@ type
   THorseCoreParam = class
   private
     FParams: THorseList;
+    FFiles: TAbstractWebRequestFiles;
     FFields: TDictionary<string, THorseCoreParamField>;
     FContent: TStrings;
     FRequired: Boolean;
@@ -29,6 +31,8 @@ type
     function GetContent: TStrings;
     function AsString(const AKey: string): string;
     procedure ClearFields;
+
+    function NewField(const AKey: String): THorseCoreParamField;
   public
     function Required(const AValue: Boolean): THorseCoreParam;
     function Field(const AKey: string): THorseCoreParamField;
@@ -40,7 +44,7 @@ type
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
-    constructor Create(const AParams: THorseList);
+    constructor Create(const AParams: THorseList; const AFiles: TAbstractWebRequestFiles = nil);
     destructor Destroy; override;
   end;
 
@@ -65,10 +69,11 @@ begin
   Result := FParams.ContainsValue(AValue);
 end;
 
-constructor THorseCoreParam.Create(const AParams: THorseList);
+constructor THorseCoreParam.Create(const AParams: THorseList; const AFiles: TAbstractWebRequestFiles = nil);
 begin
   FParams := AParams;
   FRequired := False;
+  FFiles := AFiles;
 end;
 
 destructor THorseCoreParam.Destroy;
@@ -90,7 +95,7 @@ begin
   if FFields.ContainsKey(LFieldName) then
     Exit(FFields.Items[LFieldName]);
 
-  Result := THorseCoreParamField.create(FParams, AKey);
+  Result := NewField(AKey);
   try
     Result
       .Required(FRequired)
@@ -161,6 +166,24 @@ begin
       Exit(FParams[LKey]);
   end;
   Result := EmptyStr;
+end;
+
+function THorseCoreParam.NewField(const AKey: String): THorseCoreParamField;
+var
+  LCount: Integer;
+  LName: String;
+begin
+  for LCount := 0 to Pred(FFiles.Count) do
+  begin
+    LName := FFiles.Items[LCount].FieldName;
+    if AnsiSameText(LName, AKey) then
+    begin
+      result := THorseCoreParamField.Create(FFiles.Items[LCount].Stream, AKey);
+      Exit;
+    end;
+  end;
+
+  result := THorseCoreParamField.create(FParams, AKey);
 end;
 
 function THorseCoreParam.Required(const AValue: Boolean): THorseCoreParam;

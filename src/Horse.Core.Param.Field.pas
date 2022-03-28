@@ -27,6 +27,7 @@ type
     FReturnUTC: Boolean;
     FTrueValue: string;
     FValue: string;
+    FStream: TStream;
 
     function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
@@ -51,10 +52,12 @@ type
     function AsInteger: Integer;
     function AsInt64: Int64;
     function AsISO8601DateTime: TDateTime;
-    function Asstring: string;
+    function AsStream: TStream;
+    function AsString: string;
     function AsTime: TTime;
 
-    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string);
+    constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
+    constructor Create(const AStream: TStream; const AFieldName: string); overload;
   end;
 
 implementation
@@ -66,7 +69,7 @@ var
   LStrParam: string;
 begin
   Result := False;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   if LStrParam <> EmptyStr then
     Result := LowerCase(LStrParam) = LowerCase(FTrueValue);
 end;
@@ -82,7 +85,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -101,7 +104,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -124,7 +127,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -142,7 +145,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt64(LStrParam);
@@ -157,7 +160,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt(LStrParam);
@@ -172,7 +175,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   if LStrParam <> EmptyStr then
   begin
     if not TryISO8601ToDate(LStrParam, Result) then
@@ -180,7 +183,21 @@ begin
   end;
 end;
 
-function THorseCoreParamField.Asstring: string;
+function THorseCoreParamField.AsStream: TStream;
+begin
+  result := nil;
+  if FContains then
+  begin
+    result := FStream;
+    if Assigned(result) then
+      result.Position := 0;
+  end
+  else
+  if FRequired then
+    RaiseHorseException(FRequiredMessage, [FFieldName]);
+end;
+
+function THorseCoreParamField.AsString: string;
 begin
   Result := EmptyStr;
   if FContains then
@@ -196,7 +213,7 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := Asstring;
+  LStrParam := AsString;
   try
     if LStrParam <> EmptyStr then
     begin
@@ -207,6 +224,15 @@ begin
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'time']);
   end;
+end;
+
+constructor THorseCoreParamField.Create(const AStream: TStream; const AFieldName: string);
+begin
+  FContains := True;
+  FFieldName := AFieldName;
+  FValue := EmptyStr;
+  FRequired := False;
+  FStream := AStream;
 end;
 
 constructor THorseCoreParamField.Create(const AParams: TDictionary<string, string>; const AFieldName: string);

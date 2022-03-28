@@ -132,7 +132,7 @@ procedure THorseRequest.InitializeContentFields;
 var
   I: Integer;
 begin
-  FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
+  FContentFields := THorseCoreParam.Create(THorseList.Create, FWebRequest.Files).Required(False);
   if (not CanLoadContentFields) then
     Exit;
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
