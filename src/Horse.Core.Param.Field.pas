@@ -241,7 +241,7 @@ begin
 
   if ACheckLhsBrackets then
   begin
-    for LLhsBracketType in TLhsBracketsType do
+    for LLhsBracketType := Low(TLhsBracketsType) to High(TLhsBracketsType) do
     begin
       if AParams.ContainsKey(FFieldName+LLhsBracketType.ToString) then
       begin
