@@ -138,12 +138,12 @@ begin
 
   LFileStream:=TFileStream.Create(AFileName,fmOpenRead or fmShareDenyWrite);
   try
-    MimeTypes.LoadKnownTypes;
     FWebResponse.ContentLength:=LFileStream.Size;
     FWebResponse.ContentStream:=LFileStream;
     if (AContentType = EmptyStr) then
     begin
       {$IF DEFINED(FPC)}
+      MimeTypes.LoadKnownTypes;
       FWebResponse.ContentType := MimeTypes.GetMimeType(ExtractFileExt(AFileName));
       {$ELSE}
       TMimeTypes.Default.GetFileInfo(AFileName, LType, LKind);
