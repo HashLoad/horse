@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{A4A352F5-2896-4539-AE34-A7DF0D94AF4D}</ProjectGuid>
-        <ProjectVersion>19.3</ProjectVersion>
+        <ProjectVersion>19.4</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <MainSource>Console.dpr</MainSource>
         <Base>True</Base>
@@ -129,7 +129,6 @@
         <DCCReference Include="..\..\src\Horse.Core.Route.pas"/>
         <DCCReference Include="..\..\src\Horse.Core.RouterTree.pas"/>
         <DCCReference Include="..\..\src\Horse.Exception.pas"/>
-        <DCCReference Include="..\..\src\Horse.HTTP.pas"/>
         <DCCReference Include="..\..\src\Horse.pas"/>
         <DCCReference Include="..\..\src\Horse.Provider.Abstract.pas"/>
         <DCCReference Include="..\..\src\Horse.Provider.Apache.pas"/>
@@ -150,10 +149,19 @@
         <DCCReference Include="tests\Tests.Commons.pas"/>
         <DCCReference Include="..\..\src\Horse.Core.Param.pas"/>
         <DCCReference Include="..\..\src\Horse.Core.Param.Header.pas"/>
-        <DCCReference Include="..\..\src\Horse.Rtti.pas"/>
         <DCCReference Include="..\..\src\Horse.Provider.IOHandleSSL.pas"/>
         <DCCReference Include="tests\Tests.Horse.Core.Param.pas"/>
         <DCCReference Include="..\..\src\Horse.Core.Param.Field.pas"/>
+        <DCCReference Include="..\..\src\Horse.Request.pas"/>
+        <DCCReference Include="..\..\src\Horse.Response.pas"/>
+        <DCCReference Include="..\..\src\Horse.Core.Param.Config.pas"/>
+        <DCCReference Include="..\..\src\Horse.Rtti.Helper.pas"/>
+        <DCCReference Include="..\..\src\Horse.Rtti.pas"/>
+        <DCCReference Include="..\..\src\Horse.Callback.pas"/>
+        <DCCReference Include="..\..\src\Horse.Core.RouterTree.NextCaller.pas"/>
+        <DCCReference Include="..\..\src\Horse.Exception.Interrupted.pas"/>
+        <DCCReference Include="..\..\src\Horse.Session.pas"/>
+        <DCCReference Include="..\..\src\Horse.Core.Param.Field.Brackets.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -184,15 +192,8 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="..\Console.exe" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>Console.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\Console.exe" Configuration="CI" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>Console.exe</RemoteName>
+                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
+                    <Platform Name="iOSSimulator">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -206,8 +207,15 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
+                <DeployFile LocalName="..\Console.exe" Configuration="CI" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Console.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\Console.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Console.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -1190,17 +1198,17 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="OSX64" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="OSXARM64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Android64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="Linux64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="Linux64" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="OSX64" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="OSXARM64" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
                 <Platform value="Linux64">False</Platform>
