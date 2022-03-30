@@ -102,7 +102,8 @@ type
     TextHTML,
     ImageJPEG,
     ImagePNG,
-    ImageGIF);
+    ImageGIF,
+    Download);
 
   TMessageType = (Default, Error, Warning, Information);
 
@@ -218,6 +219,8 @@ begin
       Result := 'image/png';
     TMimeTypes.ImageGIF:
       Result := 'image/gif';
+    TMimeTypes.Download:
+      Result := 'application/x-download';
   end;
 end;
 
