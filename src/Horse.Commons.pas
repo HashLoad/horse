@@ -9,7 +9,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Classes, SysUtils
+  Classes, SysUtils, StrUtils
 {$ELSE}
   System.Classes, System.SysUtils
 {$ENDIF}
@@ -133,20 +133,15 @@ implementation
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
 begin
-  if ACommand = 'ANY' then
-    Result := TMethodType.mtAny;
-  if ACommand = 'DELETE' then
-    Result := TMethodType.mtDelete;
-  if ACommand = 'GET' then
-    Result := TMethodType.mtGet;
-  if ACommand = 'HEAD' then
-    Result := TMethodType.mtHead;
-  if ACommand = 'PATCH' then
-    Result := TMethodType.mtPatch;
-  if ACommand = 'POST' then
-    Result := TMethodType.mtPost;
-  if ACommand = 'PUT' then
-    Result := TMethodType.mtPut;
+  case AnsiIndexText(ACommand, ['ANY', 'DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT']) of
+    0: Result := TMethodType.mtAny;
+    1: Result := TMethodType.mtDelete;
+    2: Result := TMethodType.mtGet;
+    3: Result := TMethodType.mtHead;
+    4: Result := TMethodType.mtPatch;
+    5: Result := TMethodType.mtPost;
+    6: Result := TMethodType.mtPut;
+  end;
 end;
 {$ENDIF}
 

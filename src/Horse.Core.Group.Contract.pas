@@ -23,30 +23,30 @@ type
     function Use(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
     function Get(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
     function Get(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Get(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+    {$IFNDEF FPC}
     function Get(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
     {$IFEND}
 
     function Put(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
     function Put(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Put(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+    {$IFNDEF FPC}
     function Put(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
     {$IFEND}
 
     function Head(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
     function Head(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Head(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+    {$IFNDEF FPC}
     function Head(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
     {$IFEND}
 
     function Post(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
     function Post(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Post(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+    {$IFNDEF FPC}
     function Post(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
     {$IFEND}
 
@@ -54,13 +54,15 @@ type
     function Patch(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
 
-      {$IFNDEF FPC}
       function Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
       function Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+      {$IFNDEF FPC}
       function Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
+      {$IFEND}
 
       function Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
       function Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+      {$IFNDEF FPC}
       function Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
       {$IFEND}
     {$IFEND}

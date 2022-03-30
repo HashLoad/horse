@@ -49,3 +49,4 @@ backup/
 **/console/
 **/vcl/
 dunitx-results.xml
+*.bak
