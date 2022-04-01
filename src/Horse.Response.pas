@@ -30,6 +30,7 @@ type
     function Status(const AStatus: Integer): THorseResponse; overload;
     function Status(const AStatus: THTTPStatus): THorseResponse; overload;
     function Status: Integer; overload;
+    function AddHeader(const AName, AValue: string): THorseResponse;
     function Content: TObject; overload;
     function Content(const AContent: TObject): THorseResponse; overload;
     function ContentType(const AContentType: string): THorseResponse;
@@ -39,6 +40,12 @@ type
   end;
 
 implementation
+
+function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
+begin
+  FWebResponse.SetCustomHeader(AName, AValue);
+  Result := Self;
+end;
 
 function THorseResponse.Content(const AContent: TObject): THorseResponse;
 begin

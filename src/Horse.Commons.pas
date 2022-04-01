@@ -105,22 +105,20 @@ type
     ImageGIF);
 
   TMessageType = (Default, Error, Warning, Information);
-
   TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
 {$SCOPEDENUMS OFF}
+
   TLhsBrackets = set of TLhsBracketsType;
 
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
   end;
 
-  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-  for TMimeTypes
+  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMimeTypes
     function ToString: string;
   end;
 
-  TLhsBracketsTypeHelper  = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-  for TLhsBracketsType
+  TLhsBracketsTypeHelper  = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TLhsBracketsType
     function ToString: string;
   end;
 

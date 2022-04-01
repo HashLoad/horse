@@ -70,6 +70,7 @@ contains
   Horse.Session in 'src\Horse.Session.pas',
   Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   ThirdParty.Posix.Syslog in 'src\ThirdParty.Posix.Syslog.pas',
-  Web.WebConst in 'src\Web.WebConst.pas';
+  Web.WebConst in 'src\Web.WebConst.pas',
+  Horse.Core.Param.Field.Brackets in 'src\Horse.Core.Param.Field.Brackets.pas';
 
 end.

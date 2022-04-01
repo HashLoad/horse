@@ -7,16 +7,14 @@ unit Horse.Core.Param.Field.Brackets;
 interface
 
 uses
-  {$IF DEFINED(FPC)}
-    SysUtils, Classes,
-  {$ELSE}
-    System.SysUtils, System.Classes,
-  {$ENDIF}
-    Horse.Commons;
+{$IF DEFINED(FPC)}
+  SysUtils, Classes,
+{$ELSE}
+  System.SysUtils, System.Classes,
+{$ENDIF}
+  Horse.Commons;
 
 type
-  { THorseCoreParamFieldLhsBrackets }
-
   THorseCoreParamFieldLhsBrackets = class
   private
     FEq: string;
@@ -38,17 +36,13 @@ type
     property Range: string read Frange;
     property Like: string read Flike;
     property Types: TLhsBrackets read FTypes write FTypes;
-
     procedure SetValue(const AType: TLhsBracketsType; const AValue: string);
     function GetValue(const AType: TLhsBracketsType): string;
   end;
 
 implementation
 
-{ THorseCoreParamFieldLhsBrackets }
-
-procedure THorseCoreParamFieldLhsBrackets.SetValue(
-  const AType: TLhsBracketsType; const AValue: string);
+procedure THorseCoreParamFieldLhsBrackets.SetValue(const AType: TLhsBracketsType; const AValue: string);
 begin
   case AType of
     TLhsBracketsType.Equal:
@@ -70,8 +64,7 @@ begin
   end;
 end;
 
-function THorseCoreParamFieldLhsBrackets.GetValue(const AType: TLhsBracketsType
-  ): string;
+function THorseCoreParamFieldLhsBrackets.GetValue(const AType: TLhsBracketsType): string;
 begin
   case AType of
     TLhsBracketsType.Equal:

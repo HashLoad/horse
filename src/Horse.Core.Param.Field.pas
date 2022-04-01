@@ -16,7 +16,6 @@ uses
   Horse.Core.Param.Config;
 
 type
-  { THorseCoreParamField }
 
   THorseCoreParamField = class
   private
@@ -73,8 +72,6 @@ type
   end;
 
 implementation
-
-{ THorseCoreParamField }
 
 function THorseCoreParamField.AsBoolean: Boolean;
 var
