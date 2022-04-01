@@ -32,30 +32,30 @@ type
     function All(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
 
     function Get(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    {$IFNDEF FPC}
     function Get(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
     function Get(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+    {$IFNDEF FPC}
     function Get(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
     {$IFEND}
 
     function Put(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    {$IFNDEF FPC}
     function Put(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
     function Put(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+    {$IFNDEF FPC}
     function Put(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
     {$IFEND}
 
     function Head(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    {$IFNDEF FPC}
     function Head(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
     function Head(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+    {$IFNDEF FPC}
     function Head(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
     {$IFEND}
 
     function Post(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
-    {$IFNDEF FPC}
     function Post(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
     function Post(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+    {$IFNDEF FPC}
     function Post(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
     {$IFEND}
 
@@ -63,13 +63,15 @@ type
     function Patch(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Delete(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
 
-      {$IFNDEF FPC}
       function Patch(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
       function Patch(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+      {$IFNDEF FPC}
       function Patch(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+      {$IFEND}
 
       function Delete(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
       function Delete(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+      {$IFNDEF FPC}
       function Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
       {$IFEND}
     {$IFEND}
@@ -141,7 +143,6 @@ begin
   THorseCore(FHorseCore).Patch(FPath, ACallback);
 end;
 
-  {$IFNDEF FPC}
   function THorseCoreRoute<T>.Delete(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>;
   begin
     THorseCore(FHorseCore).Delete(FPath, ACallback);
@@ -154,11 +155,13 @@ end;
     Result := Self;
   end;
 
+  {$IFNDEF FPC}
   function THorseCoreRoute<T>.Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
   begin
     THorseCore(FHorseCore).Delete(FPath, ACallback);
     Result := Self;
   end;
+  {$IFEND}
 
   function THorseCoreRoute<T>.Patch(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>;
   begin
@@ -172,6 +175,7 @@ end;
     Result := Self;
   end;
 
+  {$IFNDEF FPC}
   function THorseCoreRoute<T>.Patch(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
   begin
     THorseCore(FHorseCore).Patch(FPath, ACallback);
@@ -213,7 +217,6 @@ begin
   Result := Self;
 end;
 
-{$IFNDEF FPC}
 function THorseCoreRoute<T>.Get(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>;
 begin
   THorseCore(FHorseCore).Get(FPath, ACallback);
@@ -226,11 +229,13 @@ begin
   Result := Self;
 end;
 
+{$IFNDEF FPC}
 function THorseCoreRoute<T>.Get(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
 begin
   THorseCore(FHorseCore).Get(FPath, ACallback);
   Result := Self;
 end;
+{$IFEND}
 
 function THorseCoreRoute<T>.Head(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>;
 begin
@@ -244,11 +249,13 @@ begin
   Result := Self;
 end;
 
+{$IFNDEF FPC}
 function THorseCoreRoute<T>.Head(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
 begin
   THorseCore(FHorseCore).Head(FPath, ACallback);
   Result := Self;
 end;
+{$IFEND}
 
 function THorseCoreRoute<T>.Post(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>;
 begin
@@ -262,17 +269,21 @@ begin
   Result := Self;
 end;
 
+{$IFNDEF FPC}
 function THorseCoreRoute<T>.Post(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
 begin
   THorseCore(FHorseCore).Post(FPath, ACallback);
   Result := Self;
 end;
+{$IFEND}
 
+{$IFNDEF FPC}
 function THorseCoreRoute<T>.Put(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>;
 begin
   THorseCore(FHorseCore).Put(FPath, ACallback);
   Result := Self;
 end;
+{$IFEND}
 
 function THorseCoreRoute<T>.Put(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>;
 begin
@@ -285,6 +296,5 @@ begin
   THorseCore(FHorseCore).Put(FPath, ACallback);
   Result := Self;
 end;
-{$IFEND}
 
 end.
