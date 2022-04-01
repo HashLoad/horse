@@ -36,6 +36,7 @@ type
     function Download(const AFileName: string): THorseResponse; overload;
     function Render(const AFileName: string): THorseResponse; overload;
     function Status: Integer; overload;
+    function AddHeader(const AName, AValue: string): THorseResponse;
     function Content: TObject; overload;
     function Content(const AContent: TObject): THorseResponse; overload;
     function ContentType(const AContentType: string): THorseResponse;
@@ -53,6 +54,12 @@ uses
    SSystem.Net.Mime, System.IOUtils
   {$IFEND}
   ;
+
+function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
+begin
+  FWebResponse.SetCustomHeader(AName, AValue);
+  Result := Self;
+end;
 
 function THorseResponse.Content(const AContent: TObject): THorseResponse;
 begin

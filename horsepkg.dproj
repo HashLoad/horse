@@ -125,6 +125,7 @@
         </DCCReference>
         <DCCReference Include="src\ThirdParty.Posix.Syslog.pas"/>
         <DCCReference Include="src\Web.WebConst.pas"/>
+        <DCCReference Include="src\Horse.Core.Param.Field.Brackets.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
