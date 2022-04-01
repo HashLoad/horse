@@ -102,7 +102,8 @@ type
     TextHTML,
     ImageJPEG,
     ImagePNG,
-    ImageGIF);
+    ImageGIF,
+    Download);
 
   TMessageType = (Default, Error, Warning, Information);
   TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
@@ -216,6 +217,8 @@ begin
       Result := 'image/png';
     TMimeTypes.ImageGIF:
       Result := 'image/gif';
+    TMimeTypes.Download:
+      Result := 'application/x-download';
   end;
 end;
 

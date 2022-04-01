@@ -18,17 +18,23 @@ uses
   Horse.Commons;
 
 type
+
+  { THorseResponse }
+
   THorseResponse = class
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
   public
     function Send(const AContent: string): THorseResponse; overload;
-    function Send<T: class>(const AContent: T): THorseResponse; overload;
+    function Send<T{$IFNDEF FPC}: class{$IFEND}>(const AContent: T): THorseResponse; overload;
     function RedirectTo(const ALocation: string): THorseResponse; overload;
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload;
     function Status(const AStatus: Integer): THorseResponse; overload;
     function Status(const AStatus: THTTPStatus): THorseResponse; overload;
+    function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
+    function Download(const AFileName: string): THorseResponse; overload;
+    function Render(const AFileName: string): THorseResponse; overload;
     function Status: Integer; overload;
     function AddHeader(const AName, AValue: string): THorseResponse;
     function Content: TObject; overload;
@@ -40,6 +46,14 @@ type
   end;
 
 implementation
+
+uses
+  {$IF DEFINED(FPC)}
+   fpmimetypes
+  {$ELSE}
+   SSystem.Net.Mime, System.IOUtils
+  {$IFEND}
+  ;
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
@@ -88,7 +102,7 @@ begin
   Result := Self;
 end;
 
-function THorseResponse.Send<T>(const AContent: T): THorseResponse;
+function THorseResponse.Send<T{$IFNDEF FPC}: class{$IFEND}>(const AContent: T): THorseResponse;
 begin
   FContent := AContent;
   Result := Self;
@@ -110,6 +124,59 @@ function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
   {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
   Result := Self;
+end;
+
+function THorseResponse.SendFile(const AFileName: string;
+  const AContentType: string): THorseResponse;
+var
+  LFileStream: TFileStream;
+  {$IFNDEF FPC}:
+  LType: string;
+  LKind: TMimeTypes.TKind;
+  {$IFEND}
+begin
+  Result := Self;
+
+  if (AFileName = EmptyStr) then
+    raise Exception.Create('Invalid FileName');
+
+  if not FileExists(AFileName) then
+    raise Exception.Create('File not exist');
+
+  LFileStream:=TFileStream.Create(AFileName,fmOpenRead or fmShareDenyWrite);
+  try
+    FWebResponse.ContentLength:=LFileStream.Size;
+    FWebResponse.ContentStream:=LFileStream;
+    if (AContentType = EmptyStr) then
+    begin
+      {$IF DEFINED(FPC)}
+      MimeTypes.LoadKnownTypes;
+      FWebResponse.ContentType := MimeTypes.GetMimeType(ExtractFileExt(AFileName));
+      {$ELSE}
+      TMimeTypes.Default.GetFileInfo(AFileName, LType, LKind);
+      FWebResponse.ContentType :=  := LType;
+      {$IFEND}
+    end;
+    FWebResponse.SendContent;
+    FWebResponse.ContentStream:=Nil;
+  finally
+    LFileStream.Free;
+  end;
+end;
+
+function THorseResponse.Download(const AFileName: string): THorseResponse;
+begin
+  Result := Self;
+  FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"',[ExtractFileName(AFileName)]));
+
+  SendFile(AFileName, TMimeTypes.Download.ToString);
+end;
+
+function THorseResponse.Render(const AFileName: string): THorseResponse;
+begin
+  Result := Self;
+
+  SendFile(AFileName, TMimeTypes.TextHTML.ToString);
 end;
 
 function THorseResponse.Status: Integer;
