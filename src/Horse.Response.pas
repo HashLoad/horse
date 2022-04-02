@@ -18,16 +18,13 @@ uses
   Horse.Commons;
 
 type
-
-  { THorseResponse }
-
   THorseResponse = class
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
   public
     function Send(const AContent: string): THorseResponse; overload;
-    function Send<T{$IFNDEF FPC}: class{$IFEND}>(const AContent: T): THorseResponse; overload;
+    function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
     function RedirectTo(const ALocation: string): THorseResponse; overload;
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload;
     function Status(const AStatus: Integer): THorseResponse; overload;
@@ -51,8 +48,8 @@ uses
   {$IF DEFINED(FPC)}
    fpmimetypes
   {$ELSE}
-   SSystem.Net.Mime, System.IOUtils
-  {$IFEND}
+   System.Net.Mime, System.IOUtils
+  {$ENDIF}
   ;
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
@@ -102,7 +99,7 @@ begin
   Result := Self;
 end;
 
-function THorseResponse.Send<T{$IFNDEF FPC}: class{$IFEND}>(const AContent: T): THorseResponse;
+function THorseResponse.Send<T>(AContent: T): THorseResponse;
 begin
   FContent := AContent;
   Result := Self;
@@ -126,39 +123,38 @@ begin
   Result := Self;
 end;
 
-function THorseResponse.SendFile(const AFileName: string;
-  const AContentType: string): THorseResponse;
+function THorseResponse.SendFile(const AFileName: string; const AContentType: string): THorseResponse;
 var
   LFileStream: TFileStream;
-  {$IFNDEF FPC}:
+  {$IFNDEF FPC}
   LType: string;
   LKind: TMimeTypes.TKind;
-  {$IFEND}
+  {$ENDIF}
 begin
   Result := Self;
 
-  if (AFileName = EmptyStr) then
+  if AFileName = EmptyStr then
     raise Exception.Create('Invalid FileName');
 
   if not FileExists(AFileName) then
     raise Exception.Create('File not exist');
 
-  LFileStream:=TFileStream.Create(AFileName,fmOpenRead or fmShareDenyWrite);
+  LFileStream := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
   try
-    FWebResponse.ContentLength:=LFileStream.Size;
-    FWebResponse.ContentStream:=LFileStream;
-    if (AContentType = EmptyStr) then
+    FWebResponse.ContentLength := LFileStream.Size;
+    FWebResponse.ContentStream := LFileStream;
+    if AContentType = EmptyStr then
     begin
       {$IF DEFINED(FPC)}
       MimeTypes.LoadKnownTypes;
       FWebResponse.ContentType := MimeTypes.GetMimeType(ExtractFileExt(AFileName));
       {$ELSE}
       TMimeTypes.Default.GetFileInfo(AFileName, LType, LKind);
-      FWebResponse.ContentType :=  := LType;
-      {$IFEND}
+      FWebResponse.ContentType := LType;
+      {$ENDIF}
     end;
     FWebResponse.SendContent;
-    FWebResponse.ContentStream:=Nil;
+    FWebResponse.ContentStream := nil;
   finally
     LFileStream.Free;
   end;
