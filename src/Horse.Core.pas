@@ -33,6 +33,8 @@ type
     constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
   end;
 
+  { THorseCore }
+
   THorseCore = class
   private
     class var FRoutes: THorseRouterTree;
@@ -72,6 +74,13 @@ type
     class function Use(const ACallback: THorseCallback): THorseCore; overload;
     class function Use(const APath: string; const ACallbacks: array of THorseCallback): THorseCore; overload;
     class function Use(const ACallbacks: array of THorseCallback): THorseCore; overload;
+
+    class function All(const APath: string; const ACallback: THorseCallback): THorseCore; overload;
+    class function All(const APath: string; const ACallback: THorseCallbackRequestResponse): THorseCore; overload;
+    class function All(const APath: string; const ACallback: THorseCallbackRequest): THorseCore; overload;
+    {$IFNDEF FPC}
+    class function All(const APath: string; const ACallback: THorseCallbackResponse): THorseCore; overload;
+    {$IFEND}
 
     class function Get(const APath: string; const ACallback: THorseCallback): THorseCore; overload;
     class function Get(const APath: string; const ACallback: THorseCallbackRequestResponse): THorseCore; overload;
@@ -336,6 +345,38 @@ begin
   for LCallback in ACallbacks do
     Use(LCallback);
 end;
+
+class function THorseCore.All(const APath: string;
+  const ACallback: THorseCallback): THorseCore;
+var
+  LMethodType: TMethodType;
+begin
+  for LMethodType := Low(TMethodType) to High(TMethodType) do
+  begin
+    Result := RegisterCallbacksRoute(LMethodType, APath);
+    RegisterRoute(LMethodType, APath, ACallback);
+  end;
+end;
+
+class function THorseCore.All(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): THorseCore;
+begin
+  Result := All(APath, GetCallback(ACallback));
+end;
+
+class function THorseCore.All(const APath: string;
+  const ACallback: THorseCallbackRequest): THorseCore;
+begin
+  Result := All(APath, GetCallback(ACallback));
+end;
+
+{$IFNDEF FPC}
+class function THorseCore.All(const APath: string;
+  const ACallback: THorseCallbackResponse): THorseCore;
+begin
+  Result := All(APath, GetCallback(ACallback));
+end;
+{$IFEND}
 
 class function THorseCore.Version: string;
 begin
