@@ -169,14 +169,14 @@ begin
   Result := Self;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"',[ExtractFileName(AFileName)]));
 
-  SendFile(AFileName, TMimeTypes.Download.ToString);
+  SendFile(AFileName, Horse.Commons.TMimeTypes.Download.ToString);
 end;
 
 function THorseResponse.Render(const AFileName: string): THorseResponse;
 begin
   Result := Self;
 
-  SendFile(AFileName, TMimeTypes.TextHTML.ToString);
+  SendFile(AFileName, Horse.Commons.TMimeTypes.TextHTML.ToString);
 end;
 
 function THorseResponse.Status: Integer;

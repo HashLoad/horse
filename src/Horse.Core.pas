@@ -33,8 +33,6 @@ type
     constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
   end;
 
-  { THorseCore }
-
   THorseCore = class
   private
     class var FRoutes: THorseRouterTree;
@@ -346,8 +344,7 @@ begin
     Use(LCallback);
 end;
 
-class function THorseCore.All(const APath: string;
-  const ACallback: THorseCallback): THorseCore;
+class function THorseCore.All(const APath: string; const ACallback: THorseCallback): THorseCore;
 var
   LMethodType: TMethodType;
 begin
@@ -358,21 +355,18 @@ begin
   end;
 end;
 
-class function THorseCore.All(const APath: string;
-  const ACallback: THorseCallbackRequestResponse): THorseCore;
+class function THorseCore.All(const APath: string; const ACallback: THorseCallbackRequestResponse): THorseCore;
 begin
   Result := All(APath, GetCallback(ACallback));
 end;
 
-class function THorseCore.All(const APath: string;
-  const ACallback: THorseCallbackRequest): THorseCore;
+class function THorseCore.All(const APath: string; const ACallback: THorseCallbackRequest): THorseCore;
 begin
   Result := All(APath, GetCallback(ACallback));
 end;
 
 {$IFNDEF FPC}
-class function THorseCore.All(const APath: string;
-  const ACallback: THorseCallbackResponse): THorseCore;
+class function THorseCore.All(const APath: string; const ACallback: THorseCallbackResponse): THorseCore;
 begin
   Result := All(APath, GetCallback(ACallback));
 end;
