@@ -153,7 +153,11 @@ begin
       FWebResponse.ContentType := LType;
       {$ENDIF}
     end;
+    {$IF DEFINED(FPC)}
     FWebResponse.SendContent;
+    {$ELSE}
+    FWebResponse.SendResponse;
+    {$ENDIF}
     FWebResponse.ContentStream := nil;
   finally
     LFileStream.Free;
