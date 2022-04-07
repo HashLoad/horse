@@ -76,7 +76,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [bittencourtthulio/paginate](https://github.com/bittencourtthulio/Horse-Paginate)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [bittencourtthulio/cachecontrol](https://github.com/bittencourtthulio/horse-cachecontrol)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [gabrielbaltazar/gbswagger](https://github.com/gabrielbaltazar/gbswagger)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [willhubner/socketIO](https://github.com/WillHubner/Horse-SocketIO)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [dliocode/ratelimit](https://github.com/dliocode/horse-ratelimit)                                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [dliocode/slowdown](https://github.com/dliocode/horse-slowdown)                                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [giorgiobazzo/upload](https://github.com/giorgiobazzo/horse-upload)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
