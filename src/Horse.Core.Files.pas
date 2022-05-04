@@ -32,7 +32,7 @@ type THorseCoreFile = class
 
     property FreeContentStream: Boolean read FFreeContentStream write FFreeContentStream;
 
-    constructor Create(AFileName: String);
+    constructor Create(const AFileName: String);
     destructor Destroy; override;
 end;
 
@@ -68,7 +68,7 @@ begin
   {$ENDIF}
 end;
 
-constructor THorseCoreFile.Create(AFileName: String);
+constructor THorseCoreFile.Create(const AFileName: String);
 begin
   if AFileName = EmptyStr then
     raise Exception.Create('Invalid FileName');
