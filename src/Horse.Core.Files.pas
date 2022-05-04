@@ -8,11 +8,10 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections
+  SysUtils, Classes, Generics.Collections;
 {$ELSE}
-  System.SysUtils, System.Classes, System.Generics.Collections
+  System.SysUtils, System.Classes, System.Generics.Collections;
 {$ENDIF}
-  ;
 
 type THorseCoreFile = class
 
@@ -39,9 +38,11 @@ end;
 
 implementation
 
-{$IFNDEF FPC and (CompilerVersion >= 32.0)}
-uses
-  System.Net.Mime;
+{$IFNDEF FPC}
+  {$IF (CompilerVersion >= 32.0)}
+  uses
+    System.Net.Mime;
+  {$ENDIF}
 {$ENDIF}
 
 { THorseCoreFile }

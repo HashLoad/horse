@@ -162,6 +162,8 @@
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
         <DCCReference Include="..\..\src\Horse.Core.Param.Field.Brackets.pas"/>
+        <DCCReference Include="..\..\src\Horse.Core.Files.pas"/>
+        <DCCReference Include="tests\Tests.Horse.Core.Files.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

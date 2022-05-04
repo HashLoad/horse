@@ -50,7 +50,9 @@ uses
   Horse.Core.RouterTree.NextCaller in '..\..\src\Horse.Core.RouterTree.NextCaller.pas',
   Horse.Exception.Interrupted in '..\..\src\Horse.Exception.Interrupted.pas',
   Horse.Session in '..\..\src\Horse.Session.pas',
-  Horse.Core.Param.Field.Brackets in '..\..\src\Horse.Core.Param.Field.Brackets.pas';
+  Horse.Core.Param.Field.Brackets in '..\..\src\Horse.Core.Param.Field.Brackets.pas',
+  Horse.Core.Files in '..\..\src\Horse.Core.Files.pas',
+  Tests.Horse.Core.Files in 'tests\Tests.Horse.Core.Files.pas';
 
 var
   Runner: ITestRunner;
