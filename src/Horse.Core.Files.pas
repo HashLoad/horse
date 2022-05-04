@@ -8,7 +8,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes
+  SysUtils, Classes, Generics.Collections
 {$ELSE}
   System.SysUtils, System.Classes, System.Generics.Collections
 {$ENDIF}
@@ -39,11 +39,7 @@ end;
 
 implementation
 
-{$IF DEFINED(FPC)}
-uses
-   fpmimetypes;
-{$ENDIF}
-{$IF CompilerVersion >= 32.0}
+{$IFNDEF FPC and (CompilerVersion >= 32.0)}
 uses
   System.Net.Mime;
 {$ENDIF}
@@ -59,8 +55,8 @@ function THorseCoreFile.ContentType: string;
 {$ENDIF}
 begin
   {$IF DEFINED(FPC)}
-  MimeTypes.LoadKnownTypes;
-  Result := MimeTypes.GetMimeType(ExtractFileExt(FFileName));
+  InitializeFileType;
+  FFileType.TryGetValue(GetExtInfo, Result);
   {$ELSE}
     {$IF CompilerVersion >= 32.0}
     TMimeTypes.Default.GetFileInfo(FFileName, Result, LKind);
@@ -93,7 +89,7 @@ end;
 
 function THorseCoreFile.GetExtInfo: string;
 begin
-  Result := ExtractFileExt(FFileName).Trim.ToLower;
+  Result := ExtractFileExt(FFileName.Trim.ToLower);
   if (Result <> '') and (Result[Low(Result)] = '.') then
     Result := Result.Substring(1);
 end;
