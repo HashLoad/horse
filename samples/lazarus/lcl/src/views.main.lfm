@@ -1,0 +1,45 @@
+object FrmMain: TFrmMain
+  Left = 350
+  Height = 87
+  Top = 31
+  Width = 209
+  Caption = 'LCL Application'
+  ClientHeight = 87
+  ClientWidth = 209
+  LCLVersion = '2.2.0.4'
+  object Label1: TLabel
+    Left = 8
+    Height = 15
+    Top = 19
+    Width = 25
+    Caption = 'Port:'
+  end
+  object btnStop: TBitBtn
+    Left = 104
+    Height = 25
+    Top = 50
+    Width = 90
+    Caption = 'Stop'
+    Enabled = False
+    OnClick = btnStopClick
+    TabOrder = 0
+  end
+  object btnStart: TBitBtn
+    Left = 8
+    Height = 25
+    Top = 50
+    Width = 90
+    Caption = 'Start'
+    OnClick = btnStartClick
+    TabOrder = 1
+  end
+  object edtPort: TEdit
+    Left = 38
+    Height = 23
+    Top = 16
+    Width = 156
+    NumbersOnly = True
+    TabOrder = 2
+    Text = '9000'
+  end
+end
