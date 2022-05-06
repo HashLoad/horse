@@ -66,14 +66,14 @@ type
     Horse.Provider.FPC.Apache.THorseProvider<THorse>;
   {$ELSE}
     Horse.Provider.Apache.THorseProvider<THorse>;
-  {$ENDIF};
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_CGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.CGI.THorseProvider<THorse>;
   {$ELSE}
     Horse.Provider.CGI.THorseProvider<THorse>;
-  {$ENDIF};
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_FCGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
@@ -85,7 +85,7 @@ type
     Horse.Provider.FPC.Daemon.THorseProvider<THorse>;
   {$ELSE}
      Horse.Provider.Daemon.THorseProvider<THorse>;
-  {$ENDIF};
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_LCL)}
     THorseProvider = Horse.Provider.FPC.LCL.THorseProvider<THorse>;
 {$ELSEIF DEFINED(HORSE_VCL)}
@@ -96,7 +96,7 @@ type
     Horse.Provider.FPC.HTTPApplication.THorseProvider<THorse>;
   {$ELSE}
     Horse.Provider.Console.THorseProvider<THorse>;
-  {$ENDIF};
+  {$ENDIF}
 {$ENDIF}
 
   THorse = class(THorseProvider);

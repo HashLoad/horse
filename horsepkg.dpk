@@ -35,9 +35,11 @@ contains
   Horse.Callback in 'src\Horse.Callback.pas',
   Horse.Commons in 'src\Horse.Commons.pas',
   Horse.Constants in 'src\Horse.Constants.pas',
+  Horse.Core.Files in 'src\Horse.Core.Files.pas',
   Horse.Core.Group.Contract in 'src\Horse.Core.Group.Contract.pas',
   Horse.Core.Group in 'src\Horse.Core.Group.pas',
   Horse.Core.Param.Config in 'src\Horse.Core.Param.Config.pas',
+  Horse.Core.Param.Field.Brackets in 'src\Horse.Core.Param.Field.Brackets.pas',
   Horse.Core.Param.Field in 'src\Horse.Core.Param.Field.pas',
   Horse.Core.Param.Header in 'src\Horse.Core.Param.Header.pas',
   Horse.Core.Param in 'src\Horse.Core.Param.pas',
@@ -60,6 +62,7 @@ contains
   Horse.Provider.FPC.Daemon in 'src\Horse.Provider.FPC.Daemon.pas',
   Horse.Provider.FPC.FastCGI in 'src\Horse.Provider.FPC.FastCGI.pas',
   Horse.Provider.FPC.HTTPApplication in 'src\Horse.Provider.FPC.HTTPApplication.pas',
+  Horse.Provider.FPC.LCL in 'src\Horse.Provider.FPC.LCL.pas',
   Horse.Provider.IOHandleSSL in 'src\Horse.Provider.IOHandleSSL.pas',
   Horse.Provider.ISAPI in 'src\Horse.Provider.ISAPI.pas',
   Horse.Provider.VCL in 'src\Horse.Provider.VCL.pas',
@@ -70,7 +73,6 @@ contains
   Horse.Session in 'src\Horse.Session.pas',
   Horse.WebModule in 'src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   ThirdParty.Posix.Syslog in 'src\ThirdParty.Posix.Syslog.pas',
-  Web.WebConst in 'src\Web.WebConst.pas',
-  Horse.Core.Param.Field.Brackets in 'src\Horse.Core.Param.Field.Brackets.pas';
+  Web.WebConst in 'src\Web.WebConst.pas';
 
 end.
