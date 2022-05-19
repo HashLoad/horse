@@ -71,6 +71,10 @@ constructor THorseResponse.Create(const AWebResponse: {$IF DEFINED(FPC)}TRespons
 begin
   FWebResponse := AWebResponse;
   {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
+
+  {$IF DEFINED(FPC)}
+  FWebResponse.FreeContentStream := True;
+  {$ENDIF}
 end;
 
 destructor THorseResponse.Destroy;
