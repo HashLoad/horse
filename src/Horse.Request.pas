@@ -129,8 +129,12 @@ begin
 end;
 
 procedure THorseRequest.InitializeContentFields;
+const
+  CONTENT_DISPOSITION = 'Content-Disposition: form-data; name=';
 var
   I: Integer;
+  LName: String;
+  LValue: String;
 begin
   FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
   if (not CanLoadContentFields) then
@@ -140,7 +144,34 @@ begin
     FContentFields.AddStream(FWebRequest.Files[I].FieldName, FWebRequest.Files[I].Stream);
 
   for I := 0 to Pred(FWebRequest.ContentFields.Count) do
-    FContentFields.Dictionary.AddOrSetValue(FWebRequest.ContentFields.Names[I], FWebRequest.ContentFields.ValueFromIndex[I]);
+  begin
+    if IsMultipartForm then
+    begin
+      {$IF CompilerVersion <= 31.0}
+        if FWebRequest.ContentFields[I].StartsWith(CONTENT_DISPOSITION) then
+        begin
+          LName := FWebRequest.ContentFields[I]
+                      .Replace(CONTENT_DISPOSITION, EmptyStr)
+                      .Replace('"', EmptyStr);
+          LValue := FWebRequest.ContentFields[I + 1];
+        end;
+      {$ELSE}
+        LName := FWebRequest.ContentFields.Names[I];
+        LValue := FWebRequest.ContentFields.ValueFromIndex[I];
+      {$ENDIF}
+    end
+    else
+    begin
+      LName := FWebRequest.ContentFields.Names[I];
+      LValue := FWebRequest.ContentFields.ValueFromIndex[I];
+    end;
+
+    if LName <> EmptyStr then
+      FContentFields.Dictionary.AddOrSetValue(LName, LValue);
+
+    LName := EmptyStr;
+    LValue := EmptyStr;
+  end;
 end;
 
 procedure THorseRequest.InitializeCookie;
@@ -180,15 +211,23 @@ begin
 end;
 
 function THorseRequest.IsFormURLEncoded: Boolean;
+var
+  LContentType: String;
+  LFormUrlEncoded: String;
 begin
-  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString),
-    Length(TMimeTypes.ApplicationXWWWFormURLEncoded.ToString)) = 0;
+  LContentType := FWebRequest.ContentType;
+  LFormUrlEncoded := TMimeTypes.ApplicationXWWWFormURLEncoded.ToString;
+  Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
 end;
 
 function THorseRequest.IsMultipartForm: Boolean;
+var
+  LContentType: String;
+  LFormData: String;
 begin
-  Result := StrLIComp(PChar(FWebRequest.ContentType), PChar(TMimeTypes.MultiPartFormData.ToString),
-    Length(TMimeTypes.MultiPartFormData.ToString)) = 0;
+  LContentType := FWebRequest.ContentType;
+  LFormData := TMimeTypes.MultiPartFormData.ToString;
+  Result := StrLIComp(PChar(LContentType), PChar(LFormData), Length(PChar(LFormData))) = 0;
 end;
 
 function THorseRequest.MethodType: TMethodType;
