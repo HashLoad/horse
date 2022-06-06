@@ -12,7 +12,7 @@ uses
 {$ELSE}
   System.NetEncoding, System.SysUtils, Web.HTTPApp, System.Generics.Collections,
 {$ENDIF}
-  Horse.Commons, Horse.Request, Horse.Response, Horse.Callback;
+  Horse.Commons, Horse.Request, Horse.Response, Horse.Callback, Horse.Core;
 
 type
   TNextCaller = class
@@ -23,8 +23,8 @@ type
     FHTTPType: TMethodType;
     FRequest: THorseRequest;
     FResponse: THorseResponse;
-    FMiddleware: TList<THorseCallback>;
-    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    FMiddleware: TMiddlewares;
+    FCallBack: TObjectDictionary<TMethodType, TMiddlewares>;
     FCallNextPath: TCallNextPath;
     FIsGroup: Boolean;
     FTag: string;
@@ -32,13 +32,13 @@ type
     FFound: ^Boolean;
   public
     function Init: TNextCaller;
-    function SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;
+    function SetCallback(const ACallback: TObjectDictionary<TMethodType, TMiddlewares>): TNextCaller;
     function SetPath(const APath: TQueue<string>): TNextCaller;
     function SetHTTPType(const AHTTPType: TMethodType): TNextCaller;
     function SetRequest(const ARequest: THorseRequest): TNextCaller;
     function SetResponse(const AResponse: THorseResponse): TNextCaller;
     function SetIsGroup(const AIsGroup: Boolean): TNextCaller;
-    function SetMiddleware(const AMiddleware: TList<THorseCallback>): TNextCaller;
+    function SetMiddleware(const AMiddleware: TMiddlewares): TNextCaller;
     function SetTag(const ATag: string): TNextCaller;
     function SetIsRegex(const AIsRegex: Boolean): TNextCaller;
     function SetOnCallNextPath(const ACallNextPath: TCallNextPath): TNextCaller;
@@ -65,18 +65,19 @@ end;
 
 procedure TNextCaller.Next;
 var
-  LCallback: TList<THorseCallback>;
+  LCallback: TMiddlewares;
 begin
   inc(FIndex);
   if (FMiddleware.Count > FIndex) then
   begin
     FFound^ := True;
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
+
+    FMiddleware.Values.ToArray[FIndex](FRequest, FResponse, Next, Self.FMiddleware.Keys.ToArray[FIndex]);
     if (FMiddleware.Count > FIndex) then
       Next;
   end
   else
-  if (FPath.Count = 0) and assigned(FCallBack) then
+  if (FPath.Count = 0) and Assigned(FCallBack) then
   begin
     inc(FIndexCallback);
     if FCallBack.TryGetValue(FHTTPType, LCallback) then
@@ -85,7 +86,7 @@ begin
       begin
         try
           FFound^ := True;
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
+          LCallback.Values.ToArray[FIndexCallback](FRequest, FResponse, Next, LCallback.Keys.ToArray[FIndexCallback]);
         except
           on E: Exception do
           begin
@@ -118,7 +119,7 @@ begin
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
 
-function TNextCaller.SetCallback(const ACallback: TObjectDictionary < TMethodType, TList < THorseCallback >> ): TNextCaller;
+function TNextCaller.SetCallback(const ACallback: TObjectDictionary<TMethodType, TMiddlewares>): TNextCaller;
 begin
   FCallBack := ACallback;
   Result := Self;
@@ -148,7 +149,7 @@ begin
   Result := Self;
 end;
 
-function TNextCaller.SetMiddleware(const AMiddleware: TList<THorseCallback>): TNextCaller;
+function TNextCaller.SetMiddleware(const AMiddleware: TMiddlewares): TNextCaller;
 begin
   FMiddleware := AMiddleware;
   Result := Self;
