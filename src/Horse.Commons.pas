@@ -9,7 +9,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Classes, SysUtils, StrUtils
+  Classes, SysUtils, StrUtils, RegExpr
 {$ELSE}
   System.Classes, System.SysUtils
 {$ENDIF}
@@ -125,6 +125,7 @@ type
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
+function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 {$ENDIF}
 
 implementation
@@ -142,6 +143,47 @@ begin
     6: Result := TMethodType.mtPut;
   end;
 end;
+
+function MatchRoute(const AText: string; const AValues: array of string): Boolean;
+  function ReplaceParams(const AValue: string): String;
+  var
+    LPart: string;
+    LSplitedPath: TArray<string>;
+  begin
+    Result := AValue;
+    LSplitedPath := AValue.Split(['/']);
+    for LPart in LSplitedPath do
+    begin
+      if LPart.StartsWith(':') then
+        Result := StringReplace(Result,LPart,'([^/]*)/',[]);
+    end;
+  end;
+var
+  I: Integer;
+  RegexObj: TRegExpr;
+  LText: string;
+begin
+  Result := False;
+  RegexObj := TRegExpr.Create;
+  try
+    LText := Trim(AText);
+    for I := Low(AValues) to High(AValues) do
+    begin
+      RegexObj.Expression := '^('+ReplaceParams(AValues[I])+')$';
+      if not (LText.EndsWith('/')) then
+        LText := LText + '/';
+
+      if RegexObj.Exec(LText) then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end;
+  finally
+    RegexObj.Free;
+  end;
+end;
+
 {$ENDIF}
 
 { TLhsBracketsTypeHelper }
