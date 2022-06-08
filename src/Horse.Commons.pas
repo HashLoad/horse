@@ -160,27 +160,27 @@ function MatchRoute(const AText: string; const AValues: array of string): Boolea
   end;
 var
   I: Integer;
-  RegexObj: TRegExpr;
+  LRegexObj: TRegExpr;
   LText: string;
 begin
   Result := False;
-  RegexObj := TRegExpr.Create;
+  LRegexObj := TRegExpr.Create;
   try
     LText := Trim(AText);
+    if not (LText.EndsWith('/')) then
+      LText := LText + '/';
     for I := Low(AValues) to High(AValues) do
     begin
-      RegexObj.Expression := '^('+ReplaceParams(AValues[I])+')$';
-      if not (LText.EndsWith('/')) then
-        LText := LText + '/';
+      LRegexObj.Expression := '^('+ReplaceParams(AValues[I])+')$';
 
-      if RegexObj.Exec(LText) then
+      if LRegexObj.Exec(LText) then
       begin
         Result := True;
         Exit;
       end;
     end;
   finally
-    RegexObj.Free;
+    LRegexObj.Free;
   end;
 end;
 
