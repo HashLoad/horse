@@ -15,6 +15,7 @@ type
     class var FEvent: TEvent;
     class var FMaxConnections: Integer;
     class var FListenQueue: Integer;
+    class var FKeepConnectionAlive: Boolean;
     class var FIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
     class var FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;
     class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
@@ -28,6 +29,7 @@ type
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetIOHandleSSL(const AValue: THorseProviderIOHandleSSL); static;
     class procedure SetHost(const AValue: string); static;
+    class procedure SetKeepConnectionAlive(const AValue: Boolean); static;
     class function GetListenQueue: Integer; static;
     class function GetMaxConnections: Integer; static;
     class function GetPort: Integer; static;
@@ -35,6 +37,7 @@ type
     class function GetDefaultHost: string; static;
     class function GetIOHandleSSL: THorseProviderIOHandleSSL; static;
     class function GetHost: string; static;
+    class function GetKeepConnectionAlive: Boolean; static;
     class procedure InternalListen; virtual;
     class procedure InternalStopListen; virtual;
     class procedure InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: THorseProviderIOHandleSSL);
@@ -43,6 +46,7 @@ type
     class property Port: Integer read GetPort write SetPort;
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
+    class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
@@ -108,6 +112,11 @@ end;
 class function THorseProvider<T>.GetHost: string;
 begin
   Result := FHost;
+end;
+
+class function THorseProvider<T>.GetKeepConnectionAlive: Boolean;
+begin
+  Result := FKeepConnectionAlive;
 end;
 
 class function THorseProvider<T>.IsRunning: Boolean;
@@ -184,7 +193,8 @@ begin
       LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
       LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
     end;
-    
+
+    LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
     LIdHTTPWebBrokerBridge.Active := True;
     LIdHTTPWebBrokerBridge.StartListening;
@@ -219,7 +229,7 @@ begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
-    GetDefaultHTTPWebBroker.Active := False;    
+    GetDefaultHTTPWebBroker.Active := False;
     DoOnStopListen;
     FRunning := False;
     if FEvent <> nil then
@@ -271,6 +281,11 @@ end;
 class procedure THorseProvider<T>.SetHost(const AValue: string);
 begin
   FHost := AValue.Trim;
+end;
+
+class procedure THorseProvider<T>.SetKeepConnectionAlive(const AValue: Boolean);
+begin
+  FKeepConnectionAlive := AValue;
 end;
 
 class procedure THorseProvider<T>.SetIOHandleSSL(const AValue: THorseProviderIOHandleSSL);
