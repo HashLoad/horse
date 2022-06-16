@@ -1,24 +1,13 @@
-// To use ssl it is necessary to have the ssl, libeay32.dll and ssleay32.dll
-// libraries in your executable folder.
-//
-// Command to generate a self-signed certificate using openssl, on windows it is recommended to use git bash.
-// openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout cert.key -out cert.crt
-//
-// Not recommended for production, only for testing and internal use, for commercial use in production
-// use a valid certificate, such as Let's Encrypt.
-
-unit ufrmMain;
+unit Main.Form;
 
 interface
 
-uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Horse, Vcl.StdCtrls,
-  Vcl.Samples.Spin, Vcl.Mask, Vcl.ExtCtrls, Vcl.ComCtrls;
+uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Horse, Vcl.StdCtrls, Vcl.Samples.Spin, Vcl.Mask, Vcl.ExtCtrls, Vcl.ComCtrls;
 
 type
   TfrmMain = class(TForm)
-    SpinEdit1: TSpinEdit;
+    edtPort: TSpinEdit;
     Button1: TButton;
     leKey: TLabeledEdit;
     leCrt: TLabeledEdit;
@@ -34,8 +23,6 @@ type
     function GetFile(const description, extension: string): string;
     procedure Start;
     procedure OnGetPassword(var Password: string);
-  public
-    { Public declarations }
   end;
 
 var
@@ -43,11 +30,9 @@ var
 
 implementation
 
-uses
-  IdSSLOpenSSL;
+uses IdSSLOpenSSL;
 
 {$R *.dfm}
-{ TfrmMain }
 
 procedure TfrmMain.Button1Click(Sender: TObject);
 begin
@@ -67,7 +52,6 @@ end;
 function TfrmMain.GetFile(const description, extension: string): string;
 begin
   Result := '';
-
   OpenDialog1.Filter := description + '|' + extension;
   if OpenDialog1.Execute() then
   begin
@@ -76,7 +60,6 @@ begin
       Result := OpenDialog1.FileName;
     end;
   end;
-
 end;
 
 procedure TfrmMain.OnGetPassword(var Password: string);
@@ -86,6 +69,14 @@ end;
 
 procedure TfrmMain.Start;
 begin
+// To use ssl it is necessary to have the ssl, libeay32.dll and ssleay32.dll
+// libraries in your executable folder.
+//
+// Command to generate a self-signed certificate using openssl, on windows it is recommended to use git bash.
+// openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout cert.key -out cert.crt
+//
+// Not recommended for production, only for testing and internal use, for commercial use in production
+// use a valid certificate, such as Let's Encrypt.
 
   with THorse.IOHandleSSL do
   begin
@@ -97,17 +88,16 @@ begin
   end;
 
   THorse.Get('/ping',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    procedure(Res: THorseResponse)
     begin
       Res.Send('securite pong');
     end);
 
-  THorse.Listen(SpinEdit1.Value,
+  THorse.Listen(edtPort.Value,
     procedure(Horse: THorse)
     begin
-      StatusBar1.Panels.Items[0].Text := Format('Securite Server is running on https:// %s:%d',
+      StatusBar1.Panels.Items[0].Text := Format('Securite Server is running on https://%s:%d',
         [Horse.Host, Horse.Port]);
-
     end);
 end;
 

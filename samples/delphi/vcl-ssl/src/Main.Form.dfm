@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 0
   Top = 0
-  Caption = 'Horse SSL Sample'
+  Caption = 'Horse VCL with SSL - Sample'
   ClientHeight = 298
   ClientWidth = 356
   Color = clBtnFace
@@ -10,8 +10,10 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
+  OldCreateOrder = True
+  PixelsPerInch = 96
   TextHeight = 15
-  object SpinEdit1: TSpinEdit
+  object edtPort: TSpinEdit
     Left = 8
     Top = 20
     Width = 97
@@ -40,7 +42,6 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Private Key'
     ReadOnly = True
     TabOrder = 2
-    Text = ''
   end
   object leCrt: TLabeledEdit
     Left = 8
@@ -52,7 +53,6 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Public Key'
     ReadOnly = True
     TabOrder = 3
-    Text = ''
   end
   object Button2: TButton
     Left = 320
@@ -82,7 +82,6 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Password'
     PasswordChar = '*'
     TabOrder = 6
-    Text = ''
   end
   object StatusBar1: TStatusBar
     Left = 0
@@ -93,9 +92,6 @@ object frmMain: TfrmMain
       item
         Width = 50
       end>
-    ExplicitLeft = 32
-    ExplicitTop = 240
-    ExplicitWidth = 0
   end
   object OpenDialog1: TOpenDialog
     Left = 264

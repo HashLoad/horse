@@ -24,7 +24,7 @@
         <Projects Include="apache\Apache.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="ssl\SSL.dproj">
+        <Projects Include="vcl-ssl\VCL_SSL.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -98,23 +98,23 @@
     <Target Name="Apache:Make">
         <MSBuild Projects="apache\Apache.dproj" Targets="Make"/>
     </Target>
-    <Target Name="SSL">
-        <MSBuild Projects="ssl\SSL.dproj"/>
+    <Target Name="VCL_SSL">
+        <MSBuild Projects="vcl-ssl\VCL_SSL.dproj"/>
     </Target>
-    <Target Name="SSL:Clean">
-        <MSBuild Projects="ssl\SSL.dproj" Targets="Clean"/>
+    <Target Name="VCL_SSL:Clean">
+        <MSBuild Projects="vcl-ssl\VCL_SSL.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="SSL:Make">
-        <MSBuild Projects="ssl\SSL.dproj" Targets="Make"/>
+    <Target Name="VCL_SSL:Make">
+        <MSBuild Projects="vcl-ssl\VCL_SSL.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="VCL;Console;ISAPI;WinSvc;Daemon;CGI;Apache;SSL"/>
+        <CallTarget Targets="VCL;Console;ISAPI;WinSvc;Daemon;CGI;Apache;VCL_SSL"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="VCL:Clean;Console:Clean;ISAPI:Clean;WinSvc:Clean;Daemon:Clean;CGI:Clean;Apache:Clean;SSL:Clean"/>
+        <CallTarget Targets="VCL:Clean;Console:Clean;ISAPI:Clean;WinSvc:Clean;Daemon:Clean;CGI:Clean;Apache:Clean;VCL_SSL:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="VCL:Make;Console:Make;ISAPI:Make;WinSvc:Make;Daemon:Make;CGI:Make;Apache:Make;SSL:Make"/>
+        <CallTarget Targets="VCL:Make;Console:Make;ISAPI:Make;WinSvc:Make;Daemon:Make;CGI:Make;Apache:Make;VCL_SSL:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

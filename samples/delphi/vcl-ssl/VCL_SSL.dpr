@@ -1,8 +1,8 @@
-program SSL;
+program VCL_SSL;
 
 uses
   Vcl.Forms,
-  ufrmMain in 'ufrmMain.pas' {frmMain};
+  Main.Form in 'src\Main.Form.pas' {frmMain};
 
 {$R *.res}
 
