@@ -29,6 +29,7 @@ type
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload;
     function Status(const AStatus: Integer): THorseResponse; overload;
     function Status(const AStatus: THTTPStatus): THorseResponse; overload;
+    function SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse; overload;
     function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
     function Download(const AFileName: string): THorseResponse; overload;
     function Render(const AFileName: string): THorseResponse; overload;
@@ -117,6 +118,28 @@ function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
   {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
   Result := Self;
+end;
+
+function THorseResponse.SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
+var
+  LFileName: string;
+begin
+  Result := Self;
+
+  LFileName := ExtractFileName(AFileName);
+  FWebResponse.FreeContentStream := False;
+  FWebResponse.ContentLength := AFileStream.Size;
+  FWebResponse.ContentStream := AFileStream;
+  FWebResponse.SetCustomHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
+  if (AContentType <> EmptyStr) then
+    FWebResponse.ContentType := AContentType
+  else
+    FWebResponse.ContentType := 'application/octet-stream';
+  {$IF DEFINED(FPC)}
+  FWebResponse.SendContent;
+  {$ELSE}
+  FWebResponse.SendResponse;
+  {$ENDIF}
 end;
 
 function THorseResponse.SendFile(const AFileName: string; const AContentType: string): THorseResponse;
