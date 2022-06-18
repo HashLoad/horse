@@ -31,6 +31,7 @@ type
     function Status(const AStatus: THTTPStatus): THorseResponse; overload;
     function SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse; overload;
     function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
+    function Download(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse; overload;
     function Download(const AFileName: string): THorseResponse; overload;
     function Render(const AFileName: string): THorseResponse; overload;
     function Status: Integer; overload;
@@ -164,6 +165,28 @@ begin
   finally
     LFile.Free;
   end;
+end;
+
+function THorseResponse.Download(const AFileStream: TStream;
+  const AFileName: string; const AContentType: string): THorseResponse;
+var
+  LFileName: string;
+begin
+  Result := Self;
+  LFileName := ExtractFileName(AFileName);
+  FWebResponse.FreeContentStream := False;
+  FWebResponse.ContentLength := AFileStream.Size;
+  FWebResponse.ContentStream := AFileStream;
+  FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
+  if (AContentType <> EmptyStr) then
+    FWebResponse.ContentType := AContentType
+  else
+    FWebResponse.ContentType := 'application/octet-stream';
+  {$IF DEFINED(FPC)}
+  FWebResponse.SendContent;
+  {$ELSE}
+  FWebResponse.SendResponse;
+  {$ENDIF}
 end;
 
 function THorseResponse.Download(const AFileName: string): THorseResponse;
