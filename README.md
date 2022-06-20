@@ -97,7 +97,10 @@ This is a list of middlewares that are created by the Horse community, please cr
 `Horse` works with Delphi 11 Alexandria, Delphi 10.4 Sydney, Delphi 10.3 Rio, Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, Delphi XE8 and Delphi XE7.
 
 ## 💻 Code Contributors
-<img src="https://opencollective.com/horse/contributors.svg?width=890&button=false" alt="Code Contributors" style="max-width:100%;">
+
+<a href="https://github.com/Hashload/boss/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Hashload/horse" />
+</a>
 
 ## ⚠️ License
 
