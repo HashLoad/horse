@@ -98,7 +98,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 
 ## 💻 Code Contributors
 
-<a href="https://github.com/Hashload/boss/graphs/contributors">
+<a href="https://github.com/Hashload/horse/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Hashload/horse" />
 </a>
 
