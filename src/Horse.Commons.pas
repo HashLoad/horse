@@ -164,7 +164,7 @@ end;
 
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
-  function ReplaceParams(const AValue: string): String;
+  function ReplaceParams(const AValue: string): string;
   var
     LPart: string;
     LSplitedPath: TArray<string>;
@@ -176,6 +176,9 @@ function MatchRoute(const AText: string; const AValues: array of string): Boolea
       if LPart.StartsWith(':') then
         Result := StringReplace(Result, LPart, '([^/]*)', []);
     end;
+    Result := Trim(Result);
+    if not(Result.EndsWith('/')) then
+      Result := Result + '/';
   end;
 
 var
