@@ -147,6 +147,10 @@ begin
   begin
     if IsMultipartForm then
     begin
+      {$IF DEFINED(FPC)}
+        LName := FWebRequest.ContentFields.Names[I];
+        LValue := FWebRequest.ContentFields.ValueFromIndex[I];
+      {$ELSE}
       {$IF CompilerVersion <= 31.0}
         if FWebRequest.ContentFields[I].StartsWith(CONTENT_DISPOSITION) then
         begin
@@ -158,6 +162,7 @@ begin
       {$ELSE}
         LName := FWebRequest.ContentFields.Names[I];
         LValue := FWebRequest.ContentFields.ValueFromIndex[I];
+      {$ENDIF}
       {$ENDIF}
     end
     else
