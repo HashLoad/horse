@@ -10,7 +10,7 @@ const
   DEFAULT_HOST = '0.0.0.0';
   DEFAULT_PORT = 9000;
   START_RUNNING = 'Server is runing on %s:%d';
-  HORSE_VERSION = '3.0.1';
+  HORSE_VERSION = '3.0.2';
 
 implementation
 
