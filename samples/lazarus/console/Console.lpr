@@ -10,7 +10,7 @@ uses
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
-  Res.AddHeader('Teste', 'Alexandre').Send('Ping');
+  Res.Send('Ping');
 end;
 
 begin
