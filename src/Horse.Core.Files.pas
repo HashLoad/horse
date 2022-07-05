@@ -13,28 +13,24 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections;
 {$ENDIF}
 
-type THorseCoreFile = class
-
+type
+  THorseCoreFile = class
   private
     FFileType: TDictionary<string, String>;
     FFileName: string;
     FFileStream: TStream;
     FFreeContentStream: Boolean;
-
   protected
     procedure InitializeFileType;
     function GetExtInfo: string;
-
   public
+    constructor Create(const AFileName: String);
     function ContentType: string;
     function ContentStream: TStream;
     function Size: Int64;
-
     property FreeContentStream: Boolean read FFreeContentStream write FFreeContentStream;
-
-    constructor Create(const AFileName: String);
     destructor Destroy; override;
-end;
+  end;
 
 implementation
 
