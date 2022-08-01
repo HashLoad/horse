@@ -1,8 +1,8 @@
 unit Horse.Commons;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
-{$MODESWITCH TypeHelpers}
+  {$MODE DELPHI}{$H+}
+  {$MODESWITCH TypeHelpers}
 {$ENDIF}
 
 interface
@@ -14,11 +14,11 @@ uses
   StrUtils,
   RegExpr
 {$ELSE}
-    System.Classes,
+  System.Classes,
   System.SysUtils,
   System.RegularExpressions
 {$ENDIF}
-    ;
+  ;
 
 type
 {$IF DEFINED(FPC)}
@@ -113,33 +113,31 @@ type
   TMessageType = (Default, Error, Warning, Information);
   TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
 {$SCOPEDENUMS OFF}
+
   TLhsBrackets = set of TLhsBracketsType;
 
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
-end;
+  end;
 
-TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-for TMimeTypes
-  function ToString: string;
-end;
+  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
+  for TMimeTypes
+    function ToString: string;
+  end;
 
-TLhsBracketsTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-for TLhsBracketsType
-  function ToString: string;
-end;
+  TLhsBracketsTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TLhsBracketsType
+    function ToString: string;
+  end;
 
 {$IF DEFINED(FPC)}
-
 function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
-  function MatchRoute(const AText: string; const AValues: array of string): Boolean;
+
+function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
 implementation
 
 {$IF DEFINED(FPC)}
-
-
 function StringCommandToMethodType(const ACommand: string): TMethodType;
 begin
   case AnsiIndexText(ACommand, ['ANY', 'DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT']) of
@@ -159,9 +157,7 @@ begin
       Result := TMethodType.mtPut;
   end;
 end;
-
 {$ENDIF}
-
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
   function ReplaceParams(const AValue: string): string;
@@ -186,13 +182,11 @@ var
   LRegexObj: TRegExpr;
 {$ENDIF}
   I: Integer;
-  LText: string;
-  LExpression: string;
+  LText, LExpression: string;
 begin
   Result := False;
 {$IF DEFINED(FPC)}
   LRegexObj := TRegExpr.Create;
-
   try
 {$ENDIF}
     LText := Trim(AText);
