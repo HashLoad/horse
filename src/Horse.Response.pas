@@ -29,7 +29,7 @@ type
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload;
     function Status(const AStatus: Integer): THorseResponse; overload;
     function Status(const AStatus: THTTPStatus): THorseResponse; overload;
-    function SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
+    function SendFile(const AFileStream: TStream; const AFileName: string = ''; const AContentType: string = ''): THorseResponse; overload;
     function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
     function Download(const AFileStream: TStream; const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
     function Download(const AFileName: string): THorseResponse; overload;
@@ -125,6 +125,8 @@ var
   LFileName: string;
 begin
   Result := Self;
+
+  AFileStream.Position := 0;
 
   LFileName := ExtractFileName(AFileName);
 
