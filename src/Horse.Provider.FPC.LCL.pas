@@ -7,9 +7,34 @@ unit Horse.Provider.FPC.LCL;
 interface
 
 {$IF DEFINED(HORSE_LCL)}
-uses SysUtils, Classes, httpdefs, fpHTTP, fphttpapp, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+uses SysUtils, Classes, httpdefs, fpHTTP, fphttpapp, Horse.Provider.Abstract,
+  Horse.Constants, Horse.Request, Horse.Response, Horse.Proc, fphttpserver,
+  Horse.Core, Horse.Commons;
 
 type
+
+  { THTTPServerThread }
+
+  THTTPServerThread = class(TThread)
+  private
+    FStartServer: Boolean;
+    FHost: string;
+    FPort: Integer;
+    FListenQueue: Word;
+    FServer: TFPHTTPServer;
+    FHorse: THorseCore;
+  public
+    constructor Create(const ACreateSuspended: Boolean; const AStackSize: SizeUInt = DefaultStackSize);
+    destructor Destroy; override;
+    procedure StartServer;
+    procedure StopServer;
+    property Port: Integer read FPort write FPort;
+    property Host: String read FHost write FHost;
+    property ListenQueue: Word read FListenQueue write FListenQueue;
+    procedure Execute; override;
+    Procedure DoTerminate; override;
+    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
+  end;
 
   { THorseProvider }
 
@@ -19,9 +44,9 @@ type
     class var FHost: string;
     class var FRunning: Boolean;
     class var FListenQueue: Integer;
-    class var FHTTPApplication: THTTPApplication;
-    class function GetDefaultHTTPApplication: THTTPApplication;
-    class function HTTPApplicationIsNil: Boolean;
+    class var FHTTPServerThread: THTTPServerThread;
+    class function GetDefaultHTTPServerThread: THTTPServerThread;
+    class function HTTPServerThreadIsNil: Boolean;
     class procedure SetListenQueue(const AValue: Integer); static;
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetHost(const AValue: string); static;
@@ -32,7 +57,6 @@ type
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
     class procedure InternalStopListen; virtual;
-    class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
@@ -43,6 +67,7 @@ type
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class destructor UnInitialize;
     class function IsRunning: Boolean;
   end;
 {$ENDIF}
@@ -50,18 +75,19 @@ type
 implementation
 
 {$IF DEFINED(HORSE_LCL)}
-uses Horse.WebModule;
+uses Horse.WebModule, Horse.Exception.Interrupted;
 
-class function THorseProvider<T>.GetDefaultHTTPApplication: THTTPApplication;
+class function THorseProvider<T>.GetDefaultHTTPServerThread: THTTPServerThread;
 begin
-  if HTTPApplicationIsNil then
-    FHTTPApplication := Application;
-  Result := FHTTPApplication;
+  if HTTPServerThreadIsNil then
+    FHTTPServerThread := THTTPServerThread.Create(True);
+
+  Result := FHTTPServerThread;
 end;
 
-class function THorseProvider<T>.HTTPApplicationIsNil: Boolean;
+class function THorseProvider<T>.HTTPServerThreadIsNil: Boolean;
 begin
-  Result := FHTTPApplication = nil;
+  Result := (FHTTPServerThread = nil);
 end;
 
 class function THorseProvider<T>.GetDefaultHost: string;
@@ -90,6 +116,8 @@ begin
 end;
 
 class procedure THorseProvider<T>.InternalListen;
+var
+  LHTTPServerThread: THTTPServerThread;
 begin
   inherited;
   if FPort <= 0 then
@@ -98,35 +126,25 @@ begin
     FHost := GetDefaultHost;
   if FListenQueue = 0 then
     FListenQueue := 15;
-  FHTTPApplication := GetDefaultHTTPApplication;
-  FHTTPApplication.Initialize;
-  FHTTPApplication.AllowDefaultModule := True;
-  FHTTPApplication.OnGetModule := DoGetModule;
-  FHTTPApplication.Threaded := True;
-  FHTTPApplication.QueueSize := FListenQueue;
-  FHTTPApplication.Port := FPort;
-  FHTTPApplication.LegacyRouting := True;
-  FHTTPApplication.Address := FHost;
+  LHTTPServerThread := GetDefaultHTTPServerThread;
+  LHTTPServerThread.Port := FPort;
+  LHTTPServerThread.Host := FHost;
+  LHTTPServerThread.ListenQueue := FListenQueue;
+  LHTTPServerThread.StartServer;
   FRunning := True;
   DoOnListen;
-  FHTTPApplication.Run;
 end;
 
 class procedure THorseProvider<T>.InternalStopListen;
 begin
-  if not HTTPApplicationIsNil then
+  if not HTTPServerThreadIsNil then
   begin
-    FHTTPApplication.Terminate;
-    DoOnStopListen;
+    GetDefaultHTTPServerThread.StopServer;
     FRunning := False;
+    DoOnStopListen;
   end
   else
     raise Exception.Create('Horse not listen');
-end;
-
-class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
-begin
-  ModuleClass :=  THorseWebModule;
 end;
 
 class procedure THorseProvider<T>.StopListen;
@@ -150,7 +168,7 @@ begin
   SetHost(AHost);
   SetOnListen(ACallbackListen);
   SetOnStopListen(ACallbackStopListen);
-  Listen;
+  InternalListen;
 end;
 
 class procedure THorseProvider<T>.Listen(const AHost: string; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T>);
@@ -161,6 +179,13 @@ end;
 class procedure THorseProvider<T>.Listen(const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T>);
 begin
   Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
+end;
+
+class destructor THorseProvider<T>.UnInitialize;
+begin
+  if FRunning then
+    InternalStopListen;
+  FreeAndNil(FHTTPServerThread);
 end;
 
 class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T>);
@@ -182,6 +207,90 @@ class procedure THorseProvider<T>.SetPort(const AValue: Integer);
 begin
   FPort := AValue;
 end;
+
+{ THTTPServerThread }
+
+constructor THTTPServerThread.Create(const ACreateSuspended: Boolean;
+  const AStackSize: SizeUInt);
+begin
+  FreeOnTerminate := False;
+  FStartServer := False;
+  FServer := TFPHttpServer.Create(nil);
+  FServer.OnRequest := OnRequest;
+  FHorse := THorseCore.GetInstance;
+  inherited Create(ACreateSuspended, AStackSize);
+end;
+
+destructor THTTPServerThread.Destroy;
+begin
+  if Assigned(FServer) then
+  begin
+    FServer.Active := False;
+    FreeAndNil(FServer);
+  end;
+end;
+
+procedure THTTPServerThread.StartServer;
+begin
+  Start;
+  FStartServer := True;
+end;
+
+procedure THTTPServerThread.StopServer;
+begin
+  FStartServer := False;
+  FServer.Active := FStartServer;
+end;
+
+procedure THTTPServerThread.Execute;
+begin
+  while not Terminated do
+  begin
+    if FStartServer then
+    begin
+      FServer.Port := FPort;
+      FServer.Threaded := True;
+      FServer.QueueSize := FListenQueue;
+      FServer.Active := True;
+    end;
+  end;
+end;
+
+procedure THTTPServerThread.DoTerminate;
+begin
+  inherited DoTerminate;
+  FServer.Active := False;
+end;
+
+procedure THTTPServerThread.OnRequest(Sender: TObject;
+  var ARequest: TFPHTTPConnectionRequest;
+  var AResponse: TFPHTTPConnectionResponse);
+var
+  LRequest: THorseRequest;
+  LResponse: THorseResponse;
+begin
+  LRequest := THorseRequest.Create(ARequest);
+  LResponse := THorseResponse.Create(AResponse);
+  try
+    try
+      if not FHorse.Routes.Execute(LRequest, LResponse) then
+      begin
+        AResponse.Content := 'Not Found';
+        AResponse.Code := THTTPStatus.NotFound.ToInteger;
+      end;
+    except
+      on E: Exception do
+        if not E.InheritsFrom(EHorseCallbackInterrupted) then
+          raise;
+    end;
+  finally
+    if LRequest.Body<TObject> = LResponse.Content then
+      LResponse.Content(nil);
+    LRequest.Free;
+    LResponse.Free;
+  end;
+end;
+
 {$ENDIF}
 
 end.

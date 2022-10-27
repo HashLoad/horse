@@ -3,7 +3,8 @@ unit Horse.Provider.Console;
 interface
 
 {$IF NOT DEFINED(FPC)}
-uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
+uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL,
+  IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdSSL, IdContext,
   System.Classes, System.SyncObjs, System.SysUtils;
 
 type
@@ -154,6 +155,8 @@ begin
   LIOHandleSSL.SSLOptions.KeyFile := AHorseProviderIOHandleSSL.KeyFile;
   LIOHandleSSL.SSLOptions.Method := AHorseProviderIOHandleSSL.Method;
   LIOHandleSSL.SSLOptions.SSLVersions := AHorseProviderIOHandleSSL.SSLVersions;
+  LIOHandleSSL.SSLOptions.CipherList := AHorseProviderIOHandleSSL.CipherList;
+  LIOHandleSSL.SSLOptions.DHParamsFile := AHorseProviderIOHandleSSL.DHParamsFile;
   LIOHandleSSL.OnGetPassword := AHorseProviderIOHandleSSL.OnGetPassword;
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
