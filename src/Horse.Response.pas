@@ -15,7 +15,7 @@ uses
     Web.ReqMulti,
   {$ENDIF}
 {$ENDIF}
-  Horse.Commons, Horse.Core.Files;
+  Horse.Commons, Horse.Core.Files, Horse.Mime;
 
 type
   THorseResponse = class
@@ -32,7 +32,8 @@ type
     function SendFile(const AFileStream: TStream; const AFileName: string = ''; const AContentType: string = ''): THorseResponse; overload;
     function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
     function Download(const AFileStream: TStream; const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
-    function Download(const AFileName: string): THorseResponse; overload;
+    function Download(const AFileName: string; const AContentType: string = ''): THorseResponse; overload;
+    function Render(const AFileStream: TStream; const AFileName: string): THorseResponse; overload;
     function Render(const AFileName: string): THorseResponse; overload;
     function Status: Integer; overload;
     function AddHeader(const AName, AValue: string): THorseResponse;
@@ -125,9 +126,7 @@ var
   LFileName: string;
 begin
   Result := Self;
-
   AFileStream.Position := 0;
-
   LFileName := ExtractFileName(AFileName);
 
   FWebResponse.FreeContentStream := False;
@@ -135,9 +134,9 @@ begin
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
 
-  FWebResponse.ContentType := 'application/octet-stream';
-  if AContentType <> EmptyStr then
-    FWebResponse.ContentType := AContentType;
+  FWebResponse.ContentType := AContentType;
+  if (AContentType = EmptyStr) then
+    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
   {$IF DEFINED(FPC)}
   FWebResponse.SendContent;
@@ -149,24 +148,17 @@ end;
 function THorseResponse.SendFile(const AFileName: string; const AContentType: string): THorseResponse;
 var
   LFile: THorseCoreFile;
+  LContentType: string;
 begin
   Result := Self;
+
   LFile := THorseCoreFile.Create(AFileName);
-
+  LFile.FreeContentStream := True;
   try
-    FWebResponse.ContentLength := LFile.Size;
-    FWebResponse.ContentStream := LFile.ContentStream;
-    LFile.FreeContentStream := False;
-
-    FWebResponse.ContentType := AContentType;
-    if AContentType = EmptyStr then
-      FWebResponse.ContentType := LFile.ContentType;
-
-    {$IF DEFINED(FPC)}
-    FWebResponse.SendContent;
-    {$ELSE}
-    FWebResponse.SendResponse;
-    {$ENDIF}
+    LContentType := AContentType;
+    if (AContentType = EmptyStr) then
+      LContentType := LFile.ContentType;
+    SendFile(LFile.ContentStream, LFile.Name, LContentType);
   finally
     LFile.Free;
   end;
@@ -184,9 +176,9 @@ begin
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
 
-  FWebResponse.ContentType := 'application/octet-stream';
-  if AContentType <> EmptyStr then
-    FWebResponse.ContentType := AContentType;
+  FWebResponse.ContentType := AContentType;
+  if (AContentType = EmptyStr) then
+    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
   {$IF DEFINED(FPC)}
   FWebResponse.SendContent;
@@ -195,11 +187,30 @@ begin
   {$ENDIF}
 end;
 
-function THorseResponse.Download(const AFileName: string): THorseResponse;
+function THorseResponse.Download(const AFileName: string; const AContentType: string): THorseResponse;
+var
+  LFile: THorseCoreFile;
+  LContentType: string;
 begin
   Result := Self;
-  FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"',[ExtractFileName(AFileName)]));
-  SendFile(AFileName, Horse.Commons.TMimeTypes.Download.ToString);
+
+  LFile := THorseCoreFile.Create(AFileName);
+  LFile.FreeContentStream := True;
+  try
+    LContentType := AContentType;
+    if (AContentType = EmptyStr) then
+      LContentType := LFile.ContentType;
+    Download(LFile.ContentStream, LFile.Name, LContentType);
+  finally
+    LFile.Free;
+  end;
+end;
+
+function THorseResponse.Render(const AFileStream: TStream;
+  const AFileName: string): THorseResponse;
+begin
+  Result := Self;
+  SendFile(AFileStream, AFileName, Horse.Commons.TMimeTypes.TextHTML.ToString);
 end;
 
 function THorseResponse.Render(const AFileName: string): THorseResponse;
