@@ -169,6 +169,7 @@ var
   LFileName: string;
 begin
   Result := Self;
+  AFileStream.Position := 0;
   LFileName := ExtractFileName(AFileName);
 
   FWebResponse.FreeContentStream := False;
