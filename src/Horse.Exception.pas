@@ -18,26 +18,29 @@ type
   EHorseException = class(Exception)
   strict private
     FError: string;
-    FUnit: string;
-    FTitle: string;
-    FCode: Integer;
     FStatus: THTTPStatus;
     FType: TMessageType;
+    FTitle: string;
+    FCode: Integer;
+    FHint: string;
+    FUnit: string;
     constructor Create; reintroduce;
   public
     class function New: EHorseException;
     function Error(const AValue: string): EHorseException; overload;
     function Error: string; overload;
-    function Title(const AValue: string): EHorseException; overload;
-    function Title: string; overload;
-    function &Unit(const AValue: string): EHorseException; overload;
-    function &Unit: string; overload;
-    function Code(const AValue: Integer): EHorseException; overload;
-    function Code: Integer; overload;
     function Status(const AValue: THTTPStatus): EHorseException; overload;
     function Status: THTTPStatus; overload;
     function &Type(const AValue: TMessageType): EHorseException; overload;
     function &Type: TMessageType; overload;
+    function Title(const AValue: string): EHorseException; overload;
+    function Title: string; overload;
+    function Code(const AValue: Integer): EHorseException; overload;
+    function Code: Integer; overload;
+    function Hint(const AValue: string): EHorseException; overload;
+    function Hint: string; overload;
+    function &Unit(const AValue: string): EHorseException; overload;
+    function &Unit: string; overload;
   end;
 
 implementation
@@ -85,6 +88,17 @@ end;
 function EHorseException.Error: string;
 begin
   Result := FError;
+end;
+
+function EHorseException.Hint: string;
+begin
+  Result := FHint;
+end;
+
+function EHorseException.Hint(const AValue: string): EHorseException;
+begin
+  FHint := AValue;
+  Result := Self;
 end;
 
 function EHorseException.Error(const AValue: string): EHorseException;
