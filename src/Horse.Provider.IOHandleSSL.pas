@@ -1,4 +1,4 @@
-unit Horse.Provider.IOHandleSSL;
+﻿unit Horse.Provider.IOHandleSSL;
 
 interface
 
@@ -34,7 +34,7 @@ type
     function GetActive: Boolean;
     function GetCipherList: string;
     function GetDHParamsFile: string;
-    public
+  public
     constructor Create;
     property Active: Boolean read GetActive write SetActive default True;
     property CertFile: string read GetCertFile write SetCertFile;
@@ -49,14 +49,14 @@ type
     /// </summary>
     property CipherList: string read GetCipherList write SetCipherList;
     /// <summary> Diffie–Hellman key exchange[nb 1] is a method of securely 
-	/// exchanging cryptographic keys over a public channel and was one of 
-	/// the first public-key protocols as conceived by Ralph Merkle and named 
-	/// after Whitfield Diffie and Martin Hellman.[1][2] DH is one of the 
-	/// earliest practical examples of public key exchange implemented within 
-	/// the field of cryptography
+    /// exchanging cryptographic keys over a public channel and was one of
+    /// the first public-key protocols as conceived by Ralph Merkle and named
+    /// after Whitfield Diffie and Martin Hellman.[1][2] DH is one of the
+    /// earliest practical examples of public key exchange implemented within
+    /// the field of cryptography
     /// <see cref="https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange"/>
     /// </summary>
-	property DHParamsFile: string read GetDHParamsFile write SetDHParamsFile;
+    property DHParamsFile: string read GetDHParamsFile write SetDHParamsFile;
     property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;
   end;
 

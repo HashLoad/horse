@@ -13,6 +13,7 @@ type
     class var FHost: string;
     class var FMaxConnections: Integer;
     class var FListenQueue: Integer;
+    class var FKeepConnectionAlive: Boolean;
     class var FIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
     class var FHorseProviderIOHandleSSL: THorseProviderIOHandleSSL;
     class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
@@ -25,6 +26,8 @@ type
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetIOHandleSSL(const AValue: THorseProviderIOHandleSSL); static;
     class procedure SetHost(const AValue: string); static;
+    class procedure SetKeepConnectionAlive(const AValue: Boolean); static;
+    class function GetKeepConnectionAlive: Boolean; static;
     class function GetListenQueue: Integer; static;
     class function GetMaxConnections: Integer; static;
     class function GetPort: Integer; static;
@@ -40,6 +43,7 @@ type
     class property Port: Integer read GetPort write SetPort;
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
+    class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: THorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
@@ -82,6 +86,16 @@ begin
         Syslog(LOG_NOTICE, 'daemon: reloading config');
       end;
   end;
+end;
+
+class function THorseProvider<T>.GetKeepConnectionAlive: Boolean;
+begin
+  Result := FKeepConnectionAlive;
+end;
+
+class procedure THorseProvider<T>.SetKeepConnectionAlive(const AValue: Boolean);
+begin
+  FKeepConnectionAlive := AValue;
 end;
 
 class function THorseProvider<T>.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
@@ -235,6 +249,7 @@ begin
           LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
         end;
 
+        LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
         LIdHTTPWebBrokerBridge.DefaultPort := FPort;
         LIdHTTPWebBrokerBridge.Active := True;
         LIdHTTPWebBrokerBridge.StartListening;

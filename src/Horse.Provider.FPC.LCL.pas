@@ -12,9 +12,6 @@ uses SysUtils, Classes, httpdefs, fpHTTP, fphttpapp, Horse.Provider.Abstract,
   Horse.Core, Horse.Commons;
 
 type
-
-  { THTTPServerThread }
-
   THTTPServerThread = class(TThread)
   private
     FStartServer: Boolean;
@@ -35,8 +32,6 @@ type
     Procedure DoTerminate; override;
     procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
   end;
-
-  { THorseProvider }
 
   THorseProvider<T: class> = class(THorseProviderAbstract<T>)
   private
@@ -81,7 +76,6 @@ class function THorseProvider<T>.GetDefaultHTTPServerThread: THTTPServerThread;
 begin
   if HTTPServerThreadIsNil then
     FHTTPServerThread := THTTPServerThread.Create(True);
-
   Result := FHTTPServerThread;
 end;
 
@@ -210,8 +204,7 @@ end;
 
 { THTTPServerThread }
 
-constructor THTTPServerThread.Create(const ACreateSuspended: Boolean;
-  const AStackSize: SizeUInt);
+constructor THTTPServerThread.Create(const ACreateSuspended: Boolean; const AStackSize: SizeUInt);
 begin
   FreeOnTerminate := False;
   FStartServer := False;
@@ -262,9 +255,7 @@ begin
   FServer.Active := False;
 end;
 
-procedure THTTPServerThread.OnRequest(Sender: TObject;
-  var ARequest: TFPHTTPConnectionRequest;
-  var AResponse: TFPHTTPConnectionResponse);
+procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
@@ -290,7 +281,6 @@ begin
     LResponse.Free;
   end;
 end;
-
 {$ENDIF}
 
 end.
