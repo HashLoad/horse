@@ -33,10 +33,7 @@ type
 
 implementation
 
-uses
-  Horse.Mime;
-
-{ THorseCoreFile }
+uses Horse.Mime;
 
 constructor THorseCoreFile.Create(const AFileName: string);
 begin

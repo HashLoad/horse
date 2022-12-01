@@ -7,9 +7,6 @@ unit Horse.Core.Param.Config;
 interface
 
 type
-
-  { THorseCoreParamConfig }
-
   THorseCoreParamConfig = class
   private
     class var FInstance: THorseCoreParamConfig;

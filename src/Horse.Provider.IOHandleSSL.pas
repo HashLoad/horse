@@ -1,66 +1,82 @@
-﻿unit Horse.Provider.IOHandleSSL;
+unit Horse.Provider.IOHandleSSL;
+
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
 
 interface
 
-uses IdSSLOpenSSL;
+uses IdSSLOpenSSL, Horse.Provider.IOHandleSSL.Contract;
 
 type
-  THorseProviderIOHandleSSL = class
+  THorseProviderIOHandleSSL = class(TInterfacedObject, IHorseProviderIOHandleSSL)
   private
     FKeyFile: string;
     FRootCertFile: string;
     FCertFile: string;
+    FDHParamsFile: string;
+    FCipherList: string;
     FMethod: TIdSSLVersion;
     FSSLVersions: TIdSSLVersions;
-    FCipherList: string;
-    FDHParamsFile: string;
     FOnGetPassword: TPasswordEvent;
     FActive: Boolean;
-    procedure SetCertFile(const AValue: string);
-    procedure SetKeyFile(const AValue: string);
-    procedure SetRootCertFile(const AValue: string);
-    procedure SetMethod(const AValue: TIdSSLVersion);
-    procedure SetSSLVersions(const AValue: TIdSSLVersions);
-    procedure SetOnGetPassword(const AValue: TPasswordEvent);
-    procedure SetActive(const AValue: Boolean);
-    procedure SetCipherList(const AValue: string);
-    procedure SetDHParamsFile(const AValue: string);
-    function GetCertFile: string;
-    function GetKeyFile: string;
-    function GetRootCertFile: string;
-    function GetMethod: TIdSSLVersion;
-    function GetSSLVersions: TIdSSLVersions;
-    function GetOnGetPassword: TPasswordEvent;
-    function GetActive: Boolean;
-    function GetCipherList: string;
-    function GetDHParamsFile: string;
+    function Active: Boolean; overload;
+    function Active(const AValue: Boolean): IHorseProviderIOHandleSSL; overload;
+    function CertFile: string; overload;
+    function CertFile(const AValue: string): IHorseProviderIOHandleSSL; overload;
+    function RootCertFile: string; overload;
+    function RootCertFile(const AValue: string): IHorseProviderIOHandleSSL; overload;
+    function KeyFile: string; overload;
+    function KeyFile(const AValue: string): IHorseProviderIOHandleSSL; overload;
+    function Method: TIdSSLVersion; overload;
+    function Method(const AValue: TIdSSLVersion): IHorseProviderIOHandleSSL; overload;
+    function SSLVersions: TIdSSLVersions; overload;
+    function SSLVersions(const AValue: TIdSSLVersions): IHorseProviderIOHandleSSL; overload;
+    function DHParamsFile: string; overload;
+    function DHParamsFile(const AValue: string): IHorseProviderIOHandleSSL; overload;
+    function CipherList: string; overload;
+    function CipherList(const AValue: string): IHorseProviderIOHandleSSL; overload;
+    function OnGetPassword: TPasswordEvent; overload;
+    function OnGetPassword(const AValue: TPasswordEvent): IHorseProviderIOHandleSSL; overload;
   public
     constructor Create;
-    property Active: Boolean read GetActive write SetActive default True;
-    property CertFile: string read GetCertFile write SetCertFile;
-    property RootCertFile: string read GetRootCertFile write SetRootCertFile;
-    property KeyFile: string read GetKeyFile write SetKeyFile;
-    property Method: TIdSSLVersion read GetMethod write SetMethod;
-    property SSLVersions: TIdSSLVersions read GetSSLVersions write SetSSLVersions;
-    /// <summary> A cipher suite is a set of cryptographic algorithms.
-    /// The schannel SSP implementation of the TLS/SSL protocols use algorithms
-    /// from a cipher suite to create keys and encrypt information.
-    /// <see cref="https://learn.microsoft.com/en-us/windows/win32/secauthn/cipher-suites-in-schannel"/>
-    /// </summary>
-    property CipherList: string read GetCipherList write SetCipherList;
-    /// <summary> Diffie–Hellman key exchange[nb 1] is a method of securely 
-    /// exchanging cryptographic keys over a public channel and was one of
-    /// the first public-key protocols as conceived by Ralph Merkle and named
-    /// after Whitfield Diffie and Martin Hellman.[1][2] DH is one of the
-    /// earliest practical examples of public key exchange implemented within
-    /// the field of cryptography
-    /// <see cref="https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange"/>
-    /// </summary>
-    property DHParamsFile: string read GetDHParamsFile write SetDHParamsFile;
-    property OnGetPassword: TPasswordEvent read GetOnGetPassword write SetOnGetPassword;
+    class function New: IHorseProviderIOHandleSSL;
   end;
 
 implementation
+
+function THorseProviderIOHandleSSL.Active(const AValue: Boolean): IHorseProviderIOHandleSSL;
+begin
+  FActive := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.Active: Boolean;
+begin
+  Result := FActive;
+end;
+
+function THorseProviderIOHandleSSL.CertFile(const AValue: string): IHorseProviderIOHandleSSL;
+begin
+  FCertFile := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.CipherList: string;
+begin
+  Result := FCipherList;
+end;
+
+function THorseProviderIOHandleSSL.CipherList(const AValue: string): IHorseProviderIOHandleSSL;
+begin
+  FCipherList := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.CertFile: string;
+begin
+  Result := FCertFile;
+end;
 
 constructor THorseProviderIOHandleSSL.Create;
 begin
@@ -69,94 +85,75 @@ begin
   FSSLVersions := DEF_SSLVERSIONS;
 end;
 
-function THorseProviderIOHandleSSL.GetActive: Boolean;
-begin
-  Result := FActive;
-end;
-
-function THorseProviderIOHandleSSL.GetCertFile: string;
-begin
-  Result := FCertFile;
-end;
-
-function THorseProviderIOHandleSSL.GetCipherList: string;
-begin
-  Result := FCipherList;
-end;
-
-function THorseProviderIOHandleSSL.GetDHParamsFile: string;
+function THorseProviderIOHandleSSL.DHParamsFile: string;
 begin
   Result := FDHParamsFile;
 end;
 
-function THorseProviderIOHandleSSL.GetKeyFile: string;
+function THorseProviderIOHandleSSL.DHParamsFile(const AValue: string): IHorseProviderIOHandleSSL;
+begin
+  FDHParamsFile := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.KeyFile(const AValue: string): IHorseProviderIOHandleSSL;
+begin
+  FKeyFile := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.KeyFile: string;
 begin
   Result := FKeyFile;
 end;
 
-function THorseProviderIOHandleSSL.GetOnGetPassword: TPasswordEvent;
+function THorseProviderIOHandleSSL.Method(const AValue: TIdSSLVersion): IHorseProviderIOHandleSSL;
 begin
-  Result := FOnGetPassword;
+  FMethod := AValue;
+  Result := Self;
 end;
 
-function THorseProviderIOHandleSSL.GetRootCertFile: string;
-begin
-  Result := FRootCertFile;
-end;
-
-function THorseProviderIOHandleSSL.GetMethod: TIdSSLVersion;
+function THorseProviderIOHandleSSL.Method: TIdSSLVersion;
 begin
   Result := FMethod;
 end;
 
-function THorseProviderIOHandleSSL.GetSSLVersions: TIdSSLVersions;
+class function THorseProviderIOHandleSSL.New: IHorseProviderIOHandleSSL;
+begin
+  Result := THorseProviderIOHandleSSL.Create;
+end;
+
+function THorseProviderIOHandleSSL.OnGetPassword(const AValue: TPasswordEvent): IHorseProviderIOHandleSSL;
+begin
+  FOnGetPassword := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.OnGetPassword: TPasswordEvent;
+begin
+  Result := FOnGetPassword;
+end;
+
+function THorseProviderIOHandleSSL.RootCertFile(const AValue: string): IHorseProviderIOHandleSSL;
+begin
+  FRootCertFile := AValue;
+  Result := Self;
+end;
+
+function THorseProviderIOHandleSSL.RootCertFile: string;
+begin
+  Result := FRootCertFile;
+end;
+
+function THorseProviderIOHandleSSL.SSLVersions: TIdSSLVersions;
 begin
   Result := FSSLVersions;
 end;
 
-procedure THorseProviderIOHandleSSL.SetActive(const AValue: Boolean);
-begin
-  FActive := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetCertFile(const AValue: string);
-begin
-  FCertFile := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetCipherList(const AValue: string);
-begin
-  FCipherList := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetDHParamsFile(const AValue: string);
-begin
-  FDHParamsFile := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetSSLVersions(const AValue: TIdSSLVersions);
+function THorseProviderIOHandleSSL.SSLVersions(const AValue: TIdSSLVersions): IHorseProviderIOHandleSSL;
 begin
   FSSLVersions := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetMethod(const AValue: TIdSSLVersion);
-begin
-  FMethod := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetKeyFile(const AValue: string);
-begin
-  FKeyFile := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetOnGetPassword(const AValue: TPasswordEvent);
-begin
-  FOnGetPassword := AValue;
-end;
-
-procedure THorseProviderIOHandleSSL.SetRootCertFile(const AValue: string);
-begin
-  FRootCertFile := AValue;
+  Result := Self;
 end;
 
 end.
