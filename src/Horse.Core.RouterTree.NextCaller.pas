@@ -28,7 +28,7 @@ type
     FCallNextPath: TCallNextPath;
     FIsGroup: Boolean;
     FTag: string;
-    FIsRegex: Boolean;
+    FIsParamsKey: Boolean;
     FFound: ^Boolean;
   public
     function Init: TNextCaller;
@@ -40,7 +40,7 @@ type
     function SetIsGroup(const AIsGroup: Boolean): TNextCaller;
     function SetMiddleware(const AMiddleware: TList<THorseCallback>): TNextCaller;
     function SetTag(const ATag: string): TNextCaller;
-    function SetIsRegex(const AIsRegex: Boolean): TNextCaller;
+    function SetIsParamsKey(const AIsParamsKey: Boolean): TNextCaller;
     function SetOnCallNextPath(const ACallNextPath: TCallNextPath): TNextCaller;
     function SetFound(var AFound: Boolean): TNextCaller;
     procedure Next;
@@ -59,7 +59,7 @@ begin
     LCurrent := FPath.Dequeue;
   FIndex := -1;
   FIndexCallback := -1;
-  if FIsRegex then
+  if FIsParamsKey then
     FRequest.Params.Dictionary.Add(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF});
 end;
 
@@ -142,9 +142,9 @@ begin
   Result := Self;
 end;
 
-function TNextCaller.SetIsRegex(const AIsRegex: Boolean): TNextCaller;
+function TNextCaller.SetIsParamsKey(const AIsParamsKey: Boolean): TNextCaller;
 begin
-  FIsRegex := AIsRegex;
+  FIsParamsKey := AIsParamsKey;
   Result := Self;
 end;
 

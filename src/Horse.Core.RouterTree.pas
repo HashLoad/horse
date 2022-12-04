@@ -8,9 +8,9 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Generics.Collections, fpHTTP, httpprotocol,
+  SysUtils, Generics.Collections, fpHTTP, httpprotocol, RegExpr,
 {$ELSE}
-  System.SysUtils, System.NetEncoding, Web.HTTPApp, System.Generics.Collections,
+  System.SysUtils, System.NetEncoding, Web.HTTPApp, System.Generics.Collections, System.RegularExpressions,
 {$ENDIF}
   Horse.Request, Horse.Response, Horse.Proc, Horse.Commons, Horse.Callback;
 
@@ -26,7 +26,9 @@ type
   private
     FPart: string;
     FTag: string;
-    FIsRegex: Boolean;
+    FIsParamsKey: Boolean;
+    FRouterRegex: string;
+    FIsRouterRegex: Boolean;
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
@@ -107,6 +109,7 @@ begin
   FRegexedKeys := TList<string>.Create;
   FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
   FPrefix := '';
+  FIsRouterRegex := False;
 end;
 
 destructor THorseRouterTree.Destroy;
@@ -149,7 +152,7 @@ begin
     LNextCaller.SetIsGroup(AIsGroup);
     LNextCaller.SetMiddleware(FMiddleware);
     LNextCaller.SetTag(FTag);
-    LNextCaller.SetIsRegex(FIsRegex);
+    LNextCaller.SetIsParamsKey(FIsParamsKey);
     LNextCaller.SetOnCallNextPath(CallNextPath);
     LNextCaller.SetFound(LFound);
     LNextCaller.Init;
@@ -212,8 +215,16 @@ begin
   Result := False;
   if (Length(APaths) <= AIndex) then
     Exit(False);
-  if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsRegex)) then
+  if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsParamsKey)) then
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
+
+  {$IFNDEF FPC}
+  if FIsRouterRegex then
+  begin
+    Result := TRegEx.IsMatch(APaths[AIndex], Format('^%s$', [FRouterRegex]));
+    Exit;
+  end;
+  {$ENDIF}
 
   LNext := APaths[AIndex + 1];
   Inc(AIndex);
@@ -235,12 +246,18 @@ procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var AP
 var
   LNextPart: string;
   LCallbacks: TList<THorseCallback>;
+  LForceRouter: THorseRouterTree;
 begin
   if not FIsInitialized then
   begin
     FPart := APath.Dequeue;
-    FIsRegex := FPart.StartsWith(':');
+
+    FIsParamsKey := FPart.StartsWith(':');
     FTag := FPart.Substring(1, Length(FPart) - 1);
+
+    FIsRouterRegex := FPart.StartsWith('(') and FPart.EndsWith(')');
+    FRouterRegex := FPart;
+
     FIsInitialized := True;
   end
   else
@@ -259,8 +276,11 @@ begin
   if APath.Count > 0 then
   begin
     LNextPart := APath.Peek;
-    ForcePath(LNextPart).RegisterInternal(AHTTPType, APath, ACallback);
-    if ForcePath(LNextPart).FIsRegex then
+
+    LForceRouter := ForcePath(LNextPart);
+
+    LForceRouter.RegisterInternal(AHTTPType, APath, ACallback);
+    if LForceRouter.FIsParamsKey or LForceRouter.FIsRouterRegex then
       FRegexedKeys.Add(LNextPart);
   end;
 end;
