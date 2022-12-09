@@ -24,6 +24,7 @@ uses
   Horse.Provider.CGI,
   Horse.Provider.VCL,
 {$ENDIF}
+  Horse.Mime,
   Horse.Core,
   Horse.Proc,
   Horse.Request,
@@ -50,6 +51,7 @@ type
   THorseCallback = Horse.Callback.THorseCallback;
   THTTPStatus = Horse.Commons.THTTPStatus;
   TMimeTypes = Horse.Commons.TMimeTypes;
+  THorseMimeTypes = Horse.Mime.THorseMimeTypes;
   TMessageType = Horse.Commons.TMessageType;
   THorseModule = Horse.Core.THorseModule;
   PHorseModule = Horse.Core.PHorseModule;
