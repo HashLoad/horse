@@ -48,7 +48,7 @@ implementation
 
 uses
   {$IF DEFINED(FPC)}
-  fpjson, TypInfo;
+  fpjson, jsonparser, TypInfo;
   {$ELSE}
   System.JSON, System.TypInfo;
   {$ENDIF}
@@ -169,7 +169,7 @@ begin
     begin
       LJSON.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('unit', FUnit);
     end;
-    Result := LJSON.ToJSON;
+    Result := {$IF DEFINED(FPC)}LJSON.AsJSON{$ELSE}{$IF CompilerVersion > 27.0}LJSON.ToJSON{$ELSE}LJSON.ToString{$ENDIF}{$ENDIF};
   finally
     LJSON.Free;
   end;
