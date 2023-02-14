@@ -37,6 +37,7 @@ type
     function Render(const AFileName: string): THorseResponse; overload;
     function Status: Integer; overload;
     function AddHeader(const AName, AValue: string): THorseResponse;
+    function RemoveHeader(const AName: string): THorseResponse;
     function Content: TObject; overload;
     function Content(const AContent: TObject): THorseResponse; overload;
     function ContentType(const AContentType: string): THorseResponse;
@@ -113,6 +114,16 @@ function THorseResponse.RedirectTo(const ALocation: string; const AStatus: THTTP
 begin
   FWebResponse.SetCustomHeader('Location', ALocation);
   Result := Status(AStatus);
+end;
+
+function THorseResponse.RemoveHeader(const AName: string): THorseResponse;
+var
+  I: Integer;
+begin
+  I := FWebResponse.CustomHeaders.IndexOfName(AName);
+  if I <> -1 then
+    FWebResponse.CustomHeaders.Delete(I);
+  Result := Self;
 end;
 
 function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
