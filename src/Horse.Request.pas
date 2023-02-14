@@ -48,6 +48,9 @@ type
     function Cookie: THorseCoreParam;
     function ContentFields: THorseCoreParam;
     function MethodType: TMethodType;
+    function ContentType: string;
+    function Host: string;
+    function PathInfo: string;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
     property Sessions: THorseSessions read FSessions;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
@@ -126,6 +129,21 @@ begin
     FHeaders := THorseCoreParam.Create(LParam).Required(False);
   end;
   result := FHeaders;
+end;
+
+function THorseRequest.Host: string;
+begin
+  Result := FWebRequest.Host;
+end;
+
+function THorseRequest.ContentType: string;
+begin
+  Result := FWebRequest.ContentType;
+end;
+
+function THorseRequest.PathInfo: string;
+begin
+  Result := FWebRequest.PathInfo;
 end;
 
 procedure THorseRequest.InitializeContentFields;
