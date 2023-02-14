@@ -65,9 +65,10 @@ end;
 
 procedure TNextCaller.Next;
 var
+  LQueueNotFound: TQueue<string>;
   LCallback: TList<THorseCallback>;
 begin
-  inc(FIndex);
+  Inc(FIndex);
   if (FMiddleware.Count > FIndex) then
   begin
     FFound^ := True;
@@ -75,10 +76,9 @@ begin
     if (FMiddleware.Count > FIndex) then
       Next;
   end
-  else
-  if (FPath.Count = 0) and assigned(FCallBack) then
+  else if (FPath.Count = 0) and Assigned(FCallBack) then
   begin
-    inc(FIndexCallback);
+    Inc(FIndexCallback);
     if FCallBack.TryGetValue(FHTTPType, LCallback) then
     begin
       if (LCallback.Count > FIndexCallback) then
@@ -113,12 +113,21 @@ begin
   end
   else
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
-
+  if not FFound^ then
+  begin
+    LQueueNotFound := TQueue<string>.Create;
+    try
+      LQueueNotFound.Enqueue('*');
+      FFound^ := FCallNextPath(LQueueNotFound, FHTTPType, FRequest, FResponse);
+    finally
+      LQueueNotFound.Free;
+    end;
+  end;
   if not FFound^ then
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
 
-function TNextCaller.SetCallback(const ACallback: TObjectDictionary < TMethodType, TList < THorseCallback >> ): TNextCaller;
+function TNextCaller.SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;
 begin
   FCallBack := ACallback;
   Result := Self;
