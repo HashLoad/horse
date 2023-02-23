@@ -235,22 +235,28 @@ end;
 
 function THorseRequest.IsFormURLEncoded: Boolean;
 var
-  LContentType: String;
-  LFormUrlEncoded: String;
+  LContentType, LFormUrlEncoded: string;
 begin
   LContentType := FWebRequest.ContentType;
   LFormUrlEncoded := TMimeTypes.ApplicationXWWWFormURLEncoded.ToString;
-  Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
+  {$if CompilerVersion <= 30}
+    Result := LContentType = PChar(LFormUrlEncoded);
+  {$else}
+    Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
+  {$ifend}
 end;
 
 function THorseRequest.IsMultipartForm: Boolean;
 var
-  LContentType: String;
-  LFormData: String;
+  LContentType, LFormData: string;
 begin
   LContentType := FWebRequest.ContentType;
   LFormData := TMimeTypes.MultiPartFormData.ToString;
-  Result := StrLIComp(PChar(LContentType), PChar(LFormData), Length(PChar(LFormData))) = 0;
+  {$if CompilerVersion <= 30}
+    Result := LContentType = PChar(LFormData);
+  {$else}
+    Result := StrLIComp(PChar(LContentType), PChar(LFormData), Length(PChar(LFormData))) = 0;
+  {$ifend}
 end;
 
 function THorseRequest.MethodType: TMethodType;
