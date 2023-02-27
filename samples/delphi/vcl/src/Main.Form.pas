@@ -14,6 +14,7 @@ type
     procedure btnStopClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btnStartClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     procedure Status;
     procedure Start;
@@ -35,14 +36,17 @@ begin
     Stop;
 end;
 
-procedure TFrmVCL.Start;
+procedure TFrmVCL.FormCreate(Sender: TObject);
 begin
   THorse.Get('ping',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       Res.Send('pong');
     end);
+end;
 
+procedure TFrmVCL.Start;
+begin
   THorse.Listen(StrToInt(edtPort.Text));
 end;
 

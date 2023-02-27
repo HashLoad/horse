@@ -10,8 +10,7 @@ object frmMain: TfrmMain
   Font.Height = -12
   Font.Name = 'Segoe UI'
   Font.Style = []
-  OldCreateOrder = True
-  PixelsPerInch = 96
+  OnCreate = FormCreate
   TextHeight = 15
   object edtPort: TSpinEdit
     Left = 8
@@ -42,6 +41,7 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Private Key'
     ReadOnly = True
     TabOrder = 2
+    Text = ''
   end
   object leCrt: TLabeledEdit
     Left = 8
@@ -53,6 +53,7 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Public Key'
     ReadOnly = True
     TabOrder = 3
+    Text = ''
   end
   object Button2: TButton
     Left = 320
@@ -82,6 +83,7 @@ object frmMain: TfrmMain
     EditLabel.Caption = 'Password'
     PasswordChar = '*'
     TabOrder = 6
+    Text = ''
   end
   object StatusBar1: TStatusBar
     Left = 0

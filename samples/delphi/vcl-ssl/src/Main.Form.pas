@@ -19,6 +19,7 @@ type
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     function GetFile(const description, extension: string): string;
     procedure Start;
@@ -47,6 +48,15 @@ end;
 procedure TfrmMain.Button3Click(Sender: TObject);
 begin
   leCrt.Text := GetFile('Public Key', '*crt');
+end;
+
+procedure TfrmMain.FormCreate(Sender: TObject);
+begin
+  THorse.Get('/ping',
+    procedure(Res: THorseResponse)
+    begin
+      Res.Send('securite pong');
+    end);
 end;
 
 function TfrmMain.GetFile(const description, extension: string): string;
@@ -86,12 +96,6 @@ begin
     SSLVersions := [sslvTLSv1_2];
     Active := True;
   end;
-
-  THorse.Get('/ping',
-    procedure(Res: THorseResponse)
-    begin
-      Res.Send('securite pong');
-    end);
 
   THorse.Listen(edtPort.Value,
     procedure(Horse: THorse)
