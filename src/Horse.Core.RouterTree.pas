@@ -1,18 +1,30 @@
 unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Generics.Collections, fpHTTP, httpprotocol, RegExpr,
+  SysUtils,
+  Generics.Collections,
+  fpHTTP,
+  httpprotocol,
+  RegExpr,
 {$ELSE}
-  System.SysUtils, System.NetEncoding, Web.HTTPApp, System.Generics.Collections, System.RegularExpressions,
+  System.SysUtils,
+  System.NetEncoding,
+  Web.HTTPApp,
+  System.Generics.Collections,
+  System.RegularExpressions,
 {$ENDIF}
-  Horse.Request, Horse.Response, Horse.Proc, Horse.Commons, Horse.Callback;
+  Horse.Request,
+  Horse.Response,
+  Horse.Proc,
+  Horse.Commons,
+  Horse.Callback;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
@@ -52,7 +64,8 @@ type
 
 implementation
 
-uses Horse.Exception, Horse.Core.RouterTree.NextCaller;
+uses Horse.Exception,
+  Horse.Core.RouterTree.NextCaller;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var
@@ -125,11 +138,15 @@ end;
 function THorseRouterTree.Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 var
   LQueue: TQueue<string>;
+  LPathInfo: string;
 begin
-  LQueue := GetQueuePath({$IF DEFINED(FPC)}ARequest.PathInfo{$ELSE}ARequest.PathInfo{$ENDIF}, False);
+  LPathInfo := {$IF DEFINED(FPC)}ARequest.PathInfo{$ELSE}ARequest.PathInfo{$ENDIF};
+  if LPathInfo.IsEmpty then
+    LPathInfo := '/';
+  LQueue := GetQueuePath(LPathInfo, False);
   try
     Result := ExecuteInternal(LQueue, {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method)
-      {$ELSE} ARequest.RawWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
+{$ELSE} ARequest.RawWebRequest.MethodType{$ENDIF}, ARequest, AResponse);
   finally
     LQueue.Free;
   end;
@@ -218,14 +235,13 @@ begin
   if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsParamsKey)) then
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
 
-  {$IFNDEF FPC}
+{$IFNDEF FPC}
   if FIsRouterRegex then
   begin
     Result := TRegEx.IsMatch(APaths[AIndex], Format('^%s$', [FRouterRegex]));
     Exit;
   end;
-  {$ENDIF}
-
+{$ENDIF}
   LNext := APaths[AIndex + 1];
   Inc(AIndex);
   if FRoute.TryGetValue(LNext, LNextRoute) then
