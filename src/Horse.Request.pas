@@ -239,11 +239,15 @@ var
 begin
   LContentType := FWebRequest.ContentType;
   LFormUrlEncoded := TMimeTypes.ApplicationXWWWFormURLEncoded.ToString;
-  {$if CompilerVersion <= 30}
-    Result := LContentType = PChar(LFormUrlEncoded);
-  {$else}
+  {$IF DEFINED(FPC)}
     Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
-  {$ifend}
+  {$ELSE}
+  {$IF CompilerVersion <= 30}
+    Result := LContentType = PChar(LFormUrlEncoded);
+  {$ELSE}
+    Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
+  {$IFEND}
+  {$ENDIF}
 end;
 
 function THorseRequest.IsMultipartForm: Boolean;
@@ -252,11 +256,15 @@ var
 begin
   LContentType := FWebRequest.ContentType;
   LFormData := TMimeTypes.MultiPartFormData.ToString;
-  {$if CompilerVersion <= 30}
-    Result := LContentType = PChar(LFormData);
-  {$else}
+  {$IF DEFINED(FPC)}
     Result := StrLIComp(PChar(LContentType), PChar(LFormData), Length(PChar(LFormData))) = 0;
-  {$ifend}
+  {$ELSE}
+  {$IF CompilerVersion <= 30}
+    Result := LContentType = PChar(LFormData);
+  {$ELSE}
+    Result := StrLIComp(PChar(LContentType), PChar(LFormData), Length(PChar(LFormData))) = 0;
+  {$IFEND}
+  {$ENDIF}
 end;
 
 function THorseRequest.MethodType: TMethodType;
