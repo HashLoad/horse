@@ -34,7 +34,6 @@ begin
 end;
 
 {$IFDEF LINUX}
-
 class function THorseEnvironmentVariables.GetEnvironmentVariables: TStringList;
 var
   LEnvVar: PPChar;
@@ -50,8 +49,6 @@ end;
 {$ENDIF}
 
 {$IFDEF MSWINDOWS}
-
-
 class function THorseEnvironmentVariables.GetEnvironmentVariables: TStringList;
 var
   LEnvBlock: PChar;

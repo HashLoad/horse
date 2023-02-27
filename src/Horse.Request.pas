@@ -142,8 +142,13 @@ begin
 end;
 
 function THorseRequest.PathInfo: string;
+var
+  LPrefix: string;
 begin
-  Result := FWebRequest.PathInfo;
+  LPrefix := EmptyStr;
+  if FWebRequest.PathInfo.IsEmpty then
+    LPrefix := '/';
+  Result := LPrefix + FWebRequest.PathInfo;
 end;
 
 procedure THorseRequest.InitializeContentFields;
