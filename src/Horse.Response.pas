@@ -1,21 +1,28 @@
 unit Horse.Response;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, fpHTTP, HTTPDefs,
+  SysUtils,
+  Classes,
+  fpHTTP,
+  HTTPDefs,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp,
-  {$IF CompilerVersion > 32.0}
-    Web.ReqMulti,
-  {$ENDIF}
+  System.SysUtils,
+  System.Classes,
+  Web.HTTPApp,
+{$IF CompilerVersion > 32.0}
+  Web.ReqMulti,
 {$ENDIF}
-  Horse.Commons, Horse.Core.Files, Horse.Mime;
+{$ENDIF}
+  Horse.Commons,
+  Horse.Core.Files,
+  Horse.Mime;
 
 type
   THorseResponse = class
@@ -74,10 +81,10 @@ end;
 constructor THorseResponse.Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 begin
   FWebResponse := AWebResponse;
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
+{$IF DEFINED(FPC)}
   FWebResponse.FreeContentStream := True;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 destructor THorseResponse.Destroy;
@@ -128,7 +135,7 @@ end;
 
 function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
+{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
   Result := Self;
 end;
 
@@ -149,11 +156,11 @@ begin
   if (AContentType = EmptyStr) then
     FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}
   FWebResponse.SendContent;
-  {$ELSE}
+{$ELSE}
   FWebResponse.SendResponse;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 function THorseResponse.SendFile(const AFileName: string; const AContentType: string): THorseResponse;
@@ -192,11 +199,11 @@ begin
   if (AContentType = EmptyStr) then
     FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}
   FWebResponse.SendContent;
-  {$ELSE}
+{$ELSE}
   FWebResponse.SendResponse;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 function THorseResponse.Download(const AFileName: string; const AContentType: string): THorseResponse;
@@ -238,7 +245,7 @@ end;
 
 function THorseResponse.Status(const AStatus: Integer): THorseResponse;
 begin
-  {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
+{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
   Result := Self;
 end;
 

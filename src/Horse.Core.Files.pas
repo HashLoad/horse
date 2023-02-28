@@ -8,9 +8,13 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections;
+  SysUtils,
+  Classes,
+  Generics.Collections;
 {$ELSE}
-  System.SysUtils, System.Classes, System.Generics.Collections;
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections;
 {$ENDIF}
 
 type
@@ -33,7 +37,8 @@ type
 
 implementation
 
-uses Horse.Mime;
+uses
+  Horse.Mime;
 
 constructor THorseCoreFile.Create(const AFileName: string);
 begin

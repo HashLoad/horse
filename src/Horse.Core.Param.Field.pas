@@ -8,11 +8,19 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, DateUtils, Generics.Collections,
+  SysUtils,
+  Classes,
+  DateUtils,
+  Generics.Collections,
 {$ELSE}
-  System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
+  System.SysUtils,
+  System.Classes,
+  System.DateUtils,
+  System.Generics.Collections,
 {$ENDIF}
-  Horse.Exception, Horse.Commons, Horse.Core.Param.Field.Brackets,
+  Horse.Exception,
+  Horse.Commons,
+  Horse.Core.Param.Field.Brackets,
   Horse.Core.Param.Config;
 
 type
@@ -48,9 +56,7 @@ type
     function ReturnUTC(const AValue: Boolean): THorseCoreParamField;
     function TimeFormat(const AValue: string): THorseCoreParamField;
     function TrueValue(const AValue: string): THorseCoreParamField;
-
     procedure SaveToFile(const AFileName: String);
-
     function AsBoolean: Boolean;
     function AsCurrency: Currency;
     function AsDate: TDateTime;
@@ -63,9 +69,7 @@ type
     function AsStream: TStream;
     function AsString: string;
     function AsTime: TTime;
-
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
-
     constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
     constructor Create(const AStream: TStream; const AFieldName: string); overload;
     destructor Destroy; override;
@@ -298,7 +302,6 @@ var
   LLhsBracketType: TLhsBracketsType;
 begin
   FLhsBrackets := THorseCoreParamFieldLhsBrackets.Create;
-
   if THorseCoreParamConfig.GetInstance.CheckLhsBrackets then
   begin
     for LLhsBracketType := Low(TLhsBracketsType) to High(TLhsBracketsType) do

@@ -12,13 +12,12 @@ uses
   Classes,
   SysUtils,
   StrUtils,
-  RegExpr
+  RegExpr;
 {$ELSE}
   System.Classes,
   System.SysUtils,
-  System.RegularExpressions
+  System.RegularExpressions;
 {$ENDIF}
-  ;
 
 type
 {$IF DEFINED(FPC)}
@@ -160,6 +159,7 @@ end;
 {$ENDIF}
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
+
   function ReplaceParams(const AValue: string): string;
   var
     LPart: string;

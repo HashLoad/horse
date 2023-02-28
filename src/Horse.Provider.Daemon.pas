@@ -3,11 +3,20 @@ unit Horse.Provider.Daemon;
 interface
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
-uses Horse.Provider.Abstract, Horse.Constants, Horse.Provider.IOHandleSSL.Contract, IdHTTPWebBrokerBridge, IdSSLOpenSSL, IdContext,
-  Horse.Provider.IOHandleSSL, System.SyncObjs, System.SysUtils, Posix.SysTypes;
+uses
+  Horse.Provider.Abstract,
+  Horse.Constants,
+  Horse.Provider.IOHandleSSL.Contract,
+  IdHTTPWebBrokerBridge,
+  IdSSLOpenSSL,
+  IdContext,
+  Horse.Provider.IOHandleSSL,
+  System.SyncObjs,
+  System.SysUtils,
+  Posix.SysTypes;
 
 type
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider = class(THorseProviderAbstract)
   private
     class var FPort: Integer;
     class var FHost: string;
@@ -47,10 +56,10 @@ type
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: TProc<T> = nil; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: TProc<T>; const ACallbackStopListen: TProc<T> = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class destructor UnInitialize;
   end;
 
@@ -70,7 +79,15 @@ procedure HandleSignals(SigNum: Integer); cdecl;
 implementation
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
-uses Web.WebReq, Horse.WebModule, IdCustomTCPServer, Posix.Stdlib, Posix.SysStat, Posix.Unistd, Posix.Signal, Posix.Fcntl,
+uses
+  Web.WebReq,
+  Horse.WebModule,
+  IdCustomTCPServer,
+  Posix.Stdlib,
+  Posix.SysStat,
+  Posix.Unistd,
+  Posix.Signal,
+  Posix.Fcntl,
   ThirdParty.Posix.Syslog;
 
 procedure HandleSignals(SigNum: Integer); cdecl;
@@ -88,17 +105,17 @@ begin
   end;
 end;
 
-class function THorseProvider<T>.GetKeepConnectionAlive: Boolean;
+class function THorseProvider.GetKeepConnectionAlive: Boolean;
 begin
   Result := FKeepConnectionAlive;
 end;
 
-class procedure THorseProvider<T>.SetKeepConnectionAlive(const AValue: Boolean);
+class procedure THorseProvider.SetKeepConnectionAlive(const AValue: Boolean);
 begin
   FKeepConnectionAlive := AValue;
 end;
 
-class function THorseProvider<T>.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
+class function THorseProvider.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
   if HTTPWebBrokerIsNil then
   begin
@@ -109,59 +126,59 @@ begin
   Result := FIdHTTPWebBrokerBridge;
 end;
 
-class function THorseProvider<T>.HTTPWebBrokerIsNil: Boolean;
+class function THorseProvider.HTTPWebBrokerIsNil: Boolean;
 begin
   Result := FIdHTTPWebBrokerBridge = nil;
 end;
 
-class procedure THorseProvider<T>.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
+class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
   VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
 end;
 
-class function THorseProvider<T>.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
+class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
 begin
   if FHorseProviderIOHandleSSL = nil then
     FHorseProviderIOHandleSSL := THorseProviderIOHandleSSL.New;
   Result := FHorseProviderIOHandleSSL;
 end;
 
-class function THorseProvider<T>.GetDefaultHost: string;
+class function THorseProvider.GetDefaultHost: string;
 begin
   Result := DEFAULT_HOST;
 end;
 
-class function THorseProvider<T>.GetDefaultPort: Integer;
+class function THorseProvider.GetDefaultPort: Integer;
 begin
   Result := DEFAULT_PORT;
 end;
 
-class function THorseProvider<T>.GetHost: string;
+class function THorseProvider.GetHost: string;
 begin
   Result := FHost;
 end;
 
-class function THorseProvider<T>.GetIOHandleSSL: IHorseProviderIOHandleSSL;
+class function THorseProvider.GetIOHandleSSL: IHorseProviderIOHandleSSL;
 begin
   Result := GetDefaultHorseProviderIOHandleSSL;
 end;
 
-class function THorseProvider<T>.GetListenQueue: Integer;
+class function THorseProvider.GetListenQueue: Integer;
 begin
   Result := FListenQueue;
 end;
 
-class function THorseProvider<T>.GetMaxConnections: Integer;
+class function THorseProvider.GetMaxConnections: Integer;
 begin
   Result := FMaxConnections;
 end;
 
-class function THorseProvider<T>.GetPort: Integer;
+class function THorseProvider.GetPort: Integer;
 begin
   Result := FPort;
 end;
 
-class procedure THorseProvider<T>.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
+class procedure THorseProvider.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
 var
   LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;
 begin
@@ -175,7 +192,7 @@ begin
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
 
-class procedure THorseProvider<T>.InternalListen;
+class procedure THorseProvider.InternalListen;
 var
   LIdx: Integer;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
@@ -184,42 +201,31 @@ begin
   FEvent := TEvent.Create;
   try
     openlog(nil, LOG_PID or LOG_NDELAY, LOG_DAEMON);
-
     if getppid() > 1 then
     begin
       FPID := fork();
       if FPID < 0 then
         raise Exception.Create('Error forking the process');
-
       if FPID > 0 then
         Halt(EXIT_SUCCESS);
-
       if setsid() < 0 then
         raise Exception.Create('Impossible to create an independent session');
-
       Signal(SIGCHLD, TSignalHandler(SIG_IGN));
       Signal(SIGHUP, HandleSignals);
       Signal(SIGTERM, HandleSignals);
-
       FPID := fork();
       if FPID < 0 then
         raise Exception.Create('Error forking the process');
-
       if FPID > 0 then
         Halt(EXIT_SUCCESS);
-
       for LIdx := sysconf(_SC_OPEN_MAX) downto 0 do
         __close(LIdx);
-
       FId := __open('/dev/null', O_RDWR);
       dup(FId);
       dup(FId);
-
       umask(027);
-
       chdir('/');
     end;
-
     try
       if FPort <= 0 then
         FPort := GetDefaultPort;
@@ -233,14 +239,11 @@ begin
           WebRequestHandler.MaxConnections := FMaxConnections;
           GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
         end;
-
         if FListenQueue = 0 then
           FListenQueue := IdListenQueueDefault;
-
         if FHorseProviderIOHandleSSL <> nil then
           InitServerIOHandlerSSLOpenSSL(LIdHTTPWebBrokerBridge, GetDefaultHorseProviderIOHandleSSL);
         LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
-
         LIdHTTPWebBrokerBridge.Bindings.Clear;
         if FHost <> GetDefaultHost then
         begin
@@ -248,23 +251,19 @@ begin
           LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
           LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
         end;
-
         LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
         LIdHTTPWebBrokerBridge.DefaultPort := FPort;
         LIdHTTPWebBrokerBridge.Active := True;
         LIdHTTPWebBrokerBridge.StartListening;
         FRunning := True;
         DoOnListen;
-
         Syslog(LOG_INFO, Format(START_RUNNING, [FHost, FPort]));
       except
         on E: Exception do
           Syslog(LOG_ERR, E.ClassName + ': ' + E.Message);
       end;
-
       while FRunning do
         FEvent.WaitFor();
-
       ExitCode := EXIT_SUCCESS;
     except
       on E: Exception do
@@ -273,7 +272,6 @@ begin
         ExitCode := EXIT_FAILURE;
       end;
     end;
-
     Syslog(LOG_NOTICE, 'daemon stopped');
     closelog();
   finally
@@ -281,7 +279,7 @@ begin
   end;
 end;
 
-class procedure THorseProvider<T>.InternalStopListen;
+class procedure THorseProvider.InternalStopListen;
 begin
   if not HTTPWebBrokerIsNil then
   begin
@@ -296,17 +294,17 @@ begin
     raise Exception.Create('Horse not listen');
 end;
 
-class procedure THorseProvider<T>.StopListen;
+class procedure THorseProvider.StopListen;
 begin
   InternalStopListen;
 end;
 
-class procedure THorseProvider<T>.Listen;
+class procedure THorseProvider.Listen;
 begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -315,52 +313,52 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(const AHost: string; const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider.Listen(const AHost: string; const ACallbackListen, ACallbackStopListen: TProc);
 begin
   Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider.Listen(const ACallbackListen, ACallbackStopListen: TProc);
 begin
   Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc<T>);
+class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider<T>.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
+class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
 begin
   VHandled := True;
 end;
 
-class procedure THorseProvider<T>.SetHost(const AValue: string);
+class procedure THorseProvider.SetHost(const AValue: string);
 begin
   FHost := AValue.Trim;
 end;
 
-class procedure THorseProvider<T>.SetIOHandleSSL(const AValue: IHorseProviderIOHandleSSL);
+class procedure THorseProvider.SetIOHandleSSL(const AValue: IHorseProviderIOHandleSSL);
 begin
   FHorseProviderIOHandleSSL := AValue;
 end;
 
-class procedure THorseProvider<T>.SetListenQueue(const AValue: Integer);
+class procedure THorseProvider.SetListenQueue(const AValue: Integer);
 begin
   FListenQueue := AValue;
 end;
 
-class procedure THorseProvider<T>.SetMaxConnections(const AValue: Integer);
+class procedure THorseProvider.SetMaxConnections(const AValue: Integer);
 begin
   FMaxConnections := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const AValue: Integer);
+class procedure THorseProvider.SetPort(const AValue: Integer);
 begin
   FPort := AValue;
 end;
 
-class destructor THorseProvider<T>.UnInitialize;
+class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
 end;

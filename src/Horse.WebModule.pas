@@ -8,11 +8,17 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, httpdefs, fpHTTP, fpWeb,
+  SysUtils,
+  Classes,
+  httpdefs,
+  fpHTTP,
+  fpWeb,
 {$ELSE}
-  System.SysUtils, System.Classes, Web.HTTPApp,
+  System.SysUtils,
+  System.Classes,
+  Web.HTTPApp,
 {$ENDIF}
-  Horse.Core, Horse.Commons;
+  Horse.Core;
 
 type
 {$IF DEFINED(FPC)}
@@ -40,7 +46,10 @@ var
 
 implementation
 
-uses Horse.Request, Horse.Response, Horse.Exception, Horse.Exception.Interrupted;
+uses
+  Horse.Request,
+  Horse.Response,
+  Horse.Exception.Interrupted;
 
 {$IF DEFINED(FPC)}
   {$R Horse.WebModule.lfm}

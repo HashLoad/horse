@@ -47,11 +47,14 @@ type
 implementation
 
 uses
-  {$IF DEFINED(FPC)}
-  fpjson, jsonparser, TypInfo;
-  {$ELSE}
-  System.JSON, System.TypInfo;
-  {$ENDIF}
+{$IF DEFINED(FPC)}
+  fpjson,
+  jsonparser,
+  TypInfo;
+{$ELSE}
+  System.JSON,
+  System.TypInfo;
+{$ENDIF}
 
 constructor EHorseException.Create;
 begin

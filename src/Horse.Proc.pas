@@ -7,7 +7,8 @@ unit Horse.Proc;
 interface
 
 {$IF NOT DEFINED(FPC)}
-uses System.SysUtils;
+uses
+  System.SysUtils;
 {$ENDIF}
 
 type

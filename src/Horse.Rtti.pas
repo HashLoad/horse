@@ -10,7 +10,8 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, RTTI,
 {$ELSE}
-  System.SysUtils, System.Rtti,
+  System.SysUtils,
+  System.Rtti,
 {$ENDIF}
   Horse.Commons;
 

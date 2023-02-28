@@ -3,24 +3,29 @@ unit Horse.Provider.CGI;
 interface
 
 {$IF DEFINED(HORSE_CGI) AND NOT DEFINED(FPC)}
-uses Horse.Provider.Abstract, System.SysUtils;
+uses
+  Horse.Provider.Abstract,
+  System.SysUtils;
 
 type
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider = class(THorseProviderAbstract)
   private
     class procedure InternalListen; static;
   public
     class procedure Listen; overload; override;
-    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_CGI) AND NOT DEFINED(FPC)}
-uses Web.WebBroker, Web.CGIApp, Horse.WebModule;
+uses
+  Web.WebBroker,
+  Web.CGIApp,
+  Horse.WebModule;
 
-class procedure THorseProvider<T>.InternalListen;
+class procedure THorseProvider.InternalListen;
 begin
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
@@ -28,13 +33,13 @@ begin
   Application.Run;
 end;
 
-class procedure THorseProvider<T>.Listen;
+class procedure THorseProvider.Listen;
 begin
   inherited;
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const ACallback: TProc);
 begin
   inherited;
   SetOnListen(ACallback);

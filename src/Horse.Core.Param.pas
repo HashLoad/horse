@@ -1,18 +1,29 @@
 unit Horse.Core.Param;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, DateUtils, Generics.Collections, fpHTTP, fphttpserver, HTTPDefs,
+  SysUtils,
+  Classes,
+  DateUtils,
+  Generics.Collections,
+  fpHTTP,
+  fphttpserver,
+  HTTPDefs,
 {$ELSE}
-  System.SysUtils, System.Classes, System.DateUtils, System.Generics.Collections,
+  System.SysUtils,
+  System.Classes,
+  System.DateUtils,
+  System.Generics.Collections,
 {$ENDIF}
-  Horse.Exception, Horse.Commons, Horse.Core.Param.Field;
+  Horse.Exception,
+  Horse.Commons,
+  Horse.Core.Param.Field;
 
 type
   THorseList = TDictionary<string, string>;
@@ -43,7 +54,6 @@ type
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
-
     function AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
     constructor Create(const AParams: THorseList);
     destructor Destroy; override;
@@ -51,7 +61,8 @@ type
 
 implementation
 
-uses Horse.Core.Param.Config;
+uses
+  Horse.Core.Param.Config;
 
 function THorseCoreParam.ContainsKey(const AKey: string): Boolean;
 var
@@ -144,7 +155,6 @@ begin
   begin
     for LKey in FFields.Keys do
       FFields.Items[LKey].Free;
-
     FFields.Free;
   end;
 end;
@@ -194,8 +204,7 @@ begin
       end;
     end;
   end;
-
-  Result := THorseCoreParamField.create(FParams, AKey);
+  Result := THorseCoreParamField.Create(FParams, AKey);
 end;
 
 function THorseCoreParam.Required(const AValue: Boolean): THorseCoreParam;

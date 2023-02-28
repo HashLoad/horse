@@ -34,7 +34,6 @@ uses
   Horse.Core.RouterTree,
   Horse.Exception,
   Horse.Exception.Interrupted,
-  Horse.Provider.Abstract,
   Horse.Core.Param.Config,
   Horse.Callback;
 
@@ -58,46 +57,44 @@ type
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
 
-  THorse = class;
-
 {$IF DEFINED(HORSE_ISAPI)}
-  THorseProvider = Horse.Provider.ISAPI.THorseProvider<THorse>;
+  THorseProvider = Horse.Provider.ISAPI.THorseProvider;
 {$ELSEIF DEFINED(HORSE_APACHE)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    Horse.Provider.FPC.Apache.THorseProvider<THorse>;
+    Horse.Provider.FPC.Apache.THorseProvider;
   {$ELSE}
-    Horse.Provider.Apache.THorseProvider<THorse>;
+    Horse.Provider.Apache.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_CGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    Horse.Provider.FPC.CGI.THorseProvider<THorse>;
+    Horse.Provider.FPC.CGI.THorseProvider;
   {$ELSE}
-    Horse.Provider.CGI.THorseProvider<THorse>;
+    Horse.Provider.CGI.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_FCGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    Horse.Provider.FPC.FastCGI.THorseProvider<THorse>;
+    Horse.Provider.FPC.FastCGI.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_DAEMON)}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    Horse.Provider.FPC.Daemon.THorseProvider<THorse>;
+    Horse.Provider.FPC.Daemon.THorseProvider;
   {$ELSE}
-     Horse.Provider.Daemon.THorseProvider<THorse>;
+     Horse.Provider.Daemon.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_LCL)}
-    THorseProvider = Horse.Provider.FPC.LCL.THorseProvider<THorse>;
+    THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
 {$ELSEIF DEFINED(HORSE_VCL)}
-  THorseProvider = Horse.Provider.VCL.THorseProvider<THorse>;
+  THorseProvider = Horse.Provider.VCL.THorseProvider;
 {$ELSE}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    Horse.Provider.FPC.HTTPApplication.THorseProvider<THorse>;
+    Horse.Provider.FPC.HTTPApplication.THorseProvider;
   {$ELSE}
-    Horse.Provider.Console.THorseProvider<THorse>;
+    Horse.Provider.Console.THorseProvider;
   {$ENDIF}
 {$ENDIF}
 

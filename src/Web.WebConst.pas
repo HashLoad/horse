@@ -47,12 +47,12 @@ resourcestring
   sWebDirectoryItemDisplayName = 'Action: %0:s, Mask: ''%1:s''';
 
   {$IF (DEFINED(FPC) OR (CompilerVersion > 27.0))}
-    sErrorDecodingURLText = 'Error decoding URL text';
-    sInvalidURLEncodedChar = 'Invalid URL encoded char';
-    sInvalidHTMLEncodedChar = 'Invalid HTML encoded char';
-    sFactoryAlreadyRegistered = 'Factory already registered';
-    sAppFactoryAlreadyRegistered = 'App factory already registered';
-  {$IFEND}
+  sErrorDecodingURLText = 'Error decoding URL text';
+  sInvalidURLEncodedChar = 'Invalid URL encoded char';
+  sInvalidHTMLEncodedChar = 'Invalid HTML encoded char';
+  sFactoryAlreadyRegistered = 'Factory already registered';
+  sAppFactoryAlreadyRegistered = 'App factory already registered';
+{$IFEND}
 
 implementation
 

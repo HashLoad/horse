@@ -1,18 +1,23 @@
 unit Horse.Callback;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
 {$IF DEFINED(FPC)}
-  Generics.Collections, fpHTTP,
+  Generics.Collections,
+  fpHTTP,
 {$ELSE}
-  Web.HTTPApp, System.Generics.Collections,
+  Web.HTTPApp,
+  System.Generics.Collections,
 {$ENDIF}
-  Horse.Request, Horse.Response, Horse.Proc, Horse.Commons;
+  Horse.Request,
+  Horse.Response,
+  Horse.Proc,
+  Horse.Commons;
 
 type
 {$IF DEFINED(FPC)}

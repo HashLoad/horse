@@ -6,7 +6,9 @@ unit Horse.Provider.IOHandleSSL;
 
 interface
 
-uses IdSSLOpenSSL, Horse.Provider.IOHandleSSL.Contract;
+uses
+  IdSSLOpenSSL,
+  Horse.Provider.IOHandleSSL.Contract;
 
 type
   THorseProviderIOHandleSSL = class(TInterfacedObject, IHorseProviderIOHandleSSL)

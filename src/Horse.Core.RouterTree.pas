@@ -22,7 +22,6 @@ uses
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Proc,
   Horse.Commons,
   Horse.Callback;
 
@@ -64,7 +63,7 @@ type
 
 implementation
 
-uses Horse.Exception,
+uses
   Horse.Core.RouterTree.NextCaller;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);

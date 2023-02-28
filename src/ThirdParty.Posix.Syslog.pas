@@ -14,7 +14,6 @@ unit ThirdParty.Posix.Syslog;
 interface
 
 {$IFDEF POSIX}
-
 uses
   System.SysUtils,
   Posix.Base;
@@ -81,13 +80,11 @@ procedure _syslog(priority: LongInt; _format: MarshaledAString; args: array of c
 procedure Syslog(APriority: LongInt; const AFormat: string); overload;
 
 procedure Syslog(APriority: LongInt; const AFormat: string; AArgs: array of const); overload;
-
 {$ENDIF}
 
 implementation
 
 {$IFDEF POSIX}
-
 procedure Syslog(APriority: LongInt; const AFormat: string);
 var
   LMarshaller: TMarshaller;
@@ -101,7 +98,6 @@ procedure Syslog(APriority: LongInt; const AFormat: string; AArgs: array of cons
 begin
   Syslog(APriority, Format(AFormat, AArgs));
 end;
-
 {$ENDIF}
 
 end.

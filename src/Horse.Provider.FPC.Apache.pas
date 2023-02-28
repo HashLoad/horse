@@ -1,7 +1,7 @@
 unit Horse.Provider.FPC.Apache;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -11,11 +11,18 @@ uses
 {$IFDEF unix}
   cthreads,
 {$ENDIF}
-  fphttp, httpdefs, httpd24, fpApache24, custapache24, SysUtils, Classes, Horse.Provider.Abstract,
-  Horse.Constants, Horse.Proc;
+  fphttp,
+  httpdefs,
+  httpd24,
+  fpApache24,
+  custapache24,
+  SysUtils,
+  Classes,
+  Horse.Provider.Abstract,
+  Horse.Proc;
 
 type
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider = class(THorseProviderAbstract)
   private
     class var FApacheApplication: TCustomApacheApplication;
     class var FHandlerName: string;
@@ -36,48 +43,49 @@ type
     class property ModuleName: string read GetModuleName write SetModuleName;
     class property DefaultModule: pmodule read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
-    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(HORSE_APACHE) AND DEFINED(FPC)}
-uses Horse.WebModule;
+uses
+  Horse.WebModule;
 
-class function THorseProvider<T>.GetDefaultApacheApplication: TCustomApacheApplication;
+class function THorseProvider.GetDefaultApacheApplication: TCustomApacheApplication;
 begin
   if ApacheApplicationIsNil then
     FApacheApplication := Application;
   Result := FApacheApplication;
 end;
 
-class function THorseProvider<T>.GetDefaultModule: pmodule;
+class function THorseProvider.GetDefaultModule: pmodule;
 begin
   Result := FDefaultModule;
 end;
 
-class function THorseProvider<T>.GetHandlerName: string;
+class function THorseProvider.GetHandlerName: string;
 begin
   Result := FHandlerName;
 end;
 
-class procedure THorseProvider<T>.SetModuleName(const AValue: string);
+class procedure THorseProvider.SetModuleName(const AValue: string);
 begin
   FModuleName := AValue;
 end;
 
-class function THorseProvider<T>.GetModuleName: string;
+class function THorseProvider.GetModuleName: string;
 begin
-  Result:= FModuleName;
+  Result := FModuleName;
 end;
 
-class function THorseProvider<T>.ApacheApplicationIsNil: Boolean;
+class function THorseProvider.ApacheApplicationIsNil: Boolean;
 begin
   Result := FApacheApplication = nil;
 end;
 
-class procedure THorseProvider<T>.InternalListen;
+class procedure THorseProvider.InternalListen;
 var
   LApacheApplication: TCustomApacheApplication;
 begin
@@ -93,27 +101,27 @@ begin
   LApacheApplication.Initialize;
 end;
 
-class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var pmoduleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var pmoduleClass: TCustomHTTPModuleClass);
 begin
   pmoduleClass := THorseWebModule;
 end;
 
-class procedure THorseProvider<T>.SetDefaultModule(const AValue: pmodule);
+class procedure THorseProvider.SetDefaultModule(const AValue: pmodule);
 begin
   FDefaultModule := AValue;
 end;
 
-class procedure THorseProvider<T>.SetHandlerName(const AValue: string);
+class procedure THorseProvider.SetHandlerName(const AValue: string);
 begin
   FHandlerName := AValue;
 end;
 
-class procedure THorseProvider<T>.Listen;
+class procedure THorseProvider.Listen;
 begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const ACallback: TProc);
 begin
   SetOnListen(ACallback);
   InternalListen;

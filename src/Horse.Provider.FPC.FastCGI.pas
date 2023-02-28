@@ -1,16 +1,24 @@
 unit Horse.Provider.FPC.FastCGI;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-uses SysUtils, Classes, fpFCGI, httpdefs, fpHTTP, Horse.Provider.Abstract, Horse.Constants, Horse.Proc;
+uses
+  SysUtils,
+  Classes,
+  fpFCGI,
+  httpdefs,
+  fpHTTP,
+  Horse.Provider.Abstract,
+  Horse.Constants,
+  Horse.Proc;
 
 type
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider = class(THorseProviderAbstract)
   private
     class var FPort: Integer;
     class var FHost: string;
@@ -30,51 +38,52 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallback: TProc<T>); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallback: TProc<T> = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallback: TProc); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallback: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
 {$ENDIF}
 
 implementation
 
 {$IF DEFINED(FPC) AND DEFINED(HORSE_FCGI)}
-uses Horse.WebModule;
+uses
+  Horse.WebModule;
 
-class function THorseProvider<T>.GetDefaultFastCGIApplication: TFCGIApplication;
+class function THorseProvider.GetDefaultFastCGIApplication: TFCGIApplication;
 begin
   if FastCGIApplicationIsNil then
     FFastCGIApplication := Application;
   Result := FFastCGIApplication;
 end;
 
-class function THorseProvider<T>.FastCGIApplicationIsNil: Boolean;
+class function THorseProvider.FastCGIApplicationIsNil: Boolean;
 begin
   Result := FFastCGIApplication = nil;
 end;
 
-class function THorseProvider<T>.GetDefaultHost: string;
+class function THorseProvider.GetDefaultHost: string;
 begin
   Result := DEFAULT_HOST;
 end;
 
-class function THorseProvider<T>.GetDefaultPort: Integer;
+class function THorseProvider.GetDefaultPort: Integer;
 begin
   Result := -1;
 end;
 
-class function THorseProvider<T>.GetHost: string;
+class function THorseProvider.GetHost: string;
 begin
   Result := FHost;
 end;
 
-class function THorseProvider<T>.GetPort: Integer;
+class function THorseProvider.GetPort: Integer;
 begin
   Result := FPort;
 end;
 
-class procedure THorseProvider<T>.InternalListen;
+class procedure THorseProvider.InternalListen;
 var
   LFastCGIApplication: TFCGIApplication;
 begin
@@ -93,17 +102,17 @@ begin
   LFastCGIApplication.Run;
 end;
 
-class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass := THorseWebModule;
 end;
 
-class procedure THorseProvider<T>.Listen;
+class procedure THorseProvider.Listen;
 begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(const APort: Integer; const AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallback: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -111,27 +120,27 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider<T>.Listen(const AHost: string; const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const AHost: string; const ACallback: TProc);
 begin
   Listen(FPort, AHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const ACallback: TProc);
 begin
   Listen(FPort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.Listen(const APort: Integer; const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const APort: Integer; const ACallback: TProc);
 begin
   Listen(APort, FHost, ACallback);
 end;
 
-class procedure THorseProvider<T>.SetHost(const AValue: string);
+class procedure THorseProvider.SetHost(const AValue: string);
 begin
   FHost := AValue;
 end;
 
-class procedure THorseProvider<T>.SetPort(const AValue: Integer);
+class procedure THorseProvider.SetPort(const AValue: Integer);
 begin
   FPort := AValue;
 end;

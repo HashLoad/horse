@@ -8,11 +8,20 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Generics.Collections, fpHTTP, httpprotocol,
+  SysUtils,
+  Generics.Collections,
+  fpHTTP,
+  httpprotocol,
 {$ELSE}
-  System.NetEncoding, System.SysUtils, Web.HTTPApp, System.Generics.Collections,
+  System.NetEncoding,
+  System.SysUtils,
+  Web.HTTPApp,
+  System.Generics.Collections,
 {$ENDIF}
-  Horse.Commons, Horse.Request, Horse.Response, Horse.Callback;
+  Horse.Commons,
+  Horse.Request,
+  Horse.Response,
+  Horse.Callback;
 
 type
   TNextCaller = class
@@ -48,7 +57,9 @@ type
 
 implementation
 
-uses Horse.Exception, Horse.Exception.Interrupted;
+uses
+  Horse.Exception,
+  Horse.Exception.Interrupted;
 
 function TNextCaller.Init: TNextCaller;
 var

@@ -12,9 +12,15 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes, Generics.Collections, SyncObjs;
+  SysUtils,
+  Classes,
+  Generics.Collections,
+  SyncObjs;
 {$ELSE}
-  System.SysUtils, System.Classes, System.Generics.Collections, SyncObjs;
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  SyncObjs;
 {$ENDIF}
 
 type
@@ -27,16 +33,17 @@ type
 implementation
 
 {$IFNDEF UseTHorseMimeTypesExt}
-  uses
-    System.Net.Mime;
+uses
+  System.Net.Mime;
 {$ENDIF}
 
 type
+
   THorseMimeTypesExt = class
   strict private
-    class var
-      FLock: TCriticalSection;
-      FInstance: THorseMimeTypesExt;
+  class var
+    FLock: TCriticalSection;
+    FInstance: THorseMimeTypesExt;
     class constructor Create;
     class destructor Destroy;
     class function GetDefault: THorseMimeTypesExt; static;
@@ -145,7 +152,6 @@ end;
 
 procedure THorseMimeTypesExt.InitializeFileType;
 begin
-
   {$REGION 'MIME CONST'}
   FFileType.AddOrSetValue('ez', 'application/andrew-inset');
   FFileType.AddOrSetValue('aw', 'application/applixware');
@@ -1150,7 +1156,6 @@ begin
   FFileType.AddOrSetValue('smv', 'video/x-smv');
   FFileType.AddOrSetValue('ice', 'x-conference/x-cooltalk');
   {$ENDREGION}
-
 end;
 
 end.

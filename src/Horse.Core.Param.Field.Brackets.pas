@@ -8,9 +8,11 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Classes,
+  SysUtils,
+  Classes,
 {$ELSE}
-  System.SysUtils, System.Classes,
+  System.SysUtils,
+  System.Classes,
 {$ENDIF}
   Horse.Commons;
 
@@ -27,14 +29,14 @@ type
     FLike: string;
     FTypes: TLhsBrackets;
   public
-    property Eq: string read Feq;
-    property Ne: string read Fne;
-    property Lt: string read Flt;
-    property Lte: string read Flte;
-    property Gt: string read Fgt;
-    property Gte: string read Fgte;
-    property Range: string read Frange;
-    property Like: string read Flike;
+    property Eq: string read FEq;
+    property Ne: string read FNe;
+    property Lt: string read FLt;
+    property Lte: string read FLte;
+    property Gt: string read FGt;
+    property Gte: string read FGte;
+    property Range: string read FRange;
+    property Like: string read FLike;
     property Types: TLhsBrackets read FTypes write FTypes;
     procedure SetValue(const AType: TLhsBracketsType; const AValue: string);
     function GetValue(const AType: TLhsBracketsType): string;
@@ -87,4 +89,3 @@ begin
 end;
 
 end.
-

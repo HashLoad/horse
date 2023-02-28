@@ -1,16 +1,18 @@
 unit Horse.Session;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, Generics.Collections;
+  SysUtils,
+  Generics.Collections;
 {$ELSE}
-  System.SysUtils, System.Generics.Collections;
+  System.SysUtils,
+  System.Generics.Collections;
 {$ENDIF}
 
 type

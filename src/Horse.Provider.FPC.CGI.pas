@@ -1,16 +1,23 @@
 unit Horse.Provider.FPC.CGI;
 
 {$IF DEFINED(FPC)}
-  {$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
-uses SysUtils, Classes, fpCGI, fphttp, httpdefs, Horse.Provider.Abstract, Horse.Proc;
+uses
+  SysUtils,
+  Classes,
+  fpCGI,
+  fphttp,
+  httpdefs,
+  Horse.Provider.Abstract,
+  Horse.Proc;
 
 type
-  THorseProvider<T: class> = class(THorseProviderAbstract<T>)
+  THorseProvider = class(THorseProviderAbstract)
   private
     class var FCGIApplication: TCGIApplication;
     class function GetDefaultCGIApplication: TCGIApplication;
@@ -20,7 +27,7 @@ type
   public
     constructor Create; reintroduce; overload;
     class procedure Listen; overload; override;
-    class procedure Listen(const ACallback: TProc<T>); reintroduce; overload; static;
+    class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
 
 var
@@ -30,26 +37,27 @@ var
 implementation
 
 {$IF DEFINED(HORSE_CGI) AND DEFINED(FPC)}
-uses Horse.WebModule;
+uses
+  Horse.WebModule;
 
-class function THorseProvider<T>.GetDefaultCGIApplication: TCGIApplication;
+class function THorseProvider.GetDefaultCGIApplication: TCGIApplication;
 begin
   if CGIApplicationIsNil then
     FCGIApplication := Application;
   Result := FCGIApplication;
 end;
 
-class function THorseProvider<T>.CGIApplicationIsNil: Boolean;
+class function THorseProvider.CGIApplicationIsNil: Boolean;
 begin
   Result := FCGIApplication = nil;
 end;
 
-constructor THorseProvider<T>.Create;
+constructor THorseProvider.Create;
 begin
   inherited Create;
 end;
 
-class procedure THorseProvider<T>.InternalListen;
+class procedure THorseProvider.InternalListen;
 var
   LCGIApplication: TCGIApplication;
 begin
@@ -63,17 +71,17 @@ begin
   LCGIApplication.Run;
 end;
 
-class procedure THorseProvider<T>.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass := THorseWebModule;
 end;
 
-class procedure THorseProvider<T>.Listen;
+class procedure THorseProvider.Listen;
 begin
   InternalListen;;
 end;
 
-class procedure THorseProvider<T>.Listen(const ACallback: TProc<T>);
+class procedure THorseProvider.Listen(const ACallback: TProc);
 begin
   SetOnListen(ACallback);
   InternalListen;

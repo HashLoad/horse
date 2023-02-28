@@ -12,7 +12,9 @@ uses
 {$ELSE}
   System.SysUtils,
 {$ENDIF}
-  Horse.Core.Group.Contract, Horse.Core.Route.Contract, Horse.Core.RouterTree, Horse.Callback;
+  Horse.Core.Group.Contract,
+  Horse.Core.Route.Contract,
+  Horse.Callback;
 
 type
   THorseCoreGroup<T: class> = class(TInterfacedObject, IHorseCoreGroup<T>)
@@ -22,69 +24,60 @@ type
     function NormalizePath(const APath: string): string;
   public
     constructor Create;
-
     function Prefix(const APrefix: string): IHorseCoreGroup<T>;
     function Route(const APath: string): IHorseCoreRoute<T>;
-
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
     function AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreGroup<T>;
-
     function Use(const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-
     function Get(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Get(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Get(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
+{$IFNDEF FPC}
     function Get(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-    {$IFEND}
-
+{$IFEND}
     function Put(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Put(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Put(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
+{$IFNDEF FPC}
     function Put(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-    {$IFEND}
-
+{$IFEND}
     function Head(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Head(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Head(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
+{$IFNDEF FPC}
     function Head(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-    {$IFEND}
-
+{$IFEND}
     function Post(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Post(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Post(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-    {$IFNDEF FPC}
+{$IFNDEF FPC}
     function Post(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-    {$IFEND}
-
-    {$IF (defined(fpc) or (CompilerVersion > 27.0))}
+{$IFEND}
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
     function Patch(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Delete(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
-
-      function Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
-      function Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-      {$IFNDEF FPC}
-      function Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-      {$IFEND}
-
-      function Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
-      function Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
-      {$IFNDEF FPC}
-      function Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
-      {$IFEND}
-    {$IFEND}
-
+    function Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
+    function Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+{$IFNDEF FPC}
+    function Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
+{$IFEND}
+    function Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
+    function Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+{$IFNDEF FPC}
+    function Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
+{$IFEND}
+{$IFEND}
     function &End: T;
   end;
 
 implementation
 
-uses Horse.Core, Horse;
+uses
+  Horse.Core,
+  Horse;
 
 function THorseCoreGroup<T>.&End: T;
 begin
@@ -252,45 +245,45 @@ begin
   THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
 end;
 
-  {$IFNDEF FPC}
-  function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
-  {$IFEND}
+{$IFNDEF FPC}
+function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
+{$IFEND}
 
-  function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
+function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
 
-  function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
+function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
 
-  {$IFNDEF FPC}
-  function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
-  {$IFEND}
+{$IFNDEF FPC}
+function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
+{$IFEND}
 
-  function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
+function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
 
-  function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
-  begin
-    THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
-    Result := Self;
-  end;
+function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
+  Result := Self;
+end;
 {$IFEND}
 
 function THorseCoreGroup<T>.NormalizePath(const APath: string): string;
