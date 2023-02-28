@@ -43,7 +43,9 @@ type
 {$ELSE}
     class function GetHeadersList(const AWebRequest: TWebRequest): TStrings;
 {$ENDIF}
+{$IF DEFINED(HORSE_CGI)}
     class function NormalizeEnvVarHeaderName(const AEnvVarHeaderName: string): string;
+{$ENDIF}
   public
     class function GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
   end;
@@ -171,7 +173,7 @@ end;
 
 {$ENDIF}
 
-
+{$IF DEFINED(HORSE_CGI)}
 class function THorseCoreParamHeader.NormalizeEnvVarHeaderName(const AEnvVarHeaderName: string): string;
 var
   LParts: TArray<string>;
@@ -184,5 +186,6 @@ begin
     LNormalizedParts := LNormalizedParts + [UpperCase(LParts[LSplitIndex].Chars[0]) + LParts[LSplitIndex].Substring(1)];
   Result := Result.Join('-', LNormalizedParts);
 end;
+{$ENDIF}
 
 end.
