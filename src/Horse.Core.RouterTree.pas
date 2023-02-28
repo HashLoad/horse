@@ -140,7 +140,7 @@ var
   LQueue: TQueue<string>;
   LPathInfo: string;
 begin
-  LPathInfo := {$IF DEFINED(FPC)}ARequest.PathInfo{$ELSE}ARequest.PathInfo{$ENDIF};
+  LPathInfo := {$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF};
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
   LQueue := GetQueuePath(LPathInfo, False);
