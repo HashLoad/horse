@@ -17,6 +17,7 @@ type
     Label1: TLabel;
     procedure btnStartClick(Sender: TObject);
     procedure btnStopClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     procedure Status;
     procedure Start;
@@ -47,6 +48,11 @@ begin
   Status;
 end;
 
+procedure TFrmMain.FormCreate(Sender: TObject);
+begin
+  THorse.Get('/ping', DoPing);
+end;
+
 procedure TFrmMain.Status;
 begin
   btnStop.Enabled := THorse.IsRunning;
@@ -56,7 +62,6 @@ end;
 
 procedure TFrmMain.Start;
 begin
-  THorse.Get('/ping', DoPing);
   THorse.Listen(StrToInt(edtPort.Text));
 end;
 

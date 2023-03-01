@@ -6,7 +6,8 @@ object FrmMain: TFrmMain
   Caption = 'LCL Application'
   ClientHeight = 87
   ClientWidth = 209
-  LCLVersion = '2.2.0.4'
+  OnCreate = FormCreate
+  LCLVersion = '2.3.0.0'
   object Label1: TLabel
     Left = 8
     Height = 15
