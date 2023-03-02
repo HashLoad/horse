@@ -1,7 +1,7 @@
 unit Horse.Callback;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+{$MODE DELPHI}{$H+}{$MODESWITCH FUNCTIONREFERENCES+}
 {$ENDIF}
 
 interface
@@ -20,17 +20,13 @@ uses
   Horse.Commons;
 
 type
-{$IF DEFINED(FPC)}
-  THorseCallbackRequest = procedure(AReq: THorseRequest);
-  THorseCallbackResponse = procedure(ARes: THorseResponse);
-  THorseCallbackRequestResponse = procedure(AReq: THorseRequest; ARes: THorseResponse);
-  THorseCallback = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
-  TCallNextPath = function(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean of object;
-{$ELSE}
   THorseCallbackRequest = reference to procedure(AReq: THorseRequest);
   THorseCallbackResponse = reference to procedure(ARes: THorseResponse);
   THorseCallbackRequestResponse = reference to procedure(AReq: THorseRequest; ARes: THorseResponse);
   THorseCallback = reference to procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
+{$IF DEFINED(FPC)}
+  TCallNextPath = function(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean of object;
+{$ELSE}
   TCallNextPath = reference to function(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 {$ENDIF}
 
