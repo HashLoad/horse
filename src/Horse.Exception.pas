@@ -109,6 +109,7 @@ end;
 function EHorseException.Error(const AValue: string): EHorseException;
 begin
   FError := AValue;
+  Self.Message := AValue;
   Result := Self;
 end;
 
