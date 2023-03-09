@@ -8,15 +8,15 @@ uses
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, Horse;
 
-procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+procedure GetPing(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.Send('pong');
 end;
 
-procedure OnListen(Horse: THorse);
+procedure OnListen;
 begin
   if THorse.IsRunning then
-    Writeln(Format('Server is runing on %s:%d', [Horse.Host, Horse.Port]));
+    Writeln(Format('Server is runing on %s:%d', [THorse.Host, THorse.Port]));
   if not THorse.IsRunning then
     Writeln('Server stopped');
 end;
@@ -25,6 +25,7 @@ var
   sCMD: string;
   bTerminated: Boolean;
 begin
+  // Need to set "HORSE_DAEMON" compilation directive
   THorse.Get('/ping', @GetPing);
   bTerminated := False;
   WriteLn('COMMANDS: START, STOP, TERMINATE');
@@ -38,4 +39,3 @@ begin
     end;
   end;
 end.
-

@@ -45,6 +45,7 @@ src/*.~*
 #FPC/Laz
 lib/
 backup/
+*.lps
 
 # Code coverage reports
 **/console/

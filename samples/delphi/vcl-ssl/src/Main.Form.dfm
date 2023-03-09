@@ -94,6 +94,8 @@ object frmMain: TfrmMain
       item
         Width = 50
       end>
+    ExplicitTop = 278
+    ExplicitWidth = 352
   end
   object OpenDialog1: TOpenDialog
     Left = 264

@@ -10,11 +10,17 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Horse.Provider.FPC.HTTPApplication,
+  {$IF DEFINED(HORSE_APACHE)}
   Horse.Provider.FPC.Apache,
+  {$ELSEIF DEFINED(HORSE_CGI)}
   Horse.Provider.FPC.CGI,
+  {$ELSEIF DEFINED(HORSE_FCGI)}
   Horse.Provider.FPC.FastCGI,
+  {$ELSEIF DEFINED(HORSE_DAEMON)}
   Horse.Provider.FPC.Daemon,
+  {$ELSEIF DEFINED(HORSE_LCL)}
   Horse.Provider.FPC.LCL,
+  {$ENDIF}
 {$ELSE}
   System.SysUtils,
   Horse.Provider.Console,

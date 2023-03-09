@@ -69,8 +69,6 @@ end;
 function THorseCoreParamFieldLhsBrackets.GetValue(const AType: TLhsBracketsType): string;
 begin
   case AType of
-    TLhsBracketsType.Equal:
-      Result := FEq;
     TLhsBracketsType.NotEqual:
       Result := FNe;
     TLhsBracketsType.LessThan:
@@ -85,6 +83,8 @@ begin
       Result := FRange;
     TLhsBracketsType.Like:
       Result := FLike;
+  else
+    Result := FEq;
   end;
 end;
 

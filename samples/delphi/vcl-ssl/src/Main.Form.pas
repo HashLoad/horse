@@ -53,7 +53,7 @@ end;
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   THorse.Get('/ping',
-    procedure(Res: THorseResponse)
+    procedure(Req: THorseRequest; Res: THorseResponse)
     begin
       Res.Send('securite pong');
     end);
@@ -61,14 +61,12 @@ end;
 
 function TfrmMain.GetFile(const description, extension: string): string;
 begin
-  Result := '';
+  Result := EmptyStr;
   OpenDialog1.Filter := description + '|' + extension;
   if OpenDialog1.Execute() then
   begin
-    if OpenDialog1.FileName <> '' then
-    begin
+    if OpenDialog1.FileName <> EmptyStr then
       Result := OpenDialog1.FileName;
-    end;
   end;
 end;
 
@@ -81,27 +79,26 @@ procedure TfrmMain.Start;
 begin
 // To use ssl it is necessary to have the ssl, libeay32.dll and ssleay32.dll
 // libraries in your executable folder.
-//
+
 // Command to generate a self-signed certificate using openssl, on windows it is recommended to use git bash.
 // openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout cert.key -out cert.crt
-//
+
 // Not recommended for production, only for testing and internal use, for commercial use in production
 // use a valid certificate, such as Let's Encrypt.
 
-  with THorse.IOHandleSSL do
-  begin
-    KeyFile := leKey.Text;
-    CertFile := leCrt.Text;
-    OnGetPassword := Self.OnGetPassword;
-    SSLVersions := [sslvTLSv1_2];
-    Active := True;
-  end;
+  THorse.IOHandleSSL
+    .KeyFile(leKey.Text)
+    .CertFile(leCrt.Text)
+    .OnGetPassword(Self.OnGetPassword)
+    .SSLVersions([sslvTLSv1_2])
+    .Active(True);
+
+  // Need to set "HORSE_VCL" compilation directive
 
   THorse.Listen(edtPort.Value,
-    procedure(Horse: THorse)
+    procedure
     begin
-      StatusBar1.Panels.Items[0].Text := Format('Securite Server is running on https://%s:%d',
-        [Horse.Host, Horse.Port]);
+      StatusBar1.Panels.Items[0].Text := Format('Securite Server is running on https://%s:%d', [THorse.Host, THorse.Port]);
     end);
 end;
 

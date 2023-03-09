@@ -7,13 +7,14 @@ object FrmMain: TFrmMain
   ClientHeight = 87
   ClientWidth = 209
   OnCreate = FormCreate
-  LCLVersion = '2.3.0.0'
+  LCLVersion = '2.2.2.0'
   object Label1: TLabel
     Left = 8
     Height = 15
     Top = 19
     Width = 25
     Caption = 'Port:'
+    ParentColor = False
   end
   object btnStop: TBitBtn
     Left = 104

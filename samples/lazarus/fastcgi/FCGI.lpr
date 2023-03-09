@@ -7,17 +7,13 @@ program FCGI;
 uses
   Horse;
 
-procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+procedure GetPing(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.Send('pong');
 end;
 
 begin
-
+  // Need to set "HORSE_FCGI" compilation directive
   THorse.Get('/ping', GetPing);
-  // { Uncomment the port setting here if you want to run the
-  // FastCGI application stand-alone (e.g. for NGINX) }
-  // THorse.Port:=9050; // For example
   THorse.Listen;
-
 end.

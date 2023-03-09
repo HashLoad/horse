@@ -39,7 +39,7 @@ end;
 procedure TFrmVCL.FormCreate(Sender: TObject);
 begin
   THorse.Get('ping',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    procedure(Req: THorseRequest; Res: THorseResponse)
     begin
       Res.Send('pong');
     end);
@@ -47,6 +47,7 @@ end;
 
 procedure TFrmVCL.Start;
 begin
+  // Need to set "HORSE_VCL" compilation directive
   THorse.Listen(StrToInt(edtPort.Text));
 end;
 

@@ -160,8 +160,10 @@ begin
 end;
 
 procedure THorseRequest.InitializeContentFields;
+{$IF NOT DEFINED(FPC)}
 const
   CONTENT_DISPOSITION = 'Content-Disposition: form-data; name=';
+{$ENDIF}
 var
   I: Integer;
   LName: String;

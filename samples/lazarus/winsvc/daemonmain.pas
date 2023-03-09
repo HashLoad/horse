@@ -29,17 +29,16 @@ end;
 
 procedure RunHorse;
 begin
+  // Need to set "HORSE_DAEMON" compilation directive
   THorse.Listen(9000);
 end;
 
-procedure Ping(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+procedure Ping(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.Send('pong');
 end;
 
 {$R *.lfm}
-
-{ TDaemon_Main }
 
 procedure TDaemon_Main.DataModuleCreate(Sender: TObject);
 begin
@@ -60,4 +59,3 @@ initialization
   RegisterDaemon;
 
 end.
-

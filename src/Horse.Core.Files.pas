@@ -9,8 +9,7 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-  Classes,
-  Generics.Collections;
+  Classes;
 {$ELSE}
   System.SysUtils,
   System.Classes,

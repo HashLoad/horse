@@ -10,7 +10,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-  Generics.Collections,
   fpHTTP,
   fphttpserver,
   httpprotocol,
@@ -23,17 +22,17 @@ uses
   IdCustomHTTPServer,
   IdHeaderList,
   Horse.Rtti,
-{$IF DEFINED(HORSE_APACHE)}
-  Web.ApacheHTTP,
-  Web.HTTPD24,
-{$ENDIF}
-{$IF DEFINED(HORSE_CGI)}
-  Horse.EnvironmentVariables,
-{$ENDIF}
-{$ENDIF}
-  Horse.Core.Param,
   Horse.Commons,
-  Horse.Rtti.Helper;
+  Horse.Rtti.Helper,
+  {$IF DEFINED(HORSE_APACHE)}
+    Web.ApacheHTTP,
+    Web.HTTPD24,
+  {$ENDIF}
+  {$IF DEFINED(HORSE_CGI)}
+    Horse.EnvironmentVariables,
+  {$ENDIF}
+{$ENDIF}
+  Horse.Core.Param;
 
 type
   THorseCoreParamHeader = class

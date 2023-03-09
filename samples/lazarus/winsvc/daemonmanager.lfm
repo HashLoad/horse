@@ -12,9 +12,9 @@ object Daemon_Manager: TDaemon_Manager
       WinBindings.IDTag = 0
       WinBindings.ServiceType = stWin32
       WinBindings.ErrorSeverity = esIgnore
+      WinBindings.AcceptedCodes = []
       LogStatusReport = False
     end>
-  OnCreate = Daemon_ManagerCreate
   Left = 1040
   Top = 129
 end
