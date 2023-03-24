@@ -154,7 +154,7 @@ var
   LPrefix: string;
 begin
   LPrefix := EmptyStr;
-  if FWebRequest.PathInfo.IsEmpty then
+  if FWebRequest.PathInfo = EmptyStr then
     LPrefix := '/';
   Result := LPrefix + FWebRequest.PathInfo;
 end;
