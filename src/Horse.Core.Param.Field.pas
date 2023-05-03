@@ -82,7 +82,7 @@ var
   LStrParam: string;
 begin
   Result := False;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   if LStrParam <> EmptyStr then
     Result := LowerCase(LStrParam) = LowerCase(FTrueValue);
 end;
@@ -98,13 +98,12 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
-    if LStrParam <> EmptyStr then
-    begin
-      LFormat := GetFormatSettings;
-      Result := StrToDate(Copy(LStrParam, 1, Length(FDateFormat)), LFormat);
-    end;
+    if LStrParam = EmptyStr then
+      Exit;
+    LFormat := GetFormatSettings;
+    Result := StrToDate(Copy(LStrParam, 1, Length(FDateFormat)), LFormat);
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'date']);
@@ -117,13 +116,12 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
-    if LStrParam <> EmptyStr then
-    begin
-      LFormat := GetFormatSettings;
-      Result := StrToDateTime(LStrParam, LFormat);
-    end;
+    if LStrParam = EmptyStr then
+      Exit;
+    LFormat := GetFormatSettings;
+    Result := StrToDateTime(LStrParam, LFormat);
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'datetime']);
@@ -140,13 +138,12 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
-    if LStrParam <> EmptyStr then
-    begin
-      LStrParam := LStrParam.Replace(',', FormatSettings.DecimalSeparator).Replace('.', FormatSettings.DecimalSeparator);
-      Result := StrToFloat(LStrParam);
-    end;
+    if LStrParam = EmptyStr then
+      Exit;
+    LStrParam := LStrParam.Replace(',', FormatSettings.DecimalSeparator).Replace('.', FormatSettings.DecimalSeparator);
+    Result := StrToFloat(LStrParam);
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'numeric']);
@@ -158,7 +155,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt64(LStrParam);
@@ -173,7 +170,7 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
     if LStrParam <> EmptyStr then
       Result := StrToInt(LStrParam);
@@ -188,12 +185,11 @@ var
   LStrParam: string;
 begin
   Result := 0;
-  LStrParam := AsString;
-  if LStrParam <> EmptyStr then
-  begin
-    if not TryISO8601ToDate(LStrParam, Result) then
-      RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'ISO8601 date']);
-  end;
+  LStrParam := Trim(AsString);
+  if LStrParam = EmptyStr then
+    Exit;
+  if not TryISO8601ToDate(LStrParam, Result) then
+    RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'ISO8601 date']);
 end;
 
 function THorseCoreParamField.AsStream: TStream;
@@ -205,8 +201,7 @@ begin
     if Assigned(Result) then
       Result.Position := 0;
   end
-  else
-  if FRequired then
+  else if FRequired then
     RaiseHorseException(FRequiredMessage, [FFieldName]);
 end;
 
@@ -215,8 +210,7 @@ begin
   Result := EmptyStr;
   if FContains then
     Result := FValue
-  else
-  if FRequired then
+  else if FRequired then
     RaiseHorseException(FRequiredMessage, [FFieldName]);
 end;
 
@@ -226,13 +220,12 @@ var
   LFormat: TFormatSettings;
 begin
   Result := 0;
-  LStrParam := AsString;
+  LStrParam := Trim(AsString);
   try
-    if LStrParam <> EmptyStr then
-    begin
-      LFormat := GetFormatSettings;
-      Result := StrToTime(Copy(LStrParam, 1, Length(FTimeFormat)), LFormat);
-    end;
+    if LStrParam = EmptyStr then
+      Exit;
+    LFormat := GetFormatSettings;
+    Result := StrToTime(Copy(LStrParam, 1, Length(FTimeFormat)), LFormat);
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'time']);
