@@ -18,7 +18,7 @@ begin
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      Res.Send(Req.Query.Field('str').AsString + ' ' + Req.Query.Field('inteiro').AsInteger.ToString);
+      Res.Send('pong');
     end);
 
   THorse.Listen(9000,
