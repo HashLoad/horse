@@ -329,6 +329,9 @@ begin
   if FEvent <> nil then
     FreeAndNil(FEvent);
 end;
+
+initialization
+  THorseProvider.SetKeepConnectionAlive(True);
 {$ENDIF}
 
 end.

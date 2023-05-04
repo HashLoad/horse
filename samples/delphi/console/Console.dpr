@@ -8,8 +8,6 @@ uses
   System.SysUtils;
 
 begin
-  THorse.KeepConnectionAlive := True;
-
   {$IFDEF MSWINDOWS}
   IsConsole := False;
   ReportMemoryLeaksOnShutdown := True;

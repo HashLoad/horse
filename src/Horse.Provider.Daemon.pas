@@ -362,6 +362,9 @@ class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
 end;
+
+initialization
+  THorseProvider.SetKeepConnectionAlive(True);
 {$ENDIF}
 
 end.
