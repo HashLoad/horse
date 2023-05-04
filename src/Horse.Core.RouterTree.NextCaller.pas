@@ -76,7 +76,6 @@ end;
 
 procedure TNextCaller.Next;
 var
-  LQueueNotFound: TQueue<string>;
   LCallback: TList<THorseCallback>;
 begin
   Inc(FIndex);
@@ -124,16 +123,6 @@ begin
   end
   else
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
-  if not FFound^ then
-  begin
-    LQueueNotFound := TQueue<string>.Create;
-    try
-      LQueueNotFound.Enqueue('*');
-      FFound^ := FCallNextPath(LQueueNotFound, FHTTPType, FRequest, FResponse);
-    finally
-      LQueueNotFound.Free;
-    end;
-  end;
   if not FFound^ then
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
