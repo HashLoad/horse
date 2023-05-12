@@ -1,7 +1,7 @@
 unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -22,6 +22,7 @@ uses
 {$ENDIF}
   Horse.Request,
   Horse.Response,
+  Horse.Commons,
   Horse.Callback;
 
 type
@@ -63,8 +64,7 @@ type
 implementation
 
 uses
-  Horse.Core.RouterTree.NextCaller,
-  Horse.Commons;
+  Horse.Core.RouterTree.NextCaller;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var
