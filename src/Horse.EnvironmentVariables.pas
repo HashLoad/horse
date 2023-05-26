@@ -24,6 +24,10 @@ uses
 {$IFDEF MSWINDOWS}
   Winapi.Windows,
 {$ENDIF}
+{$IFDEF LINUX}
+  Posix.Unistd,
+  Posix.Dlfcn,
+{$ENDIF}
   System.SysUtils;
 
 { THorseEnvironmentVariables }
@@ -36,13 +40,13 @@ end;
 {$IFDEF LINUX}
 class function THorseEnvironmentVariables.GetEnvironmentVariables: TStringList;
 var
-  LEnvVar: PPChar;
+  LEnvVar: PMarshaledAString;
 begin
   Result := TStringList.Create;
-  LEnvVar := System.envp;
+  LEnvVar := environ;
   while (LEnvVar <> nil) and (LEnvVar^ <> nil) do
   begin
-    Result.Add(LEnvVar^);
+    Result.Add(string(LEnvVar^));
     Inc(LEnvVar);
   end;
 end;
