@@ -110,7 +110,8 @@ type
     Download);
 
   TMessageType = (Default, Error, Warning, Information);
-  TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like);
+  TLhsBracketsType = (Equal, NotEqual, LessThan, LessThanOrEqual, GreaterThan, GreaterThanOrEqual, Range, Like,
+    Contains, StartsWith, EndsWith);
 {$SCOPEDENUMS OFF}
 
   TLhsBrackets = set of TLhsBracketsType;
@@ -233,6 +234,12 @@ begin
       Result := '[range]';
     TLhsBracketsType.Like:
       Result := '[like]';
+    TLhsBracketsType.Contains:
+      Result := '[contains]';
+    TLhsBracketsType.StartsWith:
+      Result := '[startsWith]';
+    TLhsBracketsType.EndsWith:
+      Result := '[endsWith]';
   end;
 end;
 
