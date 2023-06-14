@@ -2,7 +2,9 @@ unit Horse.Exception;
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+
 interface
+
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
@@ -15,6 +17,7 @@ uses
   System.TypInfo,
 {$ENDIF}
   Horse.Commons;
+
 type
   EHorseException = class(Exception)
   strict private
@@ -48,90 +51,110 @@ type
     function ToJSONObject: TJSONObject; virtual;
     class function New: EHorseException;
   end;
+
 implementation
+
 constructor EHorseException.Create;
 begin
   FError := EmptyStr;
   FStatus := THTTPStatus.InternalServerError;
   FCode := 0;
 end;
+
 class function EHorseException.New: EHorseException;
 begin
   Result := EHorseException.Create;
 end;
+
 function EHorseException.Code(const AValue: Integer): EHorseException;
 begin
   FCode := AValue;
   Result := Self;
 end;
+
 function EHorseException.&Type: TMessageType;
 begin
   Result := FType;
 end;
+
 function EHorseException.&Type(const AValue: TMessageType): EHorseException;
 begin
   FType := AValue;
   Result := Self;
 end;
+
 function EHorseException.Code: Integer;
 begin
   Result := FCode;
 end;
+
 function EHorseException.&Unit: string;
 begin
   Result := FUnit;
 end;
+
 function EHorseException.&Unit(const AValue: string): EHorseException;
 begin
   FUnit := AValue;
   Result := Self;
 end;
+
 function EHorseException.&Detail: string;
 begin
   Result := FDetail;
 end;
+
 function EHorseException.&Detail(const AValue: string): EHorseException;
 begin
   FDetail := AValue;
   Result := Self;
 end;
+
 function EHorseException.Error: string;
 begin
   Result := FError;
 end;
+
 function EHorseException.Error(const AValue: string): EHorseException;
 begin
   FError := AValue;
   Self.Message := AValue;
   Result := Self;
 end;
+
 function EHorseException.Status: THTTPStatus;
 begin
   Result := FStatus;
 end;
+
 function EHorseException.Status(const AValue: THTTPStatus): EHorseException;
 begin
   FStatus := AValue;
   Result := Self;
 end;
+
 function EHorseException.Title(const AValue: string): EHorseException;
 begin
   FTitle := AValue;
   Result := Self;
 end;
+
 function EHorseException.Title: string;
 begin
   Result := FTitle;
 end;
+
 function EHorseException.Hint(const AValue: string): EHorseException;
 begin
   FHint := AValue;
   Result := Self;
 end;
+
 function EHorseException.Hint: string;
 begin
   Result := FHint;
 end;
+
 function EHorseException.ToJSON: string;
 var
   LJSON: TJSONObject;
