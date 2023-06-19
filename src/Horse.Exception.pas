@@ -1,4 +1,5 @@
 unit Horse.Exception;
+
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
@@ -45,8 +46,8 @@ type
     function Hint: string; overload;
     function &Unit(const AValue: string): EHorseException; overload;
     function &Unit: string; overload;
-    function &Detail(const AValue: string): EHorseException; overload;
-    function &Detail: string; overload;
+    function Detail(const AValue: string): EHorseException; overload;
+    function Detail: string; overload;
     function ToJSON: string; virtual;
     function ToJSONObject: TJSONObject; virtual;
     class function New: EHorseException;
@@ -99,12 +100,12 @@ begin
   Result := Self;
 end;
 
-function EHorseException.&Detail: string;
+function EHorseException.Detail: string;
 begin
   Result := FDetail;
 end;
 
-function EHorseException.&Detail(const AValue: string): EHorseException;
+function EHorseException.Detail(const AValue: string): EHorseException;
 begin
   FDetail := AValue;
   Result := Self;
@@ -159,10 +160,8 @@ function EHorseException.ToJSON: string;
 var
   LJSON: TJSONObject;
 begin
-  LJSON := nil;
-
+  LJSON := ToJSONObject;
   try
-    LJSON := ToJSONObject;
     Result := {$IF DEFINED(FPC)}LJSON.AsJSON{$ELSE}{$IF CompilerVersion > 27.0}LJSON.ToJSON{$ELSE}LJSON.ToString{$ENDIF}{$ENDIF};
   finally
     LJSON.Free;
@@ -172,27 +171,23 @@ end;
 function EHorseException.ToJSONObject: TJsonObject;
 begin
   Result := TJSONObject.Create;
-  if (FType <> TMessageType.Default) then
-  begin
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('type', GetEnumName(TypeInfo(TMessageType), Integer(FType)));
-  end;
-  if not FTitle.Trim.IsEmpty then
-  begin
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('title', FTitle);
-  end;
-  if FCode <> 0 then
-  begin
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('code', {$IF DEFINED(FPC)}TJSONIntegerNumber{$ELSE}TJSONNumber{$ENDIF}.Create(FCode));
-  end;
-  Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('error', FError);
-  if not FHint.Trim.IsEmpty then
-  begin
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('hint', FHint);
-  end;
-  if not FUnit.Trim.IsEmpty then
-  begin
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('unit', FUnit);
-  end;
-end;
-end.
 
+  if FType <> TMessageType.Default then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('type', GetEnumName(TypeInfo(TMessageType), Integer(FType)));
+
+  if not FTitle.Trim.IsEmpty then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('title', FTitle);
+
+  if FCode <> 0 then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('code', {$IF DEFINED(FPC)}TJSONIntegerNumber{$ELSE}TJSONNumber{$ENDIF}.Create(FCode));
+
+  Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('error', FError);
+
+  if not FHint.Trim.IsEmpty then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('hint', FHint);
+
+  if not FUnit.Trim.IsEmpty then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('unit', FUnit);
+end;
+
+end.
