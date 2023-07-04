@@ -11,7 +11,7 @@ uses
   SysUtils,
   fpjson,
   jsonparser,
-  TypInfo;
+  TypInfo,
 {$ELSE}
   System.SysUtils,
   System.JSON,
