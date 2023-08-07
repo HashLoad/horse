@@ -21,7 +21,6 @@ type
     class var FPort: Integer;
     class var FHost: string;
     class var FRunning: Boolean;
-    class var FEvent: TEvent;
     class var FMaxConnections: Integer;
     class var FListenQueue: Integer;
     class var FKeepConnectionAlive: Boolean;
@@ -29,7 +28,6 @@ type
     class var FHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
     class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
     class function GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
-    class function GetDefaultEvent: TEvent;
     class function HTTPWebBrokerIsNil: Boolean;
     class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
@@ -110,13 +108,6 @@ end;
 class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
   VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
-end;
-
-class function THorseProvider.GetDefaultEvent: TEvent;
-begin
-  if FEvent = nil then
-    FEvent := TEvent.Create;
-  Result := FEvent;
 end;
 
 class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
@@ -225,12 +216,10 @@ class procedure THorseProvider.InternalStopListen;
 begin
   if not HTTPWebBrokerIsNil then
   begin
-    GetDefaultHTTPWebBroker.StopListening;
     GetDefaultHTTPWebBroker.Active := False;
-    DoOnStopListen;
     FRunning := False;
-    if FEvent <> nil then
-      GetDefaultEvent.SetEvent;
+    DoOnStopListen;
+    GetDefaultHTTPWebBroker.StopListening;
   end
   else
     raise Exception.Create('Horse not listen');
