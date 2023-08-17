@@ -292,8 +292,6 @@ end;
 class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
-  if FEvent <> nil then
-    FreeAndNil(FEvent);
 end;
 
 initialization
