@@ -134,9 +134,13 @@ begin
 {$IF DEFINED(HORSE_ISAPI)}
     Result.Text := AWebRequest.GetFieldByName('ALL_RAW');
 {$ELSEIF DEFINED(HORSE_APACHE)}
-    LHeadersArray := papr_array_header_t(Prequest_rec(TApacheRequest(AWebRequest).HTTPDRequest)^.headers_in);
-    LHeadersEntry := Papr_table_entry_t(LHeadersArray^.elts);
-
+    {$IF COMPILERVERSION <= 32}
+      LHeadersArray := papr_array_header_t(Prequest_rec(TWebResponse(AWebRequest).HTTPRequest)^.headers_in);
+      LHeadersEntry := Papr_table_entry_t(LHeadersArray^.elts);
+    {$ELSE}
+      LHeadersArray := papr_array_header_t(Prequest_rec(TApacheRequest(AWebRequest).HTTPDRequest)^.headers_in);
+      LHeadersEntry := Papr_table_entry_t(LHeadersArray^.elts);
+    {$IFEND}
     for I := 0 to Pred(LHeadersArray^.nelts) do
     begin
       Result.Add(string(LHeadersEntry^.key) + Result.NameValueSeparator + string(LHeadersEntry^.val));
