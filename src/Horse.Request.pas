@@ -45,22 +45,22 @@ type
     function IsFormURLEncoded: Boolean;
     function CanLoadContentFields: Boolean;
   public
-    function Body: string; overload;
+    function Body: string; overload; virtual;
     function Body<T: class>: T; overload;
-    function Body(const ABody: TObject): THorseRequest; overload;
+    function Body(const ABody: TObject): THorseRequest; overload; virtual;
     function Session<T: class>: T; overload;
-    function Session(const ASession: TObject): THorseRequest; overload;
-    function Headers: THorseCoreParam;
-    function Query: THorseCoreParam;
-    function Params: THorseCoreParam;
-    function Cookie: THorseCoreParam;
-    function ContentFields: THorseCoreParam;
-    function MethodType: TMethodType;
-    function ContentType: string;
-    function Host: string;
-    function PathInfo: string;
-    function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
-    property Sessions: THorseSessions read FSessions;
+    function Session(const ASession: TObject): THorseRequest; overload; virtual;
+    function Headers: THorseCoreParam; virtual;
+    function Query: THorseCoreParam; virtual;
+    function Params: THorseCoreParam; virtual;
+    function Cookie: THorseCoreParam; virtual;
+    function ContentFields: THorseCoreParam; virtual;
+    function Sessions: THorseSessions; virtual;
+    function MethodType: TMethodType; virtual;
+    function ContentType: string; virtual;
+    function Host: string; virtual;
+    function PathInfo: string; virtual;
+    function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
     destructor Destroy; override;
   end;
@@ -315,6 +315,11 @@ end;
 function THorseRequest.Session<T>: T;
 begin
   Result := T(FSession);
+end;
+
+function THorseRequest.Sessions: THorseSessions;
+begin
+  Result := FSessions;
 end;
 
 end.
