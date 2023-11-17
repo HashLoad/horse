@@ -69,7 +69,11 @@ implementation
 
 function THorseRequest.Body: string;
 begin
+{$IF CompilerVersion <= 31.0}
+  Result := TEncoding.UTF8.GetString(BytesOf(FWebRequest.RawContent));
+{$ELSE}
   Result := FWebRequest.Content;
+{$ENDIF}
 end;
 
 function THorseRequest.Body(const ABody: TObject): THorseRequest;
