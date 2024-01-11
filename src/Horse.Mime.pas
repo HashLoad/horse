@@ -4,7 +4,7 @@ unit Horse.Mime;
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
-{$IF DEFINED(FPC) OR (CompilerVersion < 32.0)}
+{$IF DEFINED(FPC) OR (CompilerVersion <= 32.0)}
   {$DEFINE UseTHorseMimeTypesExt}
 {$ENDIF}
 
