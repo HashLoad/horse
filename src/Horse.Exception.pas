@@ -188,6 +188,9 @@ begin
 
   if not FUnit.Trim.IsEmpty then
     Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('unit', FUnit);
+
+  if not FDetail.Trim.IsEmpty then
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('detail', FDetail);
 end;
 
 end.

@@ -11,14 +11,19 @@ uses
 type
   THorseProvider = class(THorseProviderAbstract)
   private
+    class var FMaxConnections: Integer;
     class var FHandlerName: string;
     class var FDefaultModule: Pointer;
+
+    class procedure SetMaxConnections(const AValue: Integer); static;
+    class function GetMaxConnections: Integer; static;
     class procedure InternalListen; static;
     class procedure SetHandlerName(const AValue: string); static;
     class function GetHandlerName: string; static;
     class function GetDefaultModule: Pointer; static;
     class procedure SetDefaultModule(const AValue: Pointer); static;
   public
+    class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property DefaultModule: Pointer read GetDefaultModule write SetDefaultModule;
     class procedure Listen; overload; override;
@@ -46,6 +51,12 @@ begin
   Web.ApacheApp.InitApplication(FDefaultModule, UTF8String(FHandlerName));
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
+
+  if FMaxConnections > 0 then
+  begin
+    Application.MaxConnections:= FMaxConnections;
+  end;
+
   DoOnListen;
   Application.Run;
 end;
@@ -61,6 +72,16 @@ begin
   inherited;
   SetOnListen(ACallback);
   InternalListen;
+end;
+
+class function THorseProvider.GetMaxConnections: Integer;
+begin
+  Result := FMaxConnections;
+end;
+
+class procedure THorseProvider.SetMaxConnections(const AValue: Integer);
+begin
+  FMaxConnections := AValue;
 end;
 
 class function THorseProvider.GetHandlerName: string;
