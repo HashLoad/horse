@@ -75,6 +75,8 @@ end;
 function THorseRequest.Body(const ABody: TObject): THorseRequest;
 begin
   Result := Self;
+  if Assigned(FBody) then
+    FBody.Free;
   FBody := ABody;
 end;
 
