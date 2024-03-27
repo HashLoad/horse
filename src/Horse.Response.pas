@@ -12,10 +12,12 @@ uses
   Classes,
   fpHTTP,
   HTTPDefs,
+  md5,
 {$ELSE}
   System.SysUtils,
   System.Classes,
   Web.HTTPApp,
+  IdHashMessageDigest,
 {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
 {$ENDIF}
@@ -42,6 +44,8 @@ type
     function Download(const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
     function Render(const AFileStream: TStream; const AFileName: string): THorseResponse; overload; virtual;
     function Render(const AFileName: string): THorseResponse; overload; virtual;
+    function ETagMatch(const AContent: string): Boolean; overload; virtual;
+    function ETagMatch(const AContent: TStream): Boolean; overload; virtual;
     function Status: Integer; overload; virtual;
     function AddHeader(const AName, AValue: string): THorseResponse; virtual;
     function RemoveHeader(const AName: string): THorseResponse; virtual;
@@ -222,6 +226,69 @@ begin
     Download(LFile.ContentStream, LFile.Name, LContentType);
   finally
     LFile.Free;
+  end;
+end;
+
+function THorseResponse.ETagMatch(const AContent: TStream): Boolean;
+var
+  {$IFNDEF FPC}
+  lHash: TIdHashMessageDigest5;
+  {$ENDIF}
+  lETagRequest: string;
+  lETagContent: string;
+begin
+  Result := False;
+
+  if not Assigned(AContent) then
+    Exit;
+
+  AContent.Position := 0;
+  {$IF DEFINED(FPC)}
+  lETagContent := MD5Print(MD5Buffer(TMemoryStream(AContent).Memory^, AContent.Size));
+  {$ELSE}
+  lHash := TIdHashMessageDigest5.Create;
+  try
+    lETagContent := lHash.HashStreamAsHex(AContent);
+  finally
+    lHash.Free;
+  end;
+  {$ENDIF}
+
+  if (lETagContent = '') then
+    Exit;
+
+  FWebResponse.SetCustomHeader('ETag', lETagContent);
+  {$IF DEFINED(FPC)}
+  lETagRequest := RawWebResponse.Request.GetFieldByName('if-None-Match');
+  {$ELSE}
+  lETagRequest := RawWebResponse.HTTPRequest.GetFieldByName('if-None-Match');
+  {$ENDIF}
+
+  if (lETagRequest = lETagContent) then
+  begin
+    Result := True;
+    FWebResponse.ContentType := '';
+    FWebResponse.Content := '';
+    {$IF DEFINED(FPC)}
+    FWebResponse.Code := THTTPStatus.NotModified.Tointeger;
+    FWebResponse.SendContent;
+    {$ELSE}
+    FWebResponse.StatusCode := THTTPStatus.NotModified.ToInteger;
+    FWebResponse.SendResponse;
+    {$ENDIF}
+  end;
+end;
+
+function THorseResponse.ETagMatch(const AContent: string): Boolean;
+var
+  lContentStream: TBytesStream;
+begin
+  lContentStream := TBytesStream.Create;
+  try
+    lContentStream.Write(AContent[1], Length(AContent) * SizeOf(Char));
+    Result := ETagMatch(lContentStream);
+  finally
+    lContentStream.Free;
   end;
 end;
 
