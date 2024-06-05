@@ -208,7 +208,7 @@ begin
         tkInteger:
           Result.Add(TValue.From<Integer>(StrToInt(ValueArray[i])).AsType<T>);
         tkInt64:
-          Result.Add(TValue.From<Int64>(StrToInt(ValueArray[i])).AsType<T>);
+          Result.Add(TValue.From<Int64>(StrToInt64(ValueArray[i])).AsType<T>);
         tkFloat:
           Result.Add(TValue.From<Double>(StrToFloat(ValueArray[i])).AsType<T>);
         tkString, tkUString:
