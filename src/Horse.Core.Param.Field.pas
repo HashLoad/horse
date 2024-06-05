@@ -69,6 +69,7 @@ type
     function AsStream: TStream;
     function AsString: string;
     function AsTime: TTime;
+    function AsList<T>: TList<T>;
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
     constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
     constructor Create(const AStream: TStream; const AFieldName: string); overload;
@@ -190,6 +191,45 @@ begin
     Exit;
   if not TryISO8601ToDate(LStrParam, Result) then
     RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'ISO8601 date']);
+end;
+
+function THorseCoreParamField.AsList<T>: TList<T>;
+var
+  ValueArray : TArray<string>;
+begin
+  Result := nil;
+  if FContains then
+  begin
+    Result := TList<T>.Create;
+    ValueArray := FValue.Split([',']);
+    for var i := 0 to High(ValueArray) do
+    begin
+      case GetTypeKind(T) of
+        tkInteger, tkInt64:
+          Result.Add(TValue.From<Integer>(StrToInt(ValueArray[i])).AsType<T>);
+        tkFloat:
+          Result.Add(TValue.From<Double>(StrToFloat(ValueArray[i])).AsType<T>);
+        tkString, tkUString:
+          Result.Add(TValue.From<string>(ValueArray[i]).AsType<T>);
+        tkVariant:
+          Result.Add(TValue.From<variant>(ValueArray[i]).AsType<T>);
+      else
+        // Specific handling for Datetime, Date, and Time, as they are not present in the TypeKind list.
+        begin
+          if TypeInfo(T) = TypeInfo(TDateTime) then
+            Result.Add(TValue.From<TDateTime>(StrToDateTime(ValueArray[i])).AsType<T>)
+          else if TypeInfo(T) = TypeInfo(TDate) then
+            Result.Add(TValue.From<TDate>(StrToDate(ValueArray[i])).AsType<T>)
+          else if TypeInfo(T) = TypeInfo(TTime) then
+            Result.Add(TValue.From<TTime>(StrToTime(ValueArray[i])).AsType<T>)
+          else
+            raise EHorseException.New.Error('Unsupported type');
+        end;
+      end;
+    end;
+  end
+  else if FRequired then
+    RaiseHorseException(FRequiredMessage, [FFieldName]);
 end;
 
 function THorseCoreParamField.AsStream: TStream;
