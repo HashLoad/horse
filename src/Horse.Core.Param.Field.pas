@@ -205,8 +205,10 @@ begin
     for var i := 0 to High(ValueArray) do
     begin
       case GetTypeKind(T) of
-        tkInteger, tkInt64:
+        tkInteger:
           Result.Add(TValue.From<Integer>(StrToInt(ValueArray[i])).AsType<T>);
+        tkInt64:
+          Result.Add(TValue.From<Int64>(StrToInt(ValueArray[i])).AsType<T>);
         tkFloat:
           Result.Add(TValue.From<Double>(StrToFloat(ValueArray[i])).AsType<T>);
         tkString, tkUString:
