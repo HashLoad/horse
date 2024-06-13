@@ -246,7 +246,6 @@ begin
     LEqualFirstPos := Pos('=', LItem);
     LKey := Copy(LItem, 1, LEqualFirstPos - 1);
     LValue := Copy(LItem, LEqualFirstPos + 1, Length(LItem));
-    FQuery.Dictionary.AddOrSetValue(LKey, LValue);
     if not FQuery.Dictionary.ContainsKey(LKey) then
       FQuery.Dictionary.AddOrSetValue(LKey, LValue)
     else

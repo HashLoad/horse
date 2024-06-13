@@ -17,6 +17,7 @@ uses
   System.Classes,
   System.DateUtils,
   System.Generics.Collections,
+  System.Rtti,
 {$ENDIF}
   Horse.Exception,
   Horse.Commons,
@@ -69,7 +70,7 @@ type
     function AsStream: TStream;
     function AsString: string;
     function AsTime: TTime;
-    function AsList<T>: TList<T>;
+    function AsList{$IF NOT DEFINED(FPC)}<T>{$ENDIF}: TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF};
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
     constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
     constructor Create(const AStream: TStream; const AFieldName: string); overload;
@@ -193,26 +194,30 @@ begin
     RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'ISO8601 date']);
 end;
 
-function THorseCoreParamField.AsList<T>: TList<T>;
+function THorseCoreParamField.AsList{$IF NOT DEFINED(FPC)}<T>{$ENDIF}: TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF};
 var
   ValueArray : TArray<string>;
+  i: Integer;
 begin
   Result := nil;
+  Result := TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF}.Create;
   if FContains then
   begin
-    Result := TList<T>.Create;
     ValueArray := FValue.Split([',']);
-    for var i := 0 to High(ValueArray) do
+    for i := 0 to High(ValueArray) do
     begin
+      {$IF DEFINED(FPC)}
+        Result.Add(ValueArray[i])
+      {$ELSE}
       case GetTypeKind(T) of
+        tkString, tkUString:
+          Result.Add(TValue.From<string>(ValueArray[i]).AsType<T>);
         tkInteger:
           Result.Add(TValue.From<Integer>(StrToInt(ValueArray[i])).AsType<T>);
         tkInt64:
           Result.Add(TValue.From<Int64>(StrToInt64(ValueArray[i])).AsType<T>);
         tkFloat:
           Result.Add(TValue.From<Double>(StrToFloat(ValueArray[i])).AsType<T>);
-        tkString, tkUString:
-          Result.Add(TValue.From<string>(ValueArray[i]).AsType<T>);
         tkVariant:
           Result.Add(TValue.From<variant>(ValueArray[i]).AsType<T>);
       else
@@ -228,6 +233,7 @@ begin
             raise EHorseException.New.Error('Unsupported type');
         end;
       end;
+     {$ENDIF}
     end;
   end
   else if FRequired then
