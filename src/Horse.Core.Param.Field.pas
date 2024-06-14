@@ -45,9 +45,7 @@ type
     procedure RaiseHorseException(const AMessage: string); overload;
     procedure RaiseHorseException(const AMessage: string; const Args: array of const); overload;
     function TryISO8601ToDate(const AValue: string; out Value: TDateTime): Boolean;
-
     procedure InitializeLhsBrackets(const AParams: TDictionary<string, string>; const AFieldName: string);
-
   public
     function DateFormat(const AValue: string): THorseCoreParamField;
     function InvalidFormatMessage(const AValue: string): THorseCoreParamField;
@@ -70,7 +68,10 @@ type
     function AsStream: TStream;
     function AsString: string;
     function AsTime: TTime;
-    function AsList{$IF NOT DEFINED(FPC)}<T>{$ENDIF}: TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF};
+    function AsList: TList<string>; overload;
+   {$IF NOT DEFINED(FPC)}
+    function AsList<T>: TList<T>; overload;
+   {$ENDIF}
     property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
     constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
     constructor Create(const AStream: TStream; const AFieldName: string); overload;
@@ -194,21 +195,36 @@ begin
     RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'ISO8601 date']);
 end;
 
-function THorseCoreParamField.AsList{$IF NOT DEFINED(FPC)}<T>{$ENDIF}: TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF};
+function THorseCoreParamField.AsList: TList<string>;
 var
   ValueArray : TArray<string>;
   i: Integer;
 begin
-  Result := nil;
-  Result := TList{$IF DEFINED(FPC)}<string>{$ELSE}<T>{$ENDIF}.Create;
+  Result := TList<string>.Create;
   if FContains then
   begin
     ValueArray := FValue.Split([',']);
     for i := 0 to High(ValueArray) do
     begin
-      {$IF DEFINED(FPC)}
-        Result.Add(ValueArray[i])
-      {$ELSE}
+      Result.Add(ValueArray[i]);
+    end;
+  end
+  else if FRequired then
+    RaiseHorseException(FRequiredMessage, [FFieldName]);
+end;
+
+{$IF NOT DEFINED(FPC)}
+function THorseCoreParamField.AsList<T>: TList<T>;
+var
+  ValueArray : TArray<string>;
+  i: Integer;
+begin
+  Result := TList<T>.Create;
+  if FContains then
+  begin
+    ValueArray := FValue.Split([',']);
+    for i := 0 to High(ValueArray) do
+    begin
       case GetTypeKind(T) of
         tkString, tkUString:
           Result.Add(TValue.From<string>(ValueArray[i]).AsType<T>);
@@ -233,12 +249,12 @@ begin
             raise EHorseException.New.Error('Unsupported type');
         end;
       end;
-     {$ENDIF}
     end;
   end
   else if FRequired then
     RaiseHorseException(FRequiredMessage, [FFieldName]);
 end;
+{$ENDIF}
 
 function THorseCoreParamField.AsStream: TStream;
 begin
