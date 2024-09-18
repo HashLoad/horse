@@ -22,6 +22,12 @@ type
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function All(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function All(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
+    function All(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
+{$IFNDEF FPC}
+    function All(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
+{$IFEND}
     function Get(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Get(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function Get(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
