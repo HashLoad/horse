@@ -196,10 +196,10 @@ begin
     begin
       LExpression := '^(' + ReplaceParams(AValues[I]) + ')$';
 {$IF DEFINED(FPC)}
-      LRegexObj.Expression := LExpression;
+      LRegexObj.Expression := '(?i)' + LExpression;
       if LRegexObj.Exec(LText) then
 {$ELSE}
-      if TRegEx.IsMatch(LText, LExpression) then
+      if TRegEx.IsMatch(LText, LExpression, [roIgnoreCase]) then
 {$ENDIF}
       begin
         Result := True;
