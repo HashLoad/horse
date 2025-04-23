@@ -21,6 +21,9 @@ uses
   {$ELSEIF DEFINED(HORSE_LCL)}
   Horse.Provider.FPC.LCL,
   {$ENDIF}
+{$ELSEIF DEFINED(HORSE_NOPROVIDER)}
+  System.SysUtils,
+  Horse.Provider.Abstract,
 {$ELSE}
   System.SysUtils,
   Horse.Provider.Console,
@@ -99,6 +102,8 @@ type
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.HTTPApplication.THorseProvider;
+  {$ELSEIF DEFINED(HORSE_NOPROVIDER)}
+    Horse.Provider.Abstract.THorseProviderAbstract;
   {$ELSE}
     Horse.Provider.Console.THorseProvider;
   {$ENDIF}
