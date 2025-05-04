@@ -77,7 +77,12 @@ end;
 
 function THorseCoreParam.ContainsValue(const AValue: string): Boolean;
 begin
-  Result := FParams.ContainsValue(AValue);
+  Result := False;
+  for var LPair in FParams do
+    if (SameText(LPair.Key, AValue)) and (not LPair.Value.Trim.IsEmpty) then
+      Exit(True);
+
+  //Result := FParams.ContainsValue(AValue);
 end;
 
 constructor THorseCoreParam.Create(const AParams: THorseList);
