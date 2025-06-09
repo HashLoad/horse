@@ -95,7 +95,7 @@ begin
 end;
 
 function THorseCoreParamField.AsDate: TDateTime;
-var
+var  
   LDay: Word;
   LMonth: Word;
   LYear: Word;
@@ -286,7 +286,7 @@ begin
 end;
 
 function THorseCoreParamField.AsTime: TTime;
-var
+var              
   LHour: Word;
   LMinute: Word;
   LSecond: Word;
@@ -300,7 +300,7 @@ begin
     if LStrParam = EmptyStr then
       Exit;
     if not IsDateTime(LStrParam, LDateTime) then
-      raise EConvertError.Create('');    
+      raise EConvertError.Create('');
     {$IF DEFINED(FPC)}
     DecodeTime(LDateTime, LHour, LMinute, LSecond, LMilliSecond);
     Result := EncodeTime(LHour, LMinute, LSecond, LMilliSecond);

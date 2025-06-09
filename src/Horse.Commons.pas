@@ -17,6 +17,7 @@ uses
 {$ELSE}
   System.Classes,
   System.SysUtils,
+  System.StrUtils,
   System.DateUtils,
   System.RegularExpressions;
 {$ENDIF}
@@ -136,112 +137,80 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
-function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean;
+function IsDateTime(const AText: string): Boolean; overload;
+function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean; overload;
 
 implementation
 
+function IsDateTime(const AText: string): Boolean;
+var
+  LDateTime: TDateTime;
+begin
+  Result := IsDateTime(AText, LDateTime);
+end;
+
 function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean;
 const
-  // Formatos de data
   C_DATE_FORMATS: array of string = [
-    // Dia, mês, ano
     'dd/MM/yyyy', 'dd-MM-yyyy', 'dd.MM.yyyy',
     'dd/MM/yy',   'dd-MM-yy',   'dd.MM.yy',
-
-    // Ano, mês, dia
     'yyyy/MM/dd', 'yyyy-MM-dd', 'yyyy.MM.dd',
     'yy/MM/dd',   'yy-MM-dd',   'yy.MM.dd',
-
-    // Mês, dia, ano
     'MM/dd/yyyy', 'MM-dd-yyyy', 'MM.dd.yyyy',
     'MM/dd/yy',   'MM-dd-yy',   'MM.dd.yy',
-
-    // ISO padrão com T
-    'yyyy-MM-dd"T"',            // usado como prefixo para os formatos DateTime ISO
-    'yyyy-MM-dd'
+    'yyyy-MM-dd"T"', 'yyyy-MM-dd'
   ];
 
-  // Formatos de hora
   C_TIME_FORMATS: array of string = [
-    // Horas e minutos
     'hh:nn', 'hh:nn AM/PM',
-
-    // Horas, minutos e segundos
     'hh:nn:ss', 'hh:nn:ss AM/PM',
-
-    // Com milissegundos
     'hh:nn:ss.zzz', 'hh:nn:ss.zzz AM/PM',
-
-    // ISO 8601 / UTC com T
-    '"T"hh:nn:ss',         // T + hora
-    '"T"hh:nn:ss"Z"',      // UTC (Z)
-    '"T"hh:nn:sszzz',      // UTC com milissegundos
-    '"T"hh:nn:ss.zzz"Z"',  // UTC com ms e Z
-
-    // ISO 8601 com timezone
-    '"T"hh:nn:ss+hh:nn', '"T"hh:nn:ss-hh:nn',
-    '"T"hh:nn:ss+hhmm',  '"T"hh:nn:ss-hhmm'
-  ];
-
-  // Formatos DateTime combinados
-  C_DATETIME_FORMATS: array of string = [
-    // Combinações comuns
-    'dd/MM/yyyy hh:nn:ss',
-    'dd-MM-yyyy hh:nn:ss',
-    'yyyy-MM-dd hh:nn:ss',
-    'yyyy/MM/dd hh:nn:ss',
-    'dd/MM/yyyy hh:nn:ss AM/PM',
-    'yyyy-MM-dd hh:nn:ss AM/PM',
-    'yyyy-MM-dd"T"hh:nn:ss',
-    'yyyy-MM-dd"T"hh:nn:ss.zzz',
-    'yyyy-MM-dd"T"hh:nn:ss"Z"',
-    'yyyy-MM-dd"T"hh:nn:ss.zzz"Z"',
-    'yyyy-MM-dd"T"hh:nn:ss+hh:nn',
-    'yyyy-MM-dd"T"hh:nn:ss-hh:nn',
-    'yyyy-MM-dd"T"hh:nn:ss+hhmm',
-    'yyyy-MM-dd"T"hh:nn:ss-hhmm'
+    '"T"hh:nn:ss',
+    '"T"hh:nn:ss"Z"',
+    '"T"hh:nn:sszzz',
+    '"T"hh:nn:ss.zzz"Z"',
+    '"T"hh:nn:ss'
   ];
 var
-  LFormat: string;
+  LText: string;
+  LDateFormat: string;
+  LTimeFormat: string;
   LFormatSettings: TFormatSettings;
 begin
   Result := False;
   AParsedValue := 0;
+  LText := AText;
+
+  if MatchStr(LText[Length(LText) - 4], ['+', '-']) then
+    LText := Copy(LText, 1, Length(LText) - 5);
+
+  if MatchStr(LText[Length(LText) - 5], ['+', '-']) then
+    LText := Copy(LText, 1, Length(LText) - 6);
+
   LFormatSettings := {$IF DEFINED(FPC)}DefaultFormatSettings{$ELSE}TFormatSettings.Create{$ENDIF};
-  // Tentativa com formatos DateTime
-  for LFormat in C_DATETIME_FORMATS do
+  for LDateFormat in C_DATE_FORMATS do
   begin
-    try
-      LFormatSettings.LongDateFormat := LFormat;
-      AParsedValue := StrToDateTime(AText, LFormatSettings);
-      Exit(True);
-    except
-      // Ignora erro de conversão
+    LFormatSettings.ShortDateFormat := LDateFormat;
+    for LTimeFormat in C_TIME_FORMATS do
+    begin
+      LFormatSettings.ShortTimeFormat := LTimeFormat;
+      AParsedValue := StrToDateTimeDef(LText, 0, LFormatSettings);
+      if (AParsedValue > 0) then Exit(True);
     end;
   end;
 
-  // Tentativa com formatos apenas de data
-  for LFormat in C_DATE_FORMATS do
+  for LDateFormat in C_DATE_FORMATS do
   begin
-    try
-      LFormatSettings.ShortDateFormat := LFormat;
-      AParsedValue := StrToDate(AText, LFormatSettings);
-      Exit(True);
-    except
-      // Ignora erro de conversão
-    end;
+    LFormatSettings.ShortDateFormat := LDateFormat;
+    AParsedValue := {$IF DEFINED(FPC)}StrToDateTimeDef{$ELSE}StrToDateDef{$ENDIF}(LText, 0, LFormatSettings);
+    if (AParsedValue > 0) then Exit(True);
   end;
 
-  // Tentativa com formatos apenas de hora
-  for LFormat in C_TIME_FORMATS do
+  for LTimeFormat in C_TIME_FORMATS do
   begin
-    try
-      LFormatSettings.ShortTimeFormat := LFormat;
-      AParsedValue := StrToTime(AText, LFormatSettings);
-      Exit(True);
-    except
-      // Ignora erro de conversão
-    end;
+    LFormatSettings.ShortTimeFormat := LTimeFormat;
+    AParsedValue := {$IF DEFINED(FPC)}StrToDateTimeDef{$ELSE}StrToTimeDef{$ENDIF}(LText, 0, LFormatSettings);
+    if (AParsedValue > 0) then Exit(True);
   end;
 end;
 
