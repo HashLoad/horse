@@ -12,10 +12,12 @@ uses
   Classes,
   SysUtils,
   StrUtils,
+  DateUtils,
   RegExpr;
 {$ELSE}
   System.Classes,
   System.SysUtils,
+  System.DateUtils,
   System.RegularExpressions;
 {$ENDIF}
 
@@ -134,8 +136,114 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
+function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean;
 
 implementation
+
+function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean;
+const
+  // Formatos de data
+  C_DATE_FORMATS: array of string = [
+    // Dia, mês, ano
+    'dd/MM/yyyy', 'dd-MM-yyyy', 'dd.MM.yyyy',
+    'dd/MM/yy',   'dd-MM-yy',   'dd.MM.yy',
+
+    // Ano, mês, dia
+    'yyyy/MM/dd', 'yyyy-MM-dd', 'yyyy.MM.dd',
+    'yy/MM/dd',   'yy-MM-dd',   'yy.MM.dd',
+
+    // Mês, dia, ano
+    'MM/dd/yyyy', 'MM-dd-yyyy', 'MM.dd.yyyy',
+    'MM/dd/yy',   'MM-dd-yy',   'MM.dd.yy',
+
+    // ISO padrão com T
+    'yyyy-MM-dd"T"',            // usado como prefixo para os formatos DateTime ISO
+    'yyyy-MM-dd'
+  ];
+
+  // Formatos de hora
+  C_TIME_FORMATS: array of string = [
+    // Horas e minutos
+    'hh:nn', 'hh:nn AM/PM',
+
+    // Horas, minutos e segundos
+    'hh:nn:ss', 'hh:nn:ss AM/PM',
+
+    // Com milissegundos
+    'hh:nn:ss.zzz', 'hh:nn:ss.zzz AM/PM',
+
+    // ISO 8601 / UTC com T
+    '"T"hh:nn:ss',         // T + hora
+    '"T"hh:nn:ss"Z"',      // UTC (Z)
+    '"T"hh:nn:sszzz',      // UTC com milissegundos
+    '"T"hh:nn:ss.zzz"Z"',  // UTC com ms e Z
+
+    // ISO 8601 com timezone
+    '"T"hh:nn:ss+hh:nn', '"T"hh:nn:ss-hh:nn',
+    '"T"hh:nn:ss+hhmm',  '"T"hh:nn:ss-hhmm'
+  ];
+
+  // Formatos DateTime combinados
+  C_DATETIME_FORMATS: array of string = [
+    // Combinações comuns
+    'dd/MM/yyyy hh:nn:ss',
+    'dd-MM-yyyy hh:nn:ss',
+    'yyyy-MM-dd hh:nn:ss',
+    'yyyy/MM/dd hh:nn:ss',
+    'dd/MM/yyyy hh:nn:ss AM/PM',
+    'yyyy-MM-dd hh:nn:ss AM/PM',
+    'yyyy-MM-dd"T"hh:nn:ss',
+    'yyyy-MM-dd"T"hh:nn:ss.zzz',
+    'yyyy-MM-dd"T"hh:nn:ss"Z"',
+    'yyyy-MM-dd"T"hh:nn:ss.zzz"Z"',
+    'yyyy-MM-dd"T"hh:nn:ss+hh:nn',
+    'yyyy-MM-dd"T"hh:nn:ss-hh:nn',
+    'yyyy-MM-dd"T"hh:nn:ss+hhmm',
+    'yyyy-MM-dd"T"hh:nn:ss-hhmm'
+  ];
+var
+  LFormat: string;
+  LFormatSettings: TFormatSettings;
+begin
+  Result := False;
+  AParsedValue := 0;
+  LFormatSettings := {$IF DEFINED(FPC)}DefaultFormatSettings{$ELSE}TFormatSettings.Create{$ENDIF};
+  // Tentativa com formatos DateTime
+  for LFormat in C_DATETIME_FORMATS do
+  begin
+    try
+      LFormatSettings.LongDateFormat := LFormat;
+      AParsedValue := StrToDateTime(AText, LFormatSettings);
+      Exit(True);
+    except
+      // Ignora erro de conversão
+    end;
+  end;
+
+  // Tentativa com formatos apenas de data
+  for LFormat in C_DATE_FORMATS do
+  begin
+    try
+      LFormatSettings.ShortDateFormat := LFormat;
+      AParsedValue := StrToDate(AText, LFormatSettings);
+      Exit(True);
+    except
+      // Ignora erro de conversão
+    end;
+  end;
+
+  // Tentativa com formatos apenas de hora
+  for LFormat in C_TIME_FORMATS do
+  begin
+    try
+      LFormatSettings.ShortTimeFormat := LFormat;
+      AParsedValue := StrToTime(AText, LFormatSettings);
+      Exit(True);
+    except
+      // Ignora erro de conversão
+    end;
+  end;
+end;
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
