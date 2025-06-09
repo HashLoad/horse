@@ -95,10 +95,12 @@ begin
 end;
 
 function THorseCoreParamField.AsDate: TDateTime;
-var  
+var
+  {$IF DEFINED(FPC)}
   LDay: Word;
   LMonth: Word;
   LYear: Word;
+  {$ENDIF}
   LStrParam: string;
   LDateTime: TDateTime;
 begin
@@ -286,11 +288,13 @@ begin
 end;
 
 function THorseCoreParamField.AsTime: TTime;
-var              
+var
+  {$IF DEFINED(FPC)}
   LHour: Word;
   LMinute: Word;
   LSecond: Word;
   LMilliSecond: Word;
+  {$ENDIF}
   LStrParam: string;
   LDateTime: TDateTime;
 begin
