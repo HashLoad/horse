@@ -179,13 +179,10 @@ var
 begin
   Result := False;
   AParsedValue := 0;
-  LText := AText;
+  LText := AText.Trim.TrimLeft(['"']).TrimRight(['"']);
 
-  if MatchStr(LText[Length(LText) - 4], ['+', '-']) then
-    LText := Copy(LText, 1, Length(LText) - 5);
-
-  if MatchStr(LText[Length(LText) - 5], ['+', '-']) then
-    LText := Copy(LText, 1, Length(LText) - 6);
+  if (Length(LText) >= 5) and ((Length(LText) - LastDelimiter('-', LText)) in [5, 6]) then
+    LText := Copy(LText, 1, LastDelimiter('-', LText) - 1);
 
   LFormatSettings := {$IF DEFINED(FPC)}DefaultFormatSettings{$ELSE}TFormatSettings.Create{$ENDIF};
   for LDateFormat in C_DATE_FORMATS do
