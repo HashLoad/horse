@@ -16,11 +16,8 @@ uses
   HTTPDefs,
 {$ELSE}
   System.Classes,
-  System.SysUtils,
   System.Generics.Collections,
   Web.HTTPApp,
-  IdCustomHTTPServer,
-  Horse.Rtti,
   Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
     Web.ApacheHTTP,
@@ -48,6 +45,11 @@ type
   end;
 
 implementation
+
+uses
+  IdCustomHTTPServer,
+  Horse.Rtti,
+  System.SysUtils;
 
 class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var

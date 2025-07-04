@@ -15,7 +15,6 @@ uses
 {$ELSE}
   System.SysUtils,
   System.JSON,
-  System.TypInfo,
 {$ENDIF}
   Horse.Commons;
 
@@ -54,6 +53,9 @@ type
   end;
 
 implementation
+
+uses
+  System.TypInfo;
 
 constructor EHorseException.Create;
 begin

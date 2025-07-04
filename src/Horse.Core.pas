@@ -11,15 +11,10 @@ uses
   SysUtils,
   Generics.Collections,
 {$ELSE}
-  System.SysUtils,
   System.Generics.Collections,
   Web.HTTPApp,
-  Horse.Request,
-  Horse.Response,
 {$ENDIF}
   Horse.Core.RouterTree,
-  Horse.Commons,
-  Horse.Constants,
   Horse.Callback,
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract;
@@ -135,7 +130,12 @@ implementation
 
 uses
   Horse.Core.Route,
-  Horse.Core.Group;
+  Horse.Core.Group,
+  Horse.Commons,
+  Horse.Constants,
+  Horse.Request,
+  Horse.Response,
+  System.SysUtils;
 
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
 begin

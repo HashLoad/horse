@@ -11,7 +11,6 @@ uses
   SysUtils,
   Generics.Collections;
 {$ELSE}
-  System.SysUtils,
   System.Generics.Collections;
 {$ENDIF}
 
@@ -37,6 +36,9 @@ type
   end;
 
 implementation
+
+uses
+  System.SysUtils;
 
 constructor THorseSessions.Create;
 begin

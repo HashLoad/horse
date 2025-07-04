@@ -14,8 +14,7 @@ uses
   StrUtils,
   RegExpr;
 {$ELSE}
-  System.SysUtils,
-  System.RegularExpressions;
+  System.SysUtils;
 {$ENDIF}
 
 type
@@ -135,6 +134,9 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
 implementation
+
+uses
+  System.RegularExpressions;
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;

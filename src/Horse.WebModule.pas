@@ -14,7 +14,6 @@ uses
   fpHTTP,
   fpWeb,
 {$ELSE}
-  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
 {$ENDIF}
@@ -49,7 +48,8 @@ implementation
 uses
   Horse.Request,
   Horse.Response,
-  Horse.Exception.Interrupted;
+  Horse.Exception.Interrupted,
+  System.SysUtils;
 
 {$IF DEFINED(FPC)}
   {$R Horse.WebModule.lfm}

@@ -9,8 +9,6 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-{$ELSE}
-  System.SysUtils,
 {$ENDIF}
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract,
@@ -83,7 +81,8 @@ implementation
 
 uses
   Horse.Core,
-  Horse;
+  Horse,
+  System.SysUtils;
 
 function THorseCoreGroup<T>.&End: T;
 begin

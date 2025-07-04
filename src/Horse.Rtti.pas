@@ -10,7 +10,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils, RTTI;
 {$ELSE}
-  System.SysUtils,
   System.Rtti;
 {$ENDIF}
 type
@@ -28,6 +27,9 @@ type
   end;
 
 implementation
+
+uses
+  System.SysUtils;
 
 constructor THorseRtti.Create;
 begin
