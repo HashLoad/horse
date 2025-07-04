@@ -20,9 +20,7 @@ uses
   System.Generics.Collections,
   Web.HTTPApp,
   IdCustomHTTPServer,
-  IdHeaderList,
   Horse.Rtti,
-  Horse.Commons,
   Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
     Web.ApacheHTTP,

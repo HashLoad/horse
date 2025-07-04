@@ -14,7 +14,6 @@ uses
   StrUtils,
   RegExpr;
 {$ELSE}
-  System.Classes,
   System.SysUtils,
   System.RegularExpressions;
 {$ENDIF}

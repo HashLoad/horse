@@ -15,7 +15,6 @@ uses
   RegExpr,
 {$ELSE}
   System.SysUtils,
-  System.NetEncoding,
   Web.HTTPApp,
   System.Generics.Collections,
   System.RegularExpressions,

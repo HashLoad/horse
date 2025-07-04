@@ -8,13 +8,11 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, RTTI,
+  SysUtils, RTTI;
 {$ELSE}
   System.SysUtils,
-  System.Rtti,
+  System.Rtti;
 {$ENDIF}
-  Horse.Commons;
-
 type
   THorseRtti = class
   private
