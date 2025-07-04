@@ -14,15 +14,12 @@ uses
   HTTPDefs,
 {$ELSE}
   System.SysUtils,
-  System.Classes,
   Web.HTTPApp,
 {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
 {$ENDIF}
 {$ENDIF}
   Horse.Core.Param,
-  Horse.Core.Param.Header,
-  Horse.Commons,
   Horse.Session;
 
 type
@@ -67,6 +64,11 @@ type
   end;
 
 implementation
+
+uses
+  System.Classes,
+  Horse.Core.Param.Header,
+  Horse.Commons;
 
 function THorseRequest.Body: string;
 begin

@@ -15,7 +15,6 @@ uses
   fpHTTP,
   HTTPDefs,
 {$ELSE}
-  System.SysUtils,
   System.Classes,
   System.Generics.Collections,
 {$ENDIF}
@@ -58,7 +57,8 @@ type
 implementation
 
 uses
-  Horse.Core.Param.Config;
+  Horse.Core.Param.Config,
+  System.SysUtils;
 
 function THorseCoreParam.ContainsKey(const AKey: string): Boolean;
 var

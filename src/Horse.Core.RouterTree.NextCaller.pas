@@ -13,12 +13,9 @@ uses
   fpHTTP,
   httpprotocol,
 {$ELSE}
-  System.NetEncoding,
-  System.SysUtils,
   Web.HTTPApp,
   System.Generics.Collections,
 {$ENDIF}
-  Horse.Commons,
   Horse.Request,
   Horse.Response,
   Horse.Callback;
@@ -59,7 +56,10 @@ implementation
 
 uses
   Horse.Exception,
-  Horse.Exception.Interrupted;
+  Horse.Exception.Interrupted,
+  System.NetEncoding,
+  System.SysUtils,
+  Horse.Commons;
 
 function TNextCaller.Init: TNextCaller;
 var

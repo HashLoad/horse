@@ -14,14 +14,11 @@ uses
   httpprotocol,
   RegExpr,
 {$ELSE}
-  System.SysUtils,
   Web.HTTPApp,
   System.Generics.Collections,
-  System.RegularExpressions,
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Commons,
   Horse.Callback;
 
 type
@@ -63,7 +60,10 @@ type
 implementation
 
 uses
-  Horse.Core.RouterTree.NextCaller;
+  Horse.Core.RouterTree.NextCaller,
+  System.SysUtils,
+  System.RegularExpressions,
+  Horse.Commons;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var

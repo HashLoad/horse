@@ -15,14 +15,9 @@ uses
 {$ELSE}
   System.SysUtils,
   System.Classes,
-  System.DateUtils,
   System.Generics.Collections,
-  System.Rtti,
 {$ENDIF}
-  Horse.Exception,
-  Horse.Commons,
-  Horse.Core.Param.Field.Brackets,
-  Horse.Core.Param.Config;
+  Horse.Core.Param.Field.Brackets;
 
 type
 
@@ -79,6 +74,13 @@ type
   end;
 
 implementation
+
+uses
+  Horse.Exception,
+  Horse.Commons,
+  Horse.Core.Param.Config,
+  System.DateUtils,
+  System.Rtti;
 
 function THorseCoreParamField.AsBoolean: Boolean;
 var

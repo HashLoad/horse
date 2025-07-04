@@ -11,7 +11,6 @@ uses
   SysUtils,
   Classes;
 {$ELSE}
-  System.SysUtils,
   System.Classes;
 {$ENDIF}
 
@@ -36,6 +35,7 @@ type
 implementation
 
 uses
+  System.SysUtils,
   Horse.Mime;
 
 constructor THorseCoreFile.Create(const AFileName: string);

@@ -17,9 +17,7 @@ uses
   Generics.Collections,
   SyncObjs;
 {$ELSE}
-  System.SysUtils,
-  System.Generics.Collections,
-  SyncObjs;
+  System.Generics.Collections;
 {$ENDIF}
 
 type
@@ -31,10 +29,12 @@ type
 
 implementation
 
-{$IFNDEF UseTHorseMimeTypesExt}
 uses
-  System.Net.Mime;
+{$IFNDEF UseTHorseMimeTypesExt}
+  System.Net.Mime,
 {$ENDIF}
+  System.SysUtils,
+  SyncObjs;
 
 type
 
