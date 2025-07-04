@@ -18,7 +18,6 @@ uses
   SyncObjs;
 {$ELSE}
   System.SysUtils,
-  System.Classes,
   System.Generics.Collections,
   SyncObjs;
 {$ENDIF}

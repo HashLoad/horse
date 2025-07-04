@@ -12,8 +12,7 @@ uses
   Classes;
 {$ELSE}
   System.SysUtils,
-  System.Classes,
-  System.Generics.Collections;
+  System.Classes;
 {$ENDIF}
 
 type

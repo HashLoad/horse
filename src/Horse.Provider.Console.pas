@@ -10,9 +10,7 @@ uses
   Horse.Provider.IOHandleSSL,
   IdHTTPWebBrokerBridge,
   IdSSLOpenSSL,
-  IdSSL,
   IdContext,
-  System.Classes,
   System.SyncObjs,
   System.SysUtils;
 
