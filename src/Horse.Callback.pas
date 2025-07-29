@@ -19,7 +19,8 @@ uses
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Proc;
+  Horse.Proc,
+  Horse.Commons;
 
 type
 {$IF DEFINED(FPC)}

@@ -9,10 +9,8 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Classes,
   SysUtils,
-  StrUtils,
-  RegExpr;
+  StrUtils;
 {$ELSE}
   System.SysUtils;
 {$ENDIF}
@@ -135,8 +133,12 @@ function MatchRoute(const AText: string; const AValues: array of string): Boolea
 
 implementation
 
-uses
-  System.RegularExpressions;
+uses  
+{$IF DEFINED(FPC)}
+  RegExpr;
+{$ELSE}
+  System.RegularExpressions;    
+{$ENDIF}
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;

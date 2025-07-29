@@ -10,7 +10,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-  DateUtils,
   Generics.Collections,
 {$ELSE}
   System.SysUtils,
@@ -79,8 +78,12 @@ uses
   Horse.Exception,
   Horse.Commons,
   Horse.Core.Param.Config,
+{$IF DEFINED(FPC)}  
+  DateUtils;
+{$ELSE}
   System.DateUtils,
   System.Rtti;
+{$ENDIF}
 
 function THorseCoreParamField.AsBoolean: Boolean;
 var
