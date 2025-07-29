@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes,
   fpHTTP,
   fphttpserver,
@@ -46,10 +45,14 @@ type
 
 implementation
 
-uses
+uses    
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
   IdCustomHTTPServer,
-  Horse.Rtti,
-  System.SysUtils;
+  System.SysUtils,
+{$ENDIF}
+  Horse.Rtti;
 
 class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var

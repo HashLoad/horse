@@ -7,9 +7,6 @@ unit Horse.Core.Group;
 interface
 
 uses
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ENDIF}
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract,
   Horse.Callback;
@@ -80,9 +77,13 @@ type
 implementation
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
   Horse.Core,
-  Horse,
-  System.SysUtils;
+  Horse;
 
 function THorseCoreGroup<T>.&End: T;
 begin

@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes;
 {$ELSE}
   System.Classes;
@@ -35,7 +34,11 @@ type
 implementation
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
   System.SysUtils,
+{$ENDIF}
   Horse.Mime;
 
 constructor THorseCoreFile.Create(const AFileName: string);

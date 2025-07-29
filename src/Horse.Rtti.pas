@@ -8,7 +8,7 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils, RTTI;
+  RTTI;
 {$ELSE}
   System.Rtti;
 {$ENDIF}
@@ -28,8 +28,12 @@ type
 
 implementation
 
-uses
+uses 
+{$IF DEFINED(FPC)}
+  SysUtils;
+{$ELSE}
   System.SysUtils;
+{$ENDIF}
 
 constructor THorseRtti.Create;
 begin

@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Generics.Collections;
 {$ELSE}
   System.Generics.Collections;
@@ -37,8 +36,12 @@ type
 
 implementation
 
-uses
+uses   
+{$IF DEFINED(FPC)}
+  SysUtils;
+{$ELSE}
   System.SysUtils;
+{$ENDIF}
 
 constructor THorseSessions.Create;
 begin

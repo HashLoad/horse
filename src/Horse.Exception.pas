@@ -11,7 +11,6 @@ uses
   SysUtils,
   fpjson,
   jsonparser,
-  TypInfo,
 {$ELSE}
   System.SysUtils,
   System.JSON,
@@ -54,8 +53,12 @@ type
 
 implementation
 
-uses
-  System.TypInfo;
+uses   
+{$IF DEFINED(FPC)} 
+  TypInfo;
+{$ELSE}
+  System.TypInfo; 
+{$ENDIF}
 
 constructor EHorseException.Create;
 begin

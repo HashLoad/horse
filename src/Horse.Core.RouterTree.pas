@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Generics.Collections,
   fpHTTP,
   httpprotocol,
@@ -19,7 +18,8 @@ uses
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Callback;
+  Horse.Callback,
+  Horse.Commons;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
@@ -60,10 +60,13 @@ type
 implementation
 
 uses
-  Horse.Core.RouterTree.NextCaller,
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
   System.SysUtils,
   System.RegularExpressions,
-  Horse.Commons;
+{$ENDIF}
+  Horse.Core.RouterTree.NextCaller;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var

@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes,
   DateUtils,
   Generics.Collections,
@@ -56,9 +55,13 @@ type
 
 implementation
 
-uses
-  Horse.Core.Param.Config,
-  System.SysUtils;
+uses       
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
+  Horse.Core.Param.Config;
 
 function THorseCoreParam.ContainsKey(const AKey: string): Boolean;
 var

@@ -9,7 +9,6 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-  Classes,
   fpHTTP,
   HTTPDefs,
 {$ELSE}
@@ -20,7 +19,8 @@ uses
 {$ENDIF}
 {$ENDIF}
   Horse.Core.Param,
-  Horse.Session;
+  Horse.Session,
+  Horse.Commons;
 
 type
   THorseRequest = class
@@ -65,10 +65,13 @@ type
 
 implementation
 
-uses
+uses      
+{$IF DEFINED(FPC)}
+  Classes,
+{$ELSE}
   System.Classes,
-  Horse.Core.Param.Header,
-  Horse.Commons;
+{$ENDIF}
+  Horse.Core.Param.Header;
 
 function THorseRequest.Body: string;
 begin
