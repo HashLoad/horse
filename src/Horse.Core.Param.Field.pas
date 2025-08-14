@@ -41,7 +41,6 @@ type
     FStream: TStream;
     FLhsBrackets: THorseCoreParamFieldLhsBrackets;
 
-    function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
     procedure RaiseHorseException(const AMessage: string; const Args: array of const); overload;
     function TryISO8601ToDate(const AValue: string; out Value: TDateTime): Boolean;
@@ -97,16 +96,27 @@ end;
 
 function THorseCoreParamField.AsDate: TDateTime;
 var
+  {$IF DEFINED(FPC)}
+  LDay: Word;
+  LMonth: Word;
+  LYear: Word;
+  {$ENDIF}
   LStrParam: string;
-  LFormat: TFormatSettings;
+  LDateTime: TDateTime;
 begin
   Result := 0;
   LStrParam := Trim(AsString);
   try
     if LStrParam = EmptyStr then
       Exit;
-    LFormat := GetFormatSettings;
-    Result := StrToDate(Copy(LStrParam, 1, Length(FDateFormat)), LFormat);
+    if not IsDateTime(LStrParam, LDateTime) then
+      raise EConvertError.Create('');
+    {$IF DEFINED(FPC)}
+    DecodeDate(LDateTime, LYear, LMonth, LDay);
+    Result := EncodeDate(LYear, LMonth, LDay);
+    {$ELSE}
+    Result.SetDate(LDateTime.Year, LDateTime.Month, LDateTime.Day);
+    {$ENDIF}
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'date']);
@@ -116,15 +126,14 @@ end;
 function THorseCoreParamField.AsDateTime: TDateTime;
 var
   LStrParam: string;
-  LFormat: TFormatSettings;
 begin
   Result := 0;
   LStrParam := Trim(AsString);
   try
     if LStrParam = EmptyStr then
       Exit;
-    LFormat := GetFormatSettings;
-    Result := StrToDateTime(LStrParam, LFormat);
+    if not IsDateTime(LStrParam, Result) then
+      raise EConvertError.Create('');
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'datetime']);
@@ -280,16 +289,28 @@ end;
 
 function THorseCoreParamField.AsTime: TTime;
 var
+  {$IF DEFINED(FPC)}
+  LHour: Word;
+  LMinute: Word;
+  LSecond: Word;
+  LMilliSecond: Word;
+  {$ENDIF}
   LStrParam: string;
-  LFormat: TFormatSettings;
+  LDateTime: TDateTime;
 begin
   Result := 0;
   LStrParam := Trim(AsString);
   try
     if LStrParam = EmptyStr then
       Exit;
-    LFormat := GetFormatSettings;
-    Result := StrToTime(Copy(LStrParam, 1, Length(FTimeFormat)), LFormat);
+    if not IsDateTime(LStrParam, LDateTime) then
+      raise EConvertError.Create('');
+    {$IF DEFINED(FPC)}
+    DecodeTime(LDateTime, LHour, LMinute, LSecond, LMilliSecond);
+    Result := EncodeTime(LHour, LMinute, LSecond, LMilliSecond);
+    {$ELSE}
+    TDateTime(Result).SetTime(LDateTime.Hour, LDateTime.Minute, LDateTime.Second, 0);
+    {$ENDIF}
   except
     on E: EConvertError do
       RaiseHorseException(FInvalidFormatMessage, [FFieldName, LStrParam, 'time']);
@@ -339,19 +360,6 @@ function THorseCoreParamField.DateFormat(const AValue: string): THorseCoreParamF
 begin
   Result := Self;
   FDateFormat := AValue;
-end;
-
-function THorseCoreParamField.GetFormatSettings: TFormatSettings;
-begin
-{$IF DEFINED(FPC)}
-  Result := DefaultFormatSettings;
-{$ELSE}
-  Result := TFormatSettings.Create;
-{$ENDIF}
-  if FDateFormat.IndexOf('-') > 0 then
-    Result.DateSeparator := '-';
-  Result.ShortDateFormat := FDateFormat;
-  Result.ShortTimeFormat := FTimeFormat;
 end;
 
 procedure THorseCoreParamField.InitializeLhsBrackets(const AParams: TDictionary<string, string>; const AFieldName: string);

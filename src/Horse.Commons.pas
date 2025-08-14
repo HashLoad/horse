@@ -12,10 +12,13 @@ uses
   Classes,
   SysUtils,
   StrUtils,
+  DateUtils,
   RegExpr;
 {$ELSE}
   System.Classes,
   System.SysUtils,
+  System.StrUtils,
+  System.DateUtils,
   System.RegularExpressions;
 {$ENDIF}
 
@@ -134,8 +137,79 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 {$ENDIF}
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
+function IsDateTime(const AText: string): Boolean; overload;
+function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean; overload;
 
 implementation
+
+function IsDateTime(const AText: string): Boolean;
+var
+  LDateTime: TDateTime;
+begin
+  Result := IsDateTime(AText, LDateTime);
+end;
+
+function IsDateTime(const AText: string; out AParsedValue: TDateTime): Boolean;
+const
+  C_DATE_FORMATS: array of string = [
+    'dd/MM/yyyy', 'dd-MM-yyyy', 'dd.MM.yyyy',
+    'dd/MM/yy',   'dd-MM-yy',   'dd.MM.yy',
+    'yyyy/MM/dd', 'yyyy-MM-dd', 'yyyy.MM.dd',
+    'yy/MM/dd',   'yy-MM-dd',   'yy.MM.dd',
+    'MM/dd/yyyy', 'MM-dd-yyyy', 'MM.dd.yyyy',
+    'MM/dd/yy',   'MM-dd-yy',   'MM.dd.yy',
+    'yyyy-MM-dd"T"', 'yyyy-MM-dd'
+  ];
+
+  C_TIME_FORMATS: array of string = [
+    'hh:nn', 'hh:nn AM/PM',
+    'hh:nn:ss', 'hh:nn:ss AM/PM',
+    'hh:nn:ss.zzz', 'hh:nn:ss.zzz AM/PM',
+    '"T"hh:nn:ss',
+    '"T"hh:nn:ss"Z"',
+    '"T"hh:nn:sszzz',
+    '"T"hh:nn:ss.zzz"Z"',
+    '"T"hh:nn:ss'
+  ];
+var
+  LText: string;
+  LDateFormat: string;
+  LTimeFormat: string;
+  LFormatSettings: TFormatSettings;
+begin
+  Result := False;
+  AParsedValue := 0;
+  LText := AText.Trim.TrimLeft(['"']).TrimRight(['"']);
+
+  if (Length(LText) >= 5) and ((Length(LText) - LastDelimiter('-', LText)) in [5, 6]) then
+    LText := Copy(LText, 1, LastDelimiter('-', LText) - 1);
+
+  LFormatSettings := {$IF DEFINED(FPC)}DefaultFormatSettings{$ELSE}TFormatSettings.Create{$ENDIF};
+  for LDateFormat in C_DATE_FORMATS do
+  begin
+    LFormatSettings.ShortDateFormat := LDateFormat;
+    for LTimeFormat in C_TIME_FORMATS do
+    begin
+      LFormatSettings.ShortTimeFormat := LTimeFormat;
+      AParsedValue := StrToDateTimeDef(LText, 0, LFormatSettings);
+      if (AParsedValue > 0) then Exit(True);
+    end;
+  end;
+
+  for LDateFormat in C_DATE_FORMATS do
+  begin
+    LFormatSettings.ShortDateFormat := LDateFormat;
+    AParsedValue := {$IF DEFINED(FPC)}StrToDateTimeDef{$ELSE}StrToDateDef{$ENDIF}(LText, 0, LFormatSettings);
+    if (AParsedValue > 0) then Exit(True);
+  end;
+
+  for LTimeFormat in C_TIME_FORMATS do
+  begin
+    LFormatSettings.ShortTimeFormat := LTimeFormat;
+    AParsedValue := {$IF DEFINED(FPC)}StrToDateTimeDef{$ELSE}StrToTimeDef{$ENDIF}(LText, 0, LFormatSettings);
+    if (AParsedValue > 0) then Exit(True);
+  end;
+end;
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
