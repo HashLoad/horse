@@ -5,14 +5,9 @@ interface
 {$IF NOT DEFINED(FPC)}
 uses
   Horse.Provider.Abstract,
-  Horse.Constants,
   Horse.Provider.IOHandleSSL.Contract,
-  Horse.Provider.IOHandleSSL,
   IdHTTPWebBrokerBridge,
-  IdSSLOpenSSL,
-  IdSSL,
   IdContext,
-  System.Classes,
   System.SyncObjs,
   System.SysUtils;
 
@@ -75,7 +70,10 @@ implementation
 uses
   Web.WebReq,
   Horse.WebModule,
-  IdCustomTCPServer;
+  IdCustomTCPServer,
+  Horse.Constants,
+  Horse.Provider.IOHandleSSL,
+  IdSSLOpenSSL;
 
 class function THorseProvider.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin

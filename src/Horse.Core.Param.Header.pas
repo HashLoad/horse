@@ -8,7 +8,6 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes,
   fpHTTP,
   fphttpserver,
@@ -16,13 +15,8 @@ uses
   HTTPDefs,
 {$ELSE}
   System.Classes,
-  System.SysUtils,
   System.Generics.Collections,
   Web.HTTPApp,
-  IdCustomHTTPServer,
-  IdHeaderList,
-  Horse.Rtti,
-  Horse.Commons,
   Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
     Web.ApacheHTTP,
@@ -50,6 +44,15 @@ type
   end;
 
 implementation
+
+uses    
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  IdCustomHTTPServer,
+  System.SysUtils,
+{$ENDIF}
+  Horse.Rtti;
 
 class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var

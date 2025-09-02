@@ -10,9 +10,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-{$ELSE}
-  System.SysUtils,
-  System.Classes,
 {$ENDIF}
   Horse.Commons;
 

@@ -8,21 +8,17 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes,
   fpHTTP,
   HTTPDefs,
 {$ELSE}
-  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
 {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
 {$ENDIF}
 {$ENDIF}
-  Horse.Commons,
-  Horse.Core.Files,
-  Horse.Mime;
+  Horse.Commons;
 
 type
   THorseResponse = class
@@ -54,6 +50,15 @@ type
   end;
 
 implementation
+
+uses        
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
+  Horse.Core.Files,
+  Horse.Mime;
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin

@@ -10,19 +10,13 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-  DateUtils,
   Generics.Collections,
 {$ELSE}
   System.SysUtils,
   System.Classes,
-  System.DateUtils,
   System.Generics.Collections,
-  System.Rtti,
 {$ENDIF}
-  Horse.Exception,
-  Horse.Commons,
-  Horse.Core.Param.Field.Brackets,
-  Horse.Core.Param.Config;
+  Horse.Core.Param.Field.Brackets;
 
 type
 
@@ -79,6 +73,17 @@ type
   end;
 
 implementation
+
+uses
+  Horse.Exception,
+  Horse.Commons,
+  Horse.Core.Param.Config,
+{$IF DEFINED(FPC)}  
+  DateUtils;
+{$ELSE}
+  System.DateUtils,
+  System.Rtti;
+{$ENDIF}
 
 function THorseCoreParamField.AsBoolean: Boolean;
 var

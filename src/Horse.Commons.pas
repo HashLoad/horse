@@ -9,14 +9,10 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Classes,
   SysUtils,
-  StrUtils,
-  RegExpr;
+  StrUtils;
 {$ELSE}
-  System.Classes,
-  System.SysUtils,
-  System.RegularExpressions;
+  System.SysUtils;
 {$ENDIF}
 
 type
@@ -136,6 +132,13 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
 implementation
+
+uses  
+{$IF DEFINED(FPC)}
+  RegExpr;
+{$ELSE}
+  System.RegularExpressions;    
+{$ENDIF}
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
