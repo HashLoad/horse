@@ -4,7 +4,15 @@ interface
 
 resourcestring
   sDuplicateActionName = 'Duplicate action name';
+  {$IF (CompilerVersion > 30.0)}
+  sCannotGenerateSessionId = 'Cannot generate session ID';
+  {$ENDIF}
   sOnlyOneDispatcher = 'Only one WebDispatcher per form/data module';
+  {$IF (CompilerVersion > 30.0)}
+  sOnlyOneSessionManager = 'Only one SessionManager per form/data module';
+  sOnlyOneAuthenticator = 'Only one Authenticator per form/data module';
+  sOnlyOneAuthorizer = 'Only one Authorizer per form/data module';
+  {$ENDIF}
   sHTTPItemName = 'Name';
   sHTTPItemURI = 'PathInfo';
   sHTTPItemEnabled = 'Enabled';
@@ -52,7 +60,7 @@ resourcestring
   sInvalidHTMLEncodedChar = 'Invalid HTML encoded char';
   sFactoryAlreadyRegistered = 'Factory already registered';
   sAppFactoryAlreadyRegistered = 'App factory already registered';
-{$IFEND}
+  {$IFEND}
 
 implementation
 
