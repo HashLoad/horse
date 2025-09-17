@@ -45,7 +45,6 @@ type
     function Body: string; overload; virtual;
     function Body<T: class>: T; overload;
     function Body(const ABody: TObject): THorseRequest; overload; virtual;
-    function Body(const Encoding: TEncoding): string; overload; virtual;
     function Session<T: class>: T; overload;
     function Session(const ASession: TObject): THorseRequest; overload; virtual;
     function Headers: THorseCoreParam; virtual;
@@ -84,28 +83,6 @@ begin
   if Assigned(FBody) then
     FBody.Free;
   FBody := ABody;
-end;
-
-function THorseRequest.Body(const Encoding: TEncoding): string;
-{$IF DEFINED(FPC)}
-var
-  lContent: TStringStream;
-{$ENDIF}
-begin
-  {$IF DEFINED(FPC)}
-  try
-    lContent := TStringStream.Create(FWebRequest.Content, Encoding);
-    Result   := lContent.DataString;
-  finally
-    lContent.Free;
-  end;
-  {$ELSE}
-  {$IF CompilerVersion <= 31.0}
-  Result := Encoding.GetString(BytesOf(FWebRequest.RawContent));
-  {$ELSE}
-  Result := Encoding.GetString(FWebRequest.RawContent);
-  {$ENDIF}
-  {$ENDIF}
 end;
 
 function THorseRequest.Body<T>: T;
