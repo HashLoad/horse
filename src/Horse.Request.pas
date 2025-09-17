@@ -45,7 +45,6 @@ type
     function Body: string; overload; virtual;
     function Body<T: class>: T; overload;
     function Body(const ABody: TObject): THorseRequest; overload; virtual;
-    function Body(const Encoding: TEncoding): string; overload; virtual;
     function Session<T: class>: T; overload;
     function Session(const ASession: TObject): THorseRequest; overload; virtual;
     function Headers: THorseCoreParam; virtual;
