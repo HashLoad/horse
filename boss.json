@@ -6,8 +6,6 @@
   "license": "MIT",
   "mainsrc": "src/",
   "browsingpath": "src/",
-  "projects": [
-    "packages/HorseCS.dpk"
-  ],
+  "projects": [],
   "dependencies": {}
 }
