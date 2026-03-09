@@ -59,6 +59,26 @@ type
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
+{ ===========================================================================
+  PATCH-REQ-1 — added parameterless constructor overload
+  Reason: THorseContextPool.WarmUp pre-allocates THorseRequest instances at
+  application startup, before any HTTP request arrives and before any
+  TWebRequest exists. The pool calls this overload; the original constructor
+  is completely unchanged and continues to be used by the Indy provider.
+  =========================================================================== }
+    constructor Create; overload;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-REQ-2 — added Clear procedure
+  Reason: THorseContext.Reset recycles pooled objects between requests
+  without Free/Create overhead. Rules enforced:
+    • FBody  — set to nil, NEVER freed (non-owning CrossSocket buffer ref)
+    • FSession — set to nil (stale session = wrong-request auth)
+    • FWebRequest — set to nil (belongs to previous Indy context)
+    • param collections — cleared in place, objects reused
+  =========================================================================== }
+    procedure Clear;
+{ =========================================================================== }
     destructor Destroy; override;
   end;
 
@@ -114,6 +134,43 @@ begin
   FWebRequest := AWebRequest;
   FSessions := THorseSessions.Create;
 end;
+
+{ ===========================================================================
+  PATCH-REQ-1 — parameterless constructor implementation
+  =========================================================================== }
+constructor THorseRequest.Create;
+begin
+  FWebRequest := nil;
+  FSessions := THorseSessions.Create;
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  PATCH-REQ-2 — Clear implementation
+  =========================================================================== }
+procedure THorseRequest.Clear;
+begin
+  FWebRequest := nil;
+  // FBody: non-owning reference into CrossSocket's socket buffer.
+  // Must be set to nil here. NEVER call FBody.Free — doing so corrupts
+  // the live TCP connection. The pool Reset sets FBody := nil before
+  // calling Clear, but we enforce the contract here as a safety net.
+  FBody := nil;
+  FSession := nil;
+  if Assigned(FHeaders) then
+    FHeaders.Clear;
+  if Assigned(FQuery) then
+    FQuery.Clear;
+  if Assigned(FParams) then
+    FParams.Clear;
+  if Assigned(FContentFields) then
+    FContentFields.Clear;
+  if Assigned(FCookie) then
+    FCookie.Clear;
+  if Assigned(FSessions) then
+    FSessions.Clear;
+end;
+{ =========================================================================== }
 
 destructor THorseRequest.Destroy;
 begin
