@@ -1,9 +1,13 @@
 {
-	"name": "horse",
-	"description": "",
-	"version": "1.0.0",
-	"homepage": "",
-	"mainsrc": "src/",
-	"projects": [],
-	"dependencies": {}
+  "name": "horse",
+  "description": "Horse web framework — CrossSocket-compatible fork",
+  "version": "3.1.9-crosssocket.1",
+  "homepage": "https://github.com/freitasjca/horse",
+  "license": "MIT",
+  "mainsrc": "src/",
+  "browsingpath": "src/",
+  "projects": [
+    "packages/HorseCS.dpk"
+  ],
+  "dependencies": {}
 }

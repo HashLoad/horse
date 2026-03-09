@@ -18,6 +18,15 @@ uses
   Web.ReqMulti,
 {$ENDIF}
 {$ENDIF}
+{ ===========================================================================
+  PATCH-RES-1 — added System.Generics.Collections
+  Reason: FCustomHeaders is declared as TDictionary<string, string>.
+  Required only when Delphi (not FPC) is the compiler.
+  =========================================================================== }
+{$IF NOT DEFINED(FPC)}
+  System.Generics.Collections,
+{$ENDIF}
+{ =========================================================================== }
   Horse.Commons;
 
 type
@@ -25,6 +34,16 @@ type
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
+{ ===========================================================================
+  PATCH-RES-1 — added FCustomHeaders field
+  Reason: CrossSocket has no TWebResponse. TResponseBridge.CopyHeaders
+  iterates this dictionary directly to write headers to ICrossHttpResponse.
+  AddHeader populates both FWebResponse.SetCustomHeader (Indy path) and
+  this dictionary (CrossSocket path) so all existing middleware that calls
+  Res.AddHeader continues to work on both providers without any change.
+  =========================================================================== }
+    FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
+{ =========================================================================== }
   public
     function Send(const AContent: string): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
@@ -46,6 +65,23 @@ type
     function ContentType(const AContentType: string): THorseResponse; virtual;
     function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; virtual;
     constructor Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
+{ ===========================================================================
+  PATCH-RES-2 — added Clear procedure
+  Reason: THorseContext.Reset recycles pooled objects between requests.
+  Resets FContent and clears FCustomHeaders in place (dictionary object
+  reused — avoids heap churn on the request hot path).
+  FWebResponse is set to nil — belongs to the previous Indy context.
+  =========================================================================== }
+    procedure Clear;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-3 — added CustomHeaders read-only property
+  Reason: TResponseBridge.CopyHeaders reads this property to iterate and
+  forward response headers to ICrossHttpResponse. Read-only — the bridge
+  iterates only; all writes go through AddHeader as before.
+  =========================================================================== }
+    property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
+{ =========================================================================== }
     destructor Destroy; override;
   end;
 
@@ -63,6 +99,11 @@ uses
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
   FWebResponse.SetCustomHeader(AName, AValue);
+{ ===========================================================================
+  PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it
+  =========================================================================== }
+  FCustomHeaders.AddOrSetValue(AName, AValue);
+{ =========================================================================== }
   Result := Self;
 end;
 
@@ -90,12 +131,39 @@ begin
 {$IF DEFINED(FPC)}
   FWebResponse.FreeContentStream := True;
 {$ENDIF}
+{ ===========================================================================
+  PATCH-RES-1 — initialise FCustomHeaders
+  =========================================================================== }
+{$IF NOT DEFINED(FPC)}
+  FCustomHeaders := TDictionary<string, string>.Create;
+{$ELSE}
+  FCustomHeaders := TStringList.Create;
+{$ENDIF}
+{ =========================================================================== }
 end;
+
+{ ===========================================================================
+  PATCH-RES-2 — Clear implementation
+  =========================================================================== }
+procedure THorseResponse.Clear;
+begin
+  FWebResponse := nil;
+  FContent := nil;
+  if Assigned(FCustomHeaders) then
+    FCustomHeaders.Clear;
+end;
+{ =========================================================================== }
 
 destructor THorseResponse.Destroy;
 begin
   if Assigned(FContent) then
     FContent.Free;
+{ ===========================================================================
+  PATCH-RES-1 — free FCustomHeaders
+  =========================================================================== }
+  if Assigned(FCustomHeaders) then
+    FCustomHeaders.Free;
+{ =========================================================================== }
   inherited;
 end;
 
@@ -135,6 +203,17 @@ begin
   I := FWebResponse.CustomHeaders.IndexOfName(AName);
   if I <> -1 then
     FWebResponse.CustomHeaders.Delete(I);
+{ ===========================================================================
+  PATCH-RES-1 — also remove from FCustomHeaders
+  =========================================================================== }
+{$IF NOT DEFINED(FPC)}
+  FCustomHeaders.Remove(AName);
+{$ELSE}
+  I := FCustomHeaders.IndexOfName(AName);
+  if I <> -1 then
+    FCustomHeaders.Delete(I);
+{$ENDIF}
+{ =========================================================================== }
   Result := Self;
 end;
 
