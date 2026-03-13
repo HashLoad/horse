@@ -1,4 +1,4 @@
-unit Horse.Provider.Abstract;
+﻿unit Horse.Provider.Abstract;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -16,20 +16,23 @@ uses
   Horse.Core,
 { ===========================================================================
   PATCH-ABS-1 — added unit Horse.Provider.Config
-  Reason: THorseProviderAbstract needs to declare ListenWithConfig, whose
-  parameter type THorseCrossSocketConfig is defined in Horse.Provider.Config.
-  Placing the record in a separate unit avoids a circular dependency between
-  Horse.Provider.Abstract and Horse.Provider.CrossSocket.Server.
   =========================================================================== }
-  Horse.Provider.Config;
+  Horse.Provider.Config,
 { =========================================================================== }
+  Horse.Request,
+  Horse.Response;
 
 type
   THorseProviderAbstract = class(THorseCore)
   private
     class var FOnListen: TProc;
     class var FOnStopListen: TProc;
+    // [PATCH-ABS-3] Port class var — mirrors the Indy/Console provider.
+    // CrossSocket's no-arg Listen reads this; callers set it via THorse.Port.
+    class var FPort: Integer;
     class function GetOnStopListen: TProc; static;
+    class function GetPort: Integer; static;
+    class procedure SetPort(AValue: Integer); static;
   protected
     class function GetOnListen: TProc; static;
     class procedure SetOnListen(const AValue: TProc); static;
@@ -39,17 +42,27 @@ type
   public
     class property OnListen: TProc read GetOnListen write SetOnListen;
     class property OnStopListen: TProc read GetOnStopListen write SetOnStopListen;
+    // [PATCH-ABS-3] Port property — set before calling the no-arg Listen.
+    class property Port: Integer read GetPort write SetPort;
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
 { ===========================================================================
   PATCH-ABS-2 — added ListenWithConfig virtual class method
-  Reason: THorseProviderCrossSocket overrides this to receive the full
-  THorseCrossSocketConfig (TLS settings, timeouts, size limits, etc.).
-  Default implementation delegates to Listen(APort) so all existing
-  providers — Indy, VCL, CGI, Apache, Daemon — compile and run unchanged.
   =========================================================================== }
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); virtual;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-ABS-3 — Execute class method
+  Runs the Horse middleware/route pipeline for a given request+response pair.
+  Providers that bypass TWebRequest (CrossSocket, raw socket, etc.) call this
+  after populating THorseRequest via the request bridge.
+  Implementation: THorseCore.Routes.Execute(Req, Res, nil)
+  =========================================================================== }
+    class procedure Execute(
+      const ARequest:  THorseRequest;
+      const AResponse: THorseResponse
+    ); virtual;
 { =========================================================================== }
   end;
 
@@ -77,6 +90,16 @@ begin
   Result := FOnStopListen;
 end;
 
+class function THorseProviderAbstract.GetPort: Integer;
+begin
+  Result := FPort;
+end;
+
+class procedure THorseProviderAbstract.SetPort(AValue: Integer);
+begin
+  FPort := AValue;
+end;
+
 class procedure THorseProviderAbstract.SetOnListen(const AValue: TProc);
 begin
   FOnListen := AValue;
@@ -99,6 +122,23 @@ class procedure THorseProviderAbstract.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
   Listen;
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  PATCH-ABS-3 — Execute: runs the Horse middleware+route pipeline.
+  THorseRouterTree.Execute(Req, Res, Next) walks all registered middleware and
+  the matching route handler.  Passing nil for Next means the pipeline ends
+  naturally when all handlers have run (EHorseCallbackInterrupted is raised
+  internally by Horse when a middleware calls Next with no further handlers —
+  this is normal and is caught by the provider's exception handler).
+  =========================================================================== }
+class procedure THorseProviderAbstract.Execute(
+  const ARequest:  THorseRequest;
+  const AResponse: THorseResponse
+);
+begin
+  Routes.Execute(ARequest, AResponse);
 end;
 { =========================================================================== }
 

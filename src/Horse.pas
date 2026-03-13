@@ -1,4 +1,4 @@
-unit Horse;
+﻿unit Horse;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -9,6 +9,9 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
+  {$IF DEFINED(HORSE_CROSSSOCKET)}
+  Horse.Provider.CrossSocket,
+  {$ELSE}
   Horse.Provider.FPC.HTTPApplication,
   {$IF DEFINED(HORSE_APACHE)}
   Horse.Provider.FPC.Apache,
@@ -21,9 +24,13 @@ uses
   {$ELSEIF DEFINED(HORSE_LCL)}
   Horse.Provider.FPC.LCL,
   {$ENDIF}
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_NOPROVIDER)}
   System.SysUtils,
   Horse.Provider.Abstract,
+{$ELSEIF DEFINED(HORSE_CROSSSOCKET)}
+  System.SysUtils,
+  Horse.Provider.CrossSocket,
 {$ELSE}
   System.SysUtils,
   Horse.Provider.Console,
@@ -44,9 +51,11 @@ uses
   Horse.Exception,
   Horse.Exception.Interrupted,
   Horse.Core.Param.Config,
-  Horse.Callback;
+  Horse.Callback,
+  Horse.Provider.Config;
 
 type
+<<<<<<< Updated upstream
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
   TProc = Horse.Proc.TProc;
@@ -65,6 +74,28 @@ type
   PHorseModule = Horse.Core.PHorseModule;
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
+  THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
+=======
+  EHorseException             = Horse.Exception.EHorseException;
+  EHorseCallbackInterrupted   = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
+  TProc                       = Horse.Proc.TProc;
+  TNextProc                   = Horse.Proc.TNextProc;
+  THorseList                  = Horse.Core.Param.THorseList;
+  THorseCoreParam             = Horse.Core.Param.THorseCoreParam;
+  THorseCoreParamConfig       = Horse.Core.Param.Config.THorseCoreParamConfig;
+  THorseRequest               = Horse.Request.THorseRequest;
+  THorseResponse              = Horse.Response.THorseResponse;
+  THorseCallback              = Horse.Callback.THorseCallback;
+  THTTPStatus                 = Horse.Commons.THTTPStatus;
+  TMimeTypes                  = Horse.Commons.TMimeTypes;
+  THorseMimeTypes             = Horse.Mime.THorseMimeTypes;
+  TMessageType                = Horse.Commons.TMessageType;
+  THorseModule                = Horse.Core.THorseModule;
+  PHorseModule                = Horse.Core.PHorseModule;
+  PHorseCore                  = Horse.Core.PHorseCore;
+  PHorseRouterTree            = Horse.Core.RouterTree.PHorseRouterTree;
+  THorseCrossSocketConfig     = Horse.Provider.Config.THorseCrossSocketConfig;
+>>>>>>> Stashed changes
 
 {$IF DEFINED(HORSE_ISAPI)}
   THorseProvider = Horse.Provider.ISAPI.THorseProvider;
@@ -92,16 +123,22 @@ type
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.Daemon.THorseProvider;
   {$ELSE}
-     Horse.Provider.Daemon.THorseProvider;
+    Horse.Provider.Daemon.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_LCL)}
-    THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
+  THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
 {$ELSEIF DEFINED(HORSE_VCL)}
   THorseProvider = Horse.Provider.VCL.THorseProvider;
+{$ELSEIF DEFINED(HORSE_CROSSSOCKET)}
+  THorseProvider = Horse.Provider.CrossSocket.THorseProviderCrossSocket;
 {$ELSE}
   THorseProvider =
   {$IF DEFINED(FPC)}
+    {$IF DEFINED(HORSE_CROSSSOCKET)}
+    Horse.Provider.CrossSocket.THorseProviderCrossSocket;
+    {$ELSE}
     Horse.Provider.FPC.HTTPApplication.THorseProvider;
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_NOPROVIDER)}
     Horse.Provider.Abstract.THorseProviderAbstract;
   {$ELSE}
