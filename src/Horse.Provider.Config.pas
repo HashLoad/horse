@@ -1,4 +1,4 @@
-unit Horse.Provider.Config;
+﻿unit Horse.Provider.Config;
 
 // =============================================================================
 //  Horse.Provider.Config  —  NEW FILE (Horse fork for CrossSocket provider)
@@ -30,8 +30,21 @@ unit Horse.Provider.Config;
 
 interface
 
+const
+  // [SEC-1] Safe defaults
+  DEFAULT_MAX_HEADER_SIZE  = 8192;             // 8 KB — matches nginx default
+  DEFAULT_MAX_BODY_SIZE    = 4 * 1024 * 1024;  // 4 MB
+  DEFAULT_IO_THREADS       = 0;                // 0 = library picks (CPU count)
+  // [SEC-6]
+  DEFAULT_DRAIN_TIMEOUT_MS = 5000;             // ms
+
+
 type
   THorseCrossSocketConfig = record
+
+    // IO model
+    IoThreads:       Integer;  // [SEC-2] 0 = library default (recommended)
+
     // ── Timeouts ─────────────────────────────────────────────────────────
     KeepAliveTimeout: Integer;
     // seconds; 0 = disable keep-alive entirely.
@@ -49,11 +62,13 @@ type
     // Default: 5000
 
     // ── Request size limits ───────────────────────────────────────────────
+    // Size limits [SEC-1]
     MaxHeaderSize: Integer;
     // Maximum size of all request headers combined, in bytes.
     // Matches the nginx default.
     // Default: 8192  (8 KB)
 
+    // Size limits [SEC-1]
     MaxBodySize: Int64;
     // Maximum request body size in bytes.  CrossSocket rejects bodies
     // larger than this with 413 before the Horse pipeline is entered.
@@ -66,6 +81,11 @@ type
     // Default: 10000
 
     // ── TLS / SSL ─────────────────────────────────────────────────────────
+
+    // SSL / TLS [SEC-3]
+    // SSL is enabled by passing SSLEnabled=True at construction.
+    // Certificates are loaded via SetCertificateFile / SetPrivateKeyFile
+    // on the TCrossSslSocketBase API — confirmed in Net.CrossSslSocket.Base.
     SSLEnabled: Boolean;
     // Set True to listen on HTTPS.  Requires SSLCertFile and SSLKeyFile.
     // Default: False
@@ -110,11 +130,13 @@ implementation
 
 class function THorseCrossSocketConfig.Default: THorseCrossSocketConfig;
 begin
+  Result.IoThreads      := DEFAULT_IO_THREADS;
+
   Result.KeepAliveTimeout := 30;
   Result.ReadTimeout      := 20;
-  Result.DrainTimeoutMs   := 5000;
-  Result.MaxHeaderSize    := 8192;
-  Result.MaxBodySize      := 4 * 1024 * 1024;   // 4 MB
+  Result.DrainTimeoutMs := DEFAULT_DRAIN_TIMEOUT_MS;     // [SEC-6]
+  Result.MaxHeaderSize    := DEFAULT_MAX_HEADER_SIZE;    // [SEC-1]
+  Result.MaxBodySize      := DEFAULT_MAX_BODY_SIZE;      // [SEC-1]
   Result.MaxConnections   := 10000;
   Result.SSLEnabled       := False;
   Result.SSLCertFile      := '';

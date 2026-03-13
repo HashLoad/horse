@@ -44,6 +44,23 @@ type
   =========================================================================== }
     FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
 { =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-4 — CrossSocket shadow fields
+  Reason: On the CrossSocket path FWebResponse is nil (no TWebResponse exists).
+  Every public method that previously wrote to FWebResponse now checks for nil
+  and falls through to these fields instead. The bridge reads them via the
+  read-only properties BodyText, ContentStream, and CSContentType.
+
+  FCSStatusCode  — integer HTTP status (default 200)
+  FCSBody        — string body set by Send(string) or Send<T>
+  FCSContentType — Content-Type set by ContentType(string) or SendFile
+  FCSContentStream — stream body set by SendFile/Download/Render
+  =========================================================================== }
+    FCSStatusCode:    Integer;
+    FCSBody:          string;
+    FCSContentType:   string;
+    FCSContentStream: TStream;   // non-owning — caller retains ownership
+{ =========================================================================== }
   public
     function Send(const AContent: string): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
@@ -82,6 +99,16 @@ type
   =========================================================================== }
     property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
 { =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-4 — read-only properties for the CrossSocket bridge
+  TResponseBridge.Flush reads these to write the response body and
+  Content-Type to ICrossHttpResponse.  All three are populated only when
+  FWebResponse is nil (CrossSocket path); on the Indy path they are empty.
+  =========================================================================== }
+    property BodyText:       string  read FCSBody;
+    property ContentStream:  TStream read FCSContentStream;
+    property CSContentType:  string  read FCSContentType;
+{ =========================================================================== }
     destructor Destroy; override;
   end;
 
@@ -98,7 +125,10 @@ uses
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
-  FWebResponse.SetCustomHeader(AName, AValue);
+{ PATCH-RES-4 — nil-guard: skip FWebResponse on CrossSocket path }
+  if Assigned(FWebResponse) then
+    FWebResponse.SetCustomHeader(AName, AValue);
+{ end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it
   =========================================================================== }
@@ -120,6 +150,13 @@ end;
 
 function THorseResponse.ContentType(const AContentType: string): THorseResponse;
 begin
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSContentType := AContentType;
+    Exit(Self);
+  end;
+{ end PATCH-RES-4 }
   FWebResponse.ContentType := AContentType;
   Result := Self;
 end;
@@ -127,10 +164,16 @@ end;
 constructor THorseResponse.Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 begin
   FWebResponse := AWebResponse;
+{ PATCH-RES-4 — initialise FCSStatusCode to 200 (HTTP OK) }
+  FCSStatusCode := 200;
+{ end PATCH-RES-4 }
+  if Assigned(FWebResponse) then
+  begin
 {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
 {$IF DEFINED(FPC)}
-  FWebResponse.FreeContentStream := True;
+    FWebResponse.FreeContentStream := True;
 {$ENDIF}
+  end;
 { ===========================================================================
   PATCH-RES-1 — initialise FCustomHeaders
   =========================================================================== }
@@ -151,6 +194,12 @@ begin
   FContent := nil;
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Clear;
+{ PATCH-RES-4 — wipe CrossSocket shadow fields }
+  FCSBody          := '';
+  FCSContentType   := '';
+  FCSContentStream := nil;   // non-owning — never free here
+  FCSStatusCode    := 200;
+{ end PATCH-RES-4 }
 end;
 { =========================================================================== }
 
@@ -174,6 +223,13 @@ end;
 
 function THorseResponse.Send(const AContent: string): THorseResponse;
 begin
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSBody := AContent;
+    Exit(Self);
+  end;
+{ end PATCH-RES-4 }
   FWebResponse.Content := AContent;
   Result := Self;
 end;
@@ -186,13 +242,25 @@ end;
 
 function THorseResponse.RedirectTo(const ALocation: string): THorseResponse;
 begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
+{ PATCH-RES-4 — nil-guard: on CrossSocket path FWebResponse is nil;
+  AddHeader already dual-writes to FCustomHeaders so Location is captured.
+  Status delegates to FCSStatusCode when FWebResponse is nil. }
+  if Assigned(FWebResponse) then
+    FWebResponse.SetCustomHeader('Location', ALocation)
+  else
+    AddHeader('Location', ALocation);
+{ end PATCH-RES-4 }
   Result := Status(THTTPStatus.SeeOther);
 end;
 
 function THorseResponse.RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse;
 begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
+{ PATCH-RES-4 — nil-guard }
+  if Assigned(FWebResponse) then
+    FWebResponse.SetCustomHeader('Location', ALocation)
+  else
+    AddHeader('Location', ALocation);
+{ end PATCH-RES-4 }
   Result := Status(AStatus);
 end;
 
@@ -200,9 +268,14 @@ function THorseResponse.RemoveHeader(const AName: string): THorseResponse;
 var
   I: Integer;
 begin
-  I := FWebResponse.CustomHeaders.IndexOfName(AName);
-  if I <> -1 then
-    FWebResponse.CustomHeaders.Delete(I);
+{ PATCH-RES-4 — nil-guard: skip FWebResponse access on CrossSocket path }
+  if Assigned(FWebResponse) then
+  begin
+    I := FWebResponse.CustomHeaders.IndexOfName(AName);
+    if I <> -1 then
+      FWebResponse.CustomHeaders.Delete(I);
+  end;
+{ end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also remove from FCustomHeaders
   =========================================================================== }
@@ -219,26 +292,44 @@ end;
 
 function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSStatusCode := AStatus.ToInteger;
+    Exit(Self);
+  end;
+{ end PATCH-RES-4 }
 {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
   Result := Self;
 end;
 
 function THorseResponse.SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
 var
-  LFileName: string;
+  LFileName:    string;
+  LContentType: string;
 begin
   Result := Self;
   AFileStream.Position := 0;
-  LFileName := ExtractFileName(AFileName);
+  LFileName    := ExtractFileName(AFileName);
+  LContentType := AContentType;
+  if LContentType = EmptyStr then
+    LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
+
+{ PATCH-RES-4 — nil-guard: CrossSocket path captures stream + type as shadow fields }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSContentStream := AFileStream;   // non-owning
+    FCSContentType   := LContentType;
+    AddHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
+    Exit;
+  end;
+{ end PATCH-RES-4 }
 
   FWebResponse.FreeContentStream := False;
   FWebResponse.ContentLength := AFileStream.Size;
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
-
-  FWebResponse.ContentType := AContentType;
-  if (AContentType = EmptyStr) then
-    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
+  FWebResponse.ContentType := LContentType;
 
 {$IF DEFINED(FPC)}
   FWebResponse.SendContent;
@@ -268,20 +359,31 @@ end;
 
 function THorseResponse.Download(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
 var
-  LFileName: string;
+  LFileName:    string;
+  LContentType: string;
 begin
   Result := Self;
   AFileStream.Position := 0;
-  LFileName := ExtractFileName(AFileName);
+  LFileName    := ExtractFileName(AFileName);
+  LContentType := AContentType;
+  if LContentType = EmptyStr then
+    LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
+
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSContentStream := AFileStream;   // non-owning
+    FCSContentType   := LContentType;
+    AddHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
+    Exit;
+  end;
+{ end PATCH-RES-4 }
 
   FWebResponse.FreeContentStream := False;
   FWebResponse.ContentLength := AFileStream.Size;
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
-
-  FWebResponse.ContentType := AContentType;
-  if (AContentType = EmptyStr) then
-    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
+  FWebResponse.ContentType := LContentType;
 
 {$IF DEFINED(FPC)}
   FWebResponse.SendContent;
@@ -324,11 +426,22 @@ end;
 
 function THorseResponse.Status: Integer;
 begin
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+    Exit(FCSStatusCode);
+{ end PATCH-RES-4 }
   Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF};
 end;
 
 function THorseResponse.Status(const AStatus: Integer): THorseResponse;
 begin
+{ PATCH-RES-4 — nil-guard }
+  if not Assigned(FWebResponse) then
+  begin
+    FCSStatusCode := AStatus;
+    Exit(Self);
+  end;
+{ end PATCH-RES-4 }
 {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
   Result := Self;
 end;

@@ -1,4 +1,4 @@
-unit Horse.Request;
+﻿unit Horse.Request;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -34,6 +34,15 @@ type
     FBody: TObject;
     FSession: TObject;
     FSessions: THorseSessions;
+{ ===========================================================================
+  PATCH-REQ-3 — CrossSocket shadow fields (populated by Populate, nil by default)
+  =========================================================================== }
+    FCSMethod:      string;
+    FCSMethodType:  TMethodType;
+    FCSPathInfo:    string;
+    FCSContentType: string;
+    FCSRemoteAddr:  string;
+{ =========================================================================== }
     procedure InitializeQuery;
     procedure InitializeParams;
     procedure InitializeContentFields;
@@ -58,7 +67,7 @@ type
     function Host: string; virtual;
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
-    constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
+    constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}); overload;
 { ===========================================================================
   PATCH-REQ-1 — added parameterless constructor overload
   Reason: THorseContextPool.WarmUp pre-allocates THorseRequest instances at
@@ -78,6 +87,41 @@ type
     • param collections — cleared in place, objects reused
   =========================================================================== }
     procedure Clear;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-REQ-3 — added Populate procedure and RemoteAddr function
+  Reason: The CrossSocket bridge must inject per-request values directly
+  into THorseRequest without a live TWebRequest.  All fields below were
+  previously read-only delegations to FWebRequest; they now have private
+  shadow fields that are populated here and returned when FWebRequest is nil.
+
+  Fields injected via Populate:
+    FCSMethod      — method string ('GET','POST',…)
+    FCSMethodType  — parsed TMethodType
+    FCSPathInfo    — decoded path ('/api/users/1')
+    FCSContentType — Content-Type header value
+    FCSRemoteAddr  — real peer socket address
+
+  RemoteAddr is a new public function (no equivalent existed before).
+  MethodType, ContentType, PathInfo fall through to the CS fields when
+  FWebRequest is nil (nil-guard added to each implementation).
+  =========================================================================== }
+    procedure Populate(
+      const AMethod:      string;
+      AMethodType:        TMethodType;
+      const APath:        string;
+      const AContentType: string;
+      const ARemoteAddr:  string
+    );
+    function RemoteAddr: string; virtual;
+{ ===========================================================================
+  PATCH-REQ-4 — PopulateCookiesFromHeader
+  Parses the raw "Cookie: name=value; name2=value2" header string into the
+  FCookie param collection.  Called by the CrossSocket request bridge after
+  Populate() so that Req.Cookie works on the CrossSocket path without any
+  dependency on FWebRequest.
+  =========================================================================== }
+    procedure PopulateCookiesFromHeader(const ACookieHeader: string);
 { =========================================================================== }
     destructor Destroy; override;
   end;
@@ -147,6 +191,25 @@ end;
 
 { ===========================================================================
   PATCH-REQ-2 — Clear implementation
+  THorseCoreParam owns FParams (a TDictionary<string,string>) which is
+  exposed via the public Dictionary property. Calling Dictionary.Clear
+  wipes all entries in-place without freeing the THorseCoreParam object
+  itself, so the next request reuses the same objects with no heap churn.
+  FContent is a lazy TStrings cache inside THorseCoreParam — it is freed
+  and nil-ed here via FreeAndNil on the param object then recreated by the
+  next InitializeXxx call. Because FContent is private to THorseCoreParam
+  the cleanest way to reset it is to FreeAndNil the whole THorseCoreParam
+  and let the lazy accessor rebuild it, which is what the destructor does.
+  We therefore use Dictionary.Clear for the hot-path wipe and rely on the
+  lazy InitializeXxx pattern (already used everywhere in this class) when
+  a full reset including FContent is required.
+  Strategy per field:
+    FHeaders      — Dictionary.Clear  (header map reused, no FContent used)
+    FQuery        — FreeAndNil + lazy rebuild via InitializeQuery
+    FParams       — Dictionary.Clear  (route params repopulated by router)
+    FContentFields— FreeAndNil + lazy rebuild via InitializeContentFields
+    FCookie       — FreeAndNil + lazy rebuild via InitializeCookie
+    FSessions     — FreeAndNil + Create (no lazy init method exists)
   =========================================================================== }
 procedure THorseRequest.Clear;
 begin
@@ -157,18 +220,26 @@ begin
   // calling Clear, but we enforce the contract here as a safety net.
   FBody := nil;
   FSession := nil;
+{ PATCH-REQ-3 — wipe shadow fields so next request starts clean }
+  FCSMethod      := '';
+  FCSMethodType  := mtAny;
+  FCSPathInfo    := '';
+  FCSContentType := '';
+  FCSRemoteAddr  := '';
+{ end PATCH-REQ-3 }
   if Assigned(FHeaders) then
-    FHeaders.Clear;
+    FHeaders.Dictionary.Clear;
   if Assigned(FQuery) then
-    FQuery.Clear;
+    FreeAndNil(FQuery);
   if Assigned(FParams) then
-    FParams.Clear;
+    FParams.Dictionary.Clear;
   if Assigned(FContentFields) then
-    FContentFields.Clear;
+    FreeAndNil(FContentFields);
   if Assigned(FCookie) then
-    FCookie.Clear;
+    FreeAndNil(FCookie);
   if Assigned(FSessions) then
-    FSessions.Clear;
+    FreeAndNil(FSessions);
+  FSessions := THorseSessions.Create;
 end;
 { =========================================================================== }
 
@@ -197,6 +268,16 @@ var
 begin
   if not Assigned(FHeaders) then
   begin
+{ PATCH-REQ-3 — nil-guard: when FWebRequest is nil (CrossSocket path),
+  Populate already called InitializeHeaders which set FHeaders.
+  If somehow we arrive here with FWebRequest=nil and FHeaders=nil,
+  create an empty param rather than crashing on GetHeaders(nil). }
+    if not Assigned(FWebRequest) then
+    begin
+      FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False);
+      Exit(FHeaders);
+    end;
+{ end PATCH-REQ-3 }
     LParam := THorseCoreParamHeader.GetHeaders(FWebRequest);
     FHeaders := THorseCoreParam.Create(LParam).Required(False);
   end;
@@ -210,6 +291,10 @@ end;
 
 function THorseRequest.ContentType: string;
 begin
+{ PATCH-REQ-3 — nil-guard }
+  if not Assigned(FWebRequest) then
+    Exit(FCSContentType);
+{ end PATCH-REQ-3 }
   Result := FWebRequest.ContentType;
 end;
 
@@ -217,6 +302,10 @@ function THorseRequest.PathInfo: string;
 var
   LPrefix: string;
 begin
+{ PATCH-REQ-3 — nil-guard }
+  if not Assigned(FWebRequest) then
+    Exit(FCSPathInfo);
+{ end PATCH-REQ-3 }
   LPrefix := EmptyStr;
   if FWebRequest.PathInfo = EmptyStr then
     LPrefix := '/';
@@ -234,6 +323,14 @@ var
   LValue: String;
 begin
   FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
+{ PATCH-REQ-4 — nil-guard: on CrossSocket path FWebRequest is nil.
+  Multipart / form-url-encoded body parsing is the responsibility of
+  application-level middleware on the CrossSocket path (e.g. a middleware
+  that reads Req.Body and parses it manually).  We simply return an empty
+  param collection here rather than crashing on nil FWebRequest. }
+  if not Assigned(FWebRequest) then
+    Exit;
+{ end PATCH-REQ-4 }
   if (not CanLoadContentFields) then
     Exit;
 
@@ -285,6 +382,13 @@ var
   LItem: string;
 begin
   FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
+{ PATCH-REQ-4 — nil-guard: on CrossSocket path FWebRequest is nil.
+  Cookie parsing from the raw header string is handled by
+  THorseRequest.PopulateCookiesFromHeader, called by the CrossSocket bridge
+  after Populate().  Nothing to do here on that path. }
+  if not Assigned(FWebRequest) then
+    Exit;
+{ end PATCH-REQ-4 }
   for LItem in FWebRequest.CookieFields do
   begin
     LParam := LItem.Split(['=']);
@@ -351,6 +455,10 @@ end;
 
 function THorseRequest.MethodType: TMethodType;
 begin
+{ PATCH-REQ-3 — nil-guard: return shadow field when FWebRequest is nil }
+  if not Assigned(FWebRequest) then
+    Exit(FCSMethodType);
+{ end PATCH-REQ-3 }
   Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method); {$ELSE}FWebRequest.MethodType; {$ENDIF}
 end;
 
@@ -388,5 +496,78 @@ function THorseRequest.Sessions: THorseSessions;
 begin
   Result := FSessions;
 end;
+
+{ ===========================================================================
+  PATCH-REQ-3 — Populate implementation
+  Called once per request by the CrossSocket bridge AFTER the pool returns
+  a context.  Sets the five shadow fields and pre-builds FHeaders so the
+  lazy Headers() accessor never calls GetHeaders(nil).
+  =========================================================================== }
+procedure THorseRequest.Populate(
+  const AMethod:      string;
+  AMethodType:        TMethodType;
+  const APath:        string;
+  const AContentType: string;
+  const ARemoteAddr:  string
+);
+begin
+  FCSMethod      := AMethod;
+  FCSMethodType  := AMethodType;
+  FCSPathInfo    := APath;
+  FCSContentType := AContentType;
+  FCSRemoteAddr  := ARemoteAddr;
+
+  // Pre-build FHeaders as an empty container so the lazy init in Headers()
+  // never reaches THorseCoreParamHeader.GetHeaders(nil).
+  // The bridge then populates it via FHeaders.Dictionary.AddOrSetValue.
+  if not Assigned(FHeaders) then
+    FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False)
+  else
+    FHeaders.Dictionary.Clear;
+end;
+
+function THorseRequest.RemoteAddr: string;
+begin
+  Result := FCSRemoteAddr;
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  PATCH-REQ-4 — PopulateCookiesFromHeader implementation
+  Parses the RFC 6265 Cookie header value:
+    "name=value; name2=value2; ..."
+  Each pair is split on the first '=' so values that themselves contain '='
+  (e.g. Base64) are preserved intact.
+  Leading/trailing whitespace around names and values is trimmed.
+  FCookie is pre-built by InitializeCookie (which returns early on the
+  CrossSocket path), so we just call AddOrSetValue here.
+  =========================================================================== }
+procedure THorseRequest.PopulateCookiesFromHeader(const ACookieHeader: string);
+var
+  Pairs:    TArray<string>;
+  Pair:     string;
+  EqPos:    Integer;
+  CName, CValue: string;
+begin
+  if ACookieHeader = '' then
+    Exit;
+
+  // Ensure FCookie is initialised (InitializeCookie is idempotent — it will
+  // return immediately after creating an empty collection on CrossSocket path)
+  if not Assigned(FCookie) then
+    FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
+
+  Pairs := ACookieHeader.Split([';']);
+  for Pair in Pairs do
+  begin
+    EqPos := Pos('=', Pair);
+    if EqPos < 2 then Continue;   // skip malformed / empty-name pairs
+    CName  := Trim(Copy(Pair, 1, EqPos - 1));
+    CValue := Trim(Copy(Pair, EqPos + 1, MaxInt));
+    if CName = '' then Continue;
+    FCookie.Dictionary.AddOrSetValue(CName, CValue);
+  end;
+end;
+{ =========================================================================== }
 
 end.
