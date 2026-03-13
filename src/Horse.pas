@@ -55,6 +55,7 @@ uses
   Horse.Provider.Config;
 
 type
+<<<<<<< Updated upstream
   EHorseException = Horse.Exception.EHorseException;
   EHorseCallbackInterrupted = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
   TProc = Horse.Proc.TProc;
@@ -74,6 +75,27 @@ type
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
+=======
+  EHorseException             = Horse.Exception.EHorseException;
+  EHorseCallbackInterrupted   = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
+  TProc                       = Horse.Proc.TProc;
+  TNextProc                   = Horse.Proc.TNextProc;
+  THorseList                  = Horse.Core.Param.THorseList;
+  THorseCoreParam             = Horse.Core.Param.THorseCoreParam;
+  THorseCoreParamConfig       = Horse.Core.Param.Config.THorseCoreParamConfig;
+  THorseRequest               = Horse.Request.THorseRequest;
+  THorseResponse              = Horse.Response.THorseResponse;
+  THorseCallback              = Horse.Callback.THorseCallback;
+  THTTPStatus                 = Horse.Commons.THTTPStatus;
+  TMimeTypes                  = Horse.Commons.TMimeTypes;
+  THorseMimeTypes             = Horse.Mime.THorseMimeTypes;
+  TMessageType                = Horse.Commons.TMessageType;
+  THorseModule                = Horse.Core.THorseModule;
+  PHorseModule                = Horse.Core.PHorseModule;
+  PHorseCore                  = Horse.Core.PHorseCore;
+  PHorseRouterTree            = Horse.Core.RouterTree.PHorseRouterTree;
+  THorseCrossSocketConfig     = Horse.Provider.Config.THorseCrossSocketConfig;
+>>>>>>> Stashed changes
 
 {$IF DEFINED(HORSE_ISAPI)}
   THorseProvider = Horse.Provider.ISAPI.THorseProvider;
@@ -101,10 +123,10 @@ type
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.Daemon.THorseProvider;
   {$ELSE}
-     Horse.Provider.Daemon.THorseProvider;
+    Horse.Provider.Daemon.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_LCL)}
-    THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
+  THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
 {$ELSEIF DEFINED(HORSE_VCL)}
   THorseProvider = Horse.Provider.VCL.THorseProvider;
 {$ELSEIF DEFINED(HORSE_CROSSSOCKET)}
