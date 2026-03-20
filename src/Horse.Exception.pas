@@ -241,7 +241,8 @@ end;
 
 destructor EHorseException.Destroy;
 begin
-  FCustomFields.Free();
+  if FCustomFields <> nil then
+    FCustomFields.Free();
   inherited;
 end;
 
