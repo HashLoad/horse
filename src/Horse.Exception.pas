@@ -11,13 +11,18 @@ uses
   SysUtils,
   fpjson,
   jsonparser,
+  Generics.Collections;
 {$ELSE}
   System.SysUtils,
   System.JSON,
+  System.Generics.Collections,
 {$ENDIF}
   Horse.Commons;
 
 type
+  TStringDictionary = {$IF NOT DEFINED(FPC)} TDictionary<String, String>;
+                      {$ELSE} specialize TDictionary<String, String>; {$ENDIF}
+
   EHorseException = class(Exception)
   strict private
     FError: string;
@@ -28,6 +33,7 @@ type
     FHint: string;
     FUnit: string;
     FDetail: string;
+    FCustomFields: TStringDictionary;
   public
     constructor Create; reintroduce;
     function Error(const AValue: string): EHorseException; overload;
@@ -46,26 +52,54 @@ type
     function &Unit: string; overload;
     function Detail(const AValue: string): EHorseException; overload;
     function Detail: string; overload;
+{$IF DEFINED(FPC)}
+    function Custom(const AKey: String; AValue: String): EHorseException; overload;
+{$ELSE}
+    function Custom<V>(const AKey: String; AValue: V): EHorseException; overload;
+{$ENDIF}
     function ToJSON: string; virtual;
     function ToJSONObject: TJSONObject; virtual;
+    destructor Destroy(); override;
     class function New: EHorseException;
   end;
 
 implementation
 
 uses   
-{$IF DEFINED(FPC)} 
+{$IF DEFINED(FPC)}
   TypInfo;
 {$ELSE}
-  System.TypInfo; 
+  System.TypInfo,
+  System.Rtti;
 {$ENDIF}
 
 constructor EHorseException.Create;
 begin
   FError := EmptyStr;
   FStatus := THTTPStatus.InternalServerError;
+  FCustomFields := nil;
   FCode := 0;
 end;
+
+{$IF DEFINED(FPC)}
+function EHorseException.Custom(const AKey: String; AValue: String): EHorseException;
+begin
+  if FCustomFields = nil then
+    FCustomFields := TDictionary<String, String>.Create();
+
+  FCustomFields.AddOrSetValue(AKey, AValue);
+  Result := Self;
+end;
+{$ELSE}
+function EHorseException.Custom<V>(const AKey: String; AValue: V): EHorseException;
+begin
+  if FCustomFields = nil then
+    FCustomFields := TDictionary<String, String>.Create();
+
+  FCustomFields.AddOrSetValue(AKey, TValue.From<V>(AValue).ToString());
+  Result := Self;
+end;
+{$ENDIF}
 
 class function EHorseException.New: EHorseException;
 begin
@@ -196,6 +230,19 @@ begin
 
   if not FDetail.Trim.IsEmpty then
     Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('detail', FDetail);
+
+  if FCustomFields <> nil then
+  begin
+    for var FieldEntry in FCustomFields do
+      Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}(FieldEntry.Key, FieldEntry.Value);
+  end;
+
+end;
+
+destructor EHorseException.Destroy;
+begin
+  FCustomFields.Free();
+  inherited;
 end;
 
 end.
