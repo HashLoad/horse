@@ -20,8 +20,7 @@ uses
   Horse.Commons;
 
 type
-  TStringDictionary = {$IF NOT DEFINED(FPC)} TDictionary<String, String>;
-                      {$ELSE} specialize TDictionary<String, String>; {$ENDIF}
+  TStringDictionary = TDictionary<String, String>;
 
   EHorseException = class(Exception)
   strict private
@@ -208,6 +207,8 @@ begin
 end;
 
 function EHorseException.ToJSONObject: TJsonObject;
+var
+  FieldEntry: TPair<string, string>;
 begin
   Result := TJSONObject.Create;
 
@@ -233,7 +234,7 @@ begin
 
   if FCustomFields <> nil then
   begin
-    for var FieldEntry in FCustomFields do
+    for FieldEntry in FCustomFields do
       Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}(FieldEntry.Key, FieldEntry.Value);
   end;
 
