@@ -7,6 +7,7 @@ resourcestring
 
   {$IF (CompilerVersion > 36.0)}
   sCannotGenerateSessionId = 'Cannot generate session ID';
+  sStreamingNotSupported = 'Reponse streaming is not supported';
   {$ENDIF}
 
   sOnlyOneDispatcher = 'Only one WebDispatcher per form/data module';

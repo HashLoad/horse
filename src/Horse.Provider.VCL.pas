@@ -1,10 +1,13 @@
 unit Horse.Provider.VCL;
 
+{ PATCH-VCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
+
 interface
 
 {$IF DEFINED(HORSE_VCL)}
 uses
   Horse.Provider.Abstract,
+  Horse.Provider.Config,
   Horse.Constants,
   Horse.Provider.IOHandleSSL.Contract,
   IdHTTPWebBrokerBridge,
@@ -61,6 +64,9 @@ type
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    // PATCH-VCL-1
+    class procedure ListenWithConfig(const APort: Integer;
+      const AConfig: THorseCrossSocketConfig); override;
     class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
@@ -257,6 +263,14 @@ end;
 class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
+end;
+
+// PATCH-VCL-1
+class procedure THorseProvider.ListenWithConfig(const APort: Integer;
+  const AConfig: THorseCrossSocketConfig);
+begin
+  SetPort(APort);
+  InternalListen;
 end;
 
 class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);

@@ -136,8 +136,39 @@ uses
 {$ENDIF}
   Horse.Core.Param.Header;
 
+{ ===========================================================================
+  PATCH-REQ-5 — Body: string nil-guard
+  On the CrossSocket path FWebRequest is nil.  FBody holds a non-owning
+  reference to the CrossSocket receive buffer (a TStream).  Read and return
+  its contents as a UTF-8 string.  If FBody is nil or not a stream, return
+  an empty string so that callers that check Body <> '' still work.
+  =========================================================================== }
 function THorseRequest.Body: string;
+{$IF NOT DEFINED(FPC)}
+var
+  LStream: TStream;
+  LBytes:  TBytes;
+{$ENDIF}
 begin
+  if not Assigned(FWebRequest) then
+  begin
+{$IF DEFINED(FPC)}
+    Result := '';
+{$ELSE}
+    if Assigned(FBody) and (FBody is TStream) then
+    begin
+      LStream := TStream(FBody);
+      LStream.Position := 0;
+      SetLength(LBytes, LStream.Size);
+      if LStream.Size > 0 then
+        LStream.Read(LBytes[0], LStream.Size);
+      Result := TEncoding.UTF8.GetString(LBytes);
+    end
+    else
+      Result := '';
+{$ENDIF}
+    Exit;
+  end;
   Result := FWebRequest.Content;
 end;
 
@@ -284,8 +315,22 @@ begin
   Result := FHeaders;
 end;
 
+{ ===========================================================================
+  PATCH-REQ-6 — Host nil-guard
+  On the CrossSocket path FWebRequest is nil.  Return the Host header value
+  from the already-populated FHeaders dictionary.  The request bridge
+  validates Host ([SEC-17]) before populating FHeaders, so it is always
+  present on valid CrossSocket requests.
+  =========================================================================== }
 function THorseRequest.Host: string;
 begin
+  if not Assigned(FWebRequest) then
+  begin
+    Result := '';
+    if Assigned(FHeaders) then
+      FHeaders.Dictionary.TryGetValue('Host', Result);
+    Exit;
+  end;
   Result := FWebRequest.Host;
 end;
 
@@ -401,12 +446,23 @@ begin
   FParams := THorseCoreParam.Create(THorseList.Create).Required(True);
 end;
 
+{ ===========================================================================
+  PATCH-REQ-7 — InitializeQuery nil-guard
+  On the CrossSocket path FWebRequest is nil.  Query parameters are
+  pre-populated by the CrossSocket request bridge directly via
+  AHorseReq.Query.Dictionary.AddOrSetValue, which triggers this method
+  as the lazy initialiser (FQuery is nil on first call).  We create the
+  empty param collection and return early — the bridge then populates it.
+  Accessing FWebRequest.QueryFields on the CrossSocket path would crash.
+  =========================================================================== }
 procedure THorseRequest.InitializeQuery;
 var
   LItem, LKey, LValue: string;
   LEqualFirstPos: Integer;
 begin
   FQuery := THorseCoreParam.Create(THorseList.Create).Required(False);
+  if not Assigned(FWebRequest) then
+    Exit;  // CrossSocket path: bridge populates query dict directly
   for LItem in FWebRequest.QueryFields do
   begin
     LEqualFirstPos := Pos('=', LItem);

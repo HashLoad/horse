@@ -37,6 +37,8 @@ const
   DEFAULT_IO_THREADS       = 0;                // 0 = library picks (CPU count)
   // [SEC-6]
   DEFAULT_DRAIN_TIMEOUT_MS = 5000;             // ms
+  // Compression
+  DEFAULT_MIN_COMPRESS_SIZE = 512;             // bytes — matches CrossSocket MIN_COMPRESS_SIZE
 
 
 type
@@ -49,11 +51,15 @@ type
     KeepAliveTimeout: Integer;
     // seconds; 0 = disable keep-alive entirely.
     // Default: 30
+    // NOTE: CrossSocket does not currently expose a KeepAlive timeout
+    // property.  This field is reserved for future use.
 
     ReadTimeout: Integer;
     // seconds; enforced by CrossSocket at the socket layer.
     // Mitigates slow-HTTP (Slowloris) attacks.
     // Default: 20  — never leave at 0 (would be unlimited).
+    // NOTE: CrossSocket does not currently expose a ReadTimeout property.
+    // This field is reserved for future use.
 
     DrainTimeoutMs: Integer;
     // milliseconds to wait for in-flight requests to complete when
@@ -79,6 +85,20 @@ type
     // Maximum number of simultaneous open connections.
     // Prevents file-descriptor exhaustion under a connection-flood DoS.
     // Default: 10000
+    // NOTE: CrossSocket does not currently expose a MaxConnections property.
+    // This field is reserved for future use.
+
+    // ── Compression ───────────────────────────────────────────────────────
+    Compressible: Boolean;
+    // When True, CrossSocket will gzip-compress responses whose Content-Type
+    // is compressible and whose body exceeds MinCompressSize bytes.
+    // Mapped directly to TCrossHttpServer.Compressible.
+    // Default: False
+
+    MinCompressSize: Int64;
+    // Minimum response body size (bytes) below which compression is skipped.
+    // Mapped directly to TCrossHttpServer.MinCompressSize.
+    // Default: 512  (matches CrossSocket's internal MIN_COMPRESS_SIZE)
 
     // ── TLS / SSL ─────────────────────────────────────────────────────────
 
@@ -98,6 +118,8 @@ type
 
     SSLKeyPassword: string;
     // Passphrase for an encrypted private key.  Leave empty if unencrypted.
+    // NOTE: CrossSocket does not currently expose a key-password API.
+    // This field is reserved for future use.
 
     SSLCACertFile: string;
     // Path to the CA certificate used to verify client certificates.
@@ -110,17 +132,16 @@ type
     // Default: False
 
     SSLCipherList: string;
-    // OpenSSL cipher-list string.  Empty = use the built-in AEAD-only list
-    // defined in Horse.Provider.CrossSocket.Server (TLS 1.2 + TLS 1.3,
-    // forward secrecy, no RC4/3DES/export).
+    // OpenSSL cipher-list string (TLS 1.2 format).  Empty = use CrossSocket's
+    // built-in secure list (Node.js-derived, ECDHE/DHE + AES-GCM/ChaCha20).
     // Override only when you have a specific compliance requirement.
+    // Applied via SSL_CTX_set_cipher_list on the OpenSSL context.
 
     // ── Server identity ───────────────────────────────────────────────────
     ServerBanner: string;
     // Value to emit in the HTTP Server: response header.
-    // Empty string suppresses the header (replaced with 'unknown') to
-    // prevent library/version fingerprinting.
-    // Default: ''  (suppressed)
+    // Empty string emits 'unknown' to prevent library/version fingerprinting.
+    // Default: ''  (results in 'unknown')
 
     // ── Factory ───────────────────────────────────────────────────────────
     class function Default: THorseCrossSocketConfig; static;
@@ -130,22 +151,26 @@ implementation
 
 class function THorseCrossSocketConfig.Default: THorseCrossSocketConfig;
 begin
-  Result.IoThreads      := DEFAULT_IO_THREADS;
+  Result.IoThreads         := DEFAULT_IO_THREADS;
 
-  Result.KeepAliveTimeout := 30;
-  Result.ReadTimeout      := 20;
-  Result.DrainTimeoutMs := DEFAULT_DRAIN_TIMEOUT_MS;     // [SEC-6]
-  Result.MaxHeaderSize    := DEFAULT_MAX_HEADER_SIZE;    // [SEC-1]
-  Result.MaxBodySize      := DEFAULT_MAX_BODY_SIZE;      // [SEC-1]
-  Result.MaxConnections   := 10000;
-  Result.SSLEnabled       := False;
-  Result.SSLCertFile      := '';
-  Result.SSLKeyFile       := '';
-  Result.SSLKeyPassword   := '';
-  Result.SSLCACertFile    := '';
-  Result.SSLVerifyPeer    := False;
-  Result.SSLCipherList    := '';    // empty = use SECURE_CIPHER_LIST constant
-  Result.ServerBanner     := '';    // empty = suppress Server: header
+  Result.KeepAliveTimeout  := 30;
+  Result.ReadTimeout       := 20;
+  Result.DrainTimeoutMs    := DEFAULT_DRAIN_TIMEOUT_MS;   // [SEC-6]
+  Result.MaxHeaderSize     := DEFAULT_MAX_HEADER_SIZE;    // [SEC-1]
+  Result.MaxBodySize       := DEFAULT_MAX_BODY_SIZE;      // [SEC-1]
+  Result.MaxConnections    := 10000;
+
+  Result.Compressible      := False;
+  Result.MinCompressSize   := DEFAULT_MIN_COMPRESS_SIZE;
+
+  Result.SSLEnabled        := False;
+  Result.SSLCertFile       := '';
+  Result.SSLKeyFile        := '';
+  Result.SSLKeyPassword    := '';
+  Result.SSLCACertFile     := '';
+  Result.SSLVerifyPeer     := False;
+  Result.SSLCipherList     := '';    // empty = use CrossSocket built-in list
+  Result.ServerBanner      := '';    // empty = emit 'unknown'
 end;
 
 end.

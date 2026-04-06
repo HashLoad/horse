@@ -1,5 +1,7 @@
 unit Horse.Provider.FPC.HTTPApplication;
 
+{ PATCH-FPCHTTP-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
+
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$ENDIF}
@@ -14,6 +16,7 @@ uses
   fpHTTP,
   fphttpapp,
   Horse.Provider.Abstract,
+  Horse.Provider.Config,
   Horse.Constants,
   Horse.Proc;
 
@@ -46,6 +49,9 @@ type
     class procedure Listen(const APort: Integer; const ACallback: TProc); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallback: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
+    // PATCH-FPCHTTP-1
+    class procedure ListenWithConfig(const APort: Integer;
+      const AConfig: THorseCrossSocketConfig); override;
     class function IsRunning: Boolean;
   end;
 {$ENDIF}
@@ -155,6 +161,14 @@ end;
 class procedure THorseProvider.Listen(const APort: Integer; const ACallback: TProc);
 begin
   Listen(APort, FHost, ACallback);
+end;
+
+// PATCH-FPCHTTP-1
+class procedure THorseProvider.ListenWithConfig(const APort: Integer;
+  const AConfig: THorseCrossSocketConfig);
+begin
+  SetPort(APort);
+  InternalListen;
 end;
 
 class procedure THorseProvider.SetHost(const AValue: string);

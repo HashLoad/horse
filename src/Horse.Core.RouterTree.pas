@@ -142,12 +142,47 @@ var
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
 begin
-  LPathInfo := {$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF};
+{ ===========================================================================
+  PATCH-TREE-1 — use nil-guarded getters instead of RawWebRequest directly.
+  The original code accessed ARequest.RawWebRequest.RawPathInfo (Delphi) /
+  ARequest.RawWebRequest.PathInfo (FPC) and ARequest.RawWebRequest.MethodType
+  directly.  On the CrossSocket path FWebRequest is always nil, so those
+  accesses raised an Access Violation on every single request.
+  THorseRequest.PathInfo and MethodType both have nil-guards (PATCH-REQ-3)
+  that return the FCS shadow fields when FWebRequest is nil — use those.
+  The same getters are correct for Indy/FPC paths: they delegate to
+  FWebRequest when it is not nil, so all providers remain compatible.
+  =========================================================================== }
+    LPathInfo := {$IF DEFINED(FPC)}
+	               {$IF DEFINED(HORSE_CROSSSOCKET)}
+				   ARequest.PathInfo
+				   {$ELSE}
+				   ARequest.RawWebRequest.PathInfo
+				   {$ENDIF}
+             	{$ELSE}
+	               {$IF DEFINED(HORSE_CROSSSOCKET)}
+				   ARequest.PathInfo
+				   {$ELSE}
+    			   ARequest.RawWebRequest.RawPathInfo
+				   {$ENDIF}
+				{$ENDIF};
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
   LQueue := GetQueuePath(LPathInfo, False);
   try
-    LMethodType := {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method){$ELSE}ARequest.RawWebRequest.MethodType{$ENDIF};
+        LMethodType := {$IF DEFINED(FPC)}
+	               {$IF DEFINED(HORSE_CROSSSOCKET)}
+				   ARequest.MethodType
+				   {$ELSE}
+				   StringCommandToMethodType(ARequest.RawWebRequest.Method)
+				   {$ENDIF}
+             	{$ELSE}
+	               {$IF DEFINED(HORSE_CROSSSOCKET)}
+				   ARequest.MethodType
+				   {$ELSE}
+    			   ARequest.RawWebRequest.MethodType
+				   {$ENDIF}
+				{$ENDIF};
     Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
     if not Result then
     begin
