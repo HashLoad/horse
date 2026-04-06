@@ -329,7 +329,10 @@ begin
   FWebResponse.ContentLength := AFileStream.Size;
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
-  FWebResponse.ContentType := LContentType;
+
+  FWebResponse.ContentType := AContentType;
+  if (AContentType = EmptyStr) then
+    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
 {$IF DEFINED(FPC)}
   FWebResponse.SendContent;
@@ -383,7 +386,10 @@ begin
   FWebResponse.ContentLength := AFileStream.Size;
   FWebResponse.ContentStream := AFileStream;
   FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
-  FWebResponse.ContentType := LContentType;
+
+  FWebResponse.ContentType := AContentType;
+  if (AContentType = EmptyStr) then
+    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
 {$IF DEFINED(FPC)}
   FWebResponse.SendContent;

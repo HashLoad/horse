@@ -27,12 +27,12 @@ type
   private
     class var FOnListen: TProc;
     class var FOnStopListen: TProc;
-    // [PATCH-ABS-3] Port class var — mirrors the Indy/Console provider.
-    // CrossSocket's no-arg Listen reads this; callers set it via THorse.Port.
-    class var FPort: Integer;
+    // NOTE: FPort is intentionally NOT declared here.
+    // Each concrete provider owns its own FPort class var so there is no
+    // ambiguity between the Console provider's FPort and the CrossSocket
+    // provider's FPort. Sharing a single FPort in the abstract base caused
+    // silent port-not-changing bugs when both providers were compiled.
     class function GetOnStopListen: TProc; static;
-    class function GetPort: Integer; static;
-    class procedure SetPort(AValue: Integer); static;
   protected
     class function GetOnListen: TProc; static;
     class procedure SetOnListen(const AValue: TProc); static;
@@ -42,8 +42,6 @@ type
   public
     class property OnListen: TProc read GetOnListen write SetOnListen;
     class property OnStopListen: TProc read GetOnStopListen write SetOnStopListen;
-    // [PATCH-ABS-3] Port property — set before calling the no-arg Listen.
-    class property Port: Integer read GetPort write SetPort;
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
 { ===========================================================================
@@ -90,16 +88,6 @@ begin
   Result := FOnStopListen;
 end;
 
-class function THorseProviderAbstract.GetPort: Integer;
-begin
-  Result := FPort;
-end;
-
-class procedure THorseProviderAbstract.SetPort(AValue: Integer);
-begin
-  FPort := AValue;
-end;
-
 class procedure THorseProviderAbstract.SetOnListen(const AValue: TProc);
 begin
   FOnListen := AValue;
@@ -117,6 +105,10 @@ end;
 
 { ===========================================================================
   PATCH-ABS-2 — implementation of ListenWithConfig
+  Default fallback for providers that do not use THorseCrossSocketConfig.
+  Sets nothing (no shared FPort here) and delegates to the no-arg Listen.
+  AConfig is intentionally ignored — non-CrossSocket providers have no use
+  for it. CrossSocket overrides this completely.
   =========================================================================== }
 class procedure THorseProviderAbstract.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);

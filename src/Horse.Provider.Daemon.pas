@@ -1,10 +1,17 @@
 unit Horse.Provider.Daemon;
 
+{ PATCH-DAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1.
+  THorseProviderAbstract.ListenWithConfig calls the no-arg Listen, entering
+  InternalListen with FPort = 0 ? DEFAULT_PORT (9000).  Fix: override
+  ListenWithConfig here so it calls SetPort(APort) before InternalListen.
+  AConfig is intentionally ignored — Daemon/Indy has no use for CrossSocket config. }
+
 interface
 
 {$IF DEFINED(HORSE_DAEMON) AND NOT DEFINED(FPC)}
 uses
   Horse.Provider.Abstract,
+  Horse.Provider.Config,
   Horse.Constants,
   Horse.Provider.IOHandleSSL.Contract,
   IdHTTPWebBrokerBridge,
@@ -60,6 +67,9 @@ type
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    // PATCH-DAEMON-1
+    class procedure ListenWithConfig(const APort: Integer;
+      const AConfig: THorseCrossSocketConfig); override;
     class destructor UnInitialize;
   end;
 
@@ -326,6 +336,14 @@ end;
 class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen, ACallbackStopListen: TProc);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
+end;
+
+// PATCH-DAEMON-1
+class procedure THorseProvider.ListenWithConfig(const APort: Integer;
+  const AConfig: THorseCrossSocketConfig);
+begin
+  SetPort(APort);
+  InternalListen;
 end;
 
 class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
