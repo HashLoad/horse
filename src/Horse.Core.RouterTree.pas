@@ -55,6 +55,8 @@ type
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     constructor Create;
     destructor Destroy; override;
+
+    property Route: TObjectDictionary<string, THorseRouterTree> read FRoute;
   end;
 
 implementation
