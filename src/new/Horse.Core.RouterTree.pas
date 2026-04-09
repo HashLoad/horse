@@ -141,51 +141,51 @@ var
   LPathInfo: string;
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
-  LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
 { ===========================================================================
-  PATCH-TREE-1 - nil-guard for the CrossSocket path.
+  PATCH-TREE-1 — use nil-guarded getters instead of RawWebRequest directly.
+  The original code accessed ARequest.RawWebRequest.RawPathInfo (Delphi) /
+  ARequest.RawWebRequest.PathInfo (FPC) and ARequest.RawWebRequest.MethodType
+  directly.  On the CrossSocket path FWebRequest is always nil, so those
+  accesses raise an Access Violation on every request.
 
-  The original code accessed ARequest.RawWebRequest directly:
-    Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
-                 ARequest.RawWebRequest.MethodType
-    FPC/Indy:    ARequest.RawWebRequest.PathInfo
-                 StringCommandToMethodType(ARequest.RawWebRequest.Method)
+  Fix: use ARequest.RawPathInfo (PATCH-REQ-5) and ARequest.MethodType
+  (PATCH-REQ-3), both of which are nil-guarded on THorseRequest:
 
-  On the CrossSocket path FWebRequest is always nil (no TWebRequest is ever
-  created), so those direct accesses raise an Access Violation on every request.
+    RawPathInfo â€” CrossSocket path: returns FCSPathInfo
+                  Delphi/Indy path: returns FWebRequest.RawPathInfo
+                  FPC/Indy path:    returns FWebRequest.PathInfo
+                  This preserves the exact pre-patch Indy routing behaviour
+                  for percent-encoded URLs (the previous PathInfo change was
+                  a regression â€” PathInfo is decoded, RawPathInfo is not).
 
-    Indy path (LRawWebRequest <> nil):
-      Use the EXACT original expressions for both compilers - zero behaviour
-      change for any existing Indy/FPC user.  The upstream code is reproduced
-      verbatim inside the else branch, now referencing the local variable.
-
-    CrossSocket path (LRawWebRequest = nil):
-      Use the nil-guarded accessors on THorseRequest:
-        ARequest.RawPathInfo   (PATCH-REQ-5) - returns FCSPathInfo shadow field
-        ARequest.MethodType    (PATCH-REQ-3) - returns FCSMethodType shadow field
-      Both fields are populated by TRequestBridge.Populate before the pipeline
-      is entered, so they are always valid at this point.
+    MethodType  â€” CrossSocket path: returns FCSMethodType
+                  Indy path:        delegates to FWebRequest (unchanged)
   =========================================================================== }
-  LRawWebRequest := ARequest.RawWebRequest;
-  if not Assigned(LRawWebRequest) then
-  begin
-    // CrossSocket path: shadow fields set by TRequestBridge.Populate
-    LPathInfo   := ARequest.RawPathInfo;
-    LMethodType := ARequest.MethodType;
-  end
-  else
-  begin
-    // Indy path: original upstream expressions â€” not changed from HashLoad/horse
-    LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
-                 {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
-    LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
-                   {$ELSE}LRawWebRequest.MethodType{$ENDIF};
-  end;
+(*
+  LPathInfo := {$IF DEFINED(FPC)}
+                 {$IF DEFINED(HORSE_CROSSSOCKET)}ARequest.PathInfo
+                 {$ELSE}ARequest.RawWebRequest.PathInfo{$ENDIF}
+               {$ELSE}
+                 {$IF DEFINED(HORSE_CROSSSOCKET)}ARequest.PathInfo
+                 {$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF}
+               {$ENDIF};
+*)
+  LPathInfo := ARequest.RawPathInfo;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
   LQueue := GetQueuePath(LPathInfo, False);
   try
+(*
+    LMethodType := {$IF DEFINED(FPC)}
+                     {$IF DEFINED(HORSE_CROSSSOCKET)}ARequest.MethodType
+                     {$ELSE}StringCommandToMethodType(ARequest.RawWebRequest.Method){$ENDIF}
+                   {$ELSE}
+                     {$IF DEFINED(HORSE_CROSSSOCKET)}ARequest.MethodType
+                     {$ELSE}ARequest.RawWebRequest.MethodType{$ENDIF}
+                   {$ENDIF};
+*)
+    LMethodType := ARequest.MethodType;
     Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
     if not Result then
     begin

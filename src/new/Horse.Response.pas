@@ -38,15 +38,19 @@ type
   PATCH-RES-1 — added FCustomHeaders field
   Reason: CrossSocket has no TWebResponse. TResponseBridge.CopyHeaders
   iterates this list directly to write headers to ICrossHttpResponse.
-  AddHeader writes to both FWebResponse.SetCustomHeader (Indy path) and
-  this map (CrossSocket path) so all existing middleware that calls
+  AddHeader appends to both FWebResponse.SetCustomHeader (Indy path) and
+  this list (CrossSocket path) so all existing middleware that calls
   Res.AddHeader continues to work on both providers without any change.
 
-  Delphi: TDictionary<string,string> — O(1) lookup; last value wins for
-  duplicate keys (AddOrSetValue overwrites).
-  FPC: TStringList — same key=value string storage used on the Lazarus path.
+  Delphi: TList<TPair<string,string>> preserves duplicate-key headers
+  (notably Set-Cookie). TDictionary.AddOrSetValue silently discards all but
+  the last value for a given key, which meant only the last Set-Cookie header
+  survived the flush.
+
+  FPC: TStringList with Duplicates=dupAccept stores entries as 'Name=Value'
+  strings. IndexOfName/ValueFromIndex give O(n) access; correct for headers.
   =========================================================================== }
-    FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
+    FCustomHeaders: {$IF NOT DEFINED(FPC)}TList<TPair<string, string>>{$ELSE}TStringList{$ENDIF};
 { =========================================================================== }
 { ===========================================================================
   PATCH-RES-4 — CrossSocket shadow fields
@@ -101,7 +105,7 @@ type
   forward response headers to ICrossHttpResponse. Read-only — the bridge
   iterates only; all writes go through AddHeader as before.
   =========================================================================== }
-    property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
+    property CustomHeaders: {$IF NOT DEFINED(FPC)}TList<TPair<string, string>>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
 { =========================================================================== }
 { ===========================================================================
   PATCH-RES-4 — read-only properties for the CrossSocket bridge
@@ -135,12 +139,13 @@ begin
 { end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it.
-  Delphi: TDictionary.AddOrSetValue  FPC: TStringList.Values[name] := value
+  Append so duplicate-key headers (Set-Cookie) are preserved as separate entries.
+  Delphi: TList<TPair<string,string>>.Add  FPC: TStringList.Add('Name=Value')
   =========================================================================== }
 {$IF NOT DEFINED(FPC)}
-  FCustomHeaders.AddOrSetValue(AName, AValue);
+  FCustomHeaders.Add(TPair<string, string>.Create(AName, AValue));
 {$ELSE}
-  FCustomHeaders.Values[AName] := AValue;
+  FCustomHeaders.Add(AName + '=' + AValue);
 {$ENDIF}
 { =========================================================================== }
   Result := Self;
@@ -185,12 +190,13 @@ begin
   end;
 { ===========================================================================
   PATCH-RES-1 — initialise FCustomHeaders
-  Delphi: TDictionary<string,string>  FPC: TStringList
+  Delphi: TList<TPair<string,string>>  FPC: TStringList (dupAccept)
   =========================================================================== }
 {$IF NOT DEFINED(FPC)}
-  FCustomHeaders := TDictionary<string, string>.Create;
+  FCustomHeaders := TList<TPair<string, string>>.Create;
 {$ELSE}
   FCustomHeaders := TStringList.Create;
+  FCustomHeaders.Duplicates := dupAccept;
 {$ENDIF}
 { =========================================================================== }
 end;
@@ -287,11 +293,16 @@ begin
   end;
 { end PATCH-RES-4 }
 { ===========================================================================
-  PATCH-RES-1 — also remove from FCustomHeaders
-  Delphi: TDictionary.Remove  FPC: TStringList delete by IndexOfName
+  PATCH-RES-1 — also remove from FCustomHeaders (first matching entry)
+  Delphi: linear scan on TList<TPair>  FPC: IndexOfName on TStringList
   =========================================================================== }
 {$IF NOT DEFINED(FPC)}
-  FCustomHeaders.Remove(AName);
+  for I := FCustomHeaders.Count - 1 downto 0 do
+    if SameText(FCustomHeaders[I].Key, AName) then
+    begin
+      FCustomHeaders.Delete(I);
+      Break;
+    end;
 {$ELSE}
   I := FCustomHeaders.IndexOfName(AName);
   if I >= 0 then
