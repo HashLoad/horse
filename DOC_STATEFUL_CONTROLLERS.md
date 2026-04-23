@@ -64,7 +64,7 @@ program DelphiProject;
 
 {$APPTYPE CONSOLE}
 
-uses Horse, Horse.Controller, UController;
+uses Horse, Horse.Controller, Horse.Commons, UController;
 
 begin
   // Mapeamento e Registro Automático
@@ -130,7 +130,7 @@ uses
   {$IFDEF UNIX}
   cthreads, // Essencial para aplicações console multithread no Linux/macOS
   {$ENDIF}
-  Horse, Horse.Controller, ucontroller;
+  uses Horse, Horse.Controller, Horse.Commons, ucontroller;
 
 begin
   // Mapeamento e Registro Automático (Sintaxe idêntica ao Delphi)
