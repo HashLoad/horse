@@ -44,7 +44,8 @@ uses
   Horse.Exception,
   Horse.Exception.Interrupted,
   Horse.Core.Param.Config,
-  Horse.Callback;
+  Horse.Callback,
+  Horse.Controller;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -65,6 +66,9 @@ type
   PHorseModule = Horse.Core.PHorseModule;
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
+  THorseController = Horse.Controller.THorseController;
+  THorseControllerClass = Horse.Controller.THorseControllerClass;
+  THorseController<T: THorseController, constructor> = Horse.Controller.THorseController<T>;
 
 {$IF DEFINED(HORSE_ISAPI)}
   THorseProvider = Horse.Provider.ISAPI.THorseProvider;
