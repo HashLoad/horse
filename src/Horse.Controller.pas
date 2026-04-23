@@ -44,23 +44,106 @@ type
   THorseControllerClass = class of THorseController;
 
   TControllerActionMap = record
+    ControllerClass: THorseControllerClass;
     Path: string;
     MethodType: TMethodType;
     MethodName: string;
   end;
 
-  THorseController<T: THorseController, constructor> = class
+  THorseControllerRegistry = class
   private
     class var FRoutes: TArray<TControllerActionMap>;
   public
+    class procedure RegisterRoute(AClass: THorseControllerClass; const APath: string; AMethodType: TMethodType; const AMethodName: string);
+    class function GetRoutes: TArray<TControllerActionMap>;
+    class procedure Dispatcher(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc); {$IF DEFINED(FPC)} static; {$ENDIF}
+  end;
+
+  THorseController<T: THorseController, constructor> = class
+  public
     class procedure Map(const APath: string; AMethodType: TMethodType; const AMethodName: string);
-    class procedure Handle(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc);
   end;
 
 implementation
 
 uses
   Horse;
+
+{ THorseControllerRegistry }
+
+class procedure THorseControllerRegistry.RegisterRoute(AClass: THorseControllerClass; const APath: string; AMethodType: TMethodType; const AMethodName: string);
+var
+  LLength: Integer;
+begin
+  LLength := Length(FRoutes);
+  SetLength(FRoutes, LLength + 1);
+  FRoutes[LLength].ControllerClass := AClass;
+  FRoutes[LLength].Path := APath;
+  FRoutes[LLength].MethodType := AMethodType;
+  FRoutes[LLength].MethodName := AMethodName;
+end;
+
+class function THorseControllerRegistry.GetRoutes: TArray<TControllerActionMap>;
+begin
+  Result := FRoutes;
+end;
+
+type
+  TControllerAction = procedure of object;
+
+class procedure THorseControllerRegistry.Dispatcher(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc);
+var
+  LController: THorseController;
+  LRoute: TControllerActionMap;
+  LMatched: Boolean;
+  LMethod: TMethod;
+  LAction: TControllerAction;
+  I: Integer;
+begin
+  LMatched := False;
+  LMethod.Code := nil;
+  LRoute.ControllerClass := nil;
+
+  for I := Low(FRoutes) to High(FRoutes) do
+  begin
+    LRoute := FRoutes[I];
+    if (LRoute.MethodType = ARequest.MethodType) or (LRoute.MethodType = mtAny) then
+    begin
+      if MatchRoute(ARequest.PathInfo, [LRoute.Path]) then
+      begin
+        LMatched := True;
+        Break;
+      end;
+    end;
+  end;
+
+  if LMatched and Assigned(LRoute.ControllerClass) then
+  begin
+    // For standard execution without specific constructor arguments, we instantiate using the class reference.
+    // In Delphi/FPC we must use a virtual constructor on the base class.
+    LController := LRoute.ControllerClass.Create(ARequest, AResponse, ANext);
+    try
+      {$IF DEFINED(FPC)}
+      LMethod.Code := Pointer(LController.MethodAddress(LRoute.MethodName));
+      {$ELSE}
+      LMethod.Code := LController.MethodAddress(LRoute.MethodName);
+      {$ENDIF}
+      if LMethod.Code <> nil then
+      begin
+        LMethod.Data := Pointer(LController);
+        LAction := TControllerAction(LMethod);
+        LAction();
+        Exit;
+      end
+      else
+        raise Exception.CreateFmt('Method "%s" not found or not published in controller "%s"', [LRoute.MethodName, LController.ClassName]);
+      
+      LController.Execute;
+    finally
+      LController.Free;
+    end;
+  end;
+end;
 
 { THorseController }
 
@@ -88,101 +171,34 @@ begin
   end;
 end;
 
-procedure THorseController.Get;
-begin
-end;
-
-procedure THorseController.Post;
-begin
-end;
-
-procedure THorseController.Put;
-begin
-end;
-
-procedure THorseController.Delete;
-begin
-end;
-
-procedure THorseController.Patch;
-begin
-end;
-
-procedure THorseController.Head;
-begin
-end;
+procedure THorseController.Get; begin end;
+procedure THorseController.Post; begin end;
+procedure THorseController.Put; begin end;
+procedure THorseController.Delete; begin end;
+procedure THorseController.Patch; begin end;
+procedure THorseController.Head; begin end;
 
 { THorseController<T> }
 
 class procedure THorseController<T>.Map(const APath: string; AMethodType: TMethodType; const AMethodName: string);
 var
-  LLength: Integer;
+  LCallback: THorseCallback;
 begin
-  LLength := Length(FRoutes);
-  SetLength(FRoutes, LLength + 1);
-  FRoutes[LLength].Path := APath;
-  FRoutes[LLength].MethodType := AMethodType;
-  FRoutes[LLength].MethodName := AMethodName;
+  THorseControllerRegistry.RegisterRoute(T, APath, AMethodType, AMethodName);
+
+  LCallback := {$IF DEFINED(FPC)} @THorseControllerRegistry.Dispatcher {$ELSE} THorseControllerRegistry.Dispatcher {$ENDIF};
 
   case AMethodType of
-    mtGet: THorse.Get(APath, Handle);
-    mtPost: THorse.Post(APath, Handle);
-    mtPut: THorse.Put(APath, Handle);
-    mtDelete: THorse.Delete(APath, Handle);
-    mtPatch: THorse.Patch(APath, Handle);
-    mtHead: THorse.Head(APath, Handle);
-    mtAny: THorse.Any(APath, Handle);
+    mtGet: THorse.Get(APath, LCallback);
+    mtPost: THorse.Post(APath, LCallback);
+    mtPut: THorse.Put(APath, LCallback);
+    mtDelete: THorse.Delete(APath, LCallback);
+    mtPatch: THorse.Patch(APath, LCallback);
+    mtHead: THorse.Head(APath, LCallback);
+    mtAny: THorse.All(APath, LCallback);
   end;
 end;
 
-type
-  TControllerAction = procedure of object;
-
-class procedure THorseController<T>.Handle(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc);
-var
-  LController: T;
-  LRoute: TControllerActionMap;
-  LMatched: Boolean;
-  LMethod: TMethod;
-  LAction: TControllerAction;
-  I: Integer;
-begin
-  LMatched := False;
-  LMethod.Code := nil;
-
-  for I := Low(FRoutes) to High(FRoutes) do
-  begin
-    LRoute := FRoutes[I];
-    if (LRoute.MethodType = ARequest.MethodType) or (LRoute.MethodType = mtAny) then
-    begin
-      if MatchRoute(ARequest.PathInfo, [LRoute.Path]) then
-      begin
-        LMatched := True;
-        Break;
-      end;
-    end;
-  end;
-
-  LController := T.Create(ARequest, AResponse, ANext);
-  try
-    if LMatched then
-    begin
-      LMethod.Code := LController.MethodAddress(LRoute.MethodName);
-      if LMethod.Code <> nil then
-      begin
-        LMethod.Data := LController;
-        LAction := TControllerAction(LMethod);
-        LAction();
-        Exit;
-      end
-      else
-        raise Exception.CreateFmt('Method "%s" not found or not published in controller "%s"', [LRoute.MethodName, LController.ClassName]);
-    end;
-
-    LController.Execute;
-  finally
-    LController.Free;
-  end;
-end;
+end.
 
 end.
