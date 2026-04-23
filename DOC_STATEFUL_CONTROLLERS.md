@@ -121,6 +121,9 @@ end.
 ```
 
 ### Projeto (LazarusProject.lpr)
+
+**Nota de Configuração:** Para que o compilador encontre as units do Horse, você deve adicionar o caminho para a pasta `src` do Horse nas configurações do seu projeto. Vá em **Project > Project Options > Compiler Options > Paths > Other unit files (-Fu)** e adicione o caminho.
+
 ```pascal
 program LazarusProject;
 
