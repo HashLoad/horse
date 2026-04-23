@@ -126,7 +126,11 @@ program LazarusProject;
 
 {$mode delphi}{$H+}
 
-uses Horse, Horse.Controller, ucontroller;
+uses
+  {$IFDEF UNIX}
+  cthreads, // Essencial para aplicações console multithread no Linux/macOS
+  {$ENDIF}
+  Horse, Horse.Controller, ucontroller;
 
 begin
   // Mapeamento e Registro Automático (Sintaxe idêntica ao Delphi)
