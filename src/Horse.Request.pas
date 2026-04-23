@@ -43,6 +43,28 @@ type
     FCSContentType: string;
     FCSRemoteAddr:  string;
 { =========================================================================== }
+{ ===========================================================================
+  PATCH-REQ-8 — Owned TWebRequest / TRequest adapter for middleware
+  compatibility on the CrossSocket path.
+
+  Problem solved:
+    Existing middleware (e.g. Horse.CORS) reads Req.RawWebRequest.Method / .Host /
+    .GetFieldByName(...). Before this patch, RawWebRequest returned the raw
+    FWebRequest, which is nil on the CrossSocket path — every such call AV'd.
+
+  Design:
+    The CrossSocket provider's TRequestBridge.Populate constructs a concrete
+    TCrossSocketWebRequest (subclass of TWebRequest on Delphi / TRequest on FPC)
+    backed by ICrossHttpRequest, and hands it to SetCSRawWebRequest. THorseRequest
+    OWNS the adapter: Clear and Destroy free it.
+
+  Field stays nil on the Indy path — FWebRequest remains the authoritative source
+  there (owned by the Indy provider, as before).
+
+  See: Horse.Provider.CrossSocket.WebRequestAdapter.pas
+  =========================================================================== }
+    FCSRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+{ =========================================================================== }
     procedure InitializeQuery;
     procedure InitializeParams;
     procedure InitializeContentFields;
@@ -140,6 +162,14 @@ type
   dependency on FWebRequest.
   =========================================================================== }
     procedure PopulateCookiesFromHeader(const ACookieHeader: string);
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-REQ-8 — setter for the owned RawWebRequest adapter. Called once per
+  request by the CrossSocket bridge right after Populate / header / cookie
+  population. Replaces any prior adapter instance (defence in depth —
+  Clear normally nils it first).
+  =========================================================================== }
+    procedure SetCSRawWebRequest(const ARawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 { =========================================================================== }
     destructor Destroy; override;
   end;
@@ -276,6 +306,11 @@ begin
   FCSContentType := '';
   FCSRemoteAddr  := '';
 { end PATCH-REQ-3 }
+{ PATCH-REQ-8 — free the per-request TWebRequest adapter (owned).
+  Nil on the Indy path (never assigned there); owned on CrossSocket path. }
+  if Assigned(FCSRawWebRequest) then
+    FreeAndNil(FCSRawWebRequest);
+{ end PATCH-REQ-8 }
   if Assigned(FHeaders) then
     FHeaders.Dictionary.Clear;
   if Assigned(FQuery) then
@@ -308,6 +343,12 @@ begin
     FBody.Free;
   if Assigned(FSessions) then
     FSessions.Free;
+{ PATCH-REQ-8 — free the owned TWebRequest adapter if Clear was not called
+  before Destroy (e.g. pool shutdown path). Safe because FCSRawWebRequest is
+  only ever populated on the CrossSocket path and is owned by THorseRequest. }
+  if Assigned(FCSRawWebRequest) then
+    FCSRawWebRequest.Free;
+{ end PATCH-REQ-8 }
   inherited;
 end;
 
@@ -552,7 +593,15 @@ end;
 
 function THorseRequest.RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
-  Result := FWebRequest;
+{ PATCH-REQ-8 — return the CrossSocket-path adapter when the Indy-path
+  FWebRequest is nil, so existing middleware that calls
+    Req.RawWebRequest.Method / .Host / .GetFieldByName(...)
+  works unchanged on the CrossSocket path. See
+  Horse.Provider.CrossSocket.WebRequestAdapter. }
+  if Assigned(FWebRequest) then
+    Exit(FWebRequest);
+  Result := FCSRawWebRequest;
+{ end PATCH-REQ-8 }
 end;
 
 function THorseRequest.Session(const ASession: TObject): THorseRequest;
@@ -655,6 +704,20 @@ begin
     if CName = '' then Continue;
     FCookie.Dictionary.AddOrSetValue(CName, CValue);
   end;
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  PATCH-REQ-8 — SetCSRawWebRequest implementation
+  Called once per request by TRequestBridge.Populate. Replaces any existing
+  adapter (defensive; the normal path is Clear -> nil -> Populate -> set).
+  =========================================================================== }
+procedure THorseRequest.SetCSRawWebRequest(
+  const ARawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
+begin
+  if Assigned(FCSRawWebRequest) and (FCSRawWebRequest <> ARawWebRequest) then
+    FreeAndNil(FCSRawWebRequest);
+  FCSRawWebRequest := ARawWebRequest;
 end;
 { =========================================================================== }
 
