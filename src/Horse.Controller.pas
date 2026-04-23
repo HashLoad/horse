@@ -59,6 +59,9 @@ type
 
 implementation
 
+uses
+  Horse;
+
 { THorseController }
 
 constructor THorseController.Create(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc);
@@ -120,6 +123,16 @@ begin
   FRoutes[LLength].Path := APath;
   FRoutes[LLength].MethodType := AMethodType;
   FRoutes[LLength].MethodName := AMethodName;
+
+  case AMethodType of
+    mtGet: THorse.Get(APath, Handle);
+    mtPost: THorse.Post(APath, Handle);
+    mtPut: THorse.Put(APath, Handle);
+    mtDelete: THorse.Delete(APath, Handle);
+    mtPatch: THorse.Patch(APath, Handle);
+    mtHead: THorse.Head(APath, Handle);
+    mtAny: THorse.Any(APath, Handle);
+  end;
 end;
 
 type
