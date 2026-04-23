@@ -65,6 +65,20 @@ type
     FCSContentType:   string;
     FCSContentStream: TStream;   // non-owning — caller retains ownership
 { =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-6 — owned RawWebResponse adapter for CrossSocket path
+  Mirrors PATCH-REQ-8: when FWebResponse is nil (CrossSocket), middleware that
+  calls Res.RawWebResponse.SetCustomHeader(...) — e.g. Horse.CORS — would
+  crash with an AV. This field holds a TCrossSocketWebResponse adapter so
+  RawWebResponse returns a non-nil value.
+
+  Owned by THorseResponse: Clear frees it; Destroy frees it.
+  Nil on the Indy path (FWebResponse is the authoritative source there).
+
+  See: Horse.Provider.CrossSocket.WebResponseAdapter.pas
+  =========================================================================== }
+    FCSRawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
+{ =========================================================================== }
   public
     function Send(const AContent: string): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
@@ -94,6 +108,13 @@ type
   FWebResponse is set to nil — belongs to the previous Indy context.
   =========================================================================== }
     procedure Clear;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-6 — setter for the owned RawWebResponse adapter. Called once per
+  request by the CrossSocket provider after pool acquire. Replaces any prior
+  adapter instance (defence in depth — Clear normally nils it first).
+  =========================================================================== }
+    procedure SetCSRawWebResponse(const ARawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 { =========================================================================== }
 { ===========================================================================
   PATCH-RES-3 — added CustomHeaders read-only property
@@ -210,6 +231,23 @@ begin
   FCSContentStream := nil;   // non-owning — never free here
   FCSStatusCode    := 200;
 { end PATCH-RES-4 }
+{ PATCH-RES-6 — free the per-request TWebResponse adapter (owned).
+  Nil on the Indy path (never assigned there); owned on CrossSocket path. }
+  if Assigned(FCSRawWebResponse) then
+    FreeAndNil(FCSRawWebResponse);
+{ end PATCH-RES-6 }
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  PATCH-RES-6 — SetCSRawWebResponse implementation
+  =========================================================================== }
+procedure THorseResponse.SetCSRawWebResponse(
+  const ARawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
+begin
+  if Assigned(FCSRawWebResponse) and (FCSRawWebResponse <> ARawWebResponse) then
+    FreeAndNil(FCSRawWebResponse);
+  FCSRawWebResponse := ARawWebResponse;
 end;
 { =========================================================================== }
 
@@ -223,12 +261,23 @@ begin
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Free;
 { =========================================================================== }
+{ PATCH-RES-6 — free the owned TWebResponse adapter if Clear was not called
+  before Destroy (e.g. pool shutdown path). }
+  if Assigned(FCSRawWebResponse) then
+    FCSRawWebResponse.Free;
+{ end PATCH-RES-6 }
   inherited;
 end;
 
 function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
-  Result := FWebResponse;
+{ PATCH-RES-6 — return the CrossSocket adapter when FWebResponse is nil,
+  so middleware calling Res.RawWebResponse.SetCustomHeader (e.g. Horse.CORS)
+  works on the CrossSocket path without an AV. }
+  if Assigned(FWebResponse) then
+    Exit(FWebResponse);
+  Result := FCSRawWebResponse;
+{ end PATCH-RES-6 }
 end;
 
 function THorseResponse.Send(const AContent: string): THorseResponse;
@@ -240,6 +289,21 @@ begin
     Exit(Self);
   end;
 { end PATCH-RES-4 }
+{$IF NOT DEFINED(FPC)}
+{ PATCH-RES-5 — Indy empty-body fix
+  When ContentText = '' and ContentStream = nil, TIdHTTPResponseInfo.WriteContent
+  substitutes a default HTML body (<HTML><BODY><B>200 OK</B></BODY></HTML>).
+  Assigning an empty TMemoryStream forces Indy into the stream path: it sends
+  0 bytes and no HTML is generated.  FreeContentStream defaults to True so Indy
+  owns and frees the stream. }
+  if AContent = '' then
+  begin
+    FWebResponse.ContentStream := TMemoryStream.Create;
+    FWebResponse.ContentLength := 0;
+    Exit(Self);
+  end;
+{ end PATCH-RES-5 }
+{$ENDIF}
   FWebResponse.Content := AContent;
   Result := Self;
 end;
