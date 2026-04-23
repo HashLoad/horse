@@ -141,10 +141,13 @@ var
   LPathInfo: string;
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
+{ PATCH-TREE-1: LRawWebRequest stores the result of ARequest.RawWebRequest so
+  we can pass it to Assigned(). Assigned() requires a variable â€” it cannot
+  accept a function-call expression (dcc32 E2036 "Variable required"). }
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
 { ===========================================================================
-  PATCH-TREE-1 - nil-guard for the CrossSocket path.
+  PATCH-TREE-1 â€” nil-guard for the CrossSocket path.
 
   The original code accessed ARequest.RawWebRequest directly:
     Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
@@ -155,15 +158,17 @@ begin
   On the CrossSocket path FWebRequest is always nil (no TWebRequest is ever
   created), so those direct accesses raise an Access Violation on every request.
 
+  Fix strategy: store RawWebRequest in a local variable, test it once, branch.
+
     Indy path (LRawWebRequest <> nil):
-      Use the EXACT original expressions for both compilers - zero behaviour
+      Use the EXACT original expressions for both compilers â€” zero behaviour
       change for any existing Indy/FPC user.  The upstream code is reproduced
       verbatim inside the else branch, now referencing the local variable.
 
     CrossSocket path (LRawWebRequest = nil):
       Use the nil-guarded accessors on THorseRequest:
-        ARequest.RawPathInfo   (PATCH-REQ-5) - returns FCSPathInfo shadow field
-        ARequest.MethodType    (PATCH-REQ-3) - returns FCSMethodType shadow field
+        ARequest.RawPathInfo   (PATCH-REQ-5) â€” returns FCSPathInfo shadow field
+        ARequest.MethodType    (PATCH-REQ-3) â€” returns FCSMethodType shadow field
       Both fields are populated by TRequestBridge.Populate before the pipeline
       is entered, so they are always valid at this point.
   =========================================================================== }
