@@ -163,57 +163,72 @@ end;
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
-  function ReplaceParams(const AValue: string): string;
+  function MatchRouteOptimized(const APath, APattern: string): Boolean;
   var
-    LPart: string;
-    LSplitedPath: TArray<string>;
+    PathSegments, PatternSegments: TArray<string>;
+    I, PathLen, PatternLen: Integer;
+    TrimmedPath, TrimmedPattern: string;
   begin
-    Result := AValue;
-    LSplitedPath := AValue.Split(['/']);
-    for LPart in LSplitedPath do
+    Result := False;
+
+    // 1. Normaliza e divide os caminhos em segmentos
+    TrimmedPath := APath;
+    if TrimmedPath.StartsWith('/') then
+      TrimmedPath := TrimmedPath.Substring(1);
+    if TrimmedPath.EndsWith('/') then
+      TrimmedPath := TrimmedPath.Substring(0, TrimmedPath.Length - 1);
+
+    TrimmedPattern := APattern;
+    if TrimmedPattern.StartsWith('/') then
+      TrimmedPattern := TrimmedPattern.Substring(1);
+    if TrimmedPattern.EndsWith('/') then
+      TrimmedPattern := TrimmedPattern.Substring(0, TrimmedPattern.Length - 1);
+
+    PathSegments := TrimmedPath.Split(['/']);
+    PatternSegments := TrimmedPattern.Split(['/']);
+
+    PathLen := Length(PathSegments);
+    PatternLen := Length(PatternSegments);
+
+    // 2. Regra de Falha Rápida: Se o número de segmentos não for igual, não há match.
+    if PathLen <> PatternLen then
+      Exit;
+
+    // 3. Caso especial: rota raiz "/" (quando os paths vazios resultam em um array com um elemento vazio)
+    if (PathLen = 1) and (PatternLen = 1) and (PathSegments[0] = '') and (PatternSegments[0] = '') then
     begin
-      if LPart.StartsWith(':') then
-        Result := StringReplace(Result, LPart, '([^/]*)', []);
+      Result := True;
+      Exit;
     end;
-    Result := Trim(Result);
-    if not(Result.EndsWith('/')) then
-      Result := Result + '/';
+
+    // 4. Comparação segmento por segmento
+    for I := 0 to PathLen - 1 do
+    begin
+      // Se o segmento do padrão não começa com ':', ele deve ser idêntico (case-insensitive)
+      if not PatternSegments[I].StartsWith(':') then
+      begin
+        if AnsiCompareText(PathSegments[I], PatternSegments[I]) <> 0 then
+          Exit; // Falha se segmentos estáticos não baterem
+      end;
+      // Se o segmento do padrão começa com ':', ele é um wildcard e aceita qualquer valor.
+    end;
+
+    // Se o loop terminou sem falhas, a rota corresponde.
+    Result := True;
   end;
 
 var
-{$IF DEFINED(FPC)}
-  LRegexObj: TRegExpr;
-{$ENDIF}
-  I: Integer;
-  LText, LExpression: string;
+  LPattern: string;
 begin
-  Result := False;
-{$IF DEFINED(FPC)}
-  LRegexObj := TRegExpr.Create;
-  try
-{$ENDIF}
-    LText := Trim(AText);
-    if not(LText.EndsWith('/')) then
-      LText := LText + '/';
-    for I := Low(AValues) to High(AValues) do
+  for LPattern in AValues do
+  begin
+    if MatchRouteOptimized(AText, LPattern) then
     begin
-      LExpression := '^(' + ReplaceParams(AValues[I]) + ')$';
-{$IF DEFINED(FPC)}
-      LRegexObj.Expression := '(?i)' + LExpression;
-      if LRegexObj.Exec(LText) then
-{$ELSE}
-      if TRegEx.IsMatch(LText, LExpression, [roIgnoreCase]) then
-{$ENDIF}
-      begin
-        Result := True;
-        Exit;
-      end;
+      Result := True;
+      Exit;
     end;
-{$IF DEFINED(FPC)}
-  finally
-    LRegexObj.Free;
   end;
-{$ENDIF}
+  Result := False;
 end;
 
 { TLhsBracketsTypeHelper }
