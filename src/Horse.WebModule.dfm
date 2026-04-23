@@ -6,6 +6,7 @@ object HorseWebModule: THorseWebModule
       PathInfo = '/'
       OnAction = HandlerAction
     end>
-  Height = 230
-  Width = 415
+  Height = 345
+  Width = 623
+  PixelsPerInch = 144
 end

@@ -1,4 +1,4 @@
-unit Horse.Core.RouterTree;
+﻿unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -143,13 +143,56 @@ var
   LPathInfo: string;
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
+{ PATCH-TREE-1: LRawWebRequest stores the result of ARequest.RawWebRequest so
+  we can pass it to Assigned(). Assigned() requires a variable â€” it cannot
+  accept a function-call expression (dcc32 E2036 "Variable required"). }
+  LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
-  LPathInfo := {$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF};
+{ ===========================================================================
+  PATCH-TREE-1 â€” nil-guard for the CrossSocket path.
+
+  The original code accessed ARequest.RawWebRequest directly:
+    Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
+                 ARequest.RawWebRequest.MethodType
+    FPC/Indy:    ARequest.RawWebRequest.PathInfo
+                 StringCommandToMethodType(ARequest.RawWebRequest.Method)
+
+  On the CrossSocket path FWebRequest is always nil (no TWebRequest is ever
+  created), so those direct accesses raise an Access Violation on every request.
+
+  Fix strategy: store RawWebRequest in a local variable, test it once, branch.
+
+    Indy path (LRawWebRequest <> nil):
+      Use the EXACT original expressions for both compilers â€” zero behaviour
+      change for any existing Indy/FPC user.  The upstream code is reproduced
+      verbatim inside the else branch, now referencing the local variable.
+
+    CrossSocket path (LRawWebRequest = nil):
+      Use the nil-guarded accessors on THorseRequest:
+        ARequest.RawPathInfo   (PATCH-REQ-5) â€” returns FCSPathInfo shadow field
+        ARequest.MethodType    (PATCH-REQ-3) â€” returns FCSMethodType shadow field
+      Both fields are populated by TRequestBridge.Populate before the pipeline
+      is entered, so they are always valid at this point.
+  =========================================================================== }
+  LRawWebRequest := ARequest.RawWebRequest;
+  if not Assigned(LRawWebRequest) then
+  begin
+    // CrossSocket path: shadow fields set by TRequestBridge.Populate
+    LPathInfo   := ARequest.RawPathInfo;
+    LMethodType := ARequest.MethodType;
+  end
+  else
+  begin
+    // Indy path: original upstream expressions â€” not changed from HashLoad/horse
+    LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
+                 {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
+    LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
+                   {$ELSE}LRawWebRequest.MethodType{$ENDIF};
+  end;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
   LQueue := GetQueuePath(LPathInfo, False);
   try
-    LMethodType := {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method){$ELSE}ARequest.RawWebRequest.MethodType{$ENDIF};
     Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
     if not Result then
     begin
