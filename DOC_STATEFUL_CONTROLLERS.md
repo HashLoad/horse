@@ -109,7 +109,7 @@ begin
   LJSON := TJSONArray.Create;
   LJSON.Add('Lazarus User');
   LJSON.Add('FPC Power');
-  Response.Send(LJSON).Status(200);
+  Response.Send(LJSON.AsJSON).Status(200);
 end;
 
 procedure TUserController.GetUserById;
