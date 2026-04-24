@@ -17,6 +17,7 @@ uses
   Horse.Callback,
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract,
+  Horse.Controller,
   Horse.Commons;
 
 type
@@ -124,6 +125,7 @@ type
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
     class function GetInstance: THorseCore;
     class function Version: string;
+    class function Map(AController: THorseControllerClass; const APath: string; AMethodType: TMethodType; const AMethodName: string): THorseCore;
   end;
 
 implementation
@@ -379,6 +381,24 @@ end;
 class function THorseCore.Version: string;
 begin
   Result := HORSE_VERSION;
+end;
+
+class function THorseCore.Map(AController: THorseControllerClass; const APath: string; AMethodType: TMethodType; const AMethodName: string): THorseCore;
+var
+  LCallback: THorseCallback;
+begin
+  Result := GetInstance;
+  THorseControllerRegistry.RegisterRoute(AController, APath, AMethodType, AMethodName);
+  LCallback := {$IF DEFINED(FPC)} @THorseControllerRegistry.Dispatcher {$ELSE} THorseControllerRegistry.Dispatcher {$ENDIF};
+  case AMethodType of
+    mtGet: Get(APath, LCallback);
+    mtPost: Post(APath, LCallback);
+    mtPut: Put(APath, LCallback);
+    mtDelete: Delete(APath, LCallback);
+    mtPatch: Patch(APath, LCallback);
+    mtHead: Head(APath, LCallback);
+    mtAny: All(APath, LCallback);
+  end;
 end;
 
 class function THorseCore.Use(const APath: string; const ACallbacks: array of THorseCallback): THorseCore;
