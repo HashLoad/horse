@@ -122,6 +122,15 @@ type
     class function Delete(const APath: string; const ACallback: THorseCallbackResponse): THorseCore; overload;
 {$IFEND}
 {$IFEND}
+    class function All(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+    class function Get(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+    class function Put(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+    class function Head(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+    class function Post(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    class function Delete(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+    class function Patch(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore; overload;
+{$IFEND}
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
     class function GetInstance: THorseCore;
     class function Version: string;
@@ -383,22 +392,55 @@ begin
   Result := HORSE_VERSION;
 end;
 
+class function THorseCore.All(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtAny, AMethodName);
+end;
+
+class function THorseCore.Get(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtGet, AMethodName);
+end;
+
+class function THorseCore.Put(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtPut, AMethodName);
+end;
+
+class function THorseCore.Head(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtHead, AMethodName);
+end;
+
+class function THorseCore.Post(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtPost, AMethodName);
+end;
+
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+class function THorseCore.Delete(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtDelete, AMethodName);
+end;
+
+class function THorseCore.Patch(const APath: string; AController: THorseControllerClass; const AMethodName: string): THorseCore;
+begin
+  Result := Map(AController, APath, mtPatch, AMethodName);
+end;
+{$IFEND}
+
 class function THorseCore.Map(AController: THorseControllerClass; const APath: string; AMethodType: TMethodType; const AMethodName: string): THorseCore;
 var
-  LCallback: THorseCallback;
+  LMethod: TMethodType;
 begin
   Result := GetInstance;
-  THorseControllerRegistry.RegisterRoute(AController, APath, AMethodType, AMethodName);
-  LCallback := {$IF DEFINED(FPC)} @THorseControllerRegistry.Dispatcher {$ELSE} THorseControllerRegistry.Dispatcher {$ENDIF};
-  case AMethodType of
-    mtGet: Get(APath, LCallback);
-    mtPost: Post(APath, LCallback);
-    mtPut: Put(APath, LCallback);
-    mtDelete: Delete(APath, LCallback);
-    mtPatch: Patch(APath, LCallback);
-    mtHead: Head(APath, LCallback);
-    mtAny: All(APath, LCallback);
-  end;
+  if AMethodType = mtAny then
+  begin
+    for LMethod := Low(TMethodType) to High(TMethodType) do
+      Result.GetRoutes.RegisterController(LMethod, TrimPath(APath), AController, AMethodName);
+  end
+  else
+    Result.GetRoutes.RegisterController(AMethodType, TrimPath(APath), AController, AMethodName);
 end;
 
 class function THorseCore.Use(const APath: string; const ACallbacks: array of THorseCallback): THorseCore;

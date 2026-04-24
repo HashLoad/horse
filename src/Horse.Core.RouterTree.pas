@@ -19,6 +19,7 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
+  Horse.Controller,
   Horse.Commons;
 
 type
@@ -39,8 +40,10 @@ type
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    FControllers: TObjectDictionary<TMethodType, TControllerActionMap>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback);
+    procedure RegisterControllerInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const AAction: TControllerActionMap);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
     function ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
     function CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
@@ -50,6 +53,7 @@ type
     function GetPrefix: string;
     procedure Prefix(const APrefix: string);
     procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+    procedure RegisterController(const AHTTPType: TMethodType; const APath: string; AController: THorseControllerClass; const AMethodName: string);
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
@@ -80,6 +84,43 @@ begin
   finally
     LPathChain.Free;
   end;
+end;
+
+procedure THorseRouterTree.RegisterController(const AHTTPType: TMethodType; const APath: string; AController: THorseControllerClass; const AMethodName: string);
+var
+  LQueue: TQueue<string>;
+  LAction: TControllerActionMap;
+begin
+  LQueue := GetQueuePath(APath);
+  try
+    LAction.ControllerClass := AController;
+    LAction.MethodName := AMethodName;
+    LAction.MethodType := AHTTPType;
+    LAction.Path := APath;
+    RegisterControllerInternal(AHTTPType, LQueue, LAction);
+  finally
+    LQueue.Free;
+  end;
+end;
+
+procedure THorseRouterTree.RegisterControllerInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const AAction: TControllerActionMap);
+var
+  LCurrentPath: string;
+  LNextRoute: THorseRouterTree;
+begin
+  if APath.Count = 0 then
+  begin
+    FControllers.AddOrSetValue(AHTTPType, AAction);
+    Exit;
+  end;
+
+  LCurrentPath := APath.Dequeue;
+  if not FRoute.TryGetValue(LCurrentPath, LNextRoute) then
+  begin
+    LNextRoute := THorseRouterTree.Create;
+    FRoute.Add(LCurrentPath, LNextRoute);
+  end;
+  LNextRoute.RegisterControllerInternal(AHTTPType, APath, AAction);
 end;
 
 function THorseRouterTree.CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
@@ -124,6 +165,7 @@ begin
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
   FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
+  FControllers := TObjectDictionary<TMethodType, TControllerActionMap>.Create;
   FPrefix := '';
   FIsRouterRegex := False;
 end;
@@ -135,6 +177,7 @@ begin
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
   FCallBack.Free;
+  FControllers.Free;
   inherited;
 end;
 
@@ -177,6 +220,7 @@ begin
   LNextCaller := TNextCaller.Create;
   try
     LNextCaller.SetCallback(FCallBack);
+    LNextCaller.SetControllers(FControllers);
     LNextCaller.SetPath(APath);
     LNextCaller.SetHTTPType(AHTTPType);
     LNextCaller.SetRequest(ARequest);

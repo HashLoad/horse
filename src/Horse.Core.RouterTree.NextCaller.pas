@@ -18,6 +18,7 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
+  Horse.Controller,
   Horse.Commons;
 
 type
@@ -31,13 +32,17 @@ type
     FResponse: THorseResponse;
     FMiddleware: TList<THorseCallback>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    FControllers: TObjectDictionary<TMethodType, TControllerActionMap>;
+    FControllerExecuted: Boolean;
     FCallNextPath: TCallNextPath;
     FIsGroup: Boolean;
     FTag: string;
     FIsParamsKey: Boolean;
     FFound: ^Boolean;
+    procedure ExecuteController(const AAction: TControllerActionMap);
   public
     function Init: TNextCaller;
+    function SetControllers(const AControllers: TObjectDictionary<TMethodType, TControllerActionMap>): TNextCaller;
     function SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;
     function SetPath(const APath: TQueue<string>): TNextCaller;
     function SetHTTPType(const AHTTPType: TMethodType): TNextCaller;
@@ -80,6 +85,7 @@ end;
 procedure TNextCaller.Next;
 var
   LCallback: TList<THorseCallback>;
+  LAction: TControllerActionMap;
 begin
   Inc(FIndex);
   if (FMiddleware.Count > FIndex) then
@@ -113,9 +119,29 @@ begin
         Next;
       end;
     end
+    else if Assigned(FControllers) and FControllers.TryGetValue(FHTTPType, LAction) then
+    begin
+      if not FControllerExecuted then
+      begin
+        FControllerExecuted := True;
+        FFound^ := True;
+        ExecuteController(LAction);
+        Next;
+      end;
+    end
+    else if Assigned(FControllers) and FControllers.TryGetValue(mtAny, LAction) then
+    begin
+      if not FControllerExecuted then
+      begin
+        FControllerExecuted := True;
+        FFound^ := True;
+        ExecuteController(LAction);
+        Next;
+      end;
+    end
     else
     begin
-      if FCallBack.Count > 0 then
+      if (FCallBack.Count > 0) or (Assigned(FControllers) and (FControllers.Count > 0)) then
       begin
         FFound^ := True;
         FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
@@ -126,8 +152,70 @@ begin
   end
   else
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
+  
   if not FFound^ then
-    FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+  begin
+    if Assigned(FControllers) and FControllers.TryGetValue(FHTTPType, LAction) then
+    begin
+      if not FControllerExecuted then
+      begin
+        FControllerExecuted := True;
+        FFound^ := True;
+        ExecuteController(LAction);
+        Next;
+      end;
+    end
+    else if Assigned(FControllers) and FControllers.TryGetValue(mtAny, LAction) then
+    begin
+      if not FControllerExecuted then
+      begin
+        FControllerExecuted := True;
+        FFound^ := True;
+        ExecuteController(LAction);
+        Next;
+      end;
+    end
+    else
+      FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+  end;
+end;
+
+procedure TNextCaller.ExecuteController(const AAction: TControllerActionMap);
+type
+  TControllerAction = procedure of object;
+var
+  LController: THorseController;
+  LMethod: TMethod;
+  LActionProc: TControllerAction;
+begin
+  LController := AAction.ControllerClass.Create(FRequest, FResponse, Next);
+  try
+    {$IF DEFINED(FPC)}
+    LMethod.Code := Pointer(LController.MethodAddress(AAction.MethodName));
+    {$ELSE}
+    LMethod.Code := LController.MethodAddress(AAction.MethodName);
+    {$ENDIF}
+    
+    if LMethod.Code <> nil then
+    begin
+      LMethod.Data := Pointer(LController);
+      LActionProc := TControllerAction(LMethod);
+      LActionProc();
+      Exit;
+    end
+    else
+      raise Exception.CreateFmt('Method "%s" not found in controller "%s"', [AAction.MethodName, LController.ClassName]);
+      
+    LController.Execute;
+  finally
+    LController.Free;
+  end;
+end;
+
+function TNextCaller.SetControllers(const AControllers: TObjectDictionary<TMethodType, TControllerActionMap>): TNextCaller;
+begin
+  FControllers := AControllers;
+  Result := Self;
 end;
 
 function TNextCaller.SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;

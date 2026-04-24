@@ -11,6 +11,7 @@ uses
   SysUtils,
 {$ENDIF}
   Horse.Core.Route.Contract,
+  Horse.Controller,
   Horse.Callback;
 
 type
@@ -64,6 +65,15 @@ type
 {$IFNDEF FPC}
     function Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
 {$IFEND}
+{$IFEND}
+    function All(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Get(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Put(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Head(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Post(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    function Delete(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Patch(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
 {$IFEND}
     function &End: T;
   end;
@@ -286,5 +296,49 @@ begin
   THorseCore(FHorseCore).Put(FPath, ACallback);
   Result := Self;
 end;
+
+function THorseCoreRoute<T>.All(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).All(FPath, AController, AMethodName);
+end;
+
+function THorseCoreRoute<T>.Get(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Get(FPath, AController, AMethodName);
+end;
+
+function THorseCoreRoute<T>.Put(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Put(FPath, AController, AMethodName);
+end;
+
+function THorseCoreRoute<T>.Head(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Head(FPath, AController, AMethodName);
+end;
+
+function THorseCoreRoute<T>.Post(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Post(FPath, AController, AMethodName);
+end;
+
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+function THorseCoreRoute<T>.Delete(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Delete(FPath, AController, AMethodName);
+end;
+
+function THorseCoreRoute<T>.Patch(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>;
+begin
+  Result := Self;
+  THorseCore(FHorseCore).Patch(FPath, AController, AMethodName);
+end;
+{$IFEND}
 
 end.

@@ -7,6 +7,7 @@ unit Horse.Core.Route.Contract;
 interface
 
 uses
+  Horse.Controller,
   Horse.Callback;
 
 type
@@ -55,6 +56,15 @@ type
 {$IFNDEF FPC}
     function Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
 {$IFEND}
+{$IFEND}
+    function All(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Get(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Put(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Head(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Post(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    function Delete(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
+    function Patch(AController: THorseControllerClass; const AMethodName: string): IHorseCoreRoute<T>; overload;
 {$IFEND}
     function &End: T;
   end;

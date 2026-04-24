@@ -28,6 +28,7 @@ type
   THorseCallbackResponse = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(ARes: THorseResponse);
   THorseCallbackRequestResponse = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest; ARes: THorseResponse);
   THorseCallback = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
+  THorseCallbackObject = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc) of object;
   TCallNextPath = function(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean of object;
 {$ELSE}
   THorseCallbackRequest = reference to procedure(AReq: THorseRequest);

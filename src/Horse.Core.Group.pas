@@ -9,6 +9,7 @@ interface
 uses
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract,
+  Horse.Controller,
   Horse.Callback;
 
 type
@@ -70,6 +71,15 @@ type
 {$IFNDEF FPC}
     function Delete(const APath: string; const ACallback: THorseCallbackResponse): IHorseCoreGroup<T>; overload;
 {$IFEND}
+{$IFEND}
+    function All(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+    function Get(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+    function Put(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+    function Head(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+    function Post(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+    function Delete(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
+    function Patch(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>; overload;
 {$IFEND}
     function &End: T;
   end;
@@ -334,5 +344,49 @@ begin
   Result := Self;
   THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
 end;
+
+function THorseCoreGroup<T>.All(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).All(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+function THorseCoreGroup<T>.Get(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Get(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+function THorseCoreGroup<T>.Put(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Put(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+function THorseCoreGroup<T>.Head(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Head(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+function THorseCoreGroup<T>.Post(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Post(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+{$IF (defined(fpc) or (CompilerVersion > 27.0))}
+function THorseCoreGroup<T>.Delete(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Delete(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+
+function THorseCoreGroup<T>.Patch(const APath: string; AController: THorseControllerClass; const AMethodName: string): IHorseCoreGroup<T>;
+begin
+  THorseCore(FHorseCore).Patch(NormalizePath(APath), AController, AMethodName);
+  Result := Self;
+end;
+{$IFEND}
 
 end.
