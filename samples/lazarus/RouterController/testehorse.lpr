@@ -8,10 +8,14 @@ uses
   {$ENDIF}
   Horse, Horse.Controller, Horse.Commons, ControllerTeste;
 
+procedure TesteJwt(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
 begin
-  // Mapeamento e Registro Automático (Sintaxe idêntica ao Delphi)
-  THorseController<TControllerTeste>.Map('/users', mtGet, 'ListUsers');
-  THorseController<TControllerTeste>.Map('/users/:id', mtGet, 'GetUserById');
+  ANext();
+end;
+
+begin
+  THorse.AddCallback(TesteJwt).Map(TControllerTeste,'/users', mtGet, 'ListUsers');
+  THorse.AddCallback(TesteJwt).Map(TControllerTeste,'/users/:id', mtGet, 'GetUserById');
 
   THorse.Listen(9001);
-end.
+end. 
