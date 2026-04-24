@@ -59,10 +59,6 @@ type
     class procedure Dispatcher(ARequest: THorseRequest; AResponse: THorseResponse; ANext: TNextProc); {$IF DEFINED(FPC)} static; {$ENDIF}
   end;
 
-  THorseController<T: THorseController, constructor> = class
-  public
-    class procedure Map(const APath: string; AMethodType: TMethodType; const AMethodName: string);
-  end;
 
 implementation
 
@@ -178,26 +174,6 @@ procedure THorseController.Delete; begin end;
 procedure THorseController.Patch; begin end;
 procedure THorseController.Head; begin end;
 
-{ THorseController<T> }
-
-class procedure THorseController<T>.Map(const APath: string; AMethodType: TMethodType; const AMethodName: string);
-var
-  LCallback: THorseCallback;
-begin
-  THorseControllerRegistry.RegisterRoute(T, APath, AMethodType, AMethodName);
-
-  LCallback := {$IF DEFINED(FPC)} @THorseControllerRegistry.Dispatcher {$ELSE} THorseControllerRegistry.Dispatcher {$ENDIF};
-
-  case AMethodType of
-    mtGet: THorse.Get(APath, LCallback);
-    mtPost: THorse.Post(APath, LCallback);
-    mtPut: THorse.Put(APath, LCallback);
-    mtDelete: THorse.Delete(APath, LCallback);
-    mtPatch: THorse.Patch(APath, LCallback);
-    mtHead: THorse.Head(APath, LCallback);
-    mtAny: THorse.All(APath, LCallback);
-  end;
-end;
 
 end.
 
