@@ -16,7 +16,7 @@ begin
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      Res.ContentType('text/plain').Send(Req.Body);
+      Res.Send('Ping');
     end);
 
   THorse.Listen(9000,
