@@ -1,4 +1,4 @@
-﻿program Console;
+program Console;
 
 {$APPTYPE CONSOLE}
 {$R *.res}

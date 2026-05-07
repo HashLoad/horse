@@ -12,6 +12,7 @@ uses
   SysUtils,
   StrUtils;
 {$ELSE}
+  Web.HTTPApp,
   System.SysUtils;
 {$ENDIF}
 
@@ -116,8 +117,11 @@ type
     function ToInteger: Integer;
   end;
 
-  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-  for TMimeTypes
+  TMethodTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMethodType
+    function ToString: string;
+  end;
+
+  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMimeTypes
     function ToString: string;
   end;
 
@@ -292,6 +296,28 @@ begin
       Result := 'image/gif';
     TMimeTypes.Download:
       Result := 'application/x-download';
+  end;
+end;
+
+{ TMethodTypeHelper }
+
+function TMethodTypeHelper.ToString: string;
+begin
+  case Self of
+    mtAny:
+      Result := 'Any';
+    mtGet:
+      Result := 'Get';
+    mtPut:
+      Result := 'Put';
+    mtPost:
+      Result := 'Post';
+    mtHead:
+      Result := 'Head';
+    mtDelete:
+      Result := 'Delete';
+    mtPatch:
+      Result := 'Patch';
   end;
 end;
 
