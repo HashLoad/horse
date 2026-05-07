@@ -9,20 +9,20 @@ uses
 
 begin
   {$IFDEF MSWINDOWS}
-  IsConsole := False;
-  ReportMemoryLeaksOnShutdown := True;
+    IsConsole := False;
+    ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
 
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      Res.Send('pong');
+      Res.ContentType('text/plain').Send(Req.Body);
     end);
 
   THorse.Listen(9000,
     procedure
     begin
-      Writeln(Format('Server is runing on %s:%d', [THorse.Host, THorse.Port]));
+      Writeln(Format('Server is runing on port %d...', [THorse.Port]));
       Readln;
     end);
 end.

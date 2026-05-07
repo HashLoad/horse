@@ -106,6 +106,20 @@ end;
 
 function THorseResponse.Send(const AContent: string): THorseResponse;
 begin
+{$IF NOT DEFINED(FPC)}
+  // [FIX] When ContentText = '' and ContentStream = nil, Indy's WriteContent
+  // substitutes an HTML body and overrides ContentType to 'text/html'.
+  // Assigning an empty TMemoryStream forces the stream path (0 bytes written)
+  // and preserves the application-set ContentType.
+  // FreeContentStream defaults to True — Indy frees the stream.
+  if AContent = '' then
+  begin
+    FWebResponse.ContentStream := TMemoryStream.Create;
+    FWebResponse.ContentLength := 0;
+    Exit(Self);
+  end;
+{$ENDIF}
+
   FWebResponse.Content := AContent;
   Result := Self;
 end;
