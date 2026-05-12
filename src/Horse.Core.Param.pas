@@ -1,7 +1,7 @@
 unit Horse.Core.Param;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -25,18 +25,17 @@ type
   THorseCoreParam = class
   private
     FParams: THorseList;
-    FFiles: TDictionary<String, TStream>;
+    FFiles: TDictionary<string, TStream>;
     FFields: TDictionary<string, THorseCoreParamField>;
     FContent: TStrings;
     FRequired: Boolean;
+
     function GetItem(const AKey: string): string;
     function GetDictionary: THorseList;
     function GetCount: Integer;
     function GetContent: TStrings;
-    function AsString(const AKey: string): string;
+    function NewField(const AKey: string): THorseCoreParamField;
     procedure ClearFields;
-
-    function NewField(const AKey: String): THorseCoreParamField;
   public
     function Required(const AValue: Boolean): THorseCoreParam;
     function Field(const AKey: string): THorseCoreParamField;
@@ -44,18 +43,21 @@ type
     function ContainsValue(const AValue: string): Boolean;
     function ToArray: TArray<TPair<string, string>>;
     function TryGetValue(const AKey: string; var AValue: string): Boolean;
+
     property Content: TStrings read GetContent;
     property Count: Integer read GetCount;
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
+
     function AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
+
     constructor Create(const AParams: THorseList);
     destructor Destroy; override;
   end;
 
 implementation
 
-uses       
+uses
 {$IF DEFINED(FPC)}
   SysUtils,
 {$ELSE}
@@ -63,25 +65,9 @@ uses
 {$ENDIF}
   Horse.Core.Param.Config;
 
-function THorseCoreParam.ContainsKey(const AKey: string): Boolean;
-var
-  LKey: string;
-begin
-  Result := False;
-  for LKey in FParams.Keys do
-  begin
-    if AnsiCompareText(LKey, AKey) = 0 then
-      Exit(True);
-  end;
-end;
-
-function THorseCoreParam.ContainsValue(const AValue: string): Boolean;
-begin
-  Result := FParams.ContainsValue(AValue);
-end;
-
 constructor THorseCoreParam.Create(const AParams: THorseList);
 begin
+  inherited Create;
   FParams := AParams;
   FRequired := False;
 end;
@@ -91,119 +77,8 @@ begin
   FParams.Free;
   FContent.Free;
   ClearFields;
-  if Assigned(FFiles) then
-    FFiles.Free;
+  FreeAndNil(FFiles);
   inherited;
-end;
-
-function THorseCoreParam.Field(const AKey: string): THorseCoreParamField;
-var
-  LFieldName: string;
-begin
-  if not Assigned(FFields) then
-    FFields := TDictionary<string, THorseCoreParamField>.Create;
-
-  LFieldName := AKey.ToLower;
-  if FFields.ContainsKey(LFieldName) then
-    Exit(FFields.Items[LFieldName]);
-
-  Result := NewField(AKey);
-  try
-    Result
-      .Required(FRequired)
-      .DateFormat(THorseCoreParamConfig.GetInstance.DateFormat)
-      .InvalidFormatMessage(THorseCoreParamConfig.GetInstance.InvalidFormatMessage)
-      .RequiredMessage(THorseCoreParamConfig.GetInstance.RequiredMessage)
-      .ReturnUTC(THorseCoreParamConfig.GetInstance.ReturnUTC)
-      .TimeFormat(THorseCoreParamConfig.GetInstance.TimeFormat)
-      .TrueValue(THorseCoreParamConfig.GetInstance.TrueValue);
-
-    FFields.AddOrSetValue(LFieldName, Result);
-  except
-    Result.Free;
-    raise;
-  end;
-end;
-
-function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
-begin
-  Result := Self;
-  if not Assigned(FFiles) then
-    FFiles := TDictionary<String, TStream>.Create;
-
-  FFiles.AddOrSetValue(AKey, AContent);
-end;
-
-function THorseCoreParam.AsString(const AKey: string): string;
-var
-  LKey: string;
-begin
-  Result := EmptyStr;
-  for LKey in FParams.Keys do
-  begin
-    if AnsiCompareText(LKey, AKey) = 0 then
-      Exit(FParams.Items[LKey]);
-  end;
-end;
-
-procedure THorseCoreParam.ClearFields;
-var
-  LKey: string;
-begin
-  if Assigned(FFields) then
-  begin
-    for LKey in FFields.Keys do
-      FFields.Items[LKey].Free;
-    FFields.Free;
-  end;
-end;
-
-function THorseCoreParam.GetContent: TStrings;
-var
-  LKey: string;
-begin
-  if not Assigned(FContent) then
-  begin
-    FContent := TstringList.Create;
-    for LKey in FParams.Keys do
-      FContent.Add(Format('%s=%s', [LKey, FParams[LKey]]));
-  end;
-  Result := FContent;
-end;
-
-function THorseCoreParam.GetCount: Integer;
-begin
-  Result := FParams.Count;
-end;
-
-function THorseCoreParam.GetItem(const AKey: string): string;
-var
-  LKey: string;
-begin
-  for LKey in FParams.Keys do
-  begin
-    if AnsiCompareText(LKey, AKey) = 0 then
-      Exit(FParams[LKey]);
-  end;
-  Result := EmptyStr;
-end;
-
-function THorseCoreParam.NewField(const AKey: String): THorseCoreParamField;
-var
-  LKey: String;
-begin
-  if Assigned(FFiles) then
-  begin
-    for LKey in FFiles.Keys do
-    begin
-      if AnsiSameText(LKey, AKey) then
-      begin
-        Result := THorseCoreParamField.Create(FFiles.Items[LKey], AKey);
-        Exit;
-      end;
-    end;
-  end;
-  Result := THorseCoreParamField.Create(FParams, AKey);
 end;
 
 function THorseCoreParam.Required(const AValue: Boolean): THorseCoreParam;
@@ -212,21 +87,115 @@ begin
   FRequired := AValue;
 end;
 
+function THorseCoreParam.ContainsKey(const AKey: string): Boolean;
+begin
+  Result := FParams.ContainsKey(AKey);
+end;
+
+function THorseCoreParam.ContainsValue(const AValue: string): Boolean;
+begin
+  Result := FParams.ContainsValue(AValue);
+end;
+
+function THorseCoreParam.TryGetValue(const AKey: string; var AValue: string): Boolean;
+begin
+  Result := FParams.TryGetValue(AKey, AValue);
+end;
+
+function THorseCoreParam.GetItem(const AKey: string): string;
+begin
+  FParams.TryGetValue(AKey, Result);
+end;
+
 function THorseCoreParam.GetDictionary: THorseList;
 begin
   Result := FParams;
 end;
 
+function THorseCoreParam.GetCount: Integer;
+begin
+  Result := FParams.Count;
+end;
+
+function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
+begin
+  Result := Self;
+  if not Assigned(FFiles) then
+    FFiles := TDictionary<string, TStream>.Create;
+  FFiles.AddOrSetValue(AKey, AContent);
+end;
+
+function THorseCoreParam.NewField(const AKey: string): THorseCoreParamField;
+var
+  LStream: TStream;
+begin
+  if Assigned(FFiles) and FFiles.TryGetValue(AKey, LStream) then
+    Exit(THorseCoreParamField.Create(LStream, AKey));
+  Result := THorseCoreParamField.Create(FParams, AKey);
+end;
+
+function THorseCoreParam.Field(const AKey: string): THorseCoreParamField;
+var
+  LFieldName: string;
+  LConfig: THorseCoreParamConfig;
+begin
+  if not Assigned(FFields) then
+    FFields := TDictionary<string, THorseCoreParamField>.Create;
+
+  LFieldName := AKey.ToLower;
+
+  if FFields.TryGetValue(LFieldName, Result) then
+    Exit;
+
+  Result := NewField(AKey);
+
+  try
+    LConfig := THorseCoreParamConfig.GetInstance;
+
+    Result
+      .Required(FRequired)
+      .DateFormat(LConfig.DateFormat)
+      .InvalidFormatMessage(LConfig.InvalidFormatMessage)
+      .RequiredMessage(LConfig.RequiredMessage)
+      .ReturnUTC(LConfig.ReturnUTC)
+      .TimeFormat(LConfig.TimeFormat)
+      .TrueValue(LConfig.TrueValue);
+
+    FFields.Add(LFieldName, Result);
+  except
+    Result.Free;
+    raise;
+  end;
+end;
+
+procedure THorseCoreParam.ClearFields;
+var
+  LField: THorseCoreParamField;
+begin
+  if Assigned(FFields) then
+  begin
+    for LField in FFields.Values do
+      LField.Free;
+    FreeAndNil(FFields);
+  end;
+end;
+
+function THorseCoreParam.GetContent: TStrings;
+var
+  LPair: TPair<string, string>;
+begin
+  if not Assigned(FContent) then
+  begin
+    FContent := TStringList.Create;
+    for LPair in FParams do
+      FContent.Add(LPair.Key + '=' + LPair.Value);
+  end;
+  Result := FContent;
+end;
+
 function THorseCoreParam.ToArray: TArray<TPair<string, string>>;
 begin
   Result := FParams.ToArray;
-end;
-
-function THorseCoreParam.TryGetValue(const AKey: string; var AValue: string): Boolean;
-begin
-  Result := ContainsKey(AKey);
-  if Result then
-    AValue := AsString(AKey);
 end;
 
 end.
