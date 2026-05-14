@@ -4,9 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework,
-  Horse.Core.Files,
-  System.Classes,
-  System.SysUtils;
+  Horse.Core.Files;
 
 type
   [TestFixture]
@@ -34,7 +32,8 @@ type
 
 implementation
 
-{ TTestHorseCoreFile }
+uses
+  System.SysUtils;
 
 procedure TTestHorseCoreFile.DelphiFile;
 begin
