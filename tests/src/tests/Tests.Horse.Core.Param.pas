@@ -4,11 +4,9 @@ interface
 
 uses
   DUnitX.TestFramework,
-  Horse.Exception,
   Horse.Core.Param,
   System.Generics.Collections,
   System.Classes,
-  System.DateUtils,
   System.SysUtils;
 
 type
@@ -255,7 +253,9 @@ type
 
 implementation
 
-{ TTestHorseCoreParam }
+uses
+  Horse.Exception,
+  System.DateUtils;
 
 procedure TTestHorseCoreParam.AsBoolean;
 begin
@@ -829,7 +829,7 @@ end;
 procedure TTestHorseCoreParam.Setup;
 begin
   FParams := TDictionary<String, String>.Create;
-  FHorseParam := THorseCoreParam.create(FParams);
+  FHorseParam := THorseCoreParam.Create(FParams);
   FFormatSettings := TFormatSettings.Create;
   FFormatSettings.DecimalSeparator := ',';
   FData := 0;
