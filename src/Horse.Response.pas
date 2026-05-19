@@ -79,6 +79,14 @@ type
   =========================================================================== }
     FCSRawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 { =========================================================================== }
+{ ===========================================================================
+  PATCH-RES-7 — lazy-allocation helper for FCustomHeaders.
+  Was eagerly created in the constructor; now created only when AddHeader
+  is first called. Eager allocation paid an unconditional cost on every
+  Indy/ISAPI/CGI request that never read or wrote a custom header.
+  =========================================================================== }
+    procedure EnsureCustomHeaders;
+{ =========================================================================== }
   public
     function Send(const AContent: string): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
@@ -156,8 +164,10 @@ begin
 { end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it.
+  PATCH-RES-7 — allocate the headers store on first use (was eager in Create).
   Delphi: TDictionary.AddOrSetValue  FPC: TStringList.Values[name] := value
   =========================================================================== }
+  EnsureCustomHeaders;
 {$IF NOT DEFINED(FPC)}
   FCustomHeaders.AddOrSetValue(AName, AValue);
 {$ELSE}
@@ -166,6 +176,20 @@ begin
 { =========================================================================== }
   Result := Self;
 end;
+
+{ ===========================================================================
+  PATCH-RES-7 — EnsureCustomHeaders implementation
+  =========================================================================== }
+procedure THorseResponse.EnsureCustomHeaders;
+begin
+  if FCustomHeaders <> nil then Exit;
+{$IF NOT DEFINED(FPC)}
+  FCustomHeaders := TDictionary<string, string>.Create;
+{$ELSE}
+  FCustomHeaders := TStringList.Create;
+{$ENDIF}
+end;
+{ =========================================================================== }
 
 function THorseResponse.Content(const AContent: TObject): THorseResponse;
 begin
@@ -205,15 +229,10 @@ begin
 {$ENDIF}
   end;
 { ===========================================================================
-  PATCH-RES-1 — initialise FCustomHeaders
-  Delphi: TDictionary<string,string>  FPC: TStringList
+  PATCH-RES-7 — FCustomHeaders is no longer eagerly allocated here.
+  AddHeader calls EnsureCustomHeaders on first use. Indy/ISAPI/CGI requests
+  that never call AddHeader pay nothing.
   =========================================================================== }
-{$IF NOT DEFINED(FPC)}
-  FCustomHeaders := TDictionary<string, string>.Create;
-{$ELSE}
-  FCustomHeaders := TStringList.Create;
-{$ENDIF}
-{ =========================================================================== }
 end;
 
 { ===========================================================================
@@ -249,7 +268,6 @@ begin
     FreeAndNil(FCSRawWebResponse);
   FCSRawWebResponse := ARawWebResponse;
 end;
-{ =========================================================================== }
 
 destructor THorseResponse.Destroy;
 begin
@@ -352,15 +370,20 @@ begin
 { end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also remove from FCustomHeaders
+  PATCH-RES-7 — FCustomHeaders is allocated lazily; nothing to remove if it
+  was never created (no AddHeader call ever ran).
   Delphi: TDictionary.Remove  FPC: TStringList delete by IndexOfName
   =========================================================================== }
+  if FCustomHeaders <> nil then
+  begin
 {$IF NOT DEFINED(FPC)}
-  FCustomHeaders.Remove(AName);
+    FCustomHeaders.Remove(AName);
 {$ELSE}
-  I := FCustomHeaders.IndexOfName(AName);
-  if I >= 0 then
-    FCustomHeaders.Delete(I);
+    I := FCustomHeaders.IndexOfName(AName);
+    if I >= 0 then
+      FCustomHeaders.Delete(I);
 {$ENDIF}
+  end;
 { =========================================================================== }
   Result := Self;
 end;
