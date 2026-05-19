@@ -4,6 +4,42 @@
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
+{ ===========================================================================
+  PATCH-HORSE-1 — incompatible provider define guard
+  Fires a fatal compile error when HORSE_CROSSSOCKET is combined with any
+  define whose provider would silently take precedence over it in the
+   $IF/$ELSEIF  chains below.  Without this guard, a misconfigured project
+  compiles cleanly but runs the wrong provider (e.g. Indy Console instead of
+  CrossSocket) with no diagnostic.  Four lines of Pascal — zero runtime cost.
+  =========================================================================== }
+{$IF DEFINED(HORSE_CROSSSOCKET)}
+  {$IF DEFINED(HORSE_ISAPI)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_ISAPI — remove one define. ISAPI is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_APACHE)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_APACHE — remove one define. Apache mod is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_CGI)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_CGI — remove one define. CGI is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_FCGI)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_FCGI — remove one define. FastCGI is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_DAEMON)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_DAEMON — remove one define. Both providers own the process event loop; they cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_LCL)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_LCL — remove one define. LCL drives a GUI message loop that conflicts with CrossSocket IOCP/epoll.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_VCL)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_VCL — remove one define. VCL drives a GUI message loop that conflicts with CrossSocket IOCP/epoll.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_NOPROVIDER)}
+    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_NOPROVIDER — remove one define. HORSE_NOPROVIDER suppresses all provider units including CrossSocket.'}
+  {$ENDIF}
+{$ENDIF}
+{ =========================================================================== }
+
 interface
 
 uses

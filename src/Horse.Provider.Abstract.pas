@@ -33,6 +33,22 @@ type
     // provider's FPort. Sharing a single FPort in the abstract base caused
     // silent port-not-changing bugs when both providers were compiled.
     class function GetOnStopListen: TProc; static;
+{ ===========================================================================
+  PATCH-ABS-4 — MaxConnections raised to abstract base
+  Each Indy-based concrete provider (Console, VCL, Daemon, Apache) already
+  declares its own FMaxConnections class var and MaxConnections property that
+  shadows this one — their existing behaviour is completely unchanged.
+  For THorseProviderCrossSocket (which has no MaxConnections of its own), the
+  inheritance chain resolves here: the value is stored but never forwarded to
+  the CrossSocket transport layer. CrossSocket connection limits are configured
+  via THorseCrossSocketConfig.MaxConnections instead. Raising the property
+  here preserves source compatibility for projects that call
+  THorse.MaxConnections := N and then switch to HORSE_CROSSSOCKET.
+  =========================================================================== }
+    class var FMaxConnections: Integer;
+    class function GetMaxConnections: Integer; static;
+    class procedure SetMaxConnections(const AValue: Integer); static;
+{ =========================================================================== }
   protected
     class function GetOnListen: TProc; static;
     class procedure SetOnListen(const AValue: TProc); static;
@@ -42,6 +58,9 @@ type
   public
     class property OnListen: TProc read GetOnListen write SetOnListen;
     class property OnStopListen: TProc read GetOnStopListen write SetOnStopListen;
+{ PATCH-ABS-4 }
+    class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
+{ end PATCH-ABS-4 }
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
 { ===========================================================================
@@ -104,16 +123,44 @@ begin
 end;
 
 { ===========================================================================
+  PATCH-ABS-4 — MaxConnections getter/setter
+  On Indy providers, each concrete THorseProvider declares its own
+  FMaxConnections class var and static getter/setter that shadow these — so
+  the Indy path never touches this code.  On CrossSocket, this is the only
+  MaxConnections implementation; the stored value is accepted (compiles
+  silently) but not forwarded to the transport layer.  Connection limits for
+  CrossSocket are set via THorseCrossSocketConfig.MaxConnections.
+  =========================================================================== }
+class function THorseProviderAbstract.GetMaxConnections: Integer;
+begin
+  Result := FMaxConnections;
+end;
+
+class procedure THorseProviderAbstract.SetMaxConnections(const AValue: Integer);
+begin
+  FMaxConnections := AValue;
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
   PATCH-ABS-2 — implementation of ListenWithConfig
-  Default fallback for providers that do not use THorseCrossSocketConfig.
-  Sets nothing (no shared FPort here) and delegates to the no-arg Listen.
-  AConfig is intentionally ignored — non-CrossSocket providers have no use
-  for it. CrossSocket overrides this completely.
+  Contract: every concrete provider MUST override this method.
+  The abstract base has no FPort and no way to forward APort to Listen
+  polymorphically — calling the no-arg Listen here would silently ignore
+  the caller-supplied port (the exact bug this patch was written to fix).
+  Raising here converts "silent wrong port" into an immediate compile-time-
+  detectable oversight for any future provider that forgets to override.
+  All existing patched providers (Console, Daemon, VCL, FPC.*) already
+  override this and call SetPort(APort) before their own Listen.
   =========================================================================== }
 class procedure THorseProviderAbstract.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
-  Listen;
+  raise Exception.CreateFmt(
+    '%s must override ListenWithConfig — the base implementation cannot ' +
+    'forward port %d to Listen. Override ListenWithConfig in the concrete ' +
+    'provider and call SetPort(APort) before Listen.',
+    [ClassName, APort]);
 end;
 { =========================================================================== }
 

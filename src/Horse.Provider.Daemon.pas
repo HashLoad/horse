@@ -2,7 +2,7 @@ unit Horse.Provider.Daemon;
 
 { PATCH-DAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1.
   THorseProviderAbstract.ListenWithConfig calls the no-arg Listen, entering
-  InternalListen with FPort = 0 ? DEFAULT_PORT (9000).  Fix: override
+  InternalListen with FPort = 0 - DEFAULT_PORT (9000).  Fix: override
   ListenWithConfig here so it calls SetPort(APort) before InternalListen.
   AConfig is intentionally ignored — Daemon/Indy has no use for CrossSocket config. }
 

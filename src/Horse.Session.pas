@@ -28,6 +28,12 @@ type
     function TryGetSession<T: class>(out ASession: T): Boolean;
     function Contains(const ASessionClass: TSessionClass): Boolean;
     function SetSession(const ASessionClass: TSessionClass; const AInstance: TSession): THorseSessions;
+{ PATCH-SES-1 — Clear: wipe all stored sessions in-place for pool reuse.
+  TObjectDictionary([doOwnsValues]).Clear frees every TSession before removing
+  it, so callers do not need to free sessions manually.  The dictionary object
+  itself is kept alive so the next request reuses it without any allocation. }
+    procedure Clear;
+{ end PATCH-SES-1 }
     property Session[const ASessionClass: TSessionClass]: TSession read GetSession;
     property &Object[const ASessionClass: TSessionClass]: TObject read GetObject;
     constructor Create;
@@ -36,7 +42,7 @@ type
 
 implementation
 
-uses   
+uses
 {$IF DEFINED(FPC)}
   SysUtils;
 {$ELSE}
@@ -53,6 +59,13 @@ begin
   FSessions.Free;
   inherited Destroy;
 end;
+
+{ PATCH-SES-1 }
+procedure THorseSessions.Clear;
+begin
+  FSessions.Clear;
+end;
+{ end PATCH-SES-1 }
 
 function THorseSessions.GetObject(const ASessionClass: TSessionClass): TObject;
 begin
