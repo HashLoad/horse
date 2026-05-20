@@ -4,7 +4,20 @@ interface
 
 resourcestring
   sDuplicateActionName = 'Duplicate action name';
+
+  {$IF (CompilerVersion > 36.0)}
+  sCannotGenerateSessionId = 'Cannot generate session ID';
+  sStreamingNotSupported = 'Reponse streaming is not supported';
+  {$ENDIF}
+
   sOnlyOneDispatcher = 'Only one WebDispatcher per form/data module';
+
+  {$IF (CompilerVersion > 36.0)}
+  sOnlyOneSessionManager = 'Only one SessionManager per form/data module';
+  sOnlyOneAuthenticator = 'Only one Authenticator per form/data module';
+  sOnlyOneAuthorizer = 'Only one Authorizer per form/data module';
+  {$ENDIF}
+
   sHTTPItemName = 'Name';
   sHTTPItemURI = 'PathInfo';
   sHTTPItemEnabled = 'Enabled';
@@ -29,8 +42,7 @@ resourcestring
     '  style="display: grid; justify-content: center; height: 100vh; vertical-align: top; margin: 0; margin-top: 20px">' +
     '  <main>' +
     '    <h1 style="font-size: 40px; color: #424242; text-align:center; line-height: 0.25">5🔥🙀</h1>' +
-    '    <p style="font-size: 24px; text-align: center; padding-left: 20px; padding-right: 20px;"><span style="color: #424242;">🐎 Internal Server Error 🐎</span><br><br><span style="color: #9e9e9e;">%0:s</span></p>'
-    +
+    '    <p style="font-size: 24px; text-align: center; padding-left: 20px; padding-right: 20px;"><span style="color: #424242;">🐎 Internal Server Error 🐎</span><br><br><span style="color: #9e9e9e;">%0:s</span></p>' +
     '    <p style="font-size: 18px; text-align: center; padding-left: 20px; padding-right: 20px;"><span style="color: #bdbdbd;">%1:s</span></p>' +
     '  </main>' +
     '</body>' +
@@ -52,8 +64,9 @@ resourcestring
   sInvalidHTMLEncodedChar = 'Invalid HTML encoded char';
   sFactoryAlreadyRegistered = 'Factory already registered';
   sAppFactoryAlreadyRegistered = 'App factory already registered';
-{$IFEND}
+  {$IFEND}
 
 implementation
 
 end.
+

@@ -8,20 +8,17 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Generics.Collections,
   fpHTTP,
   httpprotocol,
 {$ELSE}
-  System.NetEncoding,
-  System.SysUtils,
   Web.HTTPApp,
   System.Generics.Collections,
 {$ENDIF}
-  Horse.Commons,
   Horse.Request,
   Horse.Response,
-  Horse.Callback;
+  Horse.Callback,
+  Horse.Commons;
 
 type
   TNextCaller = class
@@ -58,6 +55,12 @@ type
 implementation
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+  System.NetEncoding,
+{$ENDIF}
   Horse.Exception,
   Horse.Exception.Interrupted;
 
@@ -71,7 +74,7 @@ begin
   FIndex := -1;
   FIndexCallback := -1;
   if FIsParamsKey then
-    FRequest.Params.Dictionary.Add(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF});
+    FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF});
 end;
 
 procedure TNextCaller.Next;

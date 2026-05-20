@@ -10,19 +10,13 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-  DateUtils,
   Generics.Collections,
 {$ELSE}
   System.SysUtils,
   System.Classes,
-  System.DateUtils,
   System.Generics.Collections,
-  System.Rtti,
 {$ENDIF}
-  Horse.Exception,
-  Horse.Commons,
-  Horse.Core.Param.Field.Brackets,
-  Horse.Core.Param.Config;
+  Horse.Core.Param.Field.Brackets;
 
 type
 
@@ -30,6 +24,11 @@ type
   private
     FContains: Boolean;
     FFieldName: string;
+    FValue: string;
+    FStream: TStream;
+    FLhsBrackets: THorseCoreParamFieldLhsBrackets;
+    procedure InitializeLhsBrackets(const AParams: TDictionary<string, string>; const AFieldName: string);
+  protected
     FRequired: Boolean;
     FRequiredMessage: string;
     FInvalidFormatMessage: string;
@@ -37,15 +36,14 @@ type
     FTimeFormat: string;
     FReturnUTC: Boolean;
     FTrueValue: string;
-    FValue: string;
-    FStream: TStream;
-    FLhsBrackets: THorseCoreParamFieldLhsBrackets;
-
     function GetFormatSettings: TFormatSettings;
     procedure RaiseHorseException(const AMessage: string); overload;
     procedure RaiseHorseException(const AMessage: string; const Args: array of const); overload;
     function TryISO8601ToDate(const AValue: string; out Value: TDateTime): Boolean;
-    procedure InitializeLhsBrackets(const AParams: TDictionary<string, string>; const AFieldName: string);
+    property Contains: Boolean read FContains;
+    property FieldName: string read FFieldName;
+    property Value: string read FValue;
+    property Stream: TStream read FStream;
   public
     function DateFormat(const AValue: string): THorseCoreParamField;
     function InvalidFormatMessage(const AValue: string): THorseCoreParamField;
@@ -72,13 +70,24 @@ type
    {$IF NOT DEFINED(FPC)}
     function AsList<T>: TList<T>; overload;
    {$ENDIF}
-    property LhsBrackets:THorseCoreParamFieldLhsBrackets read FLhsBrackets;
+    property LhsBrackets: THorseCoreParamFieldLhsBrackets read FLhsBrackets;
     constructor Create(const AParams: TDictionary<string, string>; const AFieldName: string); overload;
     constructor Create(const AStream: TStream; const AFieldName: string); overload;
     destructor Destroy; override;
   end;
 
 implementation
+
+uses
+  Horse.Exception,
+  Horse.Commons,
+  Horse.Core.Param.Config,
+{$IF DEFINED(FPC)}  
+  DateUtils;
+{$ELSE}
+  System.DateUtils,
+  System.Rtti;
+{$ENDIF}
 
 function THorseCoreParamField.AsBoolean: Boolean;
 var

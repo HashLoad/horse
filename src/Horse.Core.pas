@@ -8,21 +8,16 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Generics.Collections,
 {$ELSE}
-  System.SysUtils,
   System.Generics.Collections,
   Web.HTTPApp,
-  Horse.Request,
-  Horse.Response,
 {$ENDIF}
   Horse.Core.RouterTree,
-  Horse.Commons,
-  Horse.Constants,
   Horse.Callback,
   Horse.Core.Group.Contract,
-  Horse.Core.Route.Contract;
+  Horse.Core.Route.Contract,
+  Horse.Commons;
 
 type
   THorseCore = class;
@@ -134,8 +129,16 @@ type
 implementation
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils, 
+  Horse.Request,
+  Horse.Response,
+{$ENDIF}
   Horse.Core.Route,
-  Horse.Core.Group;
+  Horse.Core.Group,
+  Horse.Constants;
 
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
 begin

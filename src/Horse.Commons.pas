@@ -9,14 +9,11 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Classes,
   SysUtils,
-  StrUtils,
-  RegExpr;
+  StrUtils;
 {$ELSE}
-  System.Classes,
-  System.SysUtils,
-  System.RegularExpressions;
+  Web.HTTPApp,
+  System.SysUtils;
 {$ENDIF}
 
 type
@@ -120,8 +117,11 @@ type
     function ToInteger: Integer;
   end;
 
-  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper
-  for TMimeTypes
+  TMethodTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMethodType
+    function ToString: string;
+  end;
+
+  TMimeTypesHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMimeTypes
     function ToString: string;
   end;
 
@@ -136,6 +136,13 @@ function StringCommandToMethodType(const ACommand: string): TMethodType;
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
 implementation
+
+uses  
+{$IF DEFINED(FPC)}
+  RegExpr;
+{$ELSE}
+  System.RegularExpressions;    
+{$ENDIF}
 
 {$IF DEFINED(FPC)}
 function StringCommandToMethodType(const ACommand: string): TMethodType;
@@ -196,10 +203,10 @@ begin
     begin
       LExpression := '^(' + ReplaceParams(AValues[I]) + ')$';
 {$IF DEFINED(FPC)}
-      LRegexObj.Expression := LExpression;
+      LRegexObj.Expression := '(?i)' + LExpression;
       if LRegexObj.Exec(LText) then
 {$ELSE}
-      if TRegEx.IsMatch(LText, LExpression) then
+      if TRegEx.IsMatch(LText, LExpression, [roIgnoreCase]) then
 {$ENDIF}
       begin
         Result := True;
@@ -289,6 +296,28 @@ begin
       Result := 'image/gif';
     TMimeTypes.Download:
       Result := 'application/x-download';
+  end;
+end;
+
+{ TMethodTypeHelper }
+
+function TMethodTypeHelper.ToString: string;
+begin
+  case Self of
+    mtAny:
+      Result := 'Any';
+    mtGet:
+      Result := 'Get';
+    mtPut:
+      Result := 'Put';
+    mtPost:
+      Result := 'Post';
+    mtHead:
+      Result := 'Head';
+    mtDelete:
+      Result := 'Delete';
+    mtPatch:
+      Result := 'Patch';
   end;
 end;
 

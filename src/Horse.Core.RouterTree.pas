@@ -8,22 +8,18 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Generics.Collections,
   fpHTTP,
   httpprotocol,
   RegExpr,
 {$ELSE}
-  System.SysUtils,
-  System.NetEncoding,
   Web.HTTPApp,
   System.Generics.Collections,
-  System.RegularExpressions,
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Commons,
-  Horse.Callback;
+  Horse.Callback,
+  Horse.Commons;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
@@ -44,11 +40,14 @@ type
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
-    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback);
+    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
     function ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
     function CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     function HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
+    function CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
+    // Normalize a path param key so :id and :name map to the same node
+    class function NormalizeParamKey(const APart: string): string; static;
   public
     function CreateRouter(const APath: string): THorseRouterTree;
     function GetPrefix: string;
@@ -59,12 +58,32 @@ type
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     constructor Create;
     destructor Destroy; override;
+
+    property Route: TObjectDictionary<string, THorseRouterTree> read FRoute;
   end;
 
 implementation
 
 uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+  System.RegularExpressions,
+{$ENDIF}
   Horse.Core.RouterTree.NextCaller;
+
+// All named path params (e.g. :id, :name, :userId) are normalized to a
+// single canonical key ':_param'. This means /foo/:id/bar and /foo/:name/bar
+// share the same tree node, preventing duplicate route registration where
+// only the param name differs.
+class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
+begin
+  if APart.StartsWith(':') then
+    Result := ':_param'
+  else
+    Result := APart;
+end;
 
 procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var
@@ -72,12 +91,16 @@ var
 begin
   LPathChain := GetQueuePath(APath);
   try
-    RegisterInternal(AHTTPType, LPathChain, ACallback);
+    RegisterInternal(AHTTPType, LPathChain, ACallback, APath);
   finally
     LPathChain.Free;
   end;
 end;
 
+// When multiple parameterized routes match (e.g. /test/:p1/test and
+// /test/:p1/:p2), we now score each candidate by counting how many of its
+// remaining segments are literals (not params). The route with more literal
+// segments is more specific and should be preferred.
 function THorseRouterTree.CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse): Boolean;
 var
@@ -85,6 +108,9 @@ var
   LAcceptable: THorseRouterTree;
   LFound, LIsGroup: Boolean;
   LPathOrigin: TQueue<string>;
+  LBestAcceptable: THorseRouterTree;
+  LBestScore, LScore: Integer;
+  LPathArray: TArray<string>;
 begin
   LIsGroup := False;
   LPathOrigin := APath;
@@ -99,15 +125,26 @@ begin
   end;
   if (not LFound) and (FRegexedKeys.Count > 0) then
   begin
+    LBestAcceptable := nil;
+    LBestScore := -1;
+    LPathArray := APath.ToArray;
     for LKey in FRegexedKeys do
     begin
       FRoute.TryGetValue(LKey, LAcceptable);
-      if LAcceptable.HasNext(AHTTPType, APath.ToArray) then
+      if LAcceptable.HasNext(AHTTPType, LPathArray) then
       begin
-        LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
-        Break;
+        // Score = number of literal (non-param) segments in the remainder of
+        // the matched route. Higher score = more specific = preferred.
+        LScore := LAcceptable.CountLiteralSegments(AHTTPType, LPathArray);
+        if (LBestAcceptable = nil) or (LScore > LBestScore) then
+        begin
+          LBestAcceptable := LAcceptable;
+          LBestScore := LScore;
+        end;
       end;
     end;
+    if LBestAcceptable <> nil then
+      LFound := LBestAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
   end
   else if LFound then
     LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
@@ -139,13 +176,56 @@ var
   LPathInfo: string;
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
+{ PATCH-TREE-1: LRawWebRequest stores the result of ARequest.RawWebRequest so
+  we can pass it to Assigned(). Assigned() requires a variable — it cannot
+  accept a function-call expression (dcc32 E2036 "Variable required"). }
+  LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
-  LPathInfo := {$IF DEFINED(FPC)}ARequest.RawWebRequest.PathInfo{$ELSE}ARequest.RawWebRequest.RawPathInfo{$ENDIF};
+{ ===========================================================================
+  PATCH-TREE-1 — nil-guard for the CrossSocket path.
+
+  The original code accessed ARequest.RawWebRequest directly:
+    Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
+                 ARequest.RawWebRequest.MethodType
+    FPC/Indy:    ARequest.RawWebRequest.PathInfo
+                 StringCommandToMethodType(ARequest.RawWebRequest.Method)
+
+  On the CrossSocket path FWebRequest is always nil (no TWebRequest is ever
+  created), so those direct accesses raise an Access Violation on every request.
+
+  Fix strategy: store RawWebRequest in a local variable, test it once, branch.
+
+    Indy path (LRawWebRequest <> nil):
+      Use the EXACT original expressions for both compilers — zero behaviour
+      change for any existing Indy/FPC user.  The upstream code is reproduced
+      verbatim inside the else branch, now referencing the local variable.
+
+    CrossSocket path (LRawWebRequest = nil):
+      Use the nil-guarded accessors on THorseRequest:
+        ARequest.RawPathInfo   (PATCH-REQ-5) — returns FCSPathInfo shadow field
+        ARequest.MethodType    (PATCH-REQ-3) — returns FCSMethodType shadow field
+      Both fields are populated by TRequestBridge.Populate before the pipeline
+      is entered, so they are always valid at this point.
+  =========================================================================== }
+  LRawWebRequest := ARequest.RawWebRequest;
+  if not Assigned(LRawWebRequest) then
+  begin
+    // CrossSocket path: shadow fields set by TRequestBridge.Populate
+    LPathInfo   := ARequest.RawPathInfo;
+    LMethodType := ARequest.MethodType;
+  end
+  else
+  begin
+    // Indy path: original upstream expressions — not changed from HashLoad/horse
+    LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
+                 {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
+    LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
+                   {$ELSE}LRawWebRequest.MethodType{$ENDIF};
+  end;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
   LQueue := GetQueuePath(LPathInfo, False);
   try
-    LMethodType := {$IF DEFINED(FPC)} StringCommandToMethodType(ARequest.RawWebRequest.Method){$ELSE}ARequest.RawWebRequest.MethodType{$ENDIF};
     Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
     if not Result then
     begin
@@ -235,6 +315,46 @@ begin
   end;
 end;
 
+// Count how many literal (non-param) segments a route has starting from AIndex+1.
+// Used to score route specificity: more literals = more specific = preferred.
+function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
+var
+  LNext, LKey: string;
+  LNextRoute: THorseRouterTree;
+begin
+  Result := 0;
+  if (Length(APaths) <= AIndex) then
+    Exit;
+
+  // At the last segment
+  if (Length(APaths) - 1 = AIndex) then
+  begin
+    if not FIsParamsKey then
+      Result := 1;
+    Exit;
+  end;
+
+  LNext := APaths[AIndex + 1];
+  Inc(AIndex);
+
+  // Try literal child first
+  if FRoute.TryGetValue(LNext, LNextRoute) then
+  begin
+    Result := 1 + LNextRoute.CountLiteralSegments(AMethod, APaths, AIndex);
+    Exit;
+  end;
+
+  // Try param children
+  for LKey in FRegexedKeys do
+  begin
+    if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then
+    begin
+      Result := FRoute.Items[LKey].CountLiteralSegments(AMethod, APaths, AIndex);
+      Exit;
+    end;
+  end;
+end;
+
 function THorseRouterTree.HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
 var
   LNext, LKey: string;
@@ -269,17 +389,22 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string);
 var
   LNextPart: string;
+  LNormalizedNextPart: string;
   LCallbacks: TList<THorseCallback>;
   LForceRouter: THorseRouterTree;
+  LRawPart: string;
 begin
   if not FIsInitialized then
   begin
-    FPart := APath.Dequeue;
+    LRawPart := APath.Dequeue;
+    FPart := LRawPart;
 
     FIsParamsKey := FPart.StartsWith(':');
+    // Store the actual param name as the tag for URL param extraction,
+    // but we will use a normalized key in the parent's FRoute dictionary.
     FTag := FPart.Substring(1, Length(FPart) - 1);
 
     FIsRouterRegex := FPart.StartsWith('(') and FPart.EndsWith(')');
@@ -292,23 +417,37 @@ begin
 
   if APath.Count = 0 then
   begin
-    if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
+    if FCallBack.TryGetValue(AHTTPType, LCallbacks) then
+      raise Exception.Create(Format('Duplicate route detected: [%s] %s', [AHTTPType.ToString.ToUpper, AFullPath]))
+    else
     begin
       LCallbacks := TList<THorseCallback>.Create;
       FCallBack.Add(AHTTPType, LCallbacks);
     end;
-    LCallbacks.Add(ACallback)
+    LCallbacks.Add(ACallback);
   end;
 
   if APath.Count > 0 then
   begin
     LNextPart := APath.Peek;
+    // normalize param keys so :id and :name share the same node.
+    LNormalizedNextPart := NormalizeParamKey(LNextPart);
 
-    LForceRouter := ForcePath(LNextPart);
+    LForceRouter := ForcePath(LNormalizedNextPart);
 
-    LForceRouter.RegisterInternal(AHTTPType, APath, ACallback);
+    // The child node needs to know its real param tag (e.g. "id" or "name"),
+    // so we set FPart and FTag on first initialization inside RegisterInternal.
+    // But since ForcePath reuses existing nodes, we only set the tag on the
+    // first registration. Subsequent registrations with a different param name
+    // but same structure will reuse the existing node (correct behaviour for
+    // Problem 1: they are the same route).
+    LForceRouter.RegisterInternal(AHTTPType, APath, ACallback, AFullPath);
     if LForceRouter.FIsParamsKey or LForceRouter.FIsRouterRegex then
-      FRegexedKeys.Add(LNextPart);
+    begin
+      // Only add to FRegexedKeys once (avoid duplicates)
+      if not FRegexedKeys.Contains(LNormalizedNextPart) then
+        FRegexedKeys.Add(LNormalizedNextPart);
+    end;
   end;
 end;
 

@@ -12,15 +12,10 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  SysUtils,
   Classes,
-  Generics.Collections,
-  SyncObjs;
+  Generics.Collections;
 {$ELSE}
-  System.SysUtils,
-  System.Classes,
-  System.Generics.Collections,
-  SyncObjs;
+  System.Generics.Collections;
 {$ENDIF}
 
 type
@@ -32,10 +27,17 @@ type
 
 implementation
 
-{$IFNDEF UseTHorseMimeTypesExt}
 uses
-  System.Net.Mime;
+{$IFNDEF UseTHorseMimeTypesExt}
+  System.Net.Mime,
 {$ENDIF}
+
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
+  SyncObjs;
 
 type
 

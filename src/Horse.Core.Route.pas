@@ -9,8 +9,6 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-{$ELSE}
-  System.SysUtils,
 {$ENDIF}
   Horse.Core.Route.Contract,
   Horse.Callback;
