@@ -52,7 +52,10 @@ uses
   Horse.WebModule in '..\..\src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   Horse.Core.Param.Field.Brackets in '..\..\src\Horse.Core.Param.Field.Brackets.pas',
   Horse.Core.Files in '..\..\src\Horse.Core.Files.pas',
-  Tests.Horse.Core.Files in 'tests\Tests.Horse.Core.Files.pas';
+  Tests.Horse.Core.Files in 'tests\Tests.Horse.Core.Files.pas',
+  Horse.Mime in '..\..\src\Horse.Mime.pas',
+  Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
+  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';
 
 var
   runner: ITestRunner;
