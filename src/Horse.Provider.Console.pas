@@ -1,10 +1,24 @@
 unit Horse.Provider.Console;
 
+{ ===========================================================================
+  PATCH-CONSOLE-1 — ListenWithConfig override
+  Without this, THorseProviderAbstract.ListenWithConfig just calls the no-arg
+  Listen, which enters InternalListen with FPort = 0 and falls back to
+  DEFAULT_PORT (9000), silently ignoring the caller-supplied APort.
+  Fix: override ListenWithConfig in THorseProvider (Console) so that it sets
+  Console's own FPort via SetPort before calling InternalListen.
+  AConfig is intentionally ignored — Console/Indy has no use for
+  THorseCrossSocketConfig; only CrossSocket overrides ListenWithConfig fully.
+  =========================================================================== }
+
 interface
 
 {$IF NOT DEFINED(FPC)}
 uses
   Horse.Provider.Abstract,
+{ PATCH-CONSOLE-1: Horse.Provider.Config needed for THorseCrossSocketConfig }
+  Horse.Provider.Config,
+{ =========================================================================== }
   Horse.Provider.IOHandleSSL.Contract,
   IdHTTPWebBrokerBridge,
   IdContext,
@@ -59,6 +73,12 @@ type
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+{ ===========================================================================
+  PATCH-CONSOLE-1 — ListenWithConfig declaration
+  =========================================================================== }
+    class procedure ListenWithConfig(const APort: Integer;
+      const AConfig: THorseCrossSocketConfig); override;
+{ =========================================================================== }
     class function IsRunning: Boolean;
     class destructor UnInitialize;
   end;
@@ -285,6 +305,21 @@ class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListe
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
+
+{ ===========================================================================
+  PATCH-CONSOLE-1 — ListenWithConfig implementation
+  Sets Console's own FPort before starting, so the port is honoured even when
+  the caller goes through the abstract ListenWithConfig entry point.
+  AConfig is intentionally ignored — Indy/Console has no use for CrossSocket
+  configuration. CrossSocket overrides ListenWithConfig completely.
+  =========================================================================== }
+class procedure THorseProvider.ListenWithConfig(const APort: Integer;
+  const AConfig: THorseCrossSocketConfig);
+begin
+  SetPort(APort);
+  InternalListen;
+end;
+{ =========================================================================== }
 
 class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
 begin

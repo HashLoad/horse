@@ -7,12 +7,21 @@ static/
 **/__history/
 **/__recovery/
 src/*.~*
+__history/
+__recovery/
+packages/Win32/
+packages/Win64/
+packages/Linux64/
+packages/dcu/
+packages/dcp/
+packages/bpl/
 *.res
 *.exe
 *.dll
 *.bpl
 *.bpi
 *.dcp
+*.bpl
 *.so
 *.apk
 *.drc
@@ -52,3 +61,21 @@ backup/
 **/vcl/
 dunitx-results.xml
 *.bak
+
+# Claude Code
+.claude/settings.local.json
+.claude.json
+CLAUDE.md
+
+# Delphi build output
+__history/
+__recovery/
+*.dcu
+*.exe
+*.dll
+*.bpl
+*.dcp
+*.local
+*.identcache
+*.tvsconfig
+*.dsk
