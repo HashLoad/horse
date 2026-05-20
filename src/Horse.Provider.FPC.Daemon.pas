@@ -28,7 +28,6 @@ uses
 type
   THTTPServerThread = class(TThread)
   private
-    FStartServer: Boolean;
     FHost: string;
     FPort: Integer;
     FListenQueue: Word;
@@ -87,9 +86,12 @@ type
       const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc;
       const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+<<<<<<< HEAD
     // PATCH-FPCDAEMON-1
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); override;
+=======
+>>>>>>> upstream/master
     class destructor UnInitialize;
     class function IsRunning: Boolean;
   end;
