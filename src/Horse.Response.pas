@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 unit Horse.Response;
 
 {$IF DEFINED(FPC)}
@@ -20,7 +19,7 @@ uses
 {$ENDIF}
 {$ENDIF}
 { ===========================================================================
-  PATCH-RES-1 â€” added System.Generics.Collections (Delphi only)
+  PATCH-RES-1 — added System.Generics.Collections (Delphi only)
   Reason: FCustomHeaders is TList<TPair<string,string>> on Delphi.
   FPC path uses TStringList (Classes) which is already imported above.
   =========================================================================== }
@@ -36,40 +35,40 @@ type
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
     FContent: TObject;
 { ===========================================================================
-  PATCH-RES-1 â€” added FCustomHeaders field
+  PATCH-RES-1 — added FCustomHeaders field
   Reason: CrossSocket has no TWebResponse. TResponseBridge.CopyHeaders
   iterates this list directly to write headers to ICrossHttpResponse.
   AddHeader writes to both FWebResponse.SetCustomHeader (Indy path) and
   this map (CrossSocket path) so all existing middleware that calls
   Res.AddHeader continues to work on both providers without any change.
 
-  Delphi: TDictionary<string,string> â€” O(1) lookup; last value wins for
+  Delphi: TDictionary<string,string> — O(1) lookup; last value wins for
   duplicate keys (AddOrSetValue overwrites).
-  FPC: TStringList â€” same key=value string storage used on the Lazarus path.
+  FPC: TStringList — same key=value string storage used on the Lazarus path.
   =========================================================================== }
     FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-4 â€” CrossSocket shadow fields
+  PATCH-RES-4 — CrossSocket shadow fields
   Reason: On the CrossSocket path FWebResponse is nil (no TWebResponse exists).
   Every public method that previously wrote to FWebResponse now checks for nil
   and falls through to these fields instead. The bridge reads them via the
   read-only properties BodyText, ContentStream, and CSContentType.
 
-  FCSStatusCode  â€” integer HTTP status (default 200)
-  FCSBody        â€” string body set by Send(string) or Send<T>
-  FCSContentType â€” Content-Type set by ContentType(string) or SendFile
-  FCSContentStream â€” stream body set by SendFile/Download/Render
+  FCSStatusCode  — integer HTTP status (default 200)
+  FCSBody        — string body set by Send(string) or Send<T>
+  FCSContentType — Content-Type set by ContentType(string) or SendFile
+  FCSContentStream — stream body set by SendFile/Download/Render
   =========================================================================== }
     FCSStatusCode:    Integer;
     FCSBody:          string;
     FCSContentType:   string;
-    FCSContentStream: TStream;   // non-owning â€” caller retains ownership
+    FCSContentStream: TStream;   // non-owning — caller retains ownership
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-6 â€” owned RawWebResponse adapter for CrossSocket path
+  PATCH-RES-6 — owned RawWebResponse adapter for CrossSocket path
   Mirrors PATCH-REQ-8: when FWebResponse is nil (CrossSocket), middleware that
-  calls Res.RawWebResponse.SetCustomHeader(...) â€” e.g. Horse.CORS â€” would
+  calls Res.RawWebResponse.SetCustomHeader(...) — e.g. Horse.CORS — would
   crash with an AV. This field holds a TCrossSocketWebResponse adapter so
   RawWebResponse returns a non-nil value.
 
@@ -81,7 +80,7 @@ type
     FCSRawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-7 â€” lazy-allocation helper for FCustomHeaders.
+  PATCH-RES-7 — lazy-allocation helper for FCustomHeaders.
   Was eagerly created in the constructor; now created only when AddHeader
   is first called. Eager allocation paid an unconditional cost on every
   Indy/ISAPI/CGI request that never read or wrote a custom header.
@@ -110,31 +109,31 @@ type
     function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; virtual;
     constructor Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 { ===========================================================================
-  PATCH-RES-2 â€” added Clear procedure
+  PATCH-RES-2 — added Clear procedure
   Reason: THorseContext.Reset recycles pooled objects between requests.
   Resets FContent and clears FCustomHeaders in place (dictionary object
-  reused â€” avoids heap churn on the request hot path).
-  FWebResponse is set to nil â€” belongs to the previous Indy context.
+  reused — avoids heap churn on the request hot path).
+  FWebResponse is set to nil — belongs to the previous Indy context.
   =========================================================================== }
     procedure Clear;
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-6 â€” setter for the owned RawWebResponse adapter. Called once per
+  PATCH-RES-6 — setter for the owned RawWebResponse adapter. Called once per
   request by the CrossSocket provider after pool acquire. Replaces any prior
-  adapter instance (defence in depth â€” Clear normally nils it first).
+  adapter instance (defence in depth — Clear normally nils it first).
   =========================================================================== }
     procedure SetCSRawWebResponse(const ARawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-3 â€” added CustomHeaders read-only property
+  PATCH-RES-3 — added CustomHeaders read-only property
   Reason: TResponseBridge.CopyHeaders reads this property to iterate and
-  forward response headers to ICrossHttpResponse. Read-only â€” the bridge
+  forward response headers to ICrossHttpResponse. Read-only — the bridge
   iterates only; all writes go through AddHeader as before.
   =========================================================================== }
     property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
 { =========================================================================== }
 { ===========================================================================
-  PATCH-RES-4 â€” read-only properties for the CrossSocket bridge
+  PATCH-RES-4 — read-only properties for the CrossSocket bridge
   TResponseBridge.Flush reads these to write the response body and
   Content-Type to ICrossHttpResponse.  All three are populated only when
   FWebResponse is nil (CrossSocket path); on the Indy path they are empty.
@@ -159,13 +158,13 @@ uses
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard: skip FWebResponse on CrossSocket path }
+{ PATCH-RES-4 — nil-guard: skip FWebResponse on CrossSocket path }
   if Assigned(FWebResponse) then
     FWebResponse.SetCustomHeader(AName, AValue);
 { end PATCH-RES-4 }
 { ===========================================================================
-  PATCH-RES-1 â€” also populate FCustomHeaders so CrossSocket bridge can read it.
-  PATCH-RES-7 â€” allocate the headers store on first use (was eager in Create).
+  PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it.
+  PATCH-RES-7 — allocate the headers store on first use (was eager in Create).
   Delphi: TDictionary.AddOrSetValue  FPC: TStringList.Values[name] := value
   =========================================================================== }
   EnsureCustomHeaders;
@@ -179,7 +178,7 @@ begin
 end;
 
 { ===========================================================================
-  PATCH-RES-7 â€” EnsureCustomHeaders implementation
+  PATCH-RES-7 — EnsureCustomHeaders implementation
   =========================================================================== }
 procedure THorseResponse.EnsureCustomHeaders;
 begin
@@ -205,7 +204,7 @@ end;
 
 function THorseResponse.ContentType(const AContentType: string): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
   begin
     FCSContentType := AContentType;
@@ -219,7 +218,7 @@ end;
 constructor THorseResponse.Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 begin
   FWebResponse := AWebResponse;
-{ PATCH-RES-4 â€” initialise FCSStatusCode to 200 (HTTP OK) }
+{ PATCH-RES-4 — initialise FCSStatusCode to 200 (HTTP OK) }
   FCSStatusCode := 200;
 { end PATCH-RES-4 }
   if Assigned(FWebResponse) then
@@ -230,14 +229,14 @@ begin
 {$ENDIF}
   end;
 { ===========================================================================
-  PATCH-RES-7 â€” FCustomHeaders is no longer eagerly allocated here.
+  PATCH-RES-7 — FCustomHeaders is no longer eagerly allocated here.
   AddHeader calls EnsureCustomHeaders on first use. Indy/ISAPI/CGI requests
   that never call AddHeader pay nothing.
   =========================================================================== }
 end;
 
 { ===========================================================================
-  PATCH-RES-2 â€” Clear implementation
+  PATCH-RES-2 — Clear implementation
   =========================================================================== }
 procedure THorseResponse.Clear;
 begin
@@ -245,13 +244,13 @@ begin
   FContent := nil;
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Clear;
-{ PATCH-RES-4 â€” wipe CrossSocket shadow fields }
+{ PATCH-RES-4 — wipe CrossSocket shadow fields }
   FCSBody          := '';
   FCSContentType   := '';
-  FCSContentStream := nil;   // non-owning â€” never free here
+  FCSContentStream := nil;   // non-owning — never free here
   FCSStatusCode    := 200;
 { end PATCH-RES-4 }
-{ PATCH-RES-6 â€” free the per-request TWebResponse adapter (owned).
+{ PATCH-RES-6 — free the per-request TWebResponse adapter (owned).
   Nil on the Indy path (never assigned there); owned on CrossSocket path. }
   if Assigned(FCSRawWebResponse) then
     FreeAndNil(FCSRawWebResponse);
@@ -260,7 +259,7 @@ end;
 { =========================================================================== }
 
 { ===========================================================================
-  PATCH-RES-6 â€” SetCSRawWebResponse implementation
+  PATCH-RES-6 — SetCSRawWebResponse implementation
   =========================================================================== }
 procedure THorseResponse.SetCSRawWebResponse(
   const ARawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
@@ -275,12 +274,12 @@ begin
   if Assigned(FContent) then
     FContent.Free;
 { ===========================================================================
-  PATCH-RES-1 â€” free FCustomHeaders
+  PATCH-RES-1 — free FCustomHeaders
   =========================================================================== }
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Free;
 { =========================================================================== }
-{ PATCH-RES-6 â€” free the owned TWebResponse adapter if Clear was not called
+{ PATCH-RES-6 — free the owned TWebResponse adapter if Clear was not called
   before Destroy (e.g. pool shutdown path). }
   if Assigned(FCSRawWebResponse) then
     FCSRawWebResponse.Free;
@@ -290,7 +289,7 @@ end;
 
 function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
 begin
-{ PATCH-RES-6 â€” return the CrossSocket adapter when FWebResponse is nil,
+{ PATCH-RES-6 — return the CrossSocket adapter when FWebResponse is nil,
   so middleware calling Res.RawWebResponse.SetCustomHeader (e.g. Horse.CORS)
   works on the CrossSocket path without an AV. }
   if Assigned(FWebResponse) then
@@ -301,7 +300,7 @@ end;
 
 function THorseResponse.Send(const AContent: string): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
   begin
     FCSBody := AContent;
@@ -309,7 +308,7 @@ begin
   end;
 { end PATCH-RES-4 }
 {$IF NOT DEFINED(FPC)}
-{ PATCH-RES-5 â€” Indy empty-body fix
+{ PATCH-RES-5 — Indy empty-body fix
   When ContentText = '' and ContentStream = nil, TIdHTTPResponseInfo.WriteContent
   substitutes a default HTML body (<HTML><BODY><B>200 OK</B></BODY></HTML>).
   Assigning an empty TMemoryStream forces Indy into the stream path: it sends
@@ -335,7 +334,7 @@ end;
 
 function THorseResponse.RedirectTo(const ALocation: string): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard: on CrossSocket path FWebResponse is nil;
+{ PATCH-RES-4 — nil-guard: on CrossSocket path FWebResponse is nil;
   AddHeader already dual-writes to FCustomHeaders so Location is captured.
   Status delegates to FCSStatusCode when FWebResponse is nil. }
   if Assigned(FWebResponse) then
@@ -348,7 +347,7 @@ end;
 
 function THorseResponse.RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if Assigned(FWebResponse) then
     FWebResponse.SetCustomHeader('Location', ALocation)
   else
@@ -361,7 +360,7 @@ function THorseResponse.RemoveHeader(const AName: string): THorseResponse;
 var
   I: Integer;
 begin
-{ PATCH-RES-4 â€” nil-guard: skip FWebResponse access on CrossSocket path }
+{ PATCH-RES-4 — nil-guard: skip FWebResponse access on CrossSocket path }
   if Assigned(FWebResponse) then
   begin
     I := FWebResponse.CustomHeaders.IndexOfName(AName);
@@ -370,8 +369,8 @@ begin
   end;
 { end PATCH-RES-4 }
 { ===========================================================================
-  PATCH-RES-1 â€” also remove from FCustomHeaders
-  PATCH-RES-7 â€” FCustomHeaders is allocated lazily; nothing to remove if it
+  PATCH-RES-1 — also remove from FCustomHeaders
+  PATCH-RES-7 — FCustomHeaders is allocated lazily; nothing to remove if it
   was never created (no AddHeader call ever ran).
   Delphi: TDictionary.Remove  FPC: TStringList delete by IndexOfName
   =========================================================================== }
@@ -391,7 +390,7 @@ end;
 
 function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
   begin
     FCSStatusCode := AStatus.ToInteger;
@@ -414,7 +413,7 @@ begin
   if LContentType = EmptyStr then
     LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-{ PATCH-RES-4 â€” nil-guard: CrossSocket path captures stream + type as shadow fields }
+{ PATCH-RES-4 — nil-guard: CrossSocket path captures stream + type as shadow fields }
   if not Assigned(FWebResponse) then
   begin
     FCSContentStream := AFileStream;   // non-owning
@@ -470,7 +469,7 @@ begin
   if LContentType = EmptyStr then
     LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
   begin
     FCSContentStream := AFileStream;   // non-owning
@@ -529,7 +528,7 @@ end;
 
 function THorseResponse.Status: Integer;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
     Exit(FCSStatusCode);
 { end PATCH-RES-4 }
@@ -538,7 +537,7 @@ end;
 
 function THorseResponse.Status(const AStatus: Integer): THorseResponse;
 begin
-{ PATCH-RES-4 â€” nil-guard }
+{ PATCH-RES-4 — nil-guard }
   if not Assigned(FWebResponse) then
   begin
     FCSStatusCode := AStatus;
@@ -550,276 +549,3 @@ begin
 end;
 
 end.
-=======
-unit Horse.Response;
-
-{$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
-{$ENDIF}
-
-interface
-
-uses
-{$IF DEFINED(FPC)}
-  Classes,
-  fpHTTP,
-  HTTPDefs,
-{$ELSE}
-  System.Classes,
-  Web.HTTPApp,
-{$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
-{$ENDIF}
-{$ENDIF}
-  Horse.Commons;
-
-type
-  THorseResponse = class
-  private
-    FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-    FContent: TObject;
-  public
-    function Send(const AContent: string): THorseResponse; overload; virtual;
-    function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
-    function RedirectTo(const ALocation: string): THorseResponse; overload; virtual;
-    function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload; virtual;
-    function Status(const AStatus: Integer): THorseResponse; overload; virtual;
-    function Status(const AStatus: THTTPStatus): THorseResponse; overload; virtual;
-    function SendFile(const AFileStream: TStream; const AFileName: string = ''; const AContentType: string = ''): THorseResponse; overload; virtual;
-    function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
-    function Download(const AFileStream: TStream; const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
-    function Download(const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
-    function Render(const AFileStream: TStream; const AFileName: string): THorseResponse; overload; virtual;
-    function Render(const AFileName: string): THorseResponse; overload; virtual;
-    function Status: Integer; overload; virtual;
-    function AddHeader(const AName, AValue: string): THorseResponse; virtual;
-    function RemoveHeader(const AName: string): THorseResponse; virtual;
-    function Content: TObject; overload; virtual;
-    function Content(const AContent: TObject): THorseResponse; overload; virtual;
-    function ContentType(const AContentType: string): THorseResponse; virtual;
-    function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; virtual;
-    constructor Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
-    destructor Destroy; override;
-  end;
-
-implementation
-
-uses        
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ELSE}
-  System.SysUtils,
-{$ENDIF}
-  Horse.Core.Files,
-  Horse.Mime;
-
-function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
-begin
-  FWebResponse.SetCustomHeader(AName, AValue);
-  Result := Self;
-end;
-
-function THorseResponse.Content(const AContent: TObject): THorseResponse;
-begin
-  Result := Self;
-  FContent := AContent;
-end;
-
-function THorseResponse.Content: TObject;
-begin
-  Result := FContent;
-end;
-
-function THorseResponse.ContentType(const AContentType: string): THorseResponse;
-begin
-  FWebResponse.ContentType := AContentType;
-  Result := Self;
-end;
-
-constructor THorseResponse.Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
-begin
-  FWebResponse := AWebResponse;
-{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
-{$IF DEFINED(FPC)}
-  FWebResponse.FreeContentStream := True;
-{$ENDIF}
-end;
-
-destructor THorseResponse.Destroy;
-begin
-  if Assigned(FContent) then
-    FContent.Free;
-  inherited;
-end;
-
-function THorseResponse.RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
-begin
-  Result := FWebResponse;
-end;
-
-function THorseResponse.Send(const AContent: string): THorseResponse;
-begin
-{$IF NOT DEFINED(FPC)}
-  // [FIX] When ContentText = '' and ContentStream = nil, Indy's WriteContent
-  // substitutes an HTML body and overrides ContentType to 'text/html'.
-  // Assigning an empty TMemoryStream forces the stream path (0 bytes written)
-  // and preserves the application-set ContentType.
-  // FreeContentStream defaults to True — Indy frees the stream.
-  if AContent = '' then
-  begin
-    FWebResponse.ContentStream := TMemoryStream.Create;
-    FWebResponse.ContentLength := 0;
-    Exit(Self);
-  end;
-{$ENDIF}
-
-  FWebResponse.Content := AContent;
-  Result := Self;
-end;
-
-function THorseResponse.Send<T>(AContent: T): THorseResponse;
-begin
-  FContent := AContent;
-  Result := Self;
-end;
-
-function THorseResponse.RedirectTo(const ALocation: string): THorseResponse;
-begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
-  Result := Status(THTTPStatus.SeeOther);
-end;
-
-function THorseResponse.RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse;
-begin
-  FWebResponse.SetCustomHeader('Location', ALocation);
-  Result := Status(AStatus);
-end;
-
-function THorseResponse.RemoveHeader(const AName: string): THorseResponse;
-var
-  I: Integer;
-begin
-  I := FWebResponse.CustomHeaders.IndexOfName(AName);
-  if I <> -1 then
-    FWebResponse.CustomHeaders.Delete(I);
-  Result := Self;
-end;
-
-function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
-begin
-{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus.ToInteger;
-  Result := Self;
-end;
-
-function THorseResponse.SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
-var
-  LFileName: string;
-begin
-  Result := Self;
-  AFileStream.Position := 0;
-  LFileName := ExtractFileName(AFileName);
-
-  FWebResponse.FreeContentStream := False;
-  FWebResponse.ContentLength := AFileStream.Size;
-  FWebResponse.ContentStream := AFileStream;
-  FWebResponse.SetCustomHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
-
-  FWebResponse.ContentType := AContentType;
-  if (AContentType = EmptyStr) then
-    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
-
-{$IF DEFINED(FPC)}
-  FWebResponse.SendContent;
-{$ELSE}
-  FWebResponse.SendResponse;
-{$ENDIF}
-end;
-
-function THorseResponse.SendFile(const AFileName: string; const AContentType: string): THorseResponse;
-var
-  LFile: THorseCoreFile;
-  LContentType: string;
-begin
-  Result := Self;
-
-  LFile := THorseCoreFile.Create(AFileName);
-  LFile.FreeContentStream := True;
-  try
-    LContentType := AContentType;
-    if (AContentType = EmptyStr) then
-      LContentType := LFile.ContentType;
-    SendFile(LFile.ContentStream, LFile.Name, LContentType);
-  finally
-    LFile.Free;
-  end;
-end;
-
-function THorseResponse.Download(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
-var
-  LFileName: string;
-begin
-  Result := Self;
-  AFileStream.Position := 0;
-  LFileName := ExtractFileName(AFileName);
-
-  FWebResponse.FreeContentStream := False;
-  FWebResponse.ContentLength := AFileStream.Size;
-  FWebResponse.ContentStream := AFileStream;
-  FWebResponse.SetCustomHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
-
-  FWebResponse.ContentType := AContentType;
-  if (AContentType = EmptyStr) then
-    FWebResponse.ContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
-
-{$IF DEFINED(FPC)}
-  FWebResponse.SendContent;
-{$ELSE}
-  FWebResponse.SendResponse;
-{$ENDIF}
-end;
-
-function THorseResponse.Download(const AFileName: string; const AContentType: string): THorseResponse;
-var
-  LFile: THorseCoreFile;
-  LContentType: string;
-begin
-  Result := Self;
-
-  LFile := THorseCoreFile.Create(AFileName);
-  LFile.FreeContentStream := True;
-  try
-    LContentType := AContentType;
-    if (AContentType = EmptyStr) then
-      LContentType := LFile.ContentType;
-    Download(LFile.ContentStream, LFile.Name, LContentType);
-  finally
-    LFile.Free;
-  end;
-end;
-
-function THorseResponse.Render(const AFileStream: TStream;
-  const AFileName: string): THorseResponse;
-begin
-  Result := Self;
-  SendFile(AFileStream, AFileName, Horse.Commons.TMimeTypes.TextHTML.ToString);
-end;
-
-function THorseResponse.Render(const AFileName: string): THorseResponse;
-begin
-  Result := Self;
-  SendFile(AFileName, Horse.Commons.TMimeTypes.TextHTML.ToString);
-end;
-
-function THorseResponse.Status: Integer;
-begin
-  Result := {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF};
-end;
-
-function THorseResponse.Status(const AStatus: Integer): THorseResponse;
-begin
-{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
-  Result := Self;
-end;
-
-end.
->>>>>>> upstream/master
