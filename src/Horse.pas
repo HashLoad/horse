@@ -1,43 +1,166 @@
-﻿unit Horse;
+unit Horse;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 { ===========================================================================
-  PATCH-HORSE-1 — incompatible provider define guard
-  Fires a fatal compile error when HORSE_CROSSSOCKET is combined with any
-  define whose provider would silently take precedence over it in the
-   $IF/$ELSEIF  chains below.  Without this guard, a misconfigured project
-  compiles cleanly but runs the wrong provider (e.g. Indy Console instead of
-  CrossSocket) with no diagnostic.  Four lines of Pascal — zero runtime cost.
+  BACKWARDS-COMPATIBILITY CONTRACT (PATCH-HORSE-2)
+  ---------------------------------------------------------------------------
+  Every existing Horse project and middleware compiled against an earlier
+  Horse release continues to compile and run identically under PATCH-HORSE-2.
+  Future maintainers: do NOT modify this file without re-validating each
+  guarantee below.
+
+  GUARANTEED PRESERVED:
+
+  G1. Legacy define names continue to work as before. Setting any of:
+        HORSE_CROSSSOCKET, HORSE_VCL, HORSE_DAEMON, HORSE_LCL,
+        HORSE_APACHE,      HORSE_ISAPI, HORSE_CGI, HORSE_FCGI,
+        HORSE_NOPROVIDER
+      selects the same concrete THorseProvider class as the pre-PATCH-HORSE-2
+      Horse.pas did. The alias block below translates each old define to its
+      new namespaced counterpart before the chain runs.
+
+  G2. Default-provider paths are unchanged.
+        - Delphi + no HORSE_* defines  →  Horse.Provider.Console.THorseProvider
+        - FPC    + no HORSE_* defines  →  Horse.Provider.FPC.HTTPApplication.THorseProvider
+        - HORSE_NOPROVIDER             →  Horse.Provider.Abstract.THorseProviderAbstract
+
+  G3. THorseRequest / THorseResponse public API is untouched by PATCH-HORSE-2.
+      Middleware that uses Req.Body, Req.Headers, Req.Params, Req.Query,
+      Req.Cookie, Res.Send, Res.Status, Res.AddHeader, Req.RawWebRequest,
+      Res.RawWebResponse, etc. behaves identically.
+
+  G4. The hybrid-adapter interfaces IHorseRawRequest / IHorseRawResponse
+      and their generic adapters TInterfacedWebRequest / TInterfacedWebResponse
+      are untouched. Middleware that pokes Req.RawWebRequest.* on the
+      CrossSocket path keeps working.
+
+  G5. The existing Horse.Provider.CrossSocket.pas (console-shape) is the
+      unit selected when only HORSE_PROVIDER_CROSSSOCKET / HORSE_CROSSSOCKET
+      is set with no HORSE_APPTYPE_*. Existing projects pick up no new
+      behaviour unless they explicitly opt into a HORSE_APPTYPE_* combination.
+
+  G6. PATCH-HORSE-1's compile-time guard rejects only architecturally-
+      impossible combinations: HORSE_PROVIDER_* × HORSE_HOST_*, VCL-on-FPC,
+      LCL-on-Delphi, ISAPI-on-FPC, and HORSE_NOPROVIDER × anything else.
+      Combinations that the old chain rejected for *implementation* reasons
+      (HORSE_CROSSSOCKET + HORSE_VCL/DAEMON/LCL) are now expressible via the
+      cross-product Provider units in horse-provider-crosssocket — these are
+      ADDITIONS, never reductions of the working surface.
+
+  G7. No existing concrete provider class (Horse.Provider.Console / VCL /
+      Daemon / Apache / ISAPI / CGI / FPC.*) is renamed or removed. All
+      class methods (Listen, StopListen, ListenWithConfig, Execute) keep
+      their existing signatures.
+
+  G8. boss.json: the horse-provider-crosssocket package's version bump
+      (1.0.4 → 1.0.5) requires horse >= 3.1.98 only for consumers that
+      explicitly upgrade. Consumers pinned to earlier versions continue
+      working against the pre-PATCH-HORSE-2 horse.
+
+  HOW TO VERIFY: see patches/horse-provider-crosssocket/samples/tests/
+  HorseCSTestServer.dpr (legacy baseline with HORSE_CROSSSOCKET) — must
+  still pass 88/89 against the unmodified HorseCSTestClient.
   =========================================================================== }
-{$IF DEFINED(HORSE_CROSSSOCKET)}
-  {$IF DEFINED(HORSE_ISAPI)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_ISAPI — remove one define. ISAPI is a host-managed transport; CrossSocket owns the socket directly.'}
+
+{ ===========================================================================
+  PATCH-HORSE-2 — Define-namespace normalisation (three orthogonal axes)
+  ---------------------------------------------------------------------------
+  The Horse compile-time configuration is split into THREE explicit axes:
+
+    A · Provider          HORSE_PROVIDER_*  — HTTP transport library
+                          Indy        (Delphi default — implicit)
+                          fphttpserver(FPC default    — implicit)
+                          CrossSocket (HORSE_PROVIDER_CROSSSOCKET)
+                          mORMot      (HORSE_PROVIDER_MORMOT — reserved)
+
+    B · Application type  HORSE_APPTYPE_*   — binary lifecycle shape
+                          Console     (default — implicit)
+                          VCL         (HORSE_APPTYPE_VCL — Delphi only)
+                          Daemon      (HORSE_APPTYPE_DAEMON)
+                          LCL         (HORSE_APPTYPE_LCL — FPC only)
+                          HTTPApp     (FPC default — implicit)
+
+    C · Host-managed      HORSE_HOST_*      — web server owns the socket
+                          Apache      (HORSE_HOST_APACHE)
+                          ISAPI       (HORSE_HOST_ISAPI — Delphi only)
+                          CGI         (HORSE_HOST_CGI)
+                          FCGI        (HORSE_HOST_FCGI — FPC only)
+
+  Axis C wins outright when set — no Provider is involved (the host IS the
+  transport). Axis A and Axis B compose freely (subject to platform support):
+  any HORSE_PROVIDER_* can combine with any HORSE_APPTYPE_*, with the
+  cross-product unit selected by the chain below.
+
+  See doc/providers.md for the full architectural model.
+
+  ---------------------------------------------------------------------------
+  Legacy define aliases — full backwards compatibility for Horse <3.2 code.
+  Setting an old single-purpose define is equivalent to setting its new
+  namespaced counterpart. Every existing .dproj / .lpi continues to compile.
+  =========================================================================== }
+{$IFDEF HORSE_CROSSSOCKET} {$DEFINE HORSE_PROVIDER_CROSSSOCKET} {$ENDIF}
+{$IFDEF HORSE_VCL}         {$DEFINE HORSE_APPTYPE_VCL}          {$ENDIF}
+{$IFDEF HORSE_DAEMON}      {$DEFINE HORSE_APPTYPE_DAEMON}       {$ENDIF}
+{$IFDEF HORSE_LCL}         {$DEFINE HORSE_APPTYPE_LCL}          {$ENDIF}
+{$IFDEF HORSE_APACHE}      {$DEFINE HORSE_HOST_APACHE}          {$ENDIF}
+{$IFDEF HORSE_ISAPI}       {$DEFINE HORSE_HOST_ISAPI}           {$ENDIF}
+{$IFDEF HORSE_CGI}         {$DEFINE HORSE_HOST_CGI}             {$ENDIF}
+{$IFDEF HORSE_FCGI}        {$DEFINE HORSE_HOST_FCGI}            {$ENDIF}
+
+{ ===========================================================================
+  PATCH-HORSE-1 — Architecturally-impossible combination guard (expanded)
+  ---------------------------------------------------------------------------
+  Originally PATCH-HORSE-1 rejected any HORSE_CROSSSOCKET combined with any
+  other provider define. PATCH-HORSE-2's three-axis model permits orthogonal
+  Provider × Application-type combinations, so the guard narrows to the
+  combinations that remain genuinely impossible:
+
+    1. Self-hosted Provider × Host-managed runtime
+       The host owns the socket; a self-hosted transport cannot coexist.
+       (HORSE_PROVIDER_* × HORSE_HOST_*)
+    2. Cross-platform Application-type mismatch
+       VCL is Delphi-only; LCL is FPC/Lazarus-only. Setting the wrong one
+       on the wrong compiler is a project-configuration error.
+    3. HORSE_NOPROVIDER × anything else
+       The escape hatch (compile without any provider) is exclusive.
+  =========================================================================== }
+
+{ Rule 1 — self-hosted Provider × host-managed runtime }
+{$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
+  {$IF DEFINED(HORSE_HOST_ISAPI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
-  {$IF DEFINED(HORSE_APACHE)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_APACHE — remove one define. Apache mod is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$IF DEFINED(HORSE_HOST_APACHE)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
-  {$IF DEFINED(HORSE_CGI)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_CGI — remove one define. CGI is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$IF DEFINED(HORSE_HOST_CGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
-  {$IF DEFINED(HORSE_FCGI)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_FCGI — remove one define. FastCGI is a host-managed transport; CrossSocket owns the socket directly.'}
+  {$IF DEFINED(HORSE_HOST_FCGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
-  {$IF DEFINED(HORSE_DAEMON)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_DAEMON — remove one define. Both providers own the process event loop; they cannot coexist.'}
-  {$ENDIF}
-  {$IF DEFINED(HORSE_LCL)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_LCL — remove one define. LCL drives a GUI message loop that conflicts with CrossSocket IOCP/epoll.'}
-  {$ENDIF}
-  {$IF DEFINED(HORSE_VCL)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_VCL — remove one define. VCL drives a GUI message loop that conflicts with CrossSocket IOCP/epoll.'}
-  {$ENDIF}
-  {$IF DEFINED(HORSE_NOPROVIDER)}
-    {$MESSAGE FATAL 'HORSE_CROSSSOCKET is incompatible with HORSE_NOPROVIDER — remove one define. HORSE_NOPROVIDER suppresses all provider units including CrossSocket.'}
-  {$ENDIF}
-{$ENDIF}
+{$IFEND}
+
+{ Rule 2 — cross-platform Application-type mismatch }
+{$IF DEFINED(HORSE_APPTYPE_VCL) and DEFINED(FPC)}
+  {$MESSAGE FATAL 'HORSE_APPTYPE_VCL is Delphi-only — use HORSE_APPTYPE_LCL for Lazarus/FPC.'}
+{$IFEND}
+{$IF DEFINED(HORSE_APPTYPE_LCL) and not DEFINED(FPC)}
+  {$MESSAGE FATAL 'HORSE_APPTYPE_LCL is FPC/Lazarus-only — use HORSE_APPTYPE_VCL for Delphi.'}
+{$IFEND}
+{$IF DEFINED(HORSE_HOST_ISAPI) and DEFINED(FPC)}
+  {$MESSAGE FATAL 'HORSE_HOST_ISAPI is Delphi-only — IIS ISAPI extensions require Delphi.'}
+{$IFEND}
+
+{ Rule 3 — HORSE_NOPROVIDER × anything else }
+{$IF DEFINED(HORSE_NOPROVIDER)}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
+    {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with all HORSE_PROVIDER_*, HORSE_APPTYPE_*, and HORSE_HOST_* defines — remove one.'}
+  {$IFEND}
+{$IFEND}
 { =========================================================================== }
 
 interface
@@ -45,28 +168,50 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-  {$IF DEFINED(HORSE_CROSSSOCKET)}
-  Horse.Provider.CrossSocket,
-  {$ELSE}
-  Horse.Provider.FPC.HTTPApplication,
-  {$IF DEFINED(HORSE_APACHE)}
+  { Axis C — host-managed runtime wins outright }
+  {$IF DEFINED(HORSE_HOST_APACHE)}
   Horse.Provider.FPC.Apache,
-  {$ELSEIF DEFINED(HORSE_CGI)}
+  {$ELSEIF DEFINED(HORSE_HOST_CGI)}
   Horse.Provider.FPC.CGI,
-  {$ELSEIF DEFINED(HORSE_FCGI)}
+  {$ELSEIF DEFINED(HORSE_HOST_FCGI)}
   Horse.Provider.FPC.FastCGI,
-  {$ELSEIF DEFINED(HORSE_DAEMON)}
+  { Axis A · Provider × Axis B · Application type (self-hosted) }
+  {$ELSEIF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+    Horse.Provider.CrossSocket.FPC.Daemon,
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    Horse.Provider.CrossSocket.FPC.LCL,
+    {$ELSE}
+    Horse.Provider.CrossSocket,    { Console-shape — also covers FPC HTTPApplication }
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
-  {$ELSEIF DEFINED(HORSE_LCL)}
+  {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
   Horse.Provider.FPC.LCL,
-  {$ENDIF}
+  {$ELSE}
+  Horse.Provider.FPC.HTTPApplication,   { FPC default — fphttpserver under HTTPApplication }
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_NOPROVIDER)}
   System.SysUtils,
   Horse.Provider.Abstract,
-{$ELSEIF DEFINED(HORSE_CROSSSOCKET)}
+{$ELSEIF DEFINED(HORSE_HOST_ISAPI)}
   System.SysUtils,
-  Horse.Provider.CrossSocket,
+  Horse.Provider.ISAPI,
+{$ELSEIF DEFINED(HORSE_HOST_APACHE)}
+  System.SysUtils,
+  Horse.Provider.Apache,
+{$ELSEIF DEFINED(HORSE_HOST_CGI)}
+  System.SysUtils,
+  Horse.Provider.CGI,
+{$ELSEIF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
+  System.SysUtils,
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+  Horse.Provider.CrossSocket.VCL,
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+  Horse.Provider.CrossSocket.Daemon,
+  {$ELSE}
+  Horse.Provider.CrossSocket,    { Console-shape — Delphi default for CrossSocket }
+  {$ENDIF}
 {$ELSE}
   System.SysUtils,
   Horse.Provider.Console,
@@ -111,48 +256,61 @@ type
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
 
-{$IF DEFINED(HORSE_ISAPI)}
+{ PATCH-HORSE-2 — THorseProvider resolution follows the same three-axis model
+  as the uses clause above:
+    Stage 1 — Axis C (host-managed) wins outright
+    Stage 2 — Axis A (Provider) × Axis B (Application type) compose }
+{$IF DEFINED(HORSE_HOST_ISAPI)}
   THorseProvider = Horse.Provider.ISAPI.THorseProvider;
-{$ELSEIF DEFINED(HORSE_APACHE)}
+{$ELSEIF DEFINED(HORSE_HOST_APACHE)}
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.Apache.THorseProvider;
   {$ELSE}
     Horse.Provider.Apache.THorseProvider;
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_CGI)}
+{$ELSEIF DEFINED(HORSE_HOST_CGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.CGI.THorseProvider;
   {$ELSE}
     Horse.Provider.CGI.THorseProvider;
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_FCGI)}
+{$ELSEIF DEFINED(HORSE_HOST_FCGI)}
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.FastCGI.THorseProvider;
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_DAEMON)}
+{$ELSEIF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+    THorseProvider = Horse.Provider.CrossSocket.VCL.THorseProviderCrossSocketVCL;
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+    THorseProvider =
+    {$IF DEFINED(FPC)}
+      Horse.Provider.CrossSocket.FPC.Daemon.THorseProviderCrossSocketFPCDaemon;
+    {$ELSE}
+      Horse.Provider.CrossSocket.Daemon.THorseProviderCrossSocketDaemon;
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    THorseProvider = Horse.Provider.CrossSocket.FPC.LCL.THorseProviderCrossSocketFPCLCL;
+  {$ELSE}
+    THorseProvider = Horse.Provider.CrossSocket.THorseProviderCrossSocket;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.Daemon.THorseProvider;
   {$ELSE}
     Horse.Provider.Daemon.THorseProvider;
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_LCL)}
+{$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
   THorseProvider = Horse.Provider.FPC.LCL.THorseProvider;
-{$ELSEIF DEFINED(HORSE_VCL)}
+{$ELSEIF DEFINED(HORSE_APPTYPE_VCL)}
   THorseProvider = Horse.Provider.VCL.THorseProvider;
-{$ELSEIF DEFINED(HORSE_CROSSSOCKET)}
-  THorseProvider = Horse.Provider.CrossSocket.THorseProviderCrossSocket;
 {$ELSE}
   THorseProvider =
   {$IF DEFINED(FPC)}
-    {$IF DEFINED(HORSE_CROSSSOCKET)}
-    Horse.Provider.CrossSocket.THorseProviderCrossSocket;
-    {$ELSE}
     Horse.Provider.FPC.HTTPApplication.THorseProvider;
-    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_NOPROVIDER)}
     Horse.Provider.Abstract.THorseProviderAbstract;
   {$ELSE}

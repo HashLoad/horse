@@ -4,8 +4,8 @@
   </a>
 </p><br>
 <p align="center">
-  <b>Horse</b> is an <a href="https://github.com/expressjs/express">Express</a>-inspired <b>web framework</b> for Delphi and Lazarus.<br>
-  Designed to <b>ease</b> things up for <b>fast</b> development in a <b>minimalist</b> way and with high <b>performance</b>.
+  <b>Horse</b> é um <b>framework web</b> para Delphi e Lazarus inspirado no <a href="https://github.com/expressjs/express">Express</a>.<br>
+  Projetado para <b>facilitar</b> o desenvolvimento <b>rápido</b>, de forma <b>minimalista</b> e com <b>alta performance</b>.
 </p><br>
 <p align="center">
   <a href="https://t.me/hashload">
@@ -14,20 +14,20 @@
 </p>
 
 <p align="center">
-  <i>Read this in <a href="./README.md">English</a> or <a href="./README.pt-BR.md">Português (BR)</a>.</i>
+  <i>Leia em <a href="./README.md">English</a> ou <a href="./README.pt-BR.md">Português (BR)</a>.</i>
 </p>
 
-## ⚙️ Installation
+## ⚙️ Instalação
 
-Installation is done using the [`boss install`](https://github.com/HashLoad/boss) command:
+A instalação é feita pelo comando [`boss install`](https://github.com/HashLoad/boss):
 
 ```sh
 boss install horse
 ```
 
-*(Optional)* Install the [**Horse Wizard**](https://github.com/HashLoad/horse-wizard) for IDE integration.
+*(Opcional)* Instale o [**Horse Wizard**](https://github.com/HashLoad/horse-wizard) para integração com a IDE.
 
-## ⚡️ Quickstart Delphi
+## ⚡️ Início rápido — Delphi
 
 ```delphi
 uses Horse;
@@ -43,7 +43,7 @@ begin
 end.
 ```
 
-## ⚡️ Quickstart Lazarus
+## ⚡️ Início rápido — Lazarus
 
 ```delphi
 {$MODE DELPHI}{$H+}
@@ -61,58 +61,58 @@ begin
 end.
 ```
 
-## 📖 Documentation
+## 📖 Documentação
 
-The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complements the quick reference below:
+O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que complementa a referência rápida abaixo:
 
-| Topic | Read |
+| Tópico | Leia |
 |---|---|
-| First server, install paths, Delphi/Lazarus setup | [Getting Started](./doc/getting-started.md) |
-| Defining routes, route params, route groups, query strings | [Routing](./doc/routing.md) |
-| `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request & Response](./doc/request-response.md) |
-| Using middleware, registration order, the `Next` proc | [Middleware](./doc/middleware.md) |
-| **Writing & publishing your own middleware** — skeleton, thread safety, Provider neutrality, Boss packaging | [**Writing a Middleware**](./doc/writing-middleware.md) |
-| **Choosing a transport provider** — Indy (default), CrossSocket, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
-| **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |
-| Full middleware catalogue with extended descriptions | [Middleware Ecosystem](./doc/middleware-ecosystem.md) |
-| Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
+| Primeiro servidor, instalação, configuração no Delphi/Lazarus | [Primeiros passos](./doc/getting-started.pt-BR.md) |
+| Definir rotas, parâmetros de rota, grupos de rotas, query strings | [Roteamento](./doc/routing.pt-BR.md) |
+| `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
+| Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
+| **Criar e publicar seu próprio middleware** — esqueleto, thread safety, neutralidade a Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
+| **Escolher um provider de transporte** — Indy (padrão), CrossSocket, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
+| **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |
+| Catálogo completo de middlewares com descrições estendidas | [Ecossistema de Middlewares](./doc/middleware-ecosystem.pt-BR.md) |
+| Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
 
-## 🔌 Providers (transport layer)
+## 🔌 Providers (camada de transporte)
 
-A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** Provider replaces both with async **IOCP / epoll / kqueue** I/O.
+Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). O Provider **CrossSocket** opcional substitui ambos por E/S assíncrona **IOCP / epoll / kqueue**.
 
-| Provider | Compiler define | Delphi | Lazarus |
+| Provider | Define de compilação | Delphi | Lazarus |
 | ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
-| **Indy** _(Delphi default for self-hosted)_                                                     | _(none)_                | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
-| **`fphttpserver`** _(FPC default for self-hosted)_                                              | _(none)_                | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| **Indy** _(padrão Delphi para self-hosted)_                                                     | _(nenhum)_              | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
+| **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| _(planned)_ horse-provider-mormot                                                                | `HORSE_MORMOT`          | &nbsp;&nbsp;&nbsp;—  | &nbsp;&nbsp;&nbsp;&nbsp;—  |
+| _(planejado)_ horse-provider-mormot                                                              | `HORSE_MORMOT`          | &nbsp;&nbsp;&nbsp;—  | &nbsp;&nbsp;&nbsp;&nbsp;—  |
 
-> **Note** — Apache / ISAPI / CGI / FastCGI Application types (below) do **not** use any of these Providers. The host process (Apache, IIS, the web server) owns the socket; Horse runs in-process. See [Providers & Application types](./doc/providers.md) for the full model.
+> **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
-## 🎯 Application types
+## 🎯 Tipos de aplicação
 
-How the binary is packaged and started. **Self-hosted** types run under the chosen Provider above; **host-managed** types delegate the socket to the web server, which then becomes the transport.
+Como o binário é empacotado e iniciado. Tipos **self-hosted** rodam sob o Provider escolhido acima; tipos **host-managed** delegam o socket ao webserver, que se torna o transporte.
 
-| Application type | Compiler define | Delphi | Lazarus |
+| Tipo de aplicação | Define de compilação | Delphi | Lazarus |
 | ---------------------------------------------------------------------------- | ----------------- | :------------------: | :-------------------------: |
-| _**Self-hosted** (uses the selected Provider)_                                                                                                                            |
-| [Console](./doc/providers.md) _(default)_                                    | _(none)_          | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| [VCL](./doc/providers.md)                                                    | `HORSE_VCL`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-| [Daemon](./doc/providers.md) (Windows service)                               | `HORSE_DAEMON`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| [LCL](./doc/providers.md) (Lazarus GUI)                                      | `HORSE_LCL`       | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| [HTTPApplication](./doc/providers.md) (FPC)                                  | _(FPC default)_   | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| _**Host-managed** (the web server owns the socket; Provider above is unused)_                                                                                            |
-| [Apache module](./doc/providers.md)                                          | `HORSE_APACHE`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| [ISAPI](./doc/providers.md) (IIS)                                            | `HORSE_ISAPI`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-| [CGI](./doc/providers.md)                                                    | `HORSE_CGI`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| [FastCGI](./doc/providers.md)                                                | `HORSE_FCGI`      | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| _**Self-hosted** (usa o Provider selecionado)_                                                                                                                            |
+| [Console](./doc/providers.pt-BR.md) _(padrão)_                              | _(nenhum)_        | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [VCL](./doc/providers.pt-BR.md)                                              | `HORSE_VCL`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| [Daemon](./doc/providers.pt-BR.md) (serviço Windows)                        | `HORSE_DAEMON`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [LCL](./doc/providers.pt-BR.md) (GUI Lazarus)                               | `HORSE_LCL`       | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [HTTPApplication](./doc/providers.pt-BR.md) (FPC)                           | _(padrão FPC)_    | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| _**Host-managed** (o webserver é dono do socket; Provider acima não é usado)_                                                                                              |
+| [Módulo Apache](./doc/providers.pt-BR.md)                                   | `HORSE_APACHE`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [ISAPI](./doc/providers.pt-BR.md) (IIS)                                     | `HORSE_ISAPI`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| [CGI](./doc/providers.pt-BR.md)                                              | `HORSE_CGI`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [FastCGI](./doc/providers.pt-BR.md)                                          | `HORSE_FCGI`      | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
-See [Providers](./doc/providers.md) for the full compatibility matrix and how to combine Provider × Application type.
+Veja [Providers](./doc/providers.pt-BR.md) para a matriz de compatibilidade completa e como combinar Provider × Tipo de aplicação.
 
-## 🧬 Official Middlewares
+## 🧬 Middlewares oficiais
 
-For a more _maintainable_ middleware _ecosystem_, we've put official middlewares into separate repositories:
+Para um _ecossistema_ de middlewares mais _sustentável_, colocamos os middlewares oficiais em repositórios separados:
 
 | Middleware | Delphi | Lazarus |
 | ------------------------------------------------------------------- | -------------------- | --------------------------- |
@@ -125,9 +125,9 @@ For a more _maintainable_ middleware _ecosystem_, we've put official middlewares
 |  [horse/logger](https://github.com/HashLoad/horse-logger)           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [horse/compression](https://github.com/HashLoad/horse-compression) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
-## 🌱 Third Party Middlewares
+## 🌱 Middlewares de terceiros
 
-This is a list of middlewares that are created by the Horse community, please create a PR if you want to see yours!
+Esta é uma lista de middlewares criados pela comunidade Horse — abra um PR se quiser ver o seu aqui!
 
 | Middleware | Delphi | Lazarus |
 | ---------------------------------------------------------------------------------------------------------- | -------------------- | --------------------------- |
@@ -158,26 +158,26 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
-## Delphi Versions
+## Versões do Delphi
 
-`Horse` works with Delphi 13 Florence, Delphi 12 Athens, Delphi 11 Alexandria, Delphi 10.4 Sydney, Delphi 10.3 Rio, Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, Delphi XE8 and Delphi XE7.
+O `Horse` funciona com Delphi 13 Florence, Delphi 12 Athens, Delphi 11 Alexandria, Delphi 10.4 Sydney, Delphi 10.3 Rio, Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, Delphi XE8 e Delphi XE7.
 
-For the full platform matrix per provider, see [Compiler Support](./doc/compiler-support.md).
+Para a matriz completa de plataformas por provider, veja [Suporte de Compilador](./doc/compiler-support.pt-BR.md).
 
-## 🤝 Contributing
+## 🤝 Contribuindo
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to report bugs, suggest features, and submit code or documentation changes. Bilingual EN / PT-BR docs are kept in sync — when editing one language, edit the other in the same PR.
+Veja [CONTRIBUTING.pt-BR.md](./CONTRIBUTING.pt-BR.md) para reportar bugs, sugerir features e enviar mudanças de código ou documentação. Os docs bilíngues EN / PT-BR são mantidos sincronizados — ao editar um idioma, edite o outro no mesmo PR.
 
-## 💻 Code Contributors
+## 💻 Contribuidores
 
 <a href="https://github.com/Hashload/horse/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Hashload/horse" />
 </a>
 
-## ⚠️ License
+## ⚠️ Licença
 
-`Horse` is free and open-source software licensed under the [MIT License](https://github.com/HashLoad/horse/blob/master/LICENSE).
+O `Horse` é software livre e de código aberto, licenciado sob a [Licença MIT](https://github.com/HashLoad/horse/blob/master/LICENSE).
 
-## 📐 Tests
+## 📐 Testes
 
 ![tests](https://github.com/GlerystonMatos/horse/workflows/tests/badge.svg) ![Console Coverage ](https://img.shields.io/badge/console%20coverage-45%25-blue) ![VCL Coverage ](https://img.shields.io/badge/vcl%20coverage-43%25-blue)

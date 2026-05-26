@@ -1,0 +1,230 @@
+# Request & Response
+
+*Read this in [English](./request-response.md) or [Português (BR)](./request-response.pt-BR.md).*
+
+Every Horse route callback receives a `THorseRequest` and a `THorseResponse`. This page is the API reference for both.
+
+```delphi
+procedure(Req: THorseRequest; Res: THorseResponse)
+```
+
+For the route declaration itself, see [Routing](./routing.md). For middleware that wraps these objects, see [Middleware](./middleware.md).
+
+---
+
+## `THorseRequest`
+
+| Accessor | Type | What it returns |
+|---|---|---|
+| `Body` | `string` | Raw request body decoded as UTF-8. Idempotent — multiple reads return the same cached string. |
+| `Body<T>` | generic | Returns `FBody as T` — used when middleware (e.g. `Jhonson`) parses the body into an object. |
+| `Body(AObject)` | setter | Used by middleware to attach a parsed body object. Frees any previous value. |
+| `Params` | `THorseCoreParam` | Route path parameters: `Req.Params['id']`. |
+| `Query` | `THorseCoreParam` | URL query string: `Req.Query['name']`. |
+| `Headers` | `THorseCoreParam` | Request headers: `Req.Headers['Content-Type']`. Case-insensitive lookup. |
+| `Cookie` | `THorseCoreParam` | Parsed `Cookie:` header: `Req.Cookie['session']`. |
+| `ContentFields` | `THorseCoreParam` | Parsed `application/x-www-form-urlencoded` body fields. |
+| `Sessions` | `THorseSessions` | Server-side session map (one per request). |
+| `Method` | `string` | Raw HTTP verb: `'GET'`, `'POST'`, `'OPTIONS'`, etc. |
+| `MethodType` | `TMethodType` | Enum form (see [Routing](./routing.md)). |
+| `PathInfo` | `string` | Decoded path: `/users/42`. |
+| `Host` | `string` | `Host:` header value. |
+| `ContentType` | `string` | `Content-Type` request header. |
+| `RawWebRequest` | `TWebRequest` / `TRequest` | The underlying provider object — Indy's `TIdHTTPRequestInfo` for the default provider, an adapter for non-Indy providers. |
+
+### Reading a request body
+
+```delphi
+THorse.Post('/echo',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    // Raw text body
+    Res.Send('You sent: ' + Req.Body);
+  end);
+```
+
+For JSON, register the `Jhonson` middleware once at startup and then use `Body<TJSONObject>`:
+
+```delphi
+uses Horse, Horse.Jhonson, System.JSON;
+
+THorse.Use(Jhonson);
+
+THorse.Post('/items',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  var
+    Json: TJSONObject;
+  begin
+    Json := Req.Body<TJSONObject>;
+    Res.Send('Got: ' + Json.GetValue('name').Value);
+  end);
+```
+
+### Reading params, query, headers
+
+All four return `THorseCoreParam`, a dictionary-like accessor:
+
+```delphi
+THorse.Get('/search/:type',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  var
+    Limit: Integer;
+  begin
+    if not TryStrToInt(Req.Query['limit'], Limit) then
+      Limit := 10;
+
+    Res.Send(Format('Searching %s, limit %d, by %s',
+      [Req.Params['type'], Limit, Req.Headers['X-User']]));
+  end);
+```
+
+`THorseCoreParam`:
+
+- `Items[name: string]: string` — default indexer, returns `''` if absent.
+- `TryGetValue(name; out value): Boolean` — distinguish absent vs empty.
+- `Dictionary: TDictionary<string,string>` (Delphi) / `TStringList` (FPC) — direct collection access if you need to iterate.
+
+### File uploads
+
+`multipart/form-data` requests populate `Req.ContentFields`:
+
+```delphi
+THorse.Post('/upload',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  var
+    Stream: TStream;
+  begin
+    Stream := Req.ContentFields.AsStream('file');   // file field
+    try
+      Stream.SaveToFile('uploaded.bin');
+      Res.Send('Saved ' + IntToStr(Stream.Size) + ' bytes');
+    finally
+      // CrossSocket path: do NOT free — it's a non-owning ref.
+      // Indy path: also do not free; THorseRequest manages it.
+    end;
+  end);
+```
+
+---
+
+## `THorseResponse`
+
+| Method | Returns | Effect |
+|---|---|---|
+| `Send(AContent: string)` | `THorseResponse` (fluent) | Writes a string body. Default status `200`. |
+| `Send<T>(AContent: T)` | `THorseResponse` | Writes an object; the middleware chain typically serialises it (e.g. JSON via `Jhonson`). |
+| `Status(AStatus: Integer)` | `THorseResponse` | Sets HTTP status code. Default `200`. |
+| `Status(AStatus: THTTPStatus)` | `THorseResponse` | Typed variant — e.g. `THTTPStatus.NotFound`. |
+| `Status` (no arg) | `Integer` | Reads the currently-set status. |
+| `ContentType(AContentType: string)` | `THorseResponse` | Sets `Content-Type` header. |
+| `AddHeader(AName, AValue: string)` | `THorseResponse` | Adds a response header. |
+| `RemoveHeader(AName: string)` | `THorseResponse` | Removes a previously-added header. |
+| `RedirectTo(ALocation: string)` | `THorseResponse` | Sends `302 Found` with `Location:`. |
+| `RedirectTo(ALocation, AStatus)` | `THorseResponse` | Lets you choose `301`, `307`, etc. |
+| `SendFile(AFileName: string)` | `THorseResponse` | Streams a file as the body; sets `Content-Type` from the extension. |
+| `SendFile(AStream, AFileName, AContentType)` | `THorseResponse` | Streams an in-memory stream. |
+| `Download(AFileName: string)` | `THorseResponse` | Like `SendFile` but adds `Content-Disposition: attachment`. |
+| `Download(AStream, AFileName, AContentType)` | `THorseResponse` | Stream + attachment header. |
+| `Render(AFileName: string)` | `THorseResponse` | Streams a file inline (no attachment header). |
+| `RawWebResponse` | `TWebResponse` / `TResponse` | Underlying provider response. Used by middleware that needs direct access. |
+
+### Examples
+
+**Plain text:**
+```delphi
+Res.ContentType('text/plain').Send('hello');
+```
+
+**JSON (via Jhonson):**
+```delphi
+uses System.JSON;
+
+var Json := TJSONObject.Create;
+Json.AddPair('ok', TJSONBool.Create(True));
+Res.Send<TJSONObject>(Json);   // Jhonson serialises + frees
+```
+
+**Status + body for an error:**
+```delphi
+Res.Status(THTTPStatus.BadRequest)
+   .ContentType('application/json')
+   .Send('{"error":"missing field"}');
+```
+
+**Redirect:**
+```delphi
+Res.RedirectTo('/login');
+```
+
+**File download:**
+```delphi
+Res.Download('reports/2026-05.pdf');
+// Sends Content-Disposition: attachment; filename="2026-05.pdf"
+```
+
+**Stream a generated file:**
+```delphi
+var Stream := TMemoryStream.Create;
+GenerateCSV(Stream);
+Stream.Position := 0;
+Res.Download(Stream, 'export.csv', 'text/csv');
+```
+
+**Adding a custom header:**
+```delphi
+Res.AddHeader('X-Rate-Limit-Remaining', '47').Send('ok');
+```
+
+### Status helpers
+
+`Horse.Commons.THTTPStatus` provides named constants for the common codes — preferred over magic numbers:
+
+```pascal
+Res.Status(THTTPStatus.OK);              // 200
+Res.Status(THTTPStatus.Created);         // 201
+Res.Status(THTTPStatus.NoContent);       // 204
+Res.Status(THTTPStatus.BadRequest);      // 400
+Res.Status(THTTPStatus.Unauthorized);    // 401
+Res.Status(THTTPStatus.NotFound);        // 404
+Res.Status(THTTPStatus.InternalServerError); // 500
+```
+
+`Horse.Commons.THTTPStatusHelper.ToString` converts the enum back to its standard reason phrase if you ever need to print it.
+
+### Errors and exceptions
+
+Raising `EHorseException` from a callback short-circuits the response:
+
+```delphi
+uses Horse.Exception;
+
+THorse.Get('/secret',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    if Req.Headers['X-Auth'] <> 'secret' then
+      raise EHorseException.New.Status(THTTPStatus.Unauthorized).Error('Bad token');
+    Res.Send('welcome');
+  end);
+```
+
+The framework converts the exception to a JSON error response. Any other uncaught exception becomes a `500` with a generic body.
+
+To intercept exceptions globally, register the `handle-exception` middleware ([`HashLoad/handle-exception`](https://github.com/HashLoad/handle-exception)) — it formats your errors consistently.
+
+---
+
+## Provider-specific notes
+
+Most application code never needs to think about the transport. A few exceptions:
+
+- **Body ownership on CrossSocket:** `Req.Body<TStream>` on the CrossSocket provider returns a non-owning reference into the receive buffer. Never `Free` it. If you need the stream after the request returns, copy into a `TMemoryStream` you own. (Doesn't apply to Indy — Indy gives you its own owned stream.)
+- **Concurrent handlers:** Indy runs one thread per connection; CrossSocket dispatches to an IO thread pool. In both cases your handler runs to completion on a single thread, so per-request state is safe. Shared state needs explicit locking (`TCriticalSection`, `TMonitor`).
+- **`Req.RawWebRequest` and `Res.RawWebResponse`:** middleware that pokes the underlying objects (e.g. `Horse.CORS` setting `Access-Control-Allow-Origin` directly) keeps working across providers — non-Indy providers return an adapter object that exposes the same surface.
+
+See [Providers](./providers.md) for the full breakdown.
+
+## See also
+
+- [Routing](./routing.md) — declare the routes that produce these callbacks.
+- [Middleware](./middleware.md) — wrap callbacks with cross-cutting logic.
+- [Middleware Ecosystem](./middleware-ecosystem.md) — `Jhonson` (JSON), `CORS`, `JWT`, `compression`, and more.
