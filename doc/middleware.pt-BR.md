@@ -93,7 +93,7 @@ THorse
 THorse.Get('/users', ListUsers);
 ```
 
-## Curto-circuito
+## Interrompendo a cadeia
 
 Pule o `Next()` para parar a cadeia sem chamar o handler. O caso mais comum é autenticação:
 

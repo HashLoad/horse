@@ -218,8 +218,9 @@ To intercept exceptions globally, register the `handle-exception` middleware ([`
 Most application code never needs to think about the transport. A few exceptions:
 
 - **Body ownership on CrossSocket:** `Req.Body<TStream>` on the CrossSocket provider returns a non-owning reference into the receive buffer. Never `Free` it. If you need the stream after the request returns, copy into a `TMemoryStream` you own. (Doesn't apply to Indy — Indy gives you its own owned stream.)
-- **Concurrent handlers:** Indy runs one thread per connection; CrossSocket dispatches to an IO thread pool. In both cases your handler runs to completion on a single thread, so per-request state is safe. Shared state needs explicit locking (`TCriticalSection`, `TMonitor`).
-- **`Req.RawWebRequest` and `Res.RawWebResponse`:** middleware that pokes the underlying objects (e.g. `Horse.CORS` setting `Access-Control-Allow-Origin` directly) keeps working across providers — non-Indy providers return an adapter object that exposes the same surface.
+- **Body ownership on mORMot2:** the mORMot provider does not produce a `TStream` body at all — the request body is buffered as a `RawByteString` (`InContent`) owned by mORMot. `Req.Body: string` is decoded once at request entry and cached (PATCH-REQ-9), so reading it multiple times is O(1). `Req.Body<TStream>` is therefore not the right pattern on this transport; use `Req.Body: string` (text) or `Req.RawWebRequest.Content` (raw bytes) instead.
+- **Concurrent handlers:** Indy runs one thread per connection; CrossSocket dispatches to an IO thread pool (and an optional Horse worker pool); mORMot2 dispatches to its own fixed thread pool inside `THttpServer` (default 32, configurable). In every case your handler runs to completion on a single thread, so per-request state is safe. Shared state needs explicit locking (`TCriticalSection`, `TMonitor`).
+- **`Req.RawWebRequest` and `Res.RawWebResponse`:** middleware that pokes the underlying objects (e.g. `Horse.CORS` setting `Access-Control-Allow-Origin` directly) keeps working across every Provider — CrossSocket and mORMot2 both return an adapter object backed by the same `IHorseRawRequest` / `IHorseRawResponse` interface that exposes the same surface as the Indy `TIdHTTPAppRequest` / `TIdHTTPAppResponse`.
 
 See [Providers](./providers.md) for the full breakdown.
 

@@ -4,7 +4,7 @@
 
 Horse separates two architectural choices that are easy to confuse:
 
-1. **Provider** — the HTTP transport that owns the socket and parses requests. Indy is the default; CrossSocket is an optional async alternative; future providers (mORMot, nghttp2, …) will follow the same pattern.
+1. **Provider** — the HTTP transport that owns the socket and parses requests. Indy is the default; CrossSocket and mORMot2 are optional async alternatives; future providers (nghttp2, …) follow the same pattern.
 2. **Application type** — how the Delphi/FPC binary is packaged and started: a console executable, a Windows service, a VCL desktop app, an Apache module, an IIS extension, and so on.
 
 These two axes are *conceptually* orthogonal. In the current Horse build the two choices are encoded in the same set of mutually-exclusive Conditional Defines, but the documentation below keeps them separate so the mental model is clean.
@@ -37,7 +37,7 @@ The **default Provider depends on the compiler**:
 | **Indy** | _(none on Delphi)_ | Default for Delphi self-hosted | ✔ | n/a |
 | **`fphttpserver`** | _(none on FPC)_ | Default for FPC self-hosted | n/a | ✔ |
 | **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Optional, external package | ✔ | ✔ |
-| _horse-provider-mormot_ | `HORSE_MORMOT` | Planned | — | — |
+| **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Optional, external package | ✔ | ✔ |
 
 > **What library does the HTTP work, per Application type?** This is the deciding question — and it's *not* always Indy. The unifying abstraction across every row is `Web.HTTPApp.TWebRequest` on Delphi or `fpHTTP.TRequest` on FPC; below that, the concrete library differs.
 >
@@ -46,6 +46,7 @@ The **default Provider depends on the compiler**:
 > | Console / VCL / Daemon | Delphi | **Indy** (`TIdHTTPServer` + `IdHTTPWebBrokerBridge`) | ✔ |
 > | Daemon / HTTPApplication / LCL | FPC | **`fphttpserver`** | ✘ |
 > | Any self-hosted + `HORSE_CROSSSOCKET` | Either | **`Delphi-Cross-Socket`** | ✘ |
+> | Any self-hosted + `HORSE_PROVIDER_MORMOT` | Either | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
 > | Apache module | Either | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **Web server's CGI runner** (via `Web.HTTPApp.TCGIRequest`) | ✘ |
@@ -107,9 +108,71 @@ CrossSocket and Indy are **drop-in alternatives** for the same Horse codebase. T
 
 For configuration (TLS certificates, body-size limits, IO thread count, mTLS), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-crosssocket#readme).
 
+### Installation (manual — matches the mORMot2 pattern)
+
+`horse-provider-crosssocket` no longer pulls Delphi-Cross-Socket through Boss. Install Delphi-Cross-Socket the same way you install mORMot2 — clone the repo, add search paths to your project. The provider's `boss.json` declares only the patched Horse fork dependency; everything else is manual:
+
+1. Clone the patched [`horse`](https://github.com/freitasjca/horse) fork (via `boss install horse-provider-crosssocket`).
+2. Clone Delphi-Cross-Socket — **two options**:
+   - **Recommended:** upstream [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket). Tracks the maintainer's release cadence; receives upstream improvements as soon as they land.
+   - **Supported alternative:** the fork release [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3), which bundles CnPack as a vendored subtree and adds the mTLS server-mode APIs (`SetCACertificate(File)` + `SetVerifyPeer(Boolean)`). One clone instead of two, at the cost of lagging behind upstream commits between fork syncs. Pick this if you need mTLS server mode or prefer the single-dependency convenience.
+3. For the upstream path **only**, also clone [`cnpack/cnvcl`](https://github.com/cnpack/cnvcl) and add `Source/Common` + `Source/Crypto` to the search path. The fork bundles these files already.
+4. Add all the resulting paths to your project's Search-path field — see [`horse-provider-crosssocket` README](https://github.com/freitasjca/horse-provider-crosssocket#installation) for the full three-path runbook (upstream, fork, and Boss-for-Horse-only).
+
+> **Why "supported alternative" and not "deprecated"?** The fork remains actively maintained for users who want bundled CnPack convenience or need mTLS today. The trade-off is straightforward: upstream `winddriver/Delphi-Cross-Socket` has a higher commit cadence than any fork can keep up with, so the fork inevitably lags. Three previously-fork-only bug fixes (`PATCH-IOCP-1` shutdown cascade, the zero-body response parser hang, the `_OnBodyEnd` nil-guard) have already been merged upstream as of 2026-Q2 — only the mTLS additions remain genuinely fork-exclusive. An upstream mTLS PR is in preparation; once merged, the fork's only remaining value will be the bundled CnPack convenience.
+
+### mORMot2 (optional)
+
+[`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot) replaces the Indy transport with [mORMot2](https://github.com/synopse/mORMot2): a mature, high-performance library that uses **IOCP on Windows and epoll on Linux** — the same kernel primitives as CrossSocket. mORMot2 manages its own fixed thread pool (default 32 threads) so no `THorseWorkerPool` is needed.
+
+```sh
+boss install horse-provider-mormot
+```
+
+In your project's Conditional Defines: `HORSE_PROVIDER_MORMOT`. Your code stays the same.
+
+**What changes vs. Indy:**
+
+| | Indy | mORMot2 |
+|---|---|---|
+| Concurrency | One thread per connection | Fixed thread pool (default 32, configurable) |
+| Idle keep-alive cost | One thread per idle connection | Thread only runs when data is ready |
+| Per-request allocation | New `THorseRequest`/`THorseResponse` | Pre-warmed object pool (32 contexts, scales to 512) |
+| Scaling ceiling | ~1 000 concurrent on commodity hardware | 10 000+ concurrent on the same hardware |
+| Compiler support | Delphi XE7+ | Delphi 7 through 12.3 Athens, FPC 3.2+ |
+| http.sys (Windows) | ❌ | ✔ `THttpApiServer` — kernel-mode HTTP, zero code change |
+| External dependency | Indy (bundled) | mORMot2 (add to search path) |
+
+**What changes vs. CrossSocket:**
+
+| | CrossSocket | mORMot2 |
+|---|---|---|
+| Thread pool | `THorseWorkerPool` (4–64 Horse threads) | Built-in (default 32 threads) |
+| External dependency | Delphi-Cross-Socket + CnPack | mORMot2 + (Delphi only) precompiled static `.obj` blobs for zlib/OpenSSL/SQLite |
+| Boss-installable | ✔ both deps | ❌ — mORMot2 must be cloned manually and added to the search path |
+| Older Delphi support | Delphi 10.2+ | Delphi 7+ |
+| http.sys (Windows kernel-mode HTTP) | ❌ | ✔ swap `THttpServer` for `THttpApiServer` |
+| mTLS server mode | ✔ via [`freitasjca/Delphi-Cross-Socket >= 1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) | Roadmap — not yet exposed via `THorseMormotConfig` |
+
+**Pick mORMot2 when:**
+- You need Delphi 7 / XE / XE2 support.
+- You want no third-party library dependency for standard HTTP (pure Pascal).
+- You want Windows http.sys kernel-mode HTTP (`THttpApiServer`).
+- You prefer a 15+-year production-proven codebase.
+
+**Pick CrossSocket when:**
+- You prefer native async IOCP/epoll control.
+- Your project already depends on Delphi-Cross-Socket.
+
+Both providers use IOCP/epoll and a context object pool, so throughput is comparable under typical workloads.
+
+For configuration (`ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) and application-type wrappers (VCL, Windows Service, Linux daemon), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-mormot#readme).
+
+> **mORMot2 installation** — mORMot2 is not available via `boss install`. Clone [synopse/mORMot2](https://github.com/synopse/mORMot2) and add `<mORMot2>/src`, `<mORMot2>/src/core`, `<mORMot2>/src/net` to the compiler search path.
+
 ### Future providers
 
-The hybrid-interface architecture (`IHorseRawRequest` / `IHorseRawResponse`) introduced by CrossSocket makes it straightforward to add additional transports. A worked example for mORMot2 lives in [`building-a-mormot-provider.md`](https://github.com/freitasjca/horse-provider-crosssocket/blob/master/doc/building-a-mormot-provider.md); for nghttp2 see [`building-a-new-provider.md`](https://github.com/freitasjca/horse-provider-crosssocket/blob/master/doc/building-a-new-provider.md). When those land they'll appear in the Provider catalogue above.
+The hybrid-interface architecture (`IHorseRawRequest` / `IHorseRawResponse`) introduced by CrossSocket makes it straightforward to add additional transports. For nghttp2 see [`building-a-new-provider.md`](https://github.com/freitasjca/horse-provider-crosssocket/blob/master/doc/building-a-new-provider.md).
 
 ---
 
@@ -121,9 +184,12 @@ Self-hosted application types run the Provider you chose. The Provider owns the 
 |---|---|:---:|:---:|
 | **Console** _(default)_ | _(none)_ | ✔ | ✔ |
 | **VCL** | `HORSE_VCL` | ✔ | ❌ |
-| **Daemon** (Windows service) | `HORSE_DAEMON` | ✔ | ✔ |
+| **Daemon — Windows Service** | `HORSE_DAEMON` | ✔ | n/a |
+| **Daemon — Linux daemon (systemd)** | `HORSE_DAEMON` | ✔ | ✔ |
 | **LCL** (Lazarus GUI) | `HORSE_LCL` | ❌ | ✔ |
 | **HTTPApplication** (FPC) | _(FPC default)_ | ❌ | ✔ |
+
+> **Note** — `HORSE_DAEMON` is a unified application type: the produced binary is a **Windows Service** (`Vcl.SvcMgr.TService` + SCM) on Windows and a **daemon** (`signal(SIGTERM)` + systemd) on Linux. "Daemon" is the Unix-native term; Windows has no native equivalent word, so the define name is borrowed cross-platform.
 
 ### Console — the default
 
@@ -133,9 +199,14 @@ The simplest case. Write a `.dpr` with `{$APPTYPE CONSOLE}`, call `THorse.Listen
 
 Useful when your Delphi application has a UI and you want it to expose an HTTP control surface (a remote-control endpoint, an embedded admin panel). With `HORSE_VCL` defined, Horse starts the Provider on a background thread; the VCL main thread stays free for the form / message loop. Indy-only today; CrossSocket VCL support is architecturally possible but not currently expressible via the defines.
 
-### Daemon — Windows service
+### Daemon — Windows Service or Linux daemon (systemd)
 
-With `HORSE_DAEMON`, Horse wires `Listen` / `Stop` into the Windows Service Control Manager. Combined with a service wrapper, you get `sc start MyService` / `sc stop MyService` integration. Same transport (Indy) underneath.
+`HORSE_DAEMON` is a unified application type. The same `.dpr` compiles for both target OSes; the unit's `{$IFDEF MSWINDOWS}` branch selects the host-integration path at compile time.
+
+- **Windows:** Horse wires `Listen` / `Stop` into the Service Control Manager via `Vcl.SvcMgr.TService`. Combined with a service wrapper, you get `sc start MyService` / `sc stop MyService` integration.
+- **Linux:** Horse installs POSIX signal handlers for `SIGTERM` / `SIGINT` (the standard systemd shutdown signals) and ignores `SIGPIPE`. Combined with a `.service` unit file, `systemctl start/stop MyService` works identically.
+
+Same transport (Indy on Delphi, `fphttpserver` on FPC, or CrossSocket / mORMot2 when their Provider is also defined) underneath in either case. See the [Deployment Cheatsheet](./deployment.md) for both lifecycle templates side by side.
 
 ### LCL — Lazarus GUI application
 
@@ -181,11 +252,12 @@ Provider × Application type — which combinations are currently expressible (a
 | **Indy** _(Delphi default)_ | ✔ | ✔ | ✔ | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
 | **`fphttpserver`** _(FPC default)_ | n/a | n/a | n/a | ✔ | ✔ | ✔ | n/a | n/a | n/a | n/a |
 | **CrossSocket** (`HORSE_PROVIDER_CROSSSOCKET`) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ❌ | ❌ | ❌ | ❌ |
+| **mORMot2** (`HORSE_PROVIDER_MORMOT`) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ❌ | ❌ | ❌ | ❌ |
 | _Host-managed_ (Apache/ISAPI/CGI/FCGI) | n/a | n/a | n/a | n/a | n/a | n/a | ✔ | ✔ | ✔ | ✔ |
 
 Legend:
-- **✔** — supported and expressible with the current defines. Since PATCH-HORSE-2, every CrossSocket × Application-type cell is supported via the cross-product convenience units in `horse-provider-crosssocket` (e.g. `Horse.Provider.CrossSocket.VCL`, `…Daemon`, `…FPC.Daemon`, `…FPC.LCL`, `…FPC.HTTPApplication`).
-- **❌** — architecturally impossible. Apache / ISAPI / CGI / FCGI own the socket themselves; an async self-hosted transport like CrossSocket can't coexist.
+- **✔** — supported and expressible with the current defines. Since PATCH-HORSE-2, every CrossSocket × Application-type cell is supported via the cross-product convenience units in `horse-provider-crosssocket` (e.g. `Horse.Provider.CrossSocket.VCL`, `…Daemon`, `…FPC.Daemon`, `…FPC.LCL`, `…FPC.HTTPApplication`). mORMot2 ships the matching cross-product set in `horse-provider-mormot`: `Horse.Provider.Mormot` (Console default), `…Mormot.VCL`, `…Mormot.Daemon` (Windows TService + POSIX runner in one unit), `…Mormot.FPC.Daemon`, `…Mormot.FPC.LCL`, `…Mormot.FPC.HTTPApplication`.
+- **❌** — architecturally impossible. Apache / ISAPI / CGI / FCGI own the socket themselves; an async self-hosted transport like CrossSocket or mORMot2 can't coexist.
 - **n/a** — meaningless combination. Indy doesn't run on FPC; `fphttpserver` doesn't run on Delphi; host-managed application types don't use a self-hosted Provider; self-hosted types don't run under a host's lifecycle.
 
 PATCH-HORSE-1 in `Horse.pas` enforces the ❌ cells at compile time with `{$MESSAGE FATAL}` so misconfigured projects fail fast instead of silently picking the wrong code path.
@@ -200,7 +272,7 @@ The selection happens at **compile time** via Project Options → Conditional De
 
 | Axis | Prefix | Meaning |
 |---|---|---|
-| A · **Provider** | `HORSE_PROVIDER_*` | HTTP transport library — Indy (Delphi default), `fphttpserver` (FPC default), CrossSocket, future mORMot |
+| A · **Provider** | `HORSE_PROVIDER_*` | HTTP transport library — Indy (Delphi default), `fphttpserver` (FPC default), CrossSocket, mORMot2 |
 | B · **Application type** | `HORSE_APPTYPE_*` | Binary lifecycle shape — Console (default), VCL, Daemon, LCL, HTTPApplication |
 | C · **Host-managed runtime** | `HORSE_HOST_*` | Web server owns the socket — Apache, ISAPI, CGI, FastCGI |
 
@@ -220,6 +292,10 @@ Axis C wins outright when set (no Provider involved). Axes A and B compose freel
 | **CrossSocket + Windows service** *(new in PATCH-HORSE-2)* | `HORSE_PROVIDER_CROSSSOCKET` + `HORSE_APPTYPE_DAEMON` |
 | **CrossSocket + Linux daemon (FPC)** *(new in PATCH-HORSE-2)* | `HORSE_PROVIDER_CROSSSOCKET` + `HORSE_APPTYPE_DAEMON` (on FPC) |
 | **CrossSocket + Lazarus LCL** *(new in PATCH-HORSE-2)* | `HORSE_PROVIDER_CROSSSOCKET` + `HORSE_APPTYPE_LCL` |
+| **mORMot2 Console** | `HORSE_PROVIDER_MORMOT` |
+| **mORMot2 + VCL** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_VCL` |
+| **mORMot2 + Windows service** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_DAEMON` (on Windows) |
+| **mORMot2 + Linux daemon** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_DAEMON` (on Linux) |
 | Apache module | `HORSE_HOST_APACHE` |
 | IIS ISAPI extension | `HORSE_HOST_ISAPI` |
 | Plain CGI | `HORSE_HOST_CGI` |
@@ -266,7 +342,7 @@ The common pattern across every shape:
 1. **Define only `HORSE_CROSSSOCKET`** — no other `HORSE_*` provider define.
 2. Pick the right **project type** for the desired shape (Console / VCL Forms / Lazarus / Service Application / …).
 3. Drive `THorse.Listen` from the right **lifecycle event** for that shape.
-4. Call `THorse.StopListen` on shutdown so CrossSocket drains in-flight requests (SEC-30) before the process exits.
+4. Call `THorse.StopListen` on shutdown so CrossSocket drains active requests (SEC-30) before the process exits.
 
 CrossSocket's `Listen` automatically picks between blocking and non-blocking behaviour based on `IsConsole`:
 
@@ -645,7 +721,103 @@ All seven cases share the same compile-time configuration: **define `HORSE_CROSS
 
 ---
 
-## 9. Architecture note
+## 9. Running mORMot2 as each Application type
+
+The same `IsConsole` / lifecycle pattern from §8 applies to mORMot2 — the provider units (`Horse.Provider.Mormot.*`) wrap mORMot's `THttpServer` instead of `TCrossHttpServer` but expose the same `Listen` / `StopListen` contract. The four-step recipe is identical:
+
+1. **Define only `HORSE_PROVIDER_MORMOT`** — no other `HORSE_*` provider define.
+2. Pick the right **project type** for the desired shape (Console / VCL Forms / Lazarus / Service Application / …).
+3. Drive `THorse.Listen` from the right **lifecycle event** for that shape.
+4. Call `THorse.StopListen` on shutdown so mORMot's active-request counter drains active requests before the process exits.
+
+mORMot's `Listen` honours the same `IsConsole` switch as CrossSocket: `True` → blocks the calling thread until `StopListen`; `False` → returns immediately after `THttpServer.WaitStarted` so the GUI / service / LCL loop owns the main thread.
+
+### 9.1 Side-by-side with §8 — the only differences
+
+The whole code skeleton in each of §8.1–8.7 ports to mORMot2 by **two substitutions**:
+
+| In §8 (CrossSocket) | In the mORMot2 equivalent |
+|---|---|
+| `HORSE_PROVIDER_CROSSSOCKET` define | `HORSE_PROVIDER_MORMOT` define |
+| `Horse.Provider.CrossSocket.{VCL,Daemon,FPC.Daemon,FPC.LCL,FPC.HTTPApplication}` convenience helper | `Horse.Provider.Mormot.{VCL,Daemon,FPC.Daemon,FPC.LCL,FPC.HTTPApplication}` |
+
+The convenience helpers map one-to-one — the table below is the complete inventory:
+
+| Shape | CrossSocket helper | mORMot2 helper |
+|---|---|---|
+| Console (§8.1) | _(none — direct provider use)_ | _(none — direct provider use)_ |
+| VCL desktop (§8.2) | `TfrmHorseVCLHost` in `Horse.Provider.CrossSocket.VCL` | `TfrmHorseMormotVCLHost` in `Horse.Provider.Mormot.VCL` |
+| Linux daemon, Delphi (§8.3) | `THorseCrossSocketLinuxDaemonApp.Run` in `Horse.Provider.CrossSocket.Daemon` | `THorseMormotLinuxDaemonApp.Run` in `Horse.Provider.Mormot.Daemon` |
+| Windows Service (§8.4) | `THorseCrossSocketService` (`TService` base) in `Horse.Provider.CrossSocket.Daemon` | `THorseMormotService` (`TService` base) in `Horse.Provider.Mormot.Daemon` |
+| Linux daemon, FPC (§8.5) | `THorseCrossSocketDaemonApp.Run` in `Horse.Provider.CrossSocket.FPC.Daemon` | `THorseMormotFPCDaemonApp.Run` in `Horse.Provider.Mormot.FPC.Daemon` |
+| Lazarus LCL (§8.6) | `TfrmHorseLCLHost` in `Horse.Provider.CrossSocket.FPC.LCL` | `TfrmHorseMormotLCLHost` in `Horse.Provider.Mormot.FPC.LCL` |
+| FPC HTTPApplication (§8.7) | `THorseCrossSocketHTTPApp.Run` in `Horse.Provider.CrossSocket.FPC.HTTPApplication` | `THorseMormotHTTPApp.Run` in `Horse.Provider.Mormot.FPC.HTTPApplication` |
+
+The same `{$IFDEF MSWINDOWS}` / `{$ELSE}` rule that gives `HORSE_APPTYPE_DAEMON` two meanings under CrossSocket applies to mORMot too: `Horse.Provider.Mormot.Daemon.pas` carries `THorseMormotService` (Windows TService) under `{$IFDEF MSWINDOWS}` and `THorseMormotLinuxDaemonApp` (POSIX signal-handler runner) under `{$ELSE}`.
+
+### 9.2 Minimal example — Console (mORMot2)
+
+```pascal
+program MyMormotServer;
+
+{$APPTYPE CONSOLE}                 // → IsConsole = True
+
+uses
+  Winapi.Windows, Horse;           // resolves THorse → THorseProviderMormot
+
+function CtrlHandler(dwCtrlType: DWORD): BOOL; stdcall;
+begin
+  case dwCtrlType of
+    CTRL_C_EVENT, CTRL_BREAK_EVENT, CTRL_CLOSE_EVENT,
+    CTRL_SHUTDOWN_EVENT:
+      begin
+        THorse.StopListen;
+        Result := True;
+      end;
+  else
+    Result := False;
+  end;
+end;
+
+begin
+  SetConsoleCtrlHandler(@CtrlHandler, True);
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin Res.Send('pong'); end);
+
+  THorse.Listen(9000);             // blocks
+end.
+```
+
+Define: `HORSE_PROVIDER_MORMOT`. Project type: **Console Application**. No CrossSocket-style convenience runner here — Console is direct provider use, identical to §8.1 except for the resolved unit behind `THorse`.
+
+### 9.3 Tuning the mORMot transport
+
+Unlike CrossSocket (which uses `THorseWorkerPool` for the Horse pipeline), mORMot owns its own thread pool inside `THttpServer` — default 32 threads. Adjust via `THorseMormotConfig` and the typed entry point:
+
+```pascal
+uses
+  Horse, Horse.Provider.Mormot, Horse.Provider.Mormot.Config;
+
+var
+  Config: THorseMormotConfig;
+begin
+  Config                := THorseMormotConfig.Default;
+  Config.ThreadPool     := 64;                  // bigger pool for blocking handlers
+  Config.MaxBodyBytes   := 16 * 1024 * 1024;    // 16 MB
+  Config.DrainTimeoutMs := 10_000;              // graceful drain window
+  Config.ServerBanner   := 'MyServer/1.0';      // sent as Server: header
+
+  THorseProviderMormot.ListenWithConfig(9000, Config);
+end.
+```
+
+The full configuration record, http.sys swap (`THttpApiServer`), TLS options, and security defaults are documented in [`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot#readme).
+
+---
+
+## 10. Architecture note
 
 Every self-hosted Provider implements the same `THorseProviderAbstract` base class. The Provider:
 
@@ -663,4 +835,5 @@ If you want to build a **new** Provider, the [hybrid-interface architecture guid
 - [Getting Started](./getting-started.md) — your first Console + Indy server.
 - [Middleware Ecosystem](./middleware-ecosystem.md) — middleware that works across all Providers.
 - [Compiler Support](./compiler-support.md) — Delphi/FPC versions per Provider and Application type.
-- [`horse-provider-crosssocket`](https://github.com/freitasjca/horse-provider-crosssocket) — the optional async Provider's own documentation.
+- [`horse-provider-crosssocket`](https://github.com/freitasjca/horse-provider-crosssocket) — the optional CrossSocket async Provider's own documentation.
+- [`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot) — the optional mORMot2 async Provider's own documentation.

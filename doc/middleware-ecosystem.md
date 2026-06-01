@@ -91,11 +91,14 @@ These are not maintained by HashLoad but are listed here because they're commonl
 
 ## Third-party transport Providers
 
-Beyond middleware, the community has produced alternative **transport Providers** — the layer Horse uses to own the socket and parse HTTP. This is a separate axis from the middleware list above (see [Providers & Application types](./providers.md) for the full conceptual model). The most actively maintained third-party Provider is:
+Beyond middleware, the community has produced alternative **transport Providers** — the layer Horse uses to own the socket and parse HTTP. This is a separate axis from the middleware list above (see [Providers & Application types](./providers.md) for the full conceptual model). The actively maintained third-party Providers are:
 
 | Provider | Description | License | Repository |
 |---|---|---|---|
-| **horse-provider-crosssocket** | Async IOCP / epoll / kqueue transport. Replaces the default Indy Provider with [Delphi-Cross-Socket](https://github.com/winddriver/Delphi-Cross-Socket). Targets high-concurrency deployments. | MIT | [freitasjca/horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket) |
+| **horse-provider-crosssocket** | Async IOCP / epoll / kqueue transport. Replaces the default Indy Provider with [Delphi-Cross-Socket](https://github.com/winddriver/Delphi-Cross-Socket). Installation is manual (mirrors mORMot2): clone `winddriver/Delphi-Cross-Socket` + [`cnpack/cnvcl`](https://github.com/cnpack/cnvcl) and add search paths. Supported alternative for mTLS users or single-dependency convenience: [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) (bundles CnPack + mTLS APIs). Targets high-concurrency deployments. Activated by `HORSE_PROVIDER_CROSSSOCKET`. Requires Delphi 10.2+ / FPC 3.2+. Baseline test score: 80 passed / 1 failed (the documented Set-Cookie multi-value Horse-core limitation). | MIT | [freitasjca/horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket) |
+| **horse-provider-mormot** | Async IOCP / epoll transport. Replaces the default Indy Provider with [mORMot2](https://github.com/synopse/mORMot2)'s `THttpServer` — pure Pascal, no compiled C deps for standard HTTP. Optional swap to `THttpApiServer` for Windows kernel-mode http.sys. Activated by `HORSE_PROVIDER_MORMOT`. Compatible with Delphi 7 through 12.3 Athens and FPC 3.2+. Ships cross-product convenience units for Console, VCL, Daemon (Windows TService + POSIX runner), Lazarus LCL, and FPC HTTPApplication. | MIT | [freitasjca/horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot) |
+
+Both Providers use the same hybrid-interface architecture (`IHorseRawRequest` / `IHorseRawResponse`), so every Horse middleware works unchanged under either. The two Provider defines are mutually exclusive — exactly one transport per build.
 
 See [Providers & Application types](./providers.md) for when to switch off the default Indy transport, the compatibility matrix vs. each Application type, and how to combine the two choices.
 

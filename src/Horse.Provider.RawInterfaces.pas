@@ -1,4 +1,4 @@
-unit Horse.Provider.RawInterfaces;
+﻿unit Horse.Provider.RawInterfaces;
 
 {
   Horse Provider Raw Interfaces
@@ -93,3 +93,4 @@ type
 implementation
 
 end.
+

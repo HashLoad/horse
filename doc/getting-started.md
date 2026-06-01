@@ -151,16 +151,23 @@ The Console hello-world above is the simplest deployment shape, but **the same `
 | IIS ISAPI extension | Delphi | `HORSE_ISAPI` | (IIS owns the lifecycle) |
 | CGI / FastCGI binary | Delphi or FPC | `HORSE_CGI` / `HORSE_FCGI` | (host owns the lifecycle) |
 
-Add **`HORSE_PROVIDER_CROSSSOCKET`** alongside (where the table says "none") to switch the transport from the default Indy / `fphttpserver` to the optional async CrossSocket Provider — that's the high-performance path. The legacy define `HORSE_CROSSSOCKET` still works (PATCH-HORSE-2 keeps it as a permanent alias).
+For the high-performance path, add **one** of the following Provider defines alongside (where the table says "none") to switch the transport from the default Indy / `fphttpserver` to an async Provider:
 
-Concrete recipes (project type, code skeleton, install commands) for each shape: [Deployment Cheatsheet](./deployment.md), or the longer-form [Providers & Application types §8](./providers.md#8-running-crosssocket-as-each-application-type).
+| Provider define | Backed by | When to pick it |
+|---|---|---|
+| `HORSE_PROVIDER_CROSSSOCKET` | [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) + [`cnpack/cnvcl`](https://github.com/cnpack/cnvcl) for CnPack/Crypto units — IOCP / epoll / kqueue. Install both manually (mirroring the mORMot2 setup). For mTLS server mode (`SSLVerifyPeer = True`), use the supported alternative [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) which bundles CnPack and adds `SetCACertificateFile` + `SetVerifyPeer` in one clone. | You prefer native async control or already depend on Delphi-Cross-Socket. Requires Delphi 10.2+. |
+| `HORSE_PROVIDER_MORMOT` | [mORMot2](https://github.com/synopse/mORMot2) `THttpServer` — IOCP / epoll | You want Delphi 7+ compatibility, http.sys kernel-mode HTTP, or pure-Pascal HTTP without compiled C deps. |
+
+The two Providers are mutually exclusive (one transport per build). The legacy alias `HORSE_CROSSSOCKET` keeps working forever (PATCH-HORSE-2 translates it to `HORSE_PROVIDER_CROSSSOCKET`); there is no legacy alias for mORMot — it's new.
+
+Concrete recipes (project type, code skeleton, install commands) for each shape: [Deployment Cheatsheet](./deployment.md), or the longer-form [Providers & Application types §8 (CrossSocket)](./providers.md#8-running-crosssocket-as-each-application-type) / [§9 (mORMot2)](./providers.md#9-running-mormot2-as-each-application-type).
 
 ## 7. Where to next
 
 - [Routing](./routing.md) — declare endpoints, path parameters, route groups.
 - [Request & Response](./request-response.md) — read input, write output.
 - [Middleware](./middleware.md) — JSON parsing, CORS, JWT, logging.
-- [Providers & Application types](./providers.md) — when to switch off the default Indy transport (e.g., for a high-concurrency Linux deployment, see the CrossSocket section).
+- [Providers & Application types](./providers.md) — when to switch off the default Indy transport. The CrossSocket and mORMot2 sections cover the two high-concurrency alternatives.
 - [Deployment Cheatsheet](./deployment.md) — one-pager for shipping the binary as any of the seven shapes above.
 
 ## Troubleshooting
