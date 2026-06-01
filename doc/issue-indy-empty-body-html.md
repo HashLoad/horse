@@ -156,8 +156,11 @@ required on the Horse side.
 
 Any version of Horse that uses the Indy/Console provider
 (`Horse.Provider.Console`) and calls `Res.Send('')` or equivalent.  Not
-reproducible with the CrossSocket provider, which writes response bodies
-independently of `TIdHTTPResponseInfo`.
+reproducible with the CrossSocket provider (`HORSE_PROVIDER_CROSSSOCKET`)
+nor with the mORMot2 provider (`HORSE_PROVIDER_MORMOT`) — both write the
+response body directly, bypassing Indy's `TIdHTTPResponseInfo.WriteContent`
+substitution path entirely. Switching to either async provider is a valid
+workaround as well as a fix for the underlying bug.
 
 ---
 

@@ -74,7 +74,7 @@ unit Horse;
                           Indy        (Delphi default — implicit)
                           fphttpserver(FPC default    — implicit)
                           CrossSocket (HORSE_PROVIDER_CROSSSOCKET)
-                          mORMot      (HORSE_PROVIDER_MORMOT — reserved)
+                          mORMot      (HORSE_PROVIDER_MORMOT)
 
     B · Application type  HORSE_APPTYPE_*   — binary lifecycle shape
                           Console     (default — implicit)
@@ -143,6 +143,20 @@ unit Horse;
     {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
 {$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_MORMOT)}
+  {$IF DEFINED(HORSE_HOST_ISAPI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_APACHE)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_CGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_FCGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+{$IFEND}
 
 { Rule 2 — cross-platform Application-type mismatch }
 {$IF DEFINED(HORSE_APPTYPE_VCL) and DEFINED(FPC)}
@@ -157,9 +171,14 @@ unit Horse;
 
 { Rule 3 — HORSE_NOPROVIDER × anything else }
 {$IF DEFINED(HORSE_NOPROVIDER)}
-  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
     {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with all HORSE_PROVIDER_*, HORSE_APPTYPE_*, and HORSE_HOST_* defines — remove one.'}
   {$IFEND}
+{$IFEND}
+
+{ Rule 4 — mutually-exclusive Providers (Axis A admits at most one) }
+{$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_MORMOT)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_MORMOT are mutually exclusive — pick exactly one transport Provider per build.'}
 {$IFEND}
 { =========================================================================== }
 
@@ -183,6 +202,14 @@ uses
     Horse.Provider.CrossSocket.FPC.LCL,
     {$ELSE}
     Horse.Provider.CrossSocket,    { Console-shape — also covers FPC HTTPApplication }
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_MORMOT)}
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+    Horse.Provider.Mormot.FPC.Daemon,
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    Horse.Provider.Mormot.FPC.LCL,
+    {$ELSE}
+    Horse.Provider.Mormot.FPC.HTTPApplication,   { FPC default shape for mORMot }
     {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
@@ -211,6 +238,15 @@ uses
   Horse.Provider.CrossSocket.Daemon,
   {$ELSE}
   Horse.Provider.CrossSocket,    { Console-shape — Delphi default for CrossSocket }
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_MORMOT)}
+  System.SysUtils,
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+  Horse.Provider.Mormot.VCL,
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+  Horse.Provider.Mormot.Daemon,
+  {$ELSE}
+  Horse.Provider.Mormot,         { Console-shape — Delphi default for mORMot }
   {$ENDIF}
 {$ELSE}
   System.SysUtils,
@@ -295,6 +331,23 @@ type
     THorseProvider = Horse.Provider.CrossSocket.FPC.LCL.THorseProviderCrossSocketFPCLCL;
   {$ELSE}
     THorseProvider = Horse.Provider.CrossSocket.THorseProviderCrossSocket;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_MORMOT)}
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+    THorseProvider = Horse.Provider.Mormot.VCL.THorseProviderMormotVCL;
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+    THorseProvider =
+    {$IF DEFINED(FPC)}
+      Horse.Provider.Mormot.FPC.Daemon.THorseProviderMormotFPCDaemon;
+    {$ELSE}
+      Horse.Provider.Mormot.Daemon.THorseProviderMormotDaemon;
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    THorseProvider = Horse.Provider.Mormot.FPC.LCL.THorseProviderMormotFPCLCL;
+  {$ELSEIF DEFINED(FPC)}
+    THorseProvider = Horse.Provider.Mormot.FPC.HTTPApplication.THorseProviderMormotFPCHTTPApplication;
+  {$ELSE}
+    THorseProvider = Horse.Provider.Mormot.THorseProviderMormot;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   THorseProvider =

@@ -215,9 +215,9 @@ Para interceptar exceptions globalmente, registre o middleware `handle-exception
 
 ## Notas específicas de provider
 
-A maioria do código de aplicação nunca precisa pensar no transporte. Algumas exceções:
+A maioria do código da aplicação nunca precisa se preocupar com o transporte. Algumas exceções:
 
-- **Posse do body no CrossSocket:** `Req.Body<TStream>` no provider CrossSocket retorna uma referência não-dona ao buffer de recepção. Nunca chame `Free` nele. Se precisar do stream após a requisição retornar, copie para um `TMemoryStream` próprio. (Não se aplica ao Indy — o Indy entrega um stream próprio.)
+- **Posse do body no CrossSocket:** `Req.Body<TStream>` no provider CrossSocket retorna uma referência não proprietária para o buffer de recepção. Nunca o libere com Free. Se precisar do stream após a requisição retornar, copie o conteúdo para um  `TMemoryStream` próprio. (Não se aplica ao Indy — o Indy entrega um stream próprio.)
 - **Handlers concorrentes:** Indy roda uma thread por conexão; CrossSocket distribui para um pool de threads de IO. Em ambos, seu handler roda até o fim numa única thread, então estado por-requisição é seguro. Estado compartilhado precisa de lock explícito (`TCriticalSection`, `TMonitor`).
 - **`Req.RawWebRequest` e `Res.RawWebResponse`:** middleware que mexe nos objetos subjacentes (ex. `Horse.CORS` definindo `Access-Control-Allow-Origin` direto) continua funcionando entre providers — providers não-Indy retornam um adaptador que expõe a mesma superfície.
 

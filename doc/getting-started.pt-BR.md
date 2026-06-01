@@ -151,7 +151,14 @@ O hello-world Console acima é o formato de deploy mais simples, mas **o mesmo c
 | Extensão ISAPI IIS | Delphi | `HORSE_ISAPI` | (IIS é dono do ciclo de vida) |
 | Binário CGI / FastCGI | Delphi ou FPC | `HORSE_CGI` / `HORSE_FCGI` | (host é dono do ciclo de vida) |
 
-Adicione **`HORSE_PROVIDER_CROSSSOCKET`** junto (onde a tabela diz "nenhum") pra trocar o transporte do Indy / `fphttpserver` padrão pro Provider CrossSocket assíncrono opcional — esse é o caminho de alta performance. O define legado `HORSE_CROSSSOCKET` continua funcionando (PATCH-HORSE-2 mantém como alias permanente).
+Para o caminho de alta performance, adicione **um** dos seguintes defines de Provider (onde a tabela diz "nenhum") pra trocar o transporte do Indy / `fphttpserver` padrão por um Provider assíncrono:
+
+| Define do Provider | Backed by | Quando escolher |
+|---|---|---|
+| `HORSE_PROVIDER_CROSSSOCKET` | [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) + [`cnpack/cnvcl`](https://github.com/cnpack/cnvcl) para as units CnPack/Crypto — IOCP / epoll / kqueue. Instale ambos manualmente (espelhando o setup do mORMot2). Para mTLS no servidor (`SSLVerifyPeer = True`), use a alternativa suportada [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) que embute o CnPack e adiciona `SetCACertificateFile` + `SetVerifyPeer` num clone único. | Você prefere controle async nativo ou já depende de Delphi-Cross-Socket. Exige Delphi 10.2+. |
+| `HORSE_PROVIDER_MORMOT` | [mORMot2](https://github.com/synopse/mORMot2) `THttpServer` — IOCP / epoll | Você quer compatibilidade com Delphi 7+, HTTP em modo kernel via http.sys, ou HTTP em pure-Pascal sem deps em C compilado. |
+
+Os dois Providers são mutuamente exclusivos (um transporte por build). O alias legado `HORSE_CROSSSOCKET` continua funcionando para sempre (PATCH-HORSE-2 traduz para `HORSE_PROVIDER_CROSSSOCKET`); não há alias legado para o mORMot — ele é novo.
 
 Receitas concretas (tipo de projeto, esqueleto de código, comandos de instalação) pra cada formato: [Cheatsheet de Deploy](./deployment.pt-BR.md), ou a forma mais longa em [Providers e Tipos de aplicação §8](./providers.pt-BR.md#8-rodando-o-crosssocket-em-cada-tipo-de-aplicação).
 

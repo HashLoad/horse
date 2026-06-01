@@ -72,23 +72,25 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
 | Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
 | **Criar e publicar seu próprio middleware** — esqueleto, thread safety, neutralidade a Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
-| **Escolher um provider de transporte** — Indy (padrão), CrossSocket, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
+| **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
 | **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |
 | Catálogo completo de middlewares com descrições estendidas | [Ecossistema de Middlewares](./doc/middleware-ecosystem.pt-BR.md) |
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
 
 ## 🔌 Providers (camada de transporte)
 
-Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). O Provider **CrossSocket** opcional substitui ambos por E/S assíncrona **IOCP / epoll / kqueue**.
+Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). Os Providers opcionais **CrossSocket** e **mORMot2** substituem ambos por E/S assíncrona **IOCP / epoll / kqueue**.
 
 | Provider | Define de compilação | Delphi | Lazarus |
 | ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
 | **Indy** _(padrão Delphi para self-hosted)_                                                     | _(nenhum)_              | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
 | **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| _(planejado)_ horse-provider-mormot                                                              | `HORSE_MORMOT`          | &nbsp;&nbsp;&nbsp;—  | &nbsp;&nbsp;&nbsp;&nbsp;—  |
+| 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
+
+> **Instalação do Delphi-Cross-Socket** — clone [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) **junto com** [`cnpack/cnvcl/.../Crypto`](https://github.com/cnpack/cnvcl/tree/master/Source/Crypto) para as units CnPack/Crypto exigidas, e adicione os _search paths_ ao seu projeto. Três correções que antes eram exclusivas do fork já foram incorporadas ao upstream desde o 2º trimestre de 2026, então o mainline do upstream é adequado para uso geral. Para **mTLS** do lado servidor (`SSLVerifyPeer = True` + `SSLCACertFile = ...`) use o release pré-empacotado [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) — um único clone, CnPack já incluso, APIs de mTLS (`SetCACertificateFile` + `SetVerifyPeer`) prontas para uso. Veja [Instalação do horse-provider-crosssocket](./doc/providers.pt-BR.md#crosssocket-opcional) para o detalhamento completo dos dois caminhos.
 
 ## 🎯 Tipos de aplicação
 
@@ -99,7 +101,8 @@ Como o binário é empacotado e iniciado. Tipos **self-hosted** rodam sob o Prov
 | _**Self-hosted** (usa o Provider selecionado)_                                                                                                                            |
 | [Console](./doc/providers.pt-BR.md) _(padrão)_                              | _(nenhum)_        | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | [VCL](./doc/providers.pt-BR.md)                                              | `HORSE_VCL`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-| [Daemon](./doc/providers.pt-BR.md) (serviço Windows)                        | `HORSE_DAEMON`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| [Daemon — Serviço Windows](./doc/providers.pt-BR.md)                        | `HORSE_DAEMON`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
+| [Daemon — daemon Linux (systemd)](./doc/providers.pt-BR.md)                 | `HORSE_DAEMON`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | [LCL](./doc/providers.pt-BR.md) (GUI Lazarus)                               | `HORSE_LCL`       | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | [HTTPApplication](./doc/providers.pt-BR.md) (FPC)                           | _(padrão FPC)_    | &nbsp;&nbsp;&nbsp;❌ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | _**Host-managed** (o webserver é dono do socket; Provider acima não é usado)_                                                                                              |
@@ -107,6 +110,13 @@ Como o binário é empacotado e iniciado. Tipos **self-hosted** rodam sob o Prov
 | [ISAPI](./doc/providers.pt-BR.md) (IIS)                                     | `HORSE_ISAPI`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 | [CGI](./doc/providers.pt-BR.md)                                              | `HORSE_CGI`       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | [FastCGI](./doc/providers.pt-BR.md)                                          | `HORSE_FCGI`      | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+
+> **Nota** – `HORSE_DAEMON` é um tipo de aplicação **adaptável à plataforma**:  
+> - No **Windows** → compila como um **Serviço Windows** (`Vcl.SvcMgr.TService` + SCM)  
+> - No **Linux** → compila como um **daemon systemd** (utiliza `signal(SIGTERM)` + systemd)  
+>  
+> “Daemon” é o termo nativo do Unix; o Windows não possui um equivalente exato, por isso o mesmo nome da definição é usado em ambas as plataformas.
+
 
 Veja [Providers](./doc/providers.pt-BR.md) para a matriz de compatibilidade completa e como combinar Provider × Tipo de aplicação.
 

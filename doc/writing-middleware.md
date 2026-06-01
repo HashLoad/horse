@@ -10,7 +10,7 @@ This guide walks through implementing a production-quality Horse middleware — 
 
 Five properties — your middleware should meet all of them if you're publishing it for others:
 
-1. **Provider-neutral** — works on Indy (Delphi default), `fphttpserver` (FPC default), CrossSocket, and any future Provider. Apache / ISAPI / CGI too.
+1. **Provider-neutral** — works on Indy (Delphi default), `fphttpserver` (FPC default), CrossSocket, mORMot2, and any future Provider. Apache / ISAPI / CGI too.
 2. **Cross-compiler** — compiles on Delphi 10.4 Sydney or newer **and** FPC 3.2 or newer.
 3. **Thread-safe** — Horse handlers run on different threads under different Providers; shared state must be guarded.
 4. **Configurable** — accepts options without relying on global variables, where possible.
@@ -143,6 +143,7 @@ Horse handlers run on different threads depending on the Provider:
 | Indy (Delphi self-hosted) | One Indy thread per connection | Hundreds of threads under load |
 | `fphttpserver` (FPC self-hosted) | One thread per connection | Same as Indy |
 | CrossSocket | IO threads (fixed pool of 4–16) or worker threads (`THorseWorkerPool`, 4–64) | Same handler can run on different threads across requests |
+| mORMot2 | Fixed thread pool inside `THttpServer` (default 32, configurable via `THorseMormotConfig.ThreadPool`) | Same handler can run on different threads across requests |
 | Apache / ISAPI / CGI | Host's worker thread | Varies by host configuration |
 
 In every Provider, **a single handler invocation runs on a single thread end-to-end**. You don't need locks within one request. But shared state across requests must be protected.
@@ -355,7 +356,7 @@ Assert(LResp = 'ok');
 
 ### Provider matrix — catches the rare ones
 
-At minimum, run your integration tests under **Indy** (default — no define) and **CrossSocket** (`HORSE_PROVIDER_CROSSSOCKET`, or the legacy `HORSE_CROSSSOCKET`). If you claim FPC support, run on FPC too with the `fphttpserver` default. The reference test pattern lives in [`horse-provider-crosssocket/samples/tests/`](https://github.com/freitasjca/horse-provider-crosssocket/tree/master/samples/tests) — 32 black-box HTTP tests covering routing, body handling, concurrent requests, CORS, and shadow-field precedence. Copy the pattern.
+At minimum, run your integration tests under **Indy** (default — no define) and one of the async Providers — **CrossSocket** (`HORSE_PROVIDER_CROSSSOCKET`, or the legacy `HORSE_CROSSSOCKET`) or **mORMot2** (`HORSE_PROVIDER_MORMOT`). The two async Providers share the same hybrid-adapter contract, so middleware that passes one usually passes the other; running both gives the strongest signal. If you claim FPC support, run on FPC too with the `fphttpserver` default. The reference test patterns live in [`horse-provider-crosssocket/samples/tests/`](https://github.com/freitasjca/horse-provider-crosssocket/tree/master/samples/tests) and [`horse-provider-mormot/samples/tests/`](https://github.com/freitasjca/horse-provider-mormot/tree/master/samples/tests) — both register the same 32 black-box HTTP tests covering routing, body handling, concurrent requests, CORS, and shadow-field precedence so a single test client validates both transports.
 
 ---
 
