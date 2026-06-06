@@ -80,7 +80,7 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 ## Doe
 A organização HashLoad desenvolve e dá suporte ao Horse. Para expandir a comunidade de colaboradores e usuários, e
 permitir que os mantenedores dediquem mais tempo aos projetos, [please
-donate today](https://palletsprojects.com/donate).
+donate today](https://opencollective.com/hashload).
 
 ## 🤝 Contribuindo
 Veja [CONTRIBUTING.pt-BR.md](./CONTRIBUTING.pt-BR.md) para reportar bugs, sugerir features e enviar mudanças de código ou documentação. Os docs bilíngues EN / PT-BR são mantidos sincronizados — ao editar um idioma, edite o outro no mesmo PR.
