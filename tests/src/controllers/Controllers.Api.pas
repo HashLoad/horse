@@ -3,7 +3,7 @@ unit Controllers.Api;
 interface
 
 uses
-  Horse;
+  Horse, System.JSON, Horse.Commons;
 
 procedure Registry;
 procedure DoGetApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -12,9 +12,6 @@ procedure DoPutApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 procedure DoDeleteApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 
 implementation
-
-uses
-  System.JSON;
 
 procedure Registry;
 begin

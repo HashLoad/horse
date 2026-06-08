@@ -3,7 +3,7 @@ unit Tests.Commons;
 interface
 
 uses
-  DUnitX.TestFramework;
+  DUnitX.TestFramework, Horse.Commons;
 
 type
   [TestFixture]
@@ -15,8 +15,7 @@ type
 
 implementation
 
-uses
-  Horse.Commons;
+{ TCommonsTest }
 
 procedure TCommonsTest.TestMimeTypesToString;
 begin

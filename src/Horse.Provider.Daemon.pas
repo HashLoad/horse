@@ -37,6 +37,7 @@ type
     class function HTTPWebBrokerIsNil: Boolean;
     class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
+    class procedure OnConnect(AContext: TIdContext);
     class procedure SetListenQueue(const AValue: Integer); static;
     class procedure SetMaxConnections(const AValue: Integer); static;
     class procedure SetPort(const AValue: Integer); static;
@@ -132,6 +133,7 @@ begin
     FIdHTTPWebBrokerBridge := TIdHTTPWebBrokerBridge.Create(nil);
     FIdHTTPWebBrokerBridge.OnParseAuthentication := OnAuthentication;
     FIdHTTPWebBrokerBridge.OnQuerySSLPort := OnQuerySSLPort;
+    FIdHTTPWebBrokerBridge.OnConnect := OnConnect;
   end;
   Result := FIdHTTPWebBrokerBridge;
 end;
@@ -144,6 +146,15 @@ end;
 class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
   VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
+end;
+
+{ Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
+  loopback the keep-alive request/response ping-pong collides with the ~40 ms
+  delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
+  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+class procedure THorseProvider.OnConnect(AContext: TIdContext);
+begin
+  AContext.Binding.UseNagle := False;
 end;
 
 class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;

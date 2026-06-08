@@ -142,7 +142,7 @@ Handlers do Horse rodam em threads diferentes dependendo do Provider:
 |---|---|---|
 | Indy (Delphi self-hosted) | Uma thread Indy por conexão | Centenas de threads sob carga |
 | `fphttpserver` (FPC self-hosted) | Uma thread por conexão | Igual ao Indy |
-| CrossSocket | Threads de IO (pool fixo de 4–16) ou worker threads (`THorseWorkerPool`, 4–64) | O mesmo handler pode rodar em threads diferentes em requests diferentes |
+| CrossSocket | Threads de IO (pool fixo, `CPUCount*2+1`) ou worker threads (`THorseWorkerPool`, 4–64) | O mesmo handler pode rodar em threads diferentes em requests diferentes |
 | Apache / ISAPI / CGI | Worker thread do host | Varia pela configuração do host |
 
 Em todo Provider, **uma única invocação de handler roda numa única thread do começo ao fim**. Você não precisa de locks dentro de uma requisição. Mas estado compartilhado entre requests precisa de proteção.
