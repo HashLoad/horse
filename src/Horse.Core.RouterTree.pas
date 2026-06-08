@@ -9,7 +9,7 @@ interface
 uses
 {$IF DEFINED(FPC)}
   Generics.Collections,
-  fpHTTP,
+  httpdefs,
   httpprotocol,
   RegExpr,
 {$ELSE}
