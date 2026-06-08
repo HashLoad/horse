@@ -90,7 +90,7 @@ In your project's Conditional Defines: `HORSE_CROSSSOCKET`. Your code stays the 
 
 | | Indy | CrossSocket |
 |---|---|---|
-| Concurrency | One thread per connection | Fixed IO-thread pool (CPU-count, typically 4–16) |
+| Concurrency | One thread per connection | Fixed IO-thread pool (`CPUCount*2+1`, e.g. 9 on a 4-core, 17 on an 8-core) |
 | Idle keep-alive cost | One thread per idle connection | One epoll/IOCP handle — negligible |
 | Per-request allocation | New `THorseRequest`/`THorseResponse` | Pre-warmed object pool (32 contexts, scales to 512) |
 | Scaling ceiling | ~1 000 concurrent on commodity hardware | 10 000+ concurrent on the same hardware |
@@ -108,11 +108,13 @@ CrossSocket and Indy are **drop-in alternatives** for the same Horse codebase. T
 
 For configuration (TLS certificates, body-size limits, IO thread count, mTLS), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-crosssocket#readme).
 
-### Installation (manual — matches the mORMot2 pattern)
+### Installation 
 
-`horse-provider-crosssocket` no longer pulls Delphi-Cross-Socket through Boss. Install Delphi-Cross-Socket the same way you install mORMot2 — clone the repo, add search paths to your project. The provider's `boss.json` declares only the patched Horse fork dependency; everything else is manual:
+`horse-provider-crosssocket` pulls Delphi-Cross-Socket through Boss. 
 
-1. Clone the patched [`horse`](https://github.com/freitasjca/horse) fork (via `boss install horse-provider-crosssocket`).
+If install manually:
+
+1. Clone [`horse-provider-crosssocket`](https://github.com/freitasjca/horse-provider-crosssocket).
 2. Clone Delphi-Cross-Socket — **two options**:
    - **Recommended:** upstream [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket). Tracks the maintainer's release cadence; receives upstream improvements as soon as they land.
    - **Supported alternative:** the fork release [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3), which bundles CnPack as a vendored subtree and adds the mTLS server-mode APIs (`SetCACertificate(File)` + `SetVerifyPeer(Boolean)`). One clone instead of two, at the cost of lagging behind upstream commits between fork syncs. Pick this if you need mTLS server mode or prefer the single-dependency convenience.
@@ -829,6 +831,83 @@ Every self-hosted Provider implements the same `THorseProviderAbstract` base cla
 Non-Indy Providers (CrossSocket and any future transports) use a small set of lightweight interfaces — `IHorseRawRequest` / `IHorseRawResponse` — adapted to look like `TWebRequest` / `TWebResponse` for middleware compatibility. As a result, middleware that pokes `Req.RawWebRequest.Method` or `Res.RawWebResponse.SetCustomHeader` directly (e.g. `Horse.CORS`) keeps working unchanged across all Providers.
 
 If you want to build a **new** Provider, the [hybrid-interface architecture guide](https://github.com/freitasjca/horse-provider-crosssocket/blob/master/doc/building-a-new-provider.md) in the CrossSocket repo walks through the pattern.
+
+### 10.1 `TCP_NODELAY` on self-hosted Providers
+
+All self-hosted Providers disable **Nagle's algorithm** (`TCP_NODELAY`) on every accepted connection:
+
+- **Indy** (Console / Daemon / VCL) sets `AContext.Binding.UseNagle := False` from the bridge's `OnConnect`.
+- **CrossSocket** calls `TSocketAPI.SetTcpNoDelay(AConnection.Socket, True)` from the server's `OnConnected` — in the shared transport, so every CrossSocket Application type (Console, VCL, Daemon, FPC variants) inherits it.
+- **mORMot2** already enables `TCP_NODELAY` by default.
+
+**Why.** Without it, on **Linux loopback** the small request/response ping-pong of an HTTP keep-alive connection collides with the kernel's ~40 ms **delayed-ACK** timer, pinning throughput at a flat ~44 ms/request floor (~2 270 req/s) regardless of how fast the server actually is. Disabling Nagle removes that stall. (Windows loopback doesn't trigger it, but the option is harmless-to-beneficial there too — lower latency.)
+
+**Does it affect more than small responses?** It's a **per-connection** option, so it applies to *every* request, not just tiny ones — but the effect is **positive or neutral for all request shapes, never harmful**. It changes only *when* already-buffered bytes leave the socket, never *what* bytes or *in what order*; TCP remains a reliable, ordered byte stream and response content is byte-for-byte identical.
+
+| Response shape | Effect |
+|---|---|
+| Small responses (JSON APIs, headers-only, 204) | **Improved** — removes the keep-alive delayed-ACK stall |
+| Large responses (file downloads, big bodies) | **Neutral** — Nagle only ever held back a trailing sub-MSS chunk; that final flush is now immediate |
+| POST / uploads | **Neutral** — Nagle is an outbound concern; inbound body is unaffected |
+
+The classic downside of `TCP_NODELAY` — many tiny per-response socket writes becoming many small packets — does not apply here: Indy, CrossSocket, and Horse all buffer the full response and flush it in one (or few) writes. This matches universal HTTP-server practice (nginx, Apache, Go `net/http`, mORMot all set `TCP_NODELAY` unconditionally).
+
+> The FPC `fphttpserver` family and host-managed types (Apache / ISAPI / CGI / FastCGI) are **not** changed: `fphttpserver` exposes no clean per-connection hook, and host-managed deployments don't own the HTTP accept socket — the front web server's own Nagle policy applies.
+
+### 10.2 Indy provider connection defaults — `MaxConnections` & `ListenQueue`
+
+The Indy self-hosted providers (Console / Daemon / VCL) now apply two **safe defaults** when you
+don't set them explicitly:
+
+| Property | Old effective default | New default | Why |
+|---|---|---|---|
+| `THorse.MaxConnections` | **32** (WebBroker's `Web.WebReq.TWebRequestHandler` module-pool cap) | **1024** | The 32 cap returns **~60 % HTTP 500** (`EWebBrokerException: "Maximum number of concurrent connections exceeded"`) under **keep-alive + response-header middleware + concurrency ≥ ~40**. Raising the module-pool ceiling makes the out-of-the-box build safe. |
+| `THorse.ListenQueue` | **15** (Indy's `IdListenQueueDefault`) | **511** | 15 is too small for concurrent connection bursts → dropped/refused connections. 511 mirrors nginx's backlog (the OS clamps it to `net.core.somaxconn` / `SOMAXCONN`). |
+
+**Behaviour & compatibility.** These are applied **only when the value is left unset** — if you
+already call `THorse.MaxConnections := N` or `THorse.ListenQueue := N` before `Listen`, your value
+wins, unchanged. The `MaxConnections` default raises **only** the WebBroker module-pool ceiling
+(the thing that produced the 500s); it does **not** impose an Indy TCP connection cap unless you set
+one. Tune both up for very high concurrency (e.g. `1000`+ at c≈500).
+
+```pascal
+THorse.MaxConnections := 4096;   // optional — overrides the 1024 default
+THorse.ListenQueue    := 1024;   // optional — overrides the 511 default
+THorse.Listen(9000);
+```
+
+> **Provider scope:** this applies to the **Indy** providers only — they're the ones backed by
+> WebBroker. CrossSocket and mORMot have no WebBroker module pool (they never produced these 500s);
+> CrossSocket connection limits live in `THorseCrossSocketConfig.MaxConnections`, and mORMot sizes
+> its own fixed thread pool (`THorseMormotConfig.ThreadPool`, default 32). The constants live in
+> `Horse.Provider.Config` (`DEFAULT_MAX_CONNECTIONS`, `DEFAULT_LISTEN_QUEUE`).
+
+#### How to size them — and why they're **not** derived from CPU count
+
+These two values govern **I/O concurrency and connection-burst absorption**, not compute — so they
+are deliberately **fixed defaults, not a function of the machine's CPU count.** Size them against the
+variables that actually matter:
+
+- **`ListenQueue` = the kernel TCP accept backlog** — a *burst buffer* for connections waiting to be
+  `accept()`ed. Size it to your **peak connection-arrival burst**, not your cores; a faster box drains
+  the queue *quicker* and needs *less* backlog, not more. The OS hard-clamps it to
+  `net.core.somaxconn` (Linux) / `SOMAXCONN` (Windows) — raise that to match if you set a high value.
+- **`MaxConnections` = a ceiling on concurrent in-flight requests.** The useful level is driven by
+  your handlers' **I/O profile**: CPU-bound handlers saturate near core-count, but typical
+  **I/O-bound** handlers (DB, external HTTP, files) profitably run far more concurrent requests than
+  there are cores, because most are blocked waiting. It's a **safety ceiling**, so the practical limit
+  is **RAM / `ulimit -n`** — Indy is thread-per-connection (~1 MB stack + one fd per connection), so
+  e.g. 1024 connections ≈ up to ~1 GB of thread stacks worst-case.
+
+> **Why not scale with CPU?** `MaxConnections` is a *ceiling*; deriving it from cores would give small
+> boxes a *low* cap and re-introduce the keep-alive 500s on exactly the machines least able to absorb
+> them. CPU count belongs on the knobs that count multiplexing/compute threads — and those already
+> auto-scale: CrossSocket's IO threads (`CPUCount*2+1`) and the CPU-bound `THorseWorkerPool` (4–64
+> threads). Connection ceilings and accept backlogs are a different category.
+
+**Rule of thumb:** raise `MaxConnections` toward your expected peak concurrent in-flight requests
+(bounded by RAM/fd limits), and `ListenQueue` toward your expected peak accept burst (bounded by
+`somaxconn`). Leave them at the defaults until a load test says otherwise.
 
 ## See also
 

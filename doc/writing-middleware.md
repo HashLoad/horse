@@ -142,7 +142,7 @@ Horse handlers run on different threads depending on the Provider:
 |---|---|---|
 | Indy (Delphi self-hosted) | One Indy thread per connection | Hundreds of threads under load |
 | `fphttpserver` (FPC self-hosted) | One thread per connection | Same as Indy |
-| CrossSocket | IO threads (fixed pool of 4–16) or worker threads (`THorseWorkerPool`, 4–64) | Same handler can run on different threads across requests |
+| CrossSocket | IO threads (fixed pool, `CPUCount*2+1`) or worker threads (`THorseWorkerPool`, 4–64) | Same handler can run on different threads across requests |
 | mORMot2 | Fixed thread pool inside `THttpServer` (default 32, configurable via `THorseMormotConfig.ThreadPool`) | Same handler can run on different threads across requests |
 | Apache / ISAPI / CGI | Host's worker thread | Varies by host configuration |
 
