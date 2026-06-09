@@ -1,7 +1,7 @@
 {
   "name": "horse",
   "description": "Horse web framework \u2014 CrossSocket-compatible fork",
-  "version": "3.1.99",
+  "version": "3.1.100",
   "homepage": "https://github.com/freitasjca/horse",
   "license": "MIT",
   "mainsrc": "src/",

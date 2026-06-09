@@ -3,7 +3,8 @@ unit Tests.Api.Console;
 interface
 
 uses
-  DUnitX.TestFramework, System.JSON;
+  DUnitX.TestFramework, System.JSON, RESTRequest4D.Request, System.Classes,
+  Controllers.Api, Horse, Horse.Jhonson, SysUtils;
 
 type
   [TestFixture]
@@ -45,8 +46,7 @@ type
 
 implementation
 
-uses
-  RESTRequest4D.Request, System.Classes, Controllers.Api, Horse, Horse.Jhonson, System.SysUtils;
+{ TApiTest }
 
 procedure TApiTest.StartApiListen;
 begin
@@ -99,7 +99,7 @@ begin
       procedure
       begin
         Controllers.Api.Registry;
-        THorse.Listen('0.0.0.0',
+        THorse.Listen(
           procedure
           begin
           end,
