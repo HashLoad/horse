@@ -132,7 +132,7 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
 {$ELSE}
-  System.SysUtils, 
+  System.SysUtils,
   Horse.Request,
   Horse.Response,
 {$ENDIF}
@@ -188,8 +188,12 @@ var
   LCallback: THorseCallback;
 begin
   Result := GetInstance;
+  // Use RegisterRouteMiddleware (AIsMiddleware=True) so the duplicate-route
+  // guard in RegisterInternal is suppressed.  These callbacks come from
+  // AddCallback() and are intentionally prepended before the route handler,
+  // which is registered separately by RegisterRoute immediately after.
   for LCallback in GetCallbacks do
-    RegisterRoute(AMethod, APath, LCallback);
+    Result.GetRoutes.RegisterRouteMiddleware(AMethod, TrimPath(APath), LCallback);
 end;
 
 class function THorseCore.GetRoutes: THorseRouterTree;
