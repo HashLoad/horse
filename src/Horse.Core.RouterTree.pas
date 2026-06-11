@@ -1,4 +1,4 @@
-unit Horse.Core.RouterTree;
+﻿unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -39,8 +39,13 @@ type
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    // Methods (mtGet, mtPost, ...) that already have a ROUTE HANDLER registered
+    // on this leaf node. Distinct from FCallBack, which also holds middleware
+    // attached via AddCallback(). Used to detect genuine duplicate routes
+    // (two .Get('/same') calls) without false-positiving on middleware.
+    FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
-    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string);
+    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
     function ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
     function CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
@@ -53,6 +58,7 @@ type
     function GetPrefix: string;
     procedure Prefix(const APrefix: string);
     procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+    procedure RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
@@ -91,7 +97,23 @@ var
 begin
   LPathChain := GetQueuePath(APath);
   try
-    RegisterInternal(AHTTPType, LPathChain, ACallback, APath);
+    RegisterInternal(AHTTPType, LPathChain, ACallback, APath, False);
+  finally
+    LPathChain.Free;
+  end;
+end;
+
+// Called by THorseCore.RegisterCallbacksRoute when flushing AddCallback()
+// middleware onto a route.  AIsMiddleware=True so the duplicate guard is
+// suppressed - the route handler is registered separately by RegisterRoute
+// and appending middleware to the same callback list is intentional.
+procedure THorseRouterTree.RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+var
+  LPathChain: TQueue<string>;
+begin
+  LPathChain := GetQueuePath(APath);
+  try
+    RegisterInternal(AHTTPType, LPathChain, ACallback, APath, True);
   finally
     LPathChain.Free;
   end;
@@ -157,6 +179,7 @@ begin
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
   FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
+  FHandlerMethods := TList<TMethodType>.Create;
   FPrefix := '';
   FIsRouterRegex := False;
 end;
@@ -168,6 +191,7 @@ begin
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
   FCallBack.Free;
+  FHandlerMethods.Free;
   inherited;
 end;
 
@@ -177,12 +201,12 @@ var
   LQueue, LQueueNotFound: TQueue<string>;
   LMethodType: TMethodType;
 { PATCH-TREE-1: LRawWebRequest stores the result of ARequest.RawWebRequest so
-  we can pass it to Assigned(). Assigned() requires a variable — it cannot
+  we can pass it to Assigned(). Assigned() requires a variable - it cannot
   accept a function-call expression (dcc32 E2036 "Variable required"). }
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
 { ===========================================================================
-  PATCH-TREE-1 — nil-guard for the CrossSocket path.
+  PATCH-TREE-1 - nil-guard for the CrossSocket path.
 
   The original code accessed ARequest.RawWebRequest directly:
     Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
@@ -196,14 +220,14 @@ begin
   Fix strategy: store RawWebRequest in a local variable, test it once, branch.
 
     Indy path (LRawWebRequest <> nil):
-      Use the EXACT original expressions for both compilers — zero behaviour
+      Use the EXACT original expressions for both compilers - zero behaviour
       change for any existing Indy/FPC user.  The upstream code is reproduced
       verbatim inside the else branch, now referencing the local variable.
 
     CrossSocket path (LRawWebRequest = nil):
       Use the nil-guarded accessors on THorseRequest:
-        ARequest.RawPathInfo   (PATCH-REQ-5) — returns FCSPathInfo shadow field
-        ARequest.MethodType    (PATCH-REQ-3) — returns FCSMethodType shadow field
+        ARequest.RawPathInfo   (PATCH-REQ-5) - returns FCSPathInfo shadow field
+        ARequest.MethodType    (PATCH-REQ-3) - returns FCSMethodType shadow field
       Both fields are populated by TRequestBridge.Populate before the pipeline
       is entered, so they are always valid at this point.
   =========================================================================== }
@@ -216,7 +240,7 @@ begin
   end
   else
   begin
-    // Indy path: original upstream expressions — not changed from HashLoad/horse
+    // Indy path: original upstream expressions - not changed from HashLoad/horse
     LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
                  {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
     LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
@@ -389,7 +413,7 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string);
+procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean);
 var
   LNextPart: string;
   LNormalizedNextPart: string;
@@ -417,14 +441,25 @@ begin
 
   if APath.Count = 0 then
   begin
-    if FCallBack.TryGetValue(AHTTPType, LCallbacks) then
-      raise Exception.Create(Format('Duplicate route detected: [%s] %s', [AHTTPType.ToString.ToUpper, AFullPath]))
-    else
+    // A genuine duplicate is a second ROUTE HANDLER for the same path+method
+    // (two .Get('/same', ...) calls). Middleware attached via AddCallback()
+    // arrives first with AIsMiddleware=True and shares the same callback list,
+    // so we must NOT treat the pre-existing list as a duplicate — only a
+    // previously-registered handler counts. FHandlerMethods tracks exactly
+    // that, independent of the middleware entries in FCallBack.
+    if (not AIsMiddleware) and (FHandlerMethods.IndexOf(AHTTPType) >= 0) then
+      raise Exception.Create(Format('Duplicate route detected: [%s] %s',
+        [AHTTPType.ToString.ToUpper, AFullPath]));
+
+    if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
     begin
       LCallbacks := TList<THorseCallback>.Create;
       FCallBack.Add(AHTTPType, LCallbacks);
     end;
     LCallbacks.Add(ACallback);
+
+    if not AIsMiddleware then
+      FHandlerMethods.Add(AHTTPType);
   end;
 
   if APath.Count > 0 then
@@ -441,7 +476,7 @@ begin
     // first registration. Subsequent registrations with a different param name
     // but same structure will reuse the existing node (correct behaviour for
     // Problem 1: they are the same route).
-    LForceRouter.RegisterInternal(AHTTPType, APath, ACallback, AFullPath);
+    LForceRouter.RegisterInternal(AHTTPType, APath, ACallback, AFullPath, AIsMiddleware);
     if LForceRouter.FIsParamsKey or LForceRouter.FIsRouterRegex then
     begin
       // Only add to FRegexedKeys once (avoid duplicates)
