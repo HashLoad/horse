@@ -33,6 +33,7 @@ type
     FCookie: THorseCoreParam;
     FBody: TObject;
     FSession: TObject;
+    FOwnsSession: Boolean;
     FSessions: THorseSessions;
 { ===========================================================================
   PATCH-REQ-3 — CrossSocket shadow fields (populated by Populate, nil by default)
@@ -82,7 +83,7 @@ type
     function Body<T: class>: T; overload;
     function Body(const ABody: TObject): THorseRequest; overload; virtual;
     function Session<T: class>: T; overload;
-    function Session(const ASession: TObject): THorseRequest; overload; virtual;
+    function Session(const ASession: TObject; AOwnsSession: Boolean = False): THorseRequest; overload; virtual;
     function Headers: THorseCoreParam; virtual;
     function Query: THorseCoreParam; virtual;
     function Params: THorseCoreParam; virtual;
@@ -351,6 +352,8 @@ begin
     FreeAndNil(FCookie);
   if Assigned(FBody) then
     FBody.Free;
+  if FOwnsSession and Assigned(FSession) then
+    FreeAndNil(FSession);
   if Assigned(FSessions) then
     FSessions.Free;
 { PATCH-REQ-8 — free the owned TWebRequest adapter if Clear was not called
@@ -623,10 +626,14 @@ begin
 { end PATCH-REQ-8 }
 end;
 
-function THorseRequest.Session(const ASession: TObject): THorseRequest;
+function THorseRequest.Session(const ASession: TObject; AOwnsSession: Boolean): THorseRequest;
 begin
   Result := Self;
+  
+  if Assigned(FSession) then
+    FreeAndNil(FSession);
   FSession := ASession;
+  FOwnsSession := AOwnsSession;
 end;
 
 function THorseRequest.Session<T>: T;
