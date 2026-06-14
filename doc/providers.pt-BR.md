@@ -133,6 +133,8 @@ boss install horse-provider-mormot
 
 Nos Conditional Defines do projeto: `HORSE_PROVIDER_MORMOT`. Seu código fica o mesmo.
 
+**Três back-ends de servidor.** O provider pode hospedar qualquer um dos servidores HTTP do mORMot2, selecionado por `THorseMormotConfig.ServerKind`: `mskThreadPool` (`THttpServer`, o padrão — uma thread por requisição concorrente), `mskAsync` (`THttpAsyncServer`, um laço de eventos não bloqueante IOCP/epoll/kqueue que escala além de uma thread por requisição) ou `mskHttpApi` (`THttpApiServer`, HTTP em modo kernel via **http.sys** do Windows — somente Windows). Troque em tempo de execução (`Cfg.ServerKind := mskAsync` antes de `THorse.ListenWithConfig`) ou defina um define de projeto (`HORSE_MORMOT_ASYNC`, ou `HORSE_MORMOT_HTTPAPI` no Windows) para alterar o padrão. Sem nenhum deles, o padrão continua sendo `THttpServer` — comportamento inalterado. O `mskHttpApi` registra `http://+:<porta>/` no http.sys, o que exige direitos de Administrador ou um `netsh http add urlacl` executado uma única vez. Veja a [documentação do próprio provider](https://github.com/freitasjca/horse-provider-mormot#readme) para detalhes.
+
 **O que muda vs. Indy:**
 
 | | Indy | mORMot2 |
@@ -166,7 +168,7 @@ Nos Conditional Defines do projeto: `HORSE_PROVIDER_MORMOT`. Seu código fica o 
 
 Ambos os providers usam IOCP/epoll e um pool de objetos de contexto, portanto a taxa de transferência é comparável sob cargas típicas.
 
-Para configuração (`ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) e as implementações para cada tipo de aplicação  (VCL, Serviço Windows, daemon Linux), veja a [documentação do próprio provider](https://github.com/freitasjca/horse-provider-mormot#readme).
+Para configuração (`ServerKind`, `ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) e as implementações para cada tipo de aplicação  (VCL, Serviço Windows, daemon Linux), veja a [documentação do próprio provider](https://github.com/freitasjca/horse-provider-mormot#readme).
 
 > **Instalação do mORMot2** — o mORMot2 não está disponível via `boss install`. Clone [synopse/mORMot2](https://github.com/synopse/mORMot2) e adicione `<mORMot2>/src`, `<mORMot2>/src/core`, `<mORMot2>/src/net` ao search path do compilador.
 

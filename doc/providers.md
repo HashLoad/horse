@@ -133,6 +133,8 @@ boss install horse-provider-mormot
 
 In your project's Conditional Defines: `HORSE_PROVIDER_MORMOT`. Your code stays the same.
 
+**Three server backends.** The provider can host any of mORMot2's HTTP servers, selected via `THorseMormotConfig.ServerKind`: `mskThreadPool` (`THttpServer`, the default — one thread per concurrent request), `mskAsync` (`THttpAsyncServer`, a non-blocking IOCP/epoll/kqueue event loop that scales past thread-per-request), or `mskHttpApi` (`THttpApiServer`, Windows **http.sys** kernel-mode HTTP — Windows only). Switch at runtime (`Cfg.ServerKind := mskAsync` before `THorse.ListenWithConfig`) or set a project-wide define (`HORSE_MORMOT_ASYNC`, or `HORSE_MORMOT_HTTPAPI` on Windows) to flip the default. With none, the default stays `THttpServer` — unchanged behaviour. `mskHttpApi` registers `http://+:<port>/` with http.sys, which needs Administrator rights or a one-time `netsh http add urlacl`. See the [provider's own documentation](https://github.com/freitasjca/horse-provider-mormot#readme) for details.
+
 **What changes vs. Indy:**
 
 | | Indy | mORMot2 |
@@ -168,7 +170,7 @@ In your project's Conditional Defines: `HORSE_PROVIDER_MORMOT`. Your code stays 
 
 Both providers use IOCP/epoll and a context object pool, so throughput is comparable under typical workloads.
 
-For configuration (`ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) and application-type wrappers (VCL, Windows Service, Linux daemon), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-mormot#readme).
+For configuration (`ServerKind`, `ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) and application-type wrappers (VCL, Windows Service, Linux daemon), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-mormot#readme).
 
 > **mORMot2 installation** — mORMot2 is not available via `boss install`. Clone [synopse/mORMot2](https://github.com/synopse/mORMot2) and add `<mORMot2>/src`, `<mORMot2>/src/core`, `<mORMot2>/src/net` to the compiler search path.
 

@@ -452,7 +452,11 @@ begin
     RemoteAddr      := FRawReq.GetRemoteAddr;
     RemoteHost      := FRawReq.GetRemoteAddr;
     ProtocolVersion := FRawReq.GetProtocolVersion;
+    {$IF DEFINED(FPC)}
+    ServerPort      := FRawReq.GetServerPort;
+    {$ELSE}
     ServerPort      := IntToStr(FRawReq.GetServerPort);
+    {$ENDIF}
 
     FRawReq.PopulateQueryFields(QueryFields);
     FRawReq.PopulateContentFields(ContentFields);
