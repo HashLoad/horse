@@ -170,7 +170,6 @@
         <DCCReference Include="..\..\src\Horse.Mime.pas"/>
         <DCCReference Include="..\..\src\Horse.Provider.Config.pas"/>
         <DCCReference Include="..\..\src\Horse.Provider.IOHandleSSL.Contract.pas"/>
-        <DCCReference Include="tests\Tests.Horse.Core.Route.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

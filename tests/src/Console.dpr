@@ -55,8 +55,7 @@ uses
   Tests.Horse.Core.Files in 'tests\Tests.Horse.Core.Files.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
-  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas',
-  Tests.Horse.Core.Route in 'tests\Tests.Horse.Core.Route.pas';
+  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';
 
 var
   Runner: ITestRunner;
