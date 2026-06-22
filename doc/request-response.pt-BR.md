@@ -18,7 +18,7 @@ Para a declaração da rota em si, veja [Roteamento](./routing.pt-BR.md). Para m
 |---|---|---|
 | `Body` | `string` | Corpo da requisição decodificado como UTF-8. Idempotente — múltiplas leituras retornam a mesma string em cache. |
 | `Body<T>` | genérico | Retorna `FBody as T` — usado quando middleware (ex. `Jhonson`) parseia o body num objeto. |
-| `Body(AObject)` | setter | Usado por middleware para anexar um objeto parseado. Libera o valor anterior. |
+| `Body(AObject)` / `Body(AObject, AOwnsBody)` | setter | Usado por middleware para anexar um objeto parseado. Com `AOwnsBody = True` (o padrão / forma de 1 argumento) o Horse é dono do objeto e o libera, liberando antes qualquer valor anterior que lhe pertença. Transportes cujo corpo é uma referência não-proprietária para um buffer de socket (ex.: CrossSocket) passam `AOwnsBody = False` para que o `Clear` apenas anule a referência sem liberá-la. |
 | `Params` | `THorseCoreParam` | Parâmetros de caminho: `Req.Params['id']`. |
 | `Query` | `THorseCoreParam` | Query string: `Req.Query['name']`. |
 | `Headers` | `THorseCoreParam` | Headers da requisição: `Req.Headers['Content-Type']`. Lookup case-insensitive. |
@@ -94,7 +94,7 @@ THorse.Post('/upload',
   var
     Stream: TStream;
   begin
-    Stream := Req.ContentFields.AsStream('file');   // campo de arquivo
+    Stream := Req.ContentFields.Field('file').AsStream;   // campo de arquivo (campos de texto: Field('x').AsString)
     try
       Stream.SaveToFile('uploaded.bin');
       Res.Send('Salvo ' + IntToStr(Stream.Size) + ' bytes');
