@@ -18,7 +18,7 @@ For the route declaration itself, see [Routing](./routing.md). For middleware th
 |---|---|---|
 | `Body` | `string` | Raw request body decoded as UTF-8. Idempotent — multiple reads return the same cached string. |
 | `Body<T>` | generic | Returns `FBody as T` — used when middleware (e.g. `Jhonson`) parses the body into an object. |
-| `Body(AObject)` | setter | Used by middleware to attach a parsed body object. Frees any previous value. |
+| `Body(AObject)` / `Body(AObject, AOwnsBody)` | setter | Used by middleware to attach a parsed body object. With `AOwnsBody = True` (the default / 1-arg form) Horse owns and frees the object, freeing any previous owned value first. Transports whose body is a non-owning reference into a socket buffer (e.g. CrossSocket) pass `AOwnsBody = False` so `Clear` nils the reference without freeing it. |
 | `Params` | `THorseCoreParam` | Route path parameters: `Req.Params['id']`. |
 | `Query` | `THorseCoreParam` | URL query string: `Req.Query['name']`. |
 | `Headers` | `THorseCoreParam` | Request headers: `Req.Headers['Content-Type']`. Case-insensitive lookup. |
@@ -94,7 +94,7 @@ THorse.Post('/upload',
   var
     Stream: TStream;
   begin
-    Stream := Req.ContentFields.AsStream('file');   // file field
+    Stream := Req.ContentFields.Field('file').AsStream;   // file field (text fields: Field('x').AsString)
     try
       Stream.SaveToFile('uploaded.bin');
       Res.Send('Saved ' + IntToStr(Stream.Size) + ' bytes');

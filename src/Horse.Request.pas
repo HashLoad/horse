@@ -32,6 +32,7 @@ type
     FContentFields: THorseCoreParam;
     FCookie: THorseCoreParam;
     FBody: TObject;
+    FOwnsBody: Boolean;
     FSession: TObject;
     FOwnsSession: Boolean;
     FSessions: THorseSessions;
@@ -81,7 +82,7 @@ type
   public
     function Body: string; overload; virtual;
     function Body<T: class>: T; overload;
-    function Body(const ABody: TObject): THorseRequest; overload; virtual;
+    function Body(const ABody: TObject; AOwnsBody: Boolean = True): THorseRequest; overload; virtual;
     function Session<T: class>: T; overload;
     function Session(const ASession: TObject; AOwnsSession: Boolean = False): THorseRequest; overload; virtual;
     function Headers: THorseCoreParam; virtual;
@@ -122,9 +123,10 @@ type
   PATCH-REQ-2 — added Clear procedure
   Reason: THorseContext.Reset recycles pooled objects between requests
   without Free/Create overhead. Rules enforced:
-    • FBody       — set to nil, NEVER freed (non-owning CrossSocket buffer ref)
+    • FBody       — freed only when FOwnsBody=True (Jhonson-style owned objects);
+                    set to nil when FOwnsBody=False (CrossSocket non-owning buffer ref)
     • FBodyString — set to '' (cached decoded body; repopulated by MapBody)
-    • FSession    — set to nil (stale session = wrong-request auth)
+    • FSession    — freed when FOwnsSession=True; set to nil otherwise
     • FWebRequest — set to nil (belongs to previous Indy context)
     • param collections — cleared in place, objects reused
   =========================================================================== }
@@ -225,12 +227,17 @@ begin
   Result := FWebRequest.Content;
 end;
 
-function THorseRequest.Body(const ABody: TObject): THorseRequest;
+{ PATCH-REQ-11 — AOwnsBody controls whether Clear frees FBody on pool recycle.
+  Default True preserves upstream ownership semantics (Jhonson, etc.).
+  CrossSocket's MapBody passes False — the body is a non-owning reference
+  into CrossSocket's receive buffer that must never be freed by Horse. }
+function THorseRequest.Body(const ABody: TObject; AOwnsBody: Boolean = True): THorseRequest;
 begin
   Result := Self;
-  if Assigned(FBody) then
-    FBody.Free;
-  FBody := ABody;
+  if FOwnsBody and Assigned(FBody) then
+    FreeAndNil(FBody);
+  FBody     := ABody;
+  FOwnsBody := AOwnsBody;
 end;
 
 function THorseRequest.Body<T>: T;
@@ -298,13 +305,26 @@ end;
 procedure THorseRequest.Clear;
 begin
   FWebRequest := nil;
-  // FBody: non-owning reference into CrossSocket's socket buffer.
-  // Must be set to nil here. NEVER call FBody.Free — doing so corrupts
-  // the live TCP connection. The pool Reset sets FBody := nil before
-  // calling Clear, but we enforce the contract here as a safety net.
-  FBody       := nil;
+  { PATCH-REQ-11 — respect body ownership.
+    FOwnsBody=True  - owned object (e.g. Jhonson JSON) — free it.
+    FOwnsBody=False - non-owning ref (CrossSocket buffer) — just nil. }
+  if FOwnsBody and Assigned(FBody) then
+    FreeAndNil(FBody)
+  else
+    FBody := nil;
+  FOwnsBody := False;
+
   FBodyString := '';    { PATCH-REQ-9 }
-  FSession    := nil;
+
+  { PATCH-REQ-10 - libera sessão owned antes de reutilizar o request.
+    No provider mORMot o THorseRequest é reaproveitado pelo pool; apenas
+    zerar FSession deixa o objeto anterior sem dono e causa vazamento. }
+  if FOwnsSession and Assigned(FSession) then
+    FreeAndNil(FSession)
+  else
+    FSession := nil;
+  FOwnsSession := False;
+
 { PATCH-REQ-3 — wipe shadow fields so next request starts clean }
   FCSMethod      := '';
   FCSMethodType  := mtAny;
@@ -318,11 +338,11 @@ begin
     FreeAndNil(FCSRawWebRequest);
 { end PATCH-REQ-8 }
   if Assigned(FHeaders) then
-    FHeaders.Dictionary.Clear;
+    FHeaders.Clear;
   if Assigned(FQuery) then
     FreeAndNil(FQuery);
   if Assigned(FParams) then
-    FParams.Dictionary.Clear;
+    FParams.Clear;
   if Assigned(FContentFields) then
     FreeAndNil(FContentFields);
   if Assigned(FCookie) then
@@ -350,7 +370,7 @@ begin
     FreeAndNil(FContentFields);
   if Assigned(FCookie) then
     FreeAndNil(FCookie);
-  if Assigned(FBody) then
+  if FOwnsBody and Assigned(FBody) then
     FBody.Free;
   if FOwnsSession and Assigned(FSession) then
     FreeAndNil(FSession);
@@ -629,9 +649,15 @@ end;
 function THorseRequest.Session(const ASession: TObject; AOwnsSession: Boolean): THorseRequest;
 begin
   Result := Self;
-  
-  if Assigned(FSession) then
-    FreeAndNil(FSession);
+
+  { PATCH-REQ-10 - respeita a propriedade da sessão anterior.
+    Se a sessão anterior não era owned, não deve ser liberada aqui; se era
+    owned, precisa ser liberada antes de substituir a referência. }
+  if FOwnsSession and Assigned(FSession) then
+    FreeAndNil(FSession)
+  else
+    FSession := nil;
+
   FSession := ASession;
   FOwnsSession := AOwnsSession;
 end;
@@ -672,7 +698,7 @@ begin
   if not Assigned(FHeaders) then
     FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False)
   else
-    FHeaders.Dictionary.Clear;
+    FHeaders.Clear;
 end;
 
 function THorseRequest.RemoteAddr: string;
