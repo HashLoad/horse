@@ -241,7 +241,10 @@ end;
 procedure THorseResponse.Clear;
 begin
   FWebResponse := nil;
-  FContent := nil;
+
+  if Assigned(FContent) then
+    FreeAndNil(FContent);
+
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Clear;
 { PATCH-RES-4 — wipe CrossSocket shadow fields }

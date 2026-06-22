@@ -34,7 +34,8 @@ type
     FDetail: string;
     FCustomFields: TStringDictionary;
   public
-    constructor Create; reintroduce;
+    constructor Create; reintroduce; overload;
+    constructor Create(const AValue: string); reintroduce; overload;
     function Error(const AValue: string): EHorseException; overload;
     function Error: string; overload;
     function Status(const AValue: THTTPStatus): EHorseException; overload;
@@ -78,6 +79,12 @@ begin
   FStatus := THTTPStatus.InternalServerError;
   FCustomFields := nil;
   FCode := 0;
+end;
+
+constructor EHorseException.Create(const AValue: string);
+begin
+  Create;
+  FTitle := AValue;
 end;
 
 {$IF DEFINED(FPC)}
