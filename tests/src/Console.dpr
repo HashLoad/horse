@@ -35,7 +35,7 @@ uses
   DUnitX.TestFramework,
   Tests.Api.Console in 'tests\Tests.Api.Console.pas',
   Controllers.Api in 'controllers\Controllers.Api.pas',
-  Tests.Commons in 'tests\Tests.Commons.pas',
+  Tests.Horse.Commons in 'tests\Tests.Horse.Commons.pas',
   Horse.Core.Param in '..\..\src\Horse.Core.Param.pas',
   Horse.Core.Param.Header in '..\..\src\Horse.Core.Param.Header.pas',
   Horse.Provider.IOHandleSSL in '..\..\src\Horse.Provider.IOHandleSSL.pas',
@@ -67,35 +67,34 @@ begin
   ReportMemoryLeaksOnShutdown := True;
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
-  exit;
-{$ENDIF}
+{$ELSE}
   try
-    IsConsole := False;
     TDUnitX.CheckCommandLine;
 
     Runner := TDUnitX.CreateRunner;
-    Runner.UseRTTI := True;
+    Runner.UseRTTI := False;
+    Runner.FailsOnNoAsserts := True;
 
-    Logger := TDUnitXConsoleLogger.Create(true);
-    Runner.AddLogger(Logger);
+    if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
+    begin
+      Logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
+      Runner.AddLogger(Logger);
+    end;
 
     NunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     Runner.AddLogger(NunitLogger);
-    Runner.FailsOnNoAsserts := False;
 
     Results := Runner.Execute;
     if (not Results.AllPassed) then
       System.ExitCode := EXIT_ERRORS;
 
     {$IFNDEF CI}
-//    if (TDUnitX.Options.ExitBehavior = TDUnitXExitBehavior.Pause) then
-    begin
       System.Write('Done.. press <Enter> key to quit.');
       System.Readln;
-    end;
     {$ENDIF}
   except
     on E: Exception do
       System.Writeln(E.ClassName, ': ', E.Message);
   end;
+{$ENDIF}
 end.

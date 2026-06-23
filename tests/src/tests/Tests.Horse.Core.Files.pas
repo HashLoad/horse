@@ -80,4 +80,7 @@ begin
   FreeAndNil(FHorseFile);
 end;
 
+initialization
+  TDUnitX.RegisterTestFixture(TTestHorseCoreFile);
+
 end.

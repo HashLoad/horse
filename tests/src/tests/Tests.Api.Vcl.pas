@@ -3,7 +3,7 @@ unit Tests.Api.Vcl;
 interface
 
 uses
-  DUnitX.TestFramework, System.JSON, RESTRequest4D.Request, System.Classes,
+  DUnitX.TestFramework, System.JSON, RESTRequest4D, System.Classes,
   Controllers.Api, Horse, Horse.Jhonson, SysUtils;
 
 type
