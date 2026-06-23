@@ -785,7 +785,11 @@ begin
 
   // Set Custom Headers
   LHeadersList := ARes.CustomHeaders;
-  LHeaderCount := LHeadersList.Count;
+  if LHeadersList <> nil then
+    LHeaderCount := LHeadersList.Count
+  else
+    LHeaderCount := 0;
+
   if LHeaderCount > 0 then
   begin
     SetLength(LHeaders, LHeaderCount);
