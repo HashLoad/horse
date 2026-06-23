@@ -38,7 +38,6 @@ const
   HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS = $00000001;
 
 {$MINENUMSIZE 4}
-{$ALIGN 8}
 
 type
   ULONG = Cardinal;
@@ -269,7 +268,6 @@ function HttpSendResponseEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQ
 function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP_SERVER_PROPERTY; pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
 
 {$MINENUMSIZE 1}
-{$ALIGN ON}
 
 type
   THttpSysListenerThread = class;
