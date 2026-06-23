@@ -37,6 +37,9 @@ const
   // Request flags
   HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS = $00000001;
 
+{$MINENUMSIZE 4}
+{$ALIGN 8}
+
 type
   ULONG = Cardinal;
   USHORT = Word;
@@ -264,6 +267,9 @@ function HttpReceiveRequestEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_R
 function HttpSendHttpResponse(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pHttpResponse: PHTTP_RESPONSE; pReserved1: Pointer; var BytesSent: ULONG; pReserved2: Pointer; Reserved3: ULONG; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpSendResponseEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; EntityChunkCount: USHORT; pEntityChunks: Pointer; var BytesSent: ULONG; pReserved1: Pointer; pReserved2: Pointer; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP_SERVER_PROPERTY; pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+
+{$MINENUMSIZE 1}
+{$ALIGN ON}
 
 type
   THttpSysListenerThread = class;
@@ -976,7 +982,8 @@ begin
           LWebResponse.Free;
         end;
       except
-        // Catch all exceptions inside thread execution
+        on E: Exception do
+          Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
       end;
     end
   );
