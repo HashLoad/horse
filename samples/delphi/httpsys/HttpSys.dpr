@@ -40,10 +40,9 @@ begin
         LJSON.AddPair('provedor', 'HTTP.sys');
         LJSON.AddPair('mensagem', 'Exemplo de integração funcionando perfeitamente!');
         
-        Res.Send<TJSONObject>(LJSON);
-      except
+        Res.Send(LJSON.ToJSON);
+      finally
         LJSON.Free;
-        raise;
       end;
     end);
 
