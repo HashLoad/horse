@@ -8,14 +8,24 @@ interface
 
 {$IFDEF MSWINDOWS}
 uses
-  System.SysUtils,
-  System.Classes,
-  System.SyncObjs,
-  System.Threading,
-  System.NetEncoding,
-  System.Generics.Collections,
-  System.Generics.Defaults,
-  Winapi.Windows,
+  {$IF DEFINED(FPC)}
+    SysUtils,
+    Classes,
+    SyncObjs,
+    Generics.Collections,
+    Generics.Defaults,
+    Windows,
+    httpprotocol,
+  {$ELSE}
+    System.SysUtils,
+    System.Classes,
+    System.SyncObjs,
+    System.Threading,
+    System.NetEncoding,
+    System.Generics.Collections,
+    System.Generics.Defaults,
+    Winapi.Windows,
+  {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
   Horse.Request,
@@ -272,6 +282,18 @@ function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP
 type
   THttpSysListenerThread = class;
 
+  {$IF DEFINED(FPC)}
+  THttpSysRequestThread = class(TThread)
+  private
+    FReqQueue: THandle;
+    FBuffer: TBytes;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(AReqQueue: THandle; ABuffer: TBytes);
+  end;
+  {$ENDIF}
+
   // IHorseRawRequest implementation
   THttpSysRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
@@ -293,7 +315,13 @@ type
     function GetServerPort: Integer;
     function GetContentType: string;
     function GetContent: string;
+    {$IF DEFINED(FPC)}
+    function GetContentLength: Integer;
+    {$ELSEIF CompilerVersion >= 32.0}
     function GetContentLength: Int64;
+    {$ELSE}
+    function GetContentLength: Integer;
+    {$IFEND}
     function GetFieldByName(const AName: string): string;
 
     procedure PopulateQueryFields(ADest: TStrings);
@@ -315,6 +343,7 @@ type
   end;
 
   THttpSysWebResponse = class(TInterfacedWebResponse)
+  {$IFNDEF FPC}
   private
     FStatusCode: Integer;
     FContent: string;
@@ -334,6 +363,7 @@ type
     procedure SetContent(const Value: string); override;
     function  GetStatusCode: Integer; override;
     procedure SetStatusCode(Value: Integer); override;
+  {$ENDIF}
   public
     constructor Create(const ARawRes: IHorseRawResponse); reintroduce;
   end;
@@ -402,6 +432,57 @@ type
 implementation
 
 {$IFDEF MSWINDOWS}
+
+{$IF DEFINED(FPC)}
+{ THttpSysRequestThread }
+
+constructor THttpSysRequestThread.Create(AReqQueue: THandle; ABuffer: TBytes);
+begin
+  inherited Create(False);
+  FReqQueue := AReqQueue;
+  FBuffer := ABuffer;
+  FreeOnTerminate := True;
+end;
+
+procedure THttpSysRequestThread.Execute;
+var
+  LRawReq: IHorseRawRequest;
+  LRawRes: IHorseRawResponse;
+  LConcreteRes: THttpSysRawResponse;
+  LWebRequest: TInterfacedWebRequest;
+  LWebResponse: TInterfacedWebResponse;
+  LReq: THorseRequest;
+  LRes: THorseResponse;
+  LRequest: PHTTP_REQUEST;
+begin
+  try
+    LRequest := PHTTP_REQUEST(@FBuffer[0]);
+    LRawReq := THttpSysRawRequest.Create(LRequest, FBuffer);
+    LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
+    LRawRes := LConcreteRes;
+    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+    LWebResponse := THttpSysWebResponse.Create(LRawRes);
+    try
+      LReq := THorseRequest.Create(LWebRequest);
+      LRes := THorseResponse.Create(LWebResponse);
+      try
+        THorseProviderHttpSys.Execute(LReq, LRes);
+      finally
+        LConcreteRes.SendResponse(LRes);
+        LReq.Free;
+        LRes.Free;
+      end;
+    finally
+      LWebRequest.Free;
+      LWebResponse.Free;
+    end;
+  except
+    on E: Exception do
+      // Silencia erros de Dispatch
+      ;
+  end;
+end;
+{$ENDIF}
 
 { THttpSysRawRequest }
 
@@ -595,10 +676,22 @@ begin
   Result := TEncoding.UTF8.GetString(LBytes);
 end;
 
+{$IF DEFINED(FPC)}
+function THttpSysRawRequest.GetContentLength: Integer;
+begin
+  Result := StrToIntDef(GetFieldByName('Content-Length'), 0);
+end;
+{$ELSEIF CompilerVersion >= 32.0}
 function THttpSysRawRequest.GetContentLength: Int64;
 begin
   Result := StrToInt64Def(GetFieldByName('Content-Length'), 0);
 end;
+{$ELSE}
+function THttpSysRawRequest.GetContentLength: Integer;
+begin
+  Result := StrToIntDef(GetFieldByName('Content-Length'), 0);
+end;
+{$IFEND}
 
 function THttpSysRawRequest.GetFieldByName(const AName: string): string;
 var
@@ -651,10 +744,13 @@ begin
     begin
       LName := LField.Substring(0, LPos);
       LValue := LField.Substring(LPos + 1);
-      ADest.Add(TNetEncoding.URL.Decode(LName) + '=' + TNetEncoding.URL.Decode(LValue));
+      ADest.Add(
+        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
+        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
+      );
     end
     else
-      ADest.Add(TNetEncoding.URL.Decode(LField) + '=');
+      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
   end;
 end;
 
@@ -680,10 +776,13 @@ begin
     begin
       LName := LField.Substring(0, LPos);
       LValue := LField.Substring(LPos + 1);
-      ADest.Add(TNetEncoding.URL.Decode(LName) + '=' + TNetEncoding.URL.Decode(LValue));
+      ADest.Add(
+        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
+        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
+      );
     end
     else
-      ADest.Add(TNetEncoding.URL.Decode(LField) + '=');
+      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
   end;
 end;
 
@@ -746,8 +845,12 @@ var
   LContentType: AnsiString;
   LStatusCode: Word;
   LReason: AnsiString;
+  {$IF DEFINED(FPC)}
+  LHeadersList: TStringList;
+  {$ELSE}
   LHeadersList: TDictionary<string, string>;
   LPair: TPair<string, string>;
+  {$ENDIF}
   I: Integer;
   LContentLengthAnsi: AnsiString;
   LHeaderStrings: TArray<AnsiString>;
@@ -794,6 +897,18 @@ begin
   begin
     SetLength(LHeaders, LHeaderCount);
     SetLength(LHeaderStrings, LHeaderCount * 2);
+    {$IF DEFINED(FPC)}
+    for I := 0 to LHeaderCount - 1 do
+    begin
+      LHeaderStrings[I * 2] := AnsiString(LHeadersList.Names[I]);
+      LHeaderStrings[I * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
+      
+      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
+      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
+      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
+      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
+    end;
+    {$ELSE}
     I := 0;
     for LPair in LHeadersList do
     begin
@@ -806,6 +921,7 @@ begin
       LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
       Inc(I);
     end;
+    {$ENDIF}
     LResponse.Headers.UnknownHeaderCount := LHeaderCount;
     LResponse.Headers.pUnknownHeaders := @LHeaders[0];
   end;
@@ -872,9 +988,12 @@ end;
 constructor THttpSysWebResponse.Create(const ARawRes: IHorseRawResponse);
 begin
   inherited Create(ARawRes);
+  {$IFNDEF FPC}
   FStatusCode := 200;
+  {$ENDIF}
 end;
 
+{$IFNDEF FPC}
 function THttpSysWebResponse.GetStringVariable(Index: Integer): string;
 begin
   case Index of
@@ -936,6 +1055,7 @@ procedure THttpSysWebResponse.SetStatusCode(Value: Integer);
 begin
   FStatusCode := Value;
 end;
+{$ENDIF}
 
 
 { THttpSysListenerThread }
@@ -950,6 +1070,9 @@ end;
 
 procedure THttpSysListenerThread.DispatchRequest(ABuffer: TBytes);
 begin
+  {$IF DEFINED(FPC)}
+  THttpSysRequestThread.Create(FReqQueue, ABuffer);
+  {$ELSE}
   TTask.Run(
     procedure
     var
@@ -989,6 +1112,7 @@ begin
       end;
     end
   );
+  {$ENDIF}
 end;
 
 procedure THttpSysListenerThread.Execute;
@@ -1060,11 +1184,19 @@ begin
   FReqQueue := 0;
   FListenerThread := nil;
 
+  {$IF DEFINED(FPC)}
+  FKnownRequestHeadersMap := TDictionary<string, Integer>.Create;
+  {$ELSE}
   FKnownRequestHeadersMap := TDictionary<string, Integer>.Create(TIStringComparer.Ordinal);
+  {$ENDIF}
   for I := 0 to 40 do
     FKnownRequestHeadersMap.Add(HTTP_KNOWN_REQUEST_HEADERS[I], I);
 
+  {$IF DEFINED(FPC)}
+  FKnownResponseHeadersMap := TDictionary<string, Integer>.Create;
+  {$ELSE}
   FKnownResponseHeadersMap := TDictionary<string, Integer>.Create(TIStringComparer.Ordinal);
+  {$ENDIF}
   for I := 0 to 29 do
     FKnownResponseHeadersMap.Add(HTTP_KNOWN_RESPONSE_HEADERS[I], I);
 end;

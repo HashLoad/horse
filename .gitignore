@@ -55,6 +55,7 @@ packages/bpl/
 lib/
 backup/
 *.lps
+*.ppu
 
 # Code coverage reports
 **/console/
