@@ -181,6 +181,9 @@ unit Horse;
 {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_MORMOT)}
   {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_MORMOT are mutually exclusive — pick exactly one transport Provider per build.'}
 {$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT))}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
+{$IFEND}
 { =========================================================================== }
 
 interface
@@ -212,6 +215,12 @@ uses
     {$ELSE}
     Horse.Provider.Mormot.FPC.HTTPApplication,   { FPC default shape for mORMot }
     {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_HTTPSYS)}
+    {$IFDEF MSWINDOWS}
+    Horse.Provider.HttpSys,
+    {$ELSE}
+    {$MESSAGE ERROR 'HORSE_PROVIDER_HTTPSYS is only supported on Windows.'}
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
   {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
@@ -231,6 +240,13 @@ uses
 {$ELSEIF DEFINED(HORSE_HOST_CGI)}
   System.SysUtils,
   Horse.Provider.CGI,
+{$ELSEIF DEFINED(HORSE_PROVIDER_HTTPSYS)}
+  System.SysUtils,
+  {$IFDEF MSWINDOWS}
+  Horse.Provider.HttpSys,
+  {$ELSE}
+  Horse.Provider.Console,
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
   System.SysUtils,
   {$IF DEFINED(HORSE_APPTYPE_VCL)}
@@ -317,6 +333,13 @@ type
   THorseProvider =
   {$IF DEFINED(FPC)}
     Horse.Provider.FPC.FastCGI.THorseProvider;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_HTTPSYS)}
+  THorseProvider =
+  {$IFDEF MSWINDOWS}
+    Horse.Provider.HttpSys.THorseProviderHttpSys;
+  {$ELSE}
+    Horse.Provider.Console.THorseProvider;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
   {$IF DEFINED(HORSE_APPTYPE_VCL)}
