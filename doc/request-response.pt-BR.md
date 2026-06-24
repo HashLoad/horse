@@ -22,7 +22,7 @@ Para a declaração da rota em si, veja [Roteamento](./routing.pt-BR.md). Para m
 | `Params` | `THorseCoreParam` | Parâmetros de caminho: `Req.Params['id']`. |
 | `Query` | `THorseCoreParam` | Query string: `Req.Query['name']`. |
 | `Headers` | `THorseCoreParam` | Headers da requisição: `Req.Headers['Content-Type']`. Lookup case-insensitive. |
-| `Cookie` | `THorseCoreParam` | Header `Cookie:` parseado: `Req.Cookie['session']`. |
+| `Cookie` | `THorseCoreParam` | Header `Cookie:` parseado: `Req.Cookie['session']`. Valores que contêm `=` (base64/JWT) são preservados por inteiro (o parser separa apenas no **primeiro** `=`). |
 | `ContentFields` | `THorseCoreParam` | Campos parseados de body `application/x-www-form-urlencoded`. |
 | `Sessions` | `THorseSessions` | Mapa de sessões no servidor (um por requisição). |
 | `Method` | `string` | Verbo HTTP cru: `'GET'`, `'POST'`, `'OPTIONS'`, etc. |
@@ -119,6 +119,8 @@ THorse.Post('/upload',
 | `ContentType(AContentType: string)` | `THorseResponse` | Define o header `Content-Type`. |
 | `AddHeader(AName, AValue: string)` | `THorseResponse` | Adiciona um header de resposta. |
 | `RemoveHeader(AName: string)` | `THorseResponse` | Remove um header previamente adicionado. |
+| `Cookie(AName, AValue: string)` | `THorseCookie` | Adiciona um cookie e o retorna para configurar atributos de forma fluente. Veja [Cookies](#cookies). |
+| `AddCookie(ACookie: THorseCookie)` | `THorseResponse` | Adiciona um `THorseCookie` já construído (a propriedade do objeto passa para a resposta). |
 | `RedirectTo(ALocation: string)` | `THorseResponse` | Envia `302 Found` com `Location:`. |
 | `RedirectTo(ALocation, AStatus)` | `THorseResponse` | Permite escolher `301`, `307`, etc. |
 | `SendFile(AFileName: string)` | `THorseResponse` | Faz stream de um arquivo como body; define `Content-Type` pela extensão. |
@@ -155,6 +157,44 @@ Res.Status(THTTPStatus.BadRequest)
 ```delphi
 Res.RedirectTo('/login');
 ```
+
+### Cookies
+
+`Res.Cookie(name, value)` adiciona um cookie RFC 6265 e retorna um `THorseCookie`
+(unit `Horse.Core.Cookie`) para configurar atributos de forma fluente. Cada cookie
+vira seu próprio header `Set-Cookie` — dá para definir **vários** numa só resposta:
+
+```delphi
+uses Horse.Core.Cookie;   // para TSameSite (ssStrict / ssLax / ssNone)
+
+Res.Cookie('sid', SessionId)
+   .Path('/')
+   .HttpOnly(True)
+   .Secure(True)
+   .SameSite(ssLax)
+   .MaxAge(3600);
+
+Res.Cookie('theme', 'dark');   // um segundo cookie → uma segunda linha Set-Cookie
+```
+
+| Atributo | Método |
+|---|---|
+| `Path` / `Domain` | `.Path('/')`, `.Domain('example.com')` |
+| `Expires` (UTC) | `.Expires(EncodeDate(2030,1,1))` |
+| `Max-Age` (segundos) | `.MaxAge(3600)` |
+| `Secure` / `HttpOnly` | `.Secure(True)`, `.HttpOnly(True)` |
+| `SameSite` | `.SameSite(ssStrict | ssLax | ssNone)` |
+
+**Validação:** o nome do cookie precisa ser um token e nem o nome nem o valor podem
+conter caracteres de controle, CR/LF ou `;` — entrada inválida levanta
+`EHorseException`. Essa validação vale só para a API tipada; o caminho legado
+`Res.AddHeader('Set-Cookie', …)` continua igual (mas guarda apenas **um** cookie,
+por passar pelo mapa de headers).
+
+**Notas por provider:**
+- **CrossSocket** e **mORMot** emitem todos os atributos, uma linha `Set-Cookie` por cookie.
+- **Indy (Delphi)** mapeia para `TWebResponse.Cookies`: `Max-Age` não é representável
+  ali (use `.Expires()` no Indy); `HttpOnly` exige Delphi 10.1+, `SameSite` Delphi 10.4+.
 
 **Download de arquivo:**
 ```delphi
