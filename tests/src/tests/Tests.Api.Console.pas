@@ -1,5 +1,7 @@
 unit Tests.Api.Console;
 
+{.$DEFINE HORSE_PROVIDER_HTTPSYS}
+
 interface
 
 uses
@@ -56,7 +58,11 @@ begin
 
   FJSONArray := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
   Assert.AreEqual(9000, THorse.Port);
+  {$IFDEF HORSE_PROVIDER_HTTPSYS}
+  Assert.AreEqual('localhost', THorse.Host);
+  {$ELSE}
   Assert.AreEqual('0.0.0.0', THorse.Host);
+  {$ENDIF}
   Assert.AreEqual(10, THorse.MaxConnections);
   Assert.AreEqual(LResponse.StatusCode, 200);
   Assert.AreEqual(FJSONArray.Count, 3);
@@ -157,6 +163,9 @@ begin
 
         Controllers.Api.Registry;
         THorse.MaxConnections := 10;
+        {$IFDEF HORSE_PROVIDER_HTTPSYS}
+        THorse.Host := 'localhost';
+        {$ENDIF}
         THorse.Listen;
       end).Start;
   end;
