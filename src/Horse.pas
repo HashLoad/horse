@@ -214,6 +214,12 @@ uses
     {$ELSE}
     Horse.Provider.Mormot.FPC.HTTPApplication,   { FPC default shape for mORMot }
     {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_HTTPSYS)}
+    {$IFDEF MSWINDOWS}
+    Horse.Provider.HttpSys,
+    {$ELSE}
+    {$MESSAGE ERROR 'HORSE_PROVIDER_HTTPSYS is only supported on Windows.'}
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
   {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
