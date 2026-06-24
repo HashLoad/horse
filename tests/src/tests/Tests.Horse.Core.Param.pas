@@ -883,4 +883,7 @@ begin
   Assert.AreEqual('Value1', LValue);
 end;
 
+initialization
+  TDUnitX.RegisterTestFixture(TTestHorseCoreParam);
+
 end.

@@ -1,6 +1,6 @@
 {
-	"hash": "d41d8cd98f00b204e9800998ecf8427e",
-	"updated": "2020-11-06T18:22:13.4788482-03:00",
+	"hash": "25d902c24283ab8cfbac54dfa101ad31",
+	"updated": "2026-06-15T14:16:27.4807627-03:00",
 	"installedModules": {
 		"github.com/hashload/horse": {
 			"name": "horse",
@@ -18,18 +18,10 @@
 			"failed": false,
 			"changed": false
 		},
-		"github.com/viniciussanchez/dataset-serialize": {
-			"name": "dataset-serialize",
-			"version": "v2.5.9",
-			"hash": "62a95816d2cac761b15521c06fe43109",
-			"artifacts": {},
-			"failed": false,
-			"changed": false
-		},
 		"github.com/viniciussanchez/restrequest4delphi": {
 			"name": "restrequest4delphi",
-			"version": "v2.2.6",
-			"hash": "b2b28029d1ee379981222f32ff255734",
+			"version": "v4.0.26",
+			"hash": "f00bad33810b54a8abc73ba1e8b85277",
 			"artifacts": {},
 			"failed": false,
 			"changed": false

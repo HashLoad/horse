@@ -1,9 +1,11 @@
 unit Tests.Api.Console;
 
+{.$DEFINE HORSE_PROVIDER_HTTPSYS}
+
 interface
 
 uses
-  DUnitX.TestFramework, System.JSON, RESTRequest4D.Request, System.Classes,
+  DUnitX.TestFramework, System.JSON, RESTRequest4D, System.Classes,
   Controllers.Api, Horse, Horse.Jhonson, SysUtils;
 
 type
@@ -12,165 +14,94 @@ type
   private
     FJSONObject: TJSONObject;
     FJSONArray: TJSONArray;
-
-    procedure CreateApi;
-    procedure StartApiListen;
-    procedure StartApiListenPort;
-    procedure StartApiListenHost;
-    procedure StartApiListens;
-    procedure StartApiPortListens;
-    procedure StopApiListen;
-    procedure StopApi;
   public
+    [Setup]
+    procedure Setup;
+
     [TearDown]
     procedure TearDown;
 
     [Test]
+    [TestCase('Test01', 'GET request test')]
     procedure TestGet;
+
     [Test]
-    [TestCase('Test01', 'POST request test')]
+    [TestCase('Test02', 'POST request test')]
     procedure TestPost(const AValue: string);
+
     [Test]
-    [TestCase('Test01', 'PUT request test')]
+    [TestCase('Test03', 'PUT request test')]
     procedure TestPut(const AValue: string);
+
     [Test]
-    [TestCase('Test01', '1')]
+    [TestCase('Test04', 'DELETE request test')]
     procedure TestDelete(const AValue: string);
+
     [Test]
-    procedure TestGStartApiPortListens;
+    [TestCase('Test05', 'PATCH request test')]
+    procedure TestPatch(const AValue: string);
+
     [Test]
-    procedure TestCreateApi;
-    [Test]
-    procedure TestToHorse;
+    [TestCase('Test06', 'HEAD request test')]
+    procedure TestHead(const AValue: string);
   end;
 
 implementation
-
-{ TApiTest }
-
-procedure TApiTest.StartApiListen;
-begin
-  if (not THorse.IsRunning) then
-  begin
-    TThread.CreateAnonymousThread(
-      procedure
-      begin
-        THorse
-          .Use(Jhonson);
-
-        Controllers.Api.Registry;
-        THorse.MaxConnections := 10;
-        THorse.Listen;
-      end).Start;
-  end;
-end;
-
-procedure TApiTest.StartApiListenPort;
-begin
-  if (not THorse.IsRunning) then
-  begin
-    TThread.CreateAnonymousThread(
-      procedure
-      begin
-        Controllers.Api.Registry;
-        THorse.Listen(9000);
-      end).Start;
-  end;
-end;
-
-procedure TApiTest.StartApiListenHost;
-begin
-  if (not THorse.IsRunning) then
-  begin
-    TThread.CreateAnonymousThread(
-      procedure
-      begin
-        Controllers.Api.Registry;
-        THorse.Listen('0.0.0.0');
-      end).Start;
-  end;
-end;
-
-procedure TApiTest.StartApiListens;
-begin
-  if (not THorse.IsRunning) then
-  begin
-    TThread.CreateAnonymousThread(
-      procedure
-      begin
-        Controllers.Api.Registry;
-        THorse.Listen(
-          procedure
-          begin
-          end,
-          procedure
-          begin
-          end);
-      end).Start;
-  end;
-end;
-
-procedure TApiTest.StartApiPortListens;
-begin
-  if (not THorse.IsRunning) then
-  begin
-    TThread.CreateAnonymousThread(
-      procedure
-      begin
-        Controllers.Api.Registry;
-        THorse.Listen(9000,
-          procedure
-          begin
-          end,
-          procedure
-          begin
-          end);
-      end).Start;
-  end;
-end;
-
-procedure TApiTest.StopApiListen;
-begin
-  THorse.StopListen;
-end;
-
-procedure TApiTest.StopApi;
-begin
-  // Warnings have been disabled for this segment as the stop has been depreciated.
-  {$WARNINGS OFF}
-  THorse.StopListen;
-  {$WARNINGS ON}
-end;
-
-procedure TApiTest.TestGStartApiPortListens;
-begin
-  StartApiPortListens;
-  StopApi;
-end;
 
 procedure TApiTest.TestGet;
 var
   LResponse: IResponse;
 begin
-  StartApiListen;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
     .Get;
 
   FJSONArray := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
   Assert.AreEqual(9000, THorse.Port);
+  {$IFDEF HORSE_PROVIDER_HTTPSYS}
+  Assert.AreEqual('localhost', THorse.Host);
+  {$ELSE}
   Assert.AreEqual('0.0.0.0', THorse.Host);
+  {$ENDIF}
   Assert.AreEqual(10, THorse.MaxConnections);
   Assert.AreEqual(LResponse.StatusCode, 200);
   Assert.AreEqual(FJSONArray.Count, 3);
-  StopApiListen;
+end;
+
+procedure TApiTest.TestHead(const AValue: string);
+var
+  LResponse: IResponse;
+begin
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+    .Accept('application/json')
+    .Head;
+
+  Assert.AreEqual(LResponse.StatusCode, 204);
+  Assert.AreEqual(LResponse.Content, EmptyStr);
+end;
+
+procedure TApiTest.TestPatch(const AValue: string);
+var
+  LResponse: IResponse;
+begin
+  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+    .Accept('application/json')
+    .AddBody('{"value": "' + AValue + '"}')
+    .Patch;
+
+  FJSONObject := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONObject;
+  Assert.AreEqual(LResponse.StatusCode, 200);
+
+  if (not FJSONObject.GetValue('value').Null) then
+    Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
+  else
+    Assert.Fail('The return is not in the correct format.');
 end;
 
 procedure TApiTest.TestPost(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  StartApiListenPort;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
     .AddBody('{"value": "' + AValue + '"}')
@@ -183,14 +114,12 @@ begin
     Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not without correct format.');
-  StopApiListen;
 end;
 
 procedure TApiTest.TestPut(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  StartApiListenHost;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
     .Accept('application/json')
     .AddBody('{"value": "' + AValue + '"}')
@@ -203,14 +132,12 @@ begin
     Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not in the correct format.');
-  StopApiListen;
 end;
 
 procedure TApiTest.TestDelete(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  StartApiListens;
   LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test/' + AValue)
     .Accept('application/json')
     .Delete;
@@ -222,31 +149,32 @@ begin
     Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not in the correct format.');
-  StopApiListen;
 end;
 
-procedure TApiTest.CreateApi;
+procedure TApiTest.Setup;
 begin
-  // Warnings have been disabled for this segment as the create has been depreciated.
-  {$WARNINGS OFF}
-  THorse.Create;
-  {$WARNINGS ON}
+  if (not THorse.IsRunning) then
+  begin
+    TThread.CreateAnonymousThread(
+      procedure
+      begin
+        THorse
+          .Use(Jhonson);
+
+        Controllers.Api.Registry;
+        THorse.MaxConnections := 10;
+        {$IFDEF HORSE_PROVIDER_HTTPSYS}
+        THorse.Host := 'localhost';
+        {$ENDIF}
+        THorse.Listen;
+      end).Start;
+  end;
 end;
 
 procedure TApiTest.TearDown;
 begin
   FreeAndNil(FJSONObject);
   FreeAndNil(FJSONArray);
-end;
-
-procedure TApiTest.TestCreateApi;
-begin
-  Assert.WillRaise(CreateApi, Exception, 'The Horse instance has already been created');
-end;
-
-procedure TApiTest.TestToHorse;
-begin
-  Assert.IsNotNull(THorse.ToModule.ToHorse, 'Module instance must not be null');
 end;
 
 initialization

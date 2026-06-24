@@ -3,15 +3,21 @@ unit Controllers.Api;
 interface
 
 uses
-  Horse, System.JSON, Horse.Commons;
+  Horse;
 
 procedure Registry;
 procedure DoGetApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 procedure DoPostApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 procedure DoPutApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 procedure DoDeleteApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+procedure DoPatchApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+procedure DoHeadApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 
 implementation
+
+uses
+  System.JSON,
+  Horse.Commons;
 
 procedure Registry;
 begin
@@ -23,6 +29,9 @@ begin
           .Get(DoGetApi)
           .Post(DoPostApi)
           .Put(DoPutApi)
+          .Patch(DoPatchApi)
+          .Head(DoHeadApi)
+        .&End;
 end;
 
 procedure DoGetApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
@@ -117,6 +126,36 @@ begin
   finally
     LResponse.Free;
   end;
+end;
+
+procedure DoPatchApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+var
+  LValue: string;
+  LRequest: TJSONObject;
+  LResponse: TJSONObject;
+begin
+  LValue := '';
+  LRequest := TJSONObject.ParseJSONValue(Req.Body) as TJSONObject;
+  try
+    if (not LRequest.GetValue('value').Null) then
+      LValue := LRequest.GetValue('value').value;
+
+    LResponse := TJSONObject.Create;
+    try
+      LResponse.AddPair(TJSONPair.Create('value', LValue));
+
+      Res.Send(LResponse.ToString);
+    finally
+      LResponse.Free;
+    end;
+  finally
+    LRequest.Free;
+  end;
+end;
+
+procedure DoHeadApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+begin
+  Res.Status(THTTPStatus.NoContent);
 end;
 
 end.
