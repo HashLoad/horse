@@ -34,6 +34,7 @@ uses
     Posix.ArpaInet,
     Posix.NetinetIn,
     Posix.Errno,
+    Posix.SysResource,
   {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
@@ -86,7 +87,8 @@ type
     FBodyOffset: Integer;
     FContentLength: Int64;
     FHeaders: TDictionary<string, THeaderSegment>;
-    FBodyStream: TMemoryStream;
+    FBodyStream: TStream;
+    FTempFileName: string;
     FResolvedHeaders: TDictionary<string, string>;
     procedure EnsureBodyStream;
     function ResolveHeader(const AName: string): string;
@@ -96,7 +98,9 @@ type
       const AMethod, APath, AQuery, AVersion: string;
       AHeaders: TDictionary<string, THeaderSegment>;
       ABodyOffset: Integer;
-      AContentLength: Int64
+      AContentLength: Int64;
+      ABodyStream: TStream;
+      const ATempFileName: string
     );
     destructor Destroy; override;
 
@@ -136,6 +140,7 @@ type
     FReason: string;
     FHeaders: TDictionary<string, string>;
     procedure SendHeaders;
+    procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
   public
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
@@ -157,9 +162,21 @@ type
     Headers: TDictionary<string, THeaderSegment>;
     BodyOffset: Integer;
     ContentLength: Int64;
+    LastActive: Int64;
+    FBodyStream: TStream;
+    FTempFileName: string;
+    FChunked: Boolean;
+    FChunkState: Integer;
+    FChunkSize: Int64;
+    FChunkRemaining: Int64;
+    FChunkLineBytes: TBytes;
+    FChunkLineLen: Integer;
+    FIsKeepAlive: Boolean;
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
     procedure ClearRequest;
+    procedure WriteToBodyStream(const ABuffer: TBytes; AOffset, ALength: Integer);
+    function ProcessChunkedBytes(const ABuffer: TBytes; AOffset, ALength: Integer): Boolean;
   end;
 
   { Pool de buffers estático e thread-safe }
@@ -186,8 +203,10 @@ type
     FPipeFds: array[0..1] of Integer;
     {$ENDIF}
     FRunning: Boolean;
+    FConnections: TList<TEpollConnectionContext>;
     procedure ProcessClientRead(AContext: TEpollConnectionContext);
     procedure CloseConnection(AContext: TEpollConnectionContext);
+    procedure CheckTimeouts;
   protected
     procedure Execute; override;
   public
@@ -334,6 +353,16 @@ begin
   Buffer := TBufferPool.Acquire;
   BytesReceived := 0;
   Headers := TDictionary<string, THeaderSegment>.Create;
+  FBodyStream := nil;
+  FTempFileName := '';
+  FChunked := False;
+  FChunkState := 0;
+  FChunkSize := 0;
+  FChunkRemaining := 0;
+  SetLength(FChunkLineBytes, 256);
+  FChunkLineLen := 0;
+  FIsKeepAlive := False;
+  LastActive := GetTickCount64;
   ClearRequest;
 end;
 
@@ -341,6 +370,10 @@ destructor TEpollConnectionContext.Destroy;
 begin
   Headers.Free;
   TBufferPool.Release(Buffer);
+  if Assigned(FBodyStream) then
+    FBodyStream.Free;
+  if FTempFileName <> '' then
+    DeleteFile(FTempFileName);
   inherited;
 end;
 
@@ -353,6 +386,148 @@ begin
   Headers.Clear;
   BodyOffset := -1;
   ContentLength := 0;
+  FBodyStream := nil;
+  FTempFileName := '';
+  FChunked := False;
+  FChunkState := 0;
+  FChunkSize := 0;
+  FChunkRemaining := 0;
+  FChunkLineLen := 0;
+end;
+
+procedure TEpollConnectionContext.WriteToBodyStream(const ABuffer: TBytes; AOffset, ALength: Integer);
+var
+  LTempPath, LTempFile: string;
+  LFileStream: TFileStream;
+begin
+  if FBodyStream = nil then
+  begin
+    if (ContentLength > 0) and (ContentLength >= 2097152) then
+    begin
+      LTempPath := '/tmp/';
+      LTempFile := LTempPath + 'horse_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(Socket) + '.tmp';
+      FTempFileName := LTempFile;
+      FBodyStream := TFileStream.Create(LTempFile, fmCreate or fmOpenWrite);
+    end
+    else
+    begin
+      FBodyStream := TMemoryStream.Create;
+    end;
+  end;
+
+  if (FBodyStream is TMemoryStream) and (FBodyStream.Size + ALength >= 2097152) then
+  begin
+    LTempPath := '/tmp/';
+    LTempFile := LTempPath + 'horse_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(Socket) + '.tmp';
+    FTempFileName := LTempFile;
+    LFileStream := TFileStream.Create(LTempFile, fmCreate or fmOpenWrite);
+    try
+      if FBodyStream.Size > 0 then
+      begin
+        TMemoryStream(FBodyStream).Position := 0;
+        LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
+      end;
+      FBodyStream.Free;
+      FBodyStream := LFileStream;
+    except
+      LFileStream.Free;
+      DeleteFile(LTempFile);
+      raise;
+    end;
+  end;
+
+  FBodyStream.WriteBuffer(ABuffer[AOffset], ALength);
+end;
+
+function TEpollConnectionContext.ProcessChunkedBytes(const ABuffer: TBytes; AOffset, ALength: Integer): Boolean;
+var
+  I: Integer;
+  LByte: Byte;
+  LHexStr: string;
+  LWriteCount: Integer;
+begin
+  Result := False;
+  I := AOffset;
+  while I < AOffset + ALength do
+  begin
+    case FChunkState of
+      0: // Lendo o tamanho do chunk em Hexa
+      begin
+        LByte := ABuffer[I];
+        Inc(I);
+        
+        if LByte = 10 then // '\n'
+        begin
+          if (FChunkLineLen > 0) and (FChunkLineBytes[FChunkLineLen - 1] = 13) then
+            Dec(FChunkLineLen);
+            
+          if FChunkLineLen > 0 then
+          begin
+            LHexStr := Trim(TEncoding.ASCII.GetString(FChunkLineBytes, 0, FChunkLineLen));
+            if LHexStr.Contains(';') then
+              LHexStr := LHexStr.Split([';'])[0];
+            FChunkSize := StrToInt64Def('$' + LHexStr, 0);
+            FChunkRemaining := FChunkSize;
+            FChunkLineLen := 0;
+            
+            if FChunkSize = 0 then
+            begin
+              FChunkState := 3; // Fim
+              Result := True;
+              Exit;
+            end
+            else
+            begin
+              FChunkState := 1;
+            end;
+          end
+          else
+          begin
+            FChunkLineLen := 0;
+          end;
+        end
+        else
+        begin
+          if FChunkLineLen < Length(FChunkLineBytes) then
+          begin
+            FChunkLineBytes[FChunkLineLen] := LByte;
+            Inc(FChunkLineLen);
+          end;
+        end;
+      end;
+      
+      1: // Lendo dados do chunk
+      begin
+        LWriteCount := AOffset + ALength - I;
+        if LWriteCount > FChunkRemaining then
+          LWriteCount := FChunkRemaining;
+          
+        if LWriteCount > 0 then
+        begin
+          WriteToBodyStream(ABuffer, I, LWriteCount);
+          FChunkRemaining := FChunkRemaining - LWriteCount;
+          I := I + LWriteCount;
+        end;
+        
+        if FChunkRemaining = 0 then
+          FChunkState := 2;
+      end;
+      
+      2: // Aguardar CRLF
+      begin
+        LByte := ABuffer[I];
+        Inc(I);
+        if LByte = 10 then
+          FChunkState := 0;
+      end;
+      
+      3: // Fim do chunked
+      begin
+        Result := True;
+        Exit;
+      end;
+    end;
+  end;
 end;
 
 { THorseHttpParser }
@@ -499,7 +674,9 @@ constructor TEpollRawRequest.Create(
   const AMethod, APath, AQuery, AVersion: string;
   AHeaders: TDictionary<string, THeaderSegment>;
   ABodyOffset: Integer;
-  AContentLength: Int64
+  AContentLength: Int64;
+  ABodyStream: TStream;
+  const ATempFileName: string
 );
 begin
   inherited Create;
@@ -511,7 +688,8 @@ begin
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
-  FBodyStream := nil;
+  FBodyStream := ABodyStream;
+  FTempFileName := ATempFileName;
   FResolvedHeaders := TDictionary<string, string>.Create;
 end;
 
@@ -520,16 +698,14 @@ begin
   FResolvedHeaders.Free;
   if Assigned(FBodyStream) then
     FBodyStream.Free;
+  if FTempFileName <> '' then
+    DeleteFile(FTempFileName);
   inherited;
 end;
 
 procedure TEpollRawRequest.EnsureBodyStream;
 begin
-  if FBodyStream <> nil then Exit;
-  FBodyStream := TMemoryStream.Create;
-  if (FContentLength > 0) and (Length(FBuffer) >= FBodyOffset + FContentLength) then
-    FBodyStream.WriteBuffer(FBuffer[FBodyOffset], FContentLength);
-  FBodyStream.Position := 0;
+  // FBodyStream já é instanciado e gerenciado externamente pelo Worker/Context
 end;
 
 function TEpollRawRequest.ResolveHeader(const AName: string): string;
@@ -753,6 +929,85 @@ begin
   FHeadersSent := True;
 end;
 
+procedure TEpollRawResponse.SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+var
+  LUseChunked: Boolean;
+  LChunkBuf: TBytes;
+  LReadCount: Integer;
+  LHexStr: string;
+  LHexBytes: TBytes;
+  LTermStr: string;
+  LTermBytes: TBytes;
+  LHasChunkedHeader: Boolean;
+  {$IFDEF FPC}
+  I: Integer;
+  {$ENDIF}
+begin
+  LHasChunkedHeader := False;
+  if AHeadersList <> nil then
+  begin
+    {$IFDEF FPC}
+    for I := 0 to AHeadersList.Count - 1 do
+      if SameText(AHeadersList.Names[I], 'Transfer-Encoding') and SameText(AHeadersList.ValueFromIndex[I], 'chunked') then
+        LHasChunkedHeader := True;
+    {$ELSE}
+    LHasChunkedHeader := AHeadersList.ContainsKey('Transfer-Encoding') and SameText(AHeadersList.Items['Transfer-Encoding'], 'chunked');
+    {$ENDIF}
+  end;
+
+  LUseChunked := LHasChunkedHeader or (AStream.Size >= 2097152) or (AStream.Size < 0);
+
+  if LUseChunked then
+  begin
+    FHeaders.AddOrSetValue('Transfer-Encoding', 'chunked');
+    FHeaders.Remove('Content-Length');
+  end;
+
+  SendHeaders;
+
+  SetLength(LChunkBuf, 8192);
+  AStream.Position := 0;
+  while True do
+  begin
+    LReadCount := AStream.Read(LChunkBuf[0], Length(LChunkBuf));
+    if LReadCount <= 0 then Break;
+
+    if LUseChunked then
+    begin
+      LHexStr := Format('%x'#13#10, [LReadCount]);
+      LHexBytes := TEncoding.ASCII.GetBytes(LHexStr);
+      {$IFDEF FPC}
+      fpSend(FSocket, @LHexBytes[0], Length(LHexBytes), 0);
+      fpSend(FSocket, @LChunkBuf[0], LReadCount, 0);
+      fpSend(FSocket, PAnsiChar(#13#10), 2, 0);
+      {$ELSE}
+      send(FSocket, LHexBytes[0], Length(LHexBytes), 0);
+      send(FSocket, LChunkBuf[0], LReadCount, 0);
+      send(FSocket, PAnsiChar(#13#10)^, 2, 0);
+      {$ENDIF}
+    end
+    else
+    begin
+      {$IFDEF FPC}
+      fpSend(FSocket, @LChunkBuf[0], LReadCount, 0);
+      {$ELSE}
+      send(FSocket, LChunkBuf[0], LReadCount, 0);
+      {$ENDIF}
+    end;
+  end;
+
+  if LUseChunked then
+  begin
+    LTermStr := '0'#13#10#13#10;
+    LTermBytes := TEncoding.ASCII.GetBytes(LTermStr);
+    {$IFDEF FPC}
+    fpSend(FSocket, @LTermBytes[0], Length(LTermBytes), 0);
+    {$ELSE}
+    send(FSocket, LTermBytes[0], Length(LTermBytes), 0);
+    {$ENDIF}
+  end;
+end;
+
 procedure TEpollRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LBodyBytes: TBytes;
@@ -808,10 +1063,8 @@ begin
 
   if ARes.ContentStream <> nil then
   begin
-    SetLength(LBodyBytes, ARes.ContentStream.Size);
-    ARes.ContentStream.Position := 0;
-    if ARes.ContentStream.Size > 0 then
-      ARes.ContentStream.ReadBuffer(LBodyBytes[0], ARes.ContentStream.Size);
+    SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
+    Exit;
   end;
 
   if Length(LBodyBytes) = 0 then
@@ -847,12 +1100,16 @@ begin
   FEpollFd := -1;
   FPipeFds[0] := -1;
   FPipeFds[1] := -1;
+  FConnections := TList<TEpollConnectionContext>.Create;
   FreeOnTerminate := False;
 end;
 
 destructor THorseEpollWorker.Destroy;
 begin
   TerminateWorker;
+  while FConnections.Count > 0 do
+    CloseConnection(FConnections[0]);
+  FConnections.Free;
   inherited;
 end;
 
@@ -895,6 +1152,7 @@ end;
 
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
 begin
+  FConnections.Remove(AContext);
   epoll_ctl(FEpollFd, EPOLL_CTL_DEL, AContext.Socket, nil);
   {$IF DEFINED(FPC)}
   fpClose(AContext.Socket);
@@ -916,132 +1174,256 @@ var
   LEvent: epoll_event;
   LKeepAlive: Boolean;
   LConnHeader: string;
+  LRequestComplete: Boolean;
+  LExcessBytes: Integer;
+  LIsChunked: Boolean;
+  LSegment: THeaderSegment;
+  LRawVal: AnsiString;
 begin
-  while True do
+  LRequestComplete := False;
+
+  if AContext.BodyOffset = -1 then
   begin
-    {$IFDEF FPC}
-    LBytesRead := fpRecv(
-      AContext.Socket, 
-      @AContext.Buffer[AContext.BytesReceived], 
-      Length(AContext.Buffer) - AContext.BytesReceived, 
-      0
-    );
-    {$ELSE}
-    LBytesRead := recv(
-      AContext.Socket, 
-      AContext.Buffer[AContext.BytesReceived], 
-      Length(AContext.Buffer) - AContext.BytesReceived, 
-      0
-    );
-    {$ENDIF}
-
-    if LBytesRead = 0 then
-    begin
-      CloseConnection(AContext);
-      Exit;
-    end;
-
-    if LBytesRead < 0 then
+    while True do
     begin
       {$IFDEF FPC}
-      if (fpGetErrno = 11) or (fpGetErrno = 11) then // EAGAIN/EWOULDBLOCK = 11
+      LBytesRead := fpRecv(
+        AContext.Socket, 
+        @AContext.Buffer[AContext.BytesReceived], 
+        Length(AContext.Buffer) - AContext.BytesReceived, 
+        0
+      );
       {$ELSE}
-      if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
+      LBytesRead := recv(
+        AContext.Socket, 
+        AContext.Buffer[AContext.BytesReceived], 
+        Length(AContext.Buffer) - AContext.BytesReceived, 
+        0
+      );
       {$ENDIF}
-        Break
-      else
+
+      if LBytesRead = 0 then
       begin
         CloseConnection(AContext);
         Exit;
       end;
-    end;
 
-    AContext.BytesReceived := AContext.BytesReceived + LBytesRead;
-
-    if AContext.BytesReceived >= Length(AContext.Buffer) then
-      SetLength(AContext.Buffer, Length(AContext.Buffer) * 2);
-  end;
-
-  if THorseHttpParser.TryParseRequest(
-    AContext.Buffer,
-    AContext.BytesReceived,
-    AContext.Method,
-    AContext.Path,
-    AContext.Query,
-    AContext.Version,
-    AContext.Headers,
-    AContext.BodyOffset,
-    AContext.ContentLength
-  ) then
-  begin
-    if AContext.BytesReceived >= AContext.BodyOffset + AContext.ContentLength then
-    begin
-      LRawReq := TEpollRawRequest.Create(
-        AContext.Buffer,
-        AContext.Method,
-        AContext.Path,
-        AContext.Query,
-        AContext.Version,
-        AContext.Headers,
-        AContext.BodyOffset,
-        AContext.ContentLength
-      );
-      LRawRes := TEpollRawResponse.Create(AContext.Socket);
-      LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-      
-      {$IFDEF FPC}
-      LWebResponse := nil;
-      {$ELSE}
-      LWebResponse := TInterfacedWebResponse.Create(LRawRes);
-      {$ENDIF}
-      try
-        LReq := THorseRequest.Create(LWebRequest);
-        LRes := THorseResponse.Create(nil);
-        {$IFNDEF FPC}
-        LRes.SetCSRawWebResponse(LWebResponse);
-        LWebResponse := nil;
+      if LBytesRead < 0 then
+      begin
+        {$IFDEF FPC}
+        if (fpGetErrno = 11) or (fpGetErrno = 11) then // EAGAIN/EWOULDBLOCK = 11
+        {$ELSE}
+        if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
         {$ENDIF}
-        try
-          THorseProviderEpoll.Execute(LReq, LRes);
-        finally
-          LRawRes.SendResponse(LRes);
-          LReq.Free;
-          LRes.Free;
+          Break
+        else
+        begin
+          CloseConnection(AContext);
+          Exit;
         end;
-      finally
-        LWebRequest.Free;
-        if LWebResponse <> nil then
-          LWebResponse.Free;
-        LRawRes.Free;
       end;
 
-      LConnHeader := LRawReq.GetFieldByName('connection');
-      LKeepAlive := not SameText(LConnHeader, 'close');
+      AContext.BytesReceived := AContext.BytesReceived + LBytesRead;
+      AContext.LastActive := GetTickCount64;
 
-      if LKeepAlive then
+      if AContext.BytesReceived >= Length(AContext.Buffer) then
+        SetLength(AContext.Buffer, Length(AContext.Buffer) * 2);
+    end;
+
+    if THorseHttpParser.TryParseRequest(
+      AContext.Buffer,
+      AContext.BytesReceived,
+      AContext.Method,
+      AContext.Path,
+      AContext.Query,
+      AContext.Version,
+      AContext.Headers,
+      AContext.BodyOffset,
+      AContext.ContentLength
+    ) then
+    begin
+      LIsChunked := False;
+      if AContext.Headers.TryGetValue('transfer-encoding', LSegment) then
       begin
-        AContext.ClearRequest;
-        AContext.BytesReceived := 0;
+        if LSegment.ValueLen > 0 then
+        begin
+          SetString(LRawVal, PAnsiChar(@AContext.Buffer[LSegment.ValueStart]), LSegment.ValueLen);
+          LIsChunked := SameText(Trim(string(LRawVal)), 'chunked');
+        end;
+      end;
 
-        LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
-        LEvent.data.ptr := AContext;
-        epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
+      if LIsChunked then
+      begin
+        AContext.FChunked := True;
+        LExcessBytes := AContext.BytesReceived - AContext.BodyOffset;
+        if LExcessBytes > 0 then
+          LRequestComplete := AContext.ProcessChunkedBytes(AContext.Buffer, AContext.BodyOffset, LExcessBytes)
+        else
+          LRequestComplete := False;
       end
       else
-        CloseConnection(AContext);
-    end
-    else
+      begin
+        AContext.FChunked := False;
+        if AContext.ContentLength > 0 then
+        begin
+          LExcessBytes := AContext.BytesReceived - AContext.BodyOffset;
+          if LExcessBytes > 0 then
+            AContext.WriteToBodyStream(AContext.Buffer, AContext.BodyOffset, LExcessBytes);
+          LRequestComplete := AContext.BytesReceived >= AContext.BodyOffset + AContext.ContentLength;
+        end
+        else
+        begin
+          LRequestComplete := True;
+        end;
+      end;
+    end;
+  end
+  else
+  begin
+    while True do
     begin
+      {$IFDEF FPC}
+      LBytesRead := fpRecv(AContext.Socket, @AContext.Buffer[0], 8192, 0);
+      {$ELSE}
+      LBytesRead := recv(AContext.Socket, AContext.Buffer[0], 8192, 0);
+      {$ENDIF}
+
+      if LBytesRead = 0 then
+      begin
+        CloseConnection(AContext);
+        Exit;
+      end;
+
+      if LBytesRead < 0 then
+      begin
+        {$IFDEF FPC}
+        if (fpGetErrno = 11) or (fpGetErrno = 11) then // EAGAIN/EWOULDBLOCK = 11
+        {$ELSE}
+        if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
+        {$ENDIF}
+          Break
+        else
+        begin
+          CloseConnection(AContext);
+          Exit;
+        end;
+      end;
+
+      AContext.LastActive := GetTickCount64;
+
+      if AContext.FChunked then
+      begin
+        LRequestComplete := AContext.ProcessChunkedBytes(AContext.Buffer, 0, LBytesRead);
+        if LRequestComplete then Break;
+      end
+      else
+      begin
+        AContext.WriteToBodyStream(AContext.Buffer, 0, LBytesRead);
+        AContext.BytesReceived := AContext.BytesReceived + LBytesRead;
+        LRequestComplete := AContext.BytesReceived >= AContext.BodyOffset + AContext.ContentLength;
+        if LRequestComplete then Break;
+      end;
+    end;
+  end;
+
+  if LRequestComplete then
+  begin
+    if AContext.FBodyStream = nil then
+      AContext.FBodyStream := TMemoryStream.Create;
+
+    AContext.FBodyStream.Position := 0;
+
+    LRawReq := TEpollRawRequest.Create(
+      AContext.Buffer,
+      AContext.Method,
+      AContext.Path,
+      AContext.Query,
+      AContext.Version,
+      AContext.Headers,
+      AContext.BodyOffset,
+      AContext.ContentLength,
+      AContext.FBodyStream,
+      AContext.FTempFileName
+    );
+    LRawRes := TEpollRawResponse.Create(AContext.Socket);
+    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+    
+    {$IFDEF FPC}
+    LWebResponse := nil;
+    {$ELSE}
+    LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+    {$ENDIF}
+    try
+      LReq := THorseRequest.Create(LWebRequest);
+      LRes := THorseResponse.Create(nil);
+      {$IFNDEF FPC}
+      LRes.SetCSRawWebResponse(LWebResponse);
+      LWebResponse := nil;
+      {$ENDIF}
+      try
+        THorseProviderEpoll.Execute(LReq, LRes);
+      finally
+        LRawRes.SendResponse(LRes);
+        LReq.Free;
+        LRes.Free;
+      end;
+    finally
+      LWebRequest.Free;
+      if LWebResponse <> nil then
+        LWebResponse.Free;
+      LRawRes.Free;
+    end;
+
+    LConnHeader := LRawReq.GetFieldByName('connection');
+    LKeepAlive := not SameText(LConnHeader, 'close');
+
+    if LKeepAlive then
+    begin
+      AContext.ClearRequest;
+      AContext.FIsKeepAlive := True;
+      AContext.BytesReceived := 0;
+
       LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
       LEvent.data.ptr := AContext;
       epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
-    end;
+    end
+    else
+      CloseConnection(AContext);
+  end
+  else if AContext.BodyOffset <> -1 then
+  begin
+    LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+    LEvent.data.ptr := AContext;
+    epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
   end
   else
   begin
     LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
     LEvent.data.ptr := AContext;
     epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
+  end;
+end;
+
+procedure THorseEpollWorker.CheckTimeouts;
+var
+  LNow: Int64;
+  I: Integer;
+  LContext: TEpollConnectionContext;
+begin
+  LNow := GetTickCount64;
+  for I := FConnections.Count - 1 downto 0 do
+  begin
+    LContext := FConnections[I];
+    if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
+    begin
+      if LNow - LContext.LastActive > 60000 then
+        CloseConnection(LContext);
+    end
+    else
+    begin
+      if LNow - LContext.LastActive > 5000 then
+        CloseConnection(LContext);
+    end;
   end;
 end;
 
@@ -1167,6 +1549,7 @@ begin
             {$ENDIF}
 
             LContext := TEpollConnectionContext.Create(LClientFd);
+            FConnections.Add(LContext);
 
             LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
             LEvent.data.ptr := LContext;
@@ -1187,6 +1570,8 @@ begin
           end;
         end;
       end;
+
+      CheckTimeouts;
     end;
   finally
     {$IFDEF FPC}Writeln('Worker: Thread encerrando.');{$ENDIF}
@@ -1196,12 +1581,27 @@ end;
 { THorseProviderEpoll }
 
 class constructor THorseProviderEpoll.CreateClass;
+var
+  {$IFDEF FPC}
+  LRLimit: TRLimit;
+  {$ELSE}
+  LRLimit: rlimit;
+  {$ENDIF}
 begin
   FPort := GetDefaultPort;
   FHost := GetDefaultHost;
   FListenSockets := TList<Integer>.Create;
   FWorkers := TObjectList<THorseEpollWorker>.Create(True);
   FRunning := False;
+
+  // Eleva o limite máximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
+  LRLimit.rlim_cur := 65535;
+  LRLimit.rlim_max := 65535;
+  {$IFDEF FPC}
+  fpSetrlimit(RLIMIT_NOFILE, @LRLimit);
+  {$ELSE}
+  setrlimit(RLIMIT_NOFILE, LRLimit);
+  {$ENDIF}
 end;
 
 class destructor THorseProviderEpoll.DestroyClass;
