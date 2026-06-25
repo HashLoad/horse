@@ -289,21 +289,37 @@ type
   pepoll_event = ^epoll_event;
 
 {$IF NOT DEFINED(FPC)}
-  const
-    RLIMIT_NOFILE = 7;
+const
+  RLIMIT_NOFILE = 7;
 
-  type
-    rlimit = record
-      rlim_cur: UInt64;
-      rlim_max: UInt64;
-    end;
-    prlimit = ^rlimit;
+type
+  rlimit = record
+    rlim_cur: UInt64;
+    rlim_max: UInt64;
+  end;
+  prlimit = ^rlimit;
 
-  function epoll_create1(flags: Integer): Integer; cdecl; external libc name 'epoll_create1';
-  function epoll_ctl(epfd: Integer; op: Integer; fd: Integer; event: pepoll_event): Integer; cdecl; external libc name 'epoll_ctl';
-  function epoll_wait(epfd: Integer; events: pepoll_event; maxevents: Integer; timeout: Integer): Integer; cdecl; external libc name 'epoll_wait';
-  function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
-  function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
+  TEpollTimeSpec = record
+    tv_sec: Int64;
+    tv_nsec: Int64;
+  end;
+
+function epoll_create1(flags: Integer): Integer; cdecl; external libc name 'epoll_create1';
+function epoll_ctl(epfd: Integer; op: Integer; fd: Integer; event: pepoll_event): Integer; cdecl; external libc name 'epoll_ctl';
+function epoll_wait(epfd: Integer; events: pepoll_event; maxevents: Integer; timeout: Integer): Integer; cdecl; external libc name 'epoll_wait';
+function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
+function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
+function clock_gettime(clk_id: Integer; var tp: TEpollTimeSpec): Integer; cdecl; external libc name 'clock_gettime';
+
+function GetTickCount64: Int64;
+var
+  LTime: TEpollTimeSpec;
+begin
+  if clock_gettime(1, LTime) = 0 then
+    Result := (LTime.tv_sec * 1000) + (LTime.tv_nsec div 1000000)
+  else
+    Result := 0;
+end;
 {$IFEND}
 
 { TBufferPool }

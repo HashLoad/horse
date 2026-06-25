@@ -85,6 +85,4 @@ __recovery/
 *.dsk
 
 # Test files and local paserver
-tests/Dockerfile.paserver
 tests/LinuxPAServer23.0.tar.gz
-tests/Dockerfile.lazarus
