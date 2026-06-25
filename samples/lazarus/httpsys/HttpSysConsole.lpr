@@ -88,6 +88,14 @@ begin
   end;
 end;
 
+procedure PostUpload(Req: THorseRequest; Res: THorseResponse);
+var
+  LContent: string;
+begin
+  LContent := Req.Body;
+  Res.Send('Tamanho: ' + IntToStr(Length(LContent)) + ' / Inicio: ' + Copy(LContent, 1, 50));
+end;
+
 procedure PutUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
@@ -143,6 +151,7 @@ begin
   Writeln('  - GET    http://localhost:9095/ping');
   Writeln('  - GET    http://localhost:9095/users/123?nome=Regys');
   Writeln('  - POST   http://localhost:9095/users');
+  Writeln('  - POST   http://localhost:9095/upload');
   Writeln('  - PUT    http://localhost:9095/users/123');
   Writeln('  - PATCH  http://localhost:9095/users/123');
   Writeln('  - DELETE http://localhost:9095/users/123');
@@ -156,6 +165,7 @@ begin
   THorse.Get('/ping', GetPing);
   THorse.Get('/users/:id', GetUsers);
   THorse.Post('/users', PostUsers);
+  THorse.Post('/upload', PostUpload);
   THorse.Put('/users/:id', PutUsers);
   THorse.Patch('/users/:id', PatchUsers);
   THorse.Delete('/users/:id', DeleteUsers);

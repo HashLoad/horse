@@ -99,6 +99,16 @@ begin
       end;
     end);
 
+  // Rota de teste de upload / spooling / body
+  THorse.Post('/upload',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    var
+      LBody: string;
+    begin
+      LBody := Req.Body;
+      Res.Send('Tamanho: ' + IntToStr(Length(LBody)) + ' / Inicio: ' + Copy(LBody, 1, 50));
+    end);
+
   // 4. Rota PUT
   THorse.Put('/users/:id',
     procedure(Req: THorseRequest; Res: THorseResponse)
@@ -150,7 +160,7 @@ begin
       end;
     end);
 
-  // Escuta na porta 9095 em 0.0.0.0 (acessível de fora do container Docker)
+  // Escuta na porta 9095 em 0.0.0.0 (acessÃ­vel de fora do container Docker)
   THorse.Listen(9095, '0.0.0.0',
     procedure
     begin
@@ -162,6 +172,7 @@ begin
       Writeln('  - GET    http://localhost:9095/ping');
       Writeln('  - GET    http://localhost:9095/users/123?nome=Regys');
       Writeln('  - POST   http://localhost:9095/users');
+      Writeln('  - POST   http://localhost:9095/upload');
       Writeln('  - PUT    http://localhost:9095/users/123');
       Writeln('  - PATCH  http://localhost:9095/users/123');
       Writeln('  - DELETE http://localhost:9095/users/123');

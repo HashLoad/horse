@@ -34,7 +34,6 @@ uses
     Posix.ArpaInet,
     Posix.NetinetIn,
     Posix.Errno,
-    Posix.SysResource,
   {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
@@ -290,10 +289,21 @@ type
   pepoll_event = ^epoll_event;
 
 {$IF NOT DEFINED(FPC)}
+  const
+    RLIMIT_NOFILE = 7;
+
+  type
+    rlimit = record
+      rlim_cur: UInt64;
+      rlim_max: UInt64;
+    end;
+    prlimit = ^rlimit;
+
   function epoll_create1(flags: Integer): Integer; cdecl; external libc name 'epoll_create1';
   function epoll_ctl(epfd: Integer; op: Integer; fd: Integer; event: pepoll_event): Integer; cdecl; external libc name 'epoll_ctl';
   function epoll_wait(epfd: Integer; events: pepoll_event; maxevents: Integer; timeout: Integer): Integer; cdecl; external libc name 'epoll_wait';
   function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
+  function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
 {$IFEND}
 
 { TBufferPool }
