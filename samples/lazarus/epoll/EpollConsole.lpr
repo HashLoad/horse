@@ -56,4 +56,6 @@ begin
   THorse.Get('/ping', GetPing);
   THorse.Get('/users/:id', GetUsers);
   THorse.Listen(9095, '0.0.0.0', OnListen);
+  while THorse.IsRunning do
+    Sleep(1000);
 end.
