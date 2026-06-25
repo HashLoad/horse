@@ -3,9 +3,9 @@ program EpollConsole;
 {$MODE DELPHI}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
+  {$IFDEF UNIX}
   cthreads,
-  {$ENDIF}{$ENDIF}
+  {$ENDIF}
   SysUtils,
   fpjson,
   Horse;

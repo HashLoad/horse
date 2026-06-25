@@ -8,13 +8,15 @@ interface
 
 {$IFDEF LINUX}
 uses
-  {$IF DEFINED(FPC)}
+  {$IFDEF FPC}
     SysUtils,
     Classes,
     SyncObjs,
     Generics.Collections,
     BaseUnix,
     Unix,
+    Linux,
+    sockets,
     httpprotocol,
   {$ELSE}
     System.SysUtils,
@@ -178,7 +180,11 @@ type
   private
     FListenSocket: Integer;
     FEpollFd: Integer;
+    {$IFDEF FPC}
+    FPipeFds: TFilDes;
+    {$ELSE}
     FPipeFds: array[0..1] of Integer;
+    {$ENDIF}
     FRunning: Boolean;
     procedure ProcessClientRead(AContext: TEpollConnectionContext);
     procedure CloseConnection(AContext: TEpollConnectionContext);
@@ -742,7 +748,11 @@ begin
   LHeaderStr := LHeaderStr + #13#10;
   LHeaderBytes := TEncoding.UTF8.GetBytes(LHeaderStr);
 
+  {$IFDEF FPC}
+  fpSend(FSocket, @LHeaderBytes[0], Length(LHeaderBytes), 0);
+  {$ELSE}
   send(FSocket, LHeaderBytes[0], Length(LHeaderBytes), 0);
+  {$ENDIF}
   FHeadersSent := True;
 end;
 
@@ -750,7 +760,7 @@ procedure TEpollRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LBodyBytes: TBytes;
   LPair: TPair<string, string>;
-  LHeadersList: {$IF DEFINED(FPC)}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
+  LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
   LContentType: string;
   I: Integer;
 begin
@@ -784,7 +794,7 @@ begin
   LHeadersList := ARes.CustomHeaders;
   if LHeadersList <> nil then
   begin
-    {$IF DEFINED(FPC)}
+    {$IFDEF FPC}
     for I := 0 to LHeadersList.Count - 1 do
       FHeaders.AddOrSetValue(LHeadersList.Names[I], LHeadersList.ValueFromIndex[I]);
     {$ELSE}
@@ -813,7 +823,13 @@ begin
 
   SendHeaders;
   if Length(LBodyBytes) > 0 then
+  begin
+    {$IFDEF FPC}
+    fpSend(FSocket, @LBodyBytes[0], Length(LBodyBytes), 0);
+    {$ELSE}
     send(FSocket, LBodyBytes[0], Length(LBodyBytes), 0);
+    {$ENDIF}
+  end;
 end;
 
 { THorseEpollWorker }
@@ -887,7 +903,7 @@ procedure THorseEpollWorker.ProcessClientRead(AContext: TEpollConnectionContext)
 var
   LBytesRead: Integer;
   LRawReq: IHorseRawRequest;
-  LRawRes: IHorseRawResponse;
+  LRawRes: TEpollRawResponse;
   LWebRequest: TInterfacedWebRequest;
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
@@ -898,12 +914,21 @@ var
 begin
   while True do
   begin
+    {$IFDEF FPC}
+    LBytesRead := fpRecv(
+      AContext.Socket, 
+      @AContext.Buffer[AContext.BytesReceived], 
+      Length(AContext.Buffer) - AContext.BytesReceived, 
+      0
+    );
+    {$ELSE}
     LBytesRead := recv(
       AContext.Socket, 
       AContext.Buffer[AContext.BytesReceived], 
       Length(AContext.Buffer) - AContext.BytesReceived, 
       0
     );
+    {$ENDIF}
 
     if LBytesRead = 0 then
     begin
@@ -913,8 +938,8 @@ begin
 
     if LBytesRead < 0 then
     begin
-      {$IF DEFINED(FPC)}
-      if (SocketError = ESysEAGAIN) or (SocketError = ESysEWOULDBLOCK) then
+      {$IFDEF FPC}
+      if (fpGetErrno = 11) or (fpGetErrno = 11) then // EAGAIN/EWOULDBLOCK = 11
       {$ELSE}
       if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
       {$ENDIF}
@@ -958,20 +983,31 @@ begin
       );
       LRawRes := TEpollRawResponse.Create(AContext.Socket);
       LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+      
+      {$IFDEF FPC}
+      LWebResponse := nil;
+      {$ELSE}
       LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+      {$ENDIF}
       try
         LReq := THorseRequest.Create(LWebRequest);
+        {$IFDEF FPC}
+        LRes := THorseResponse.Create(nil);
+        {$ELSE}
         LRes := THorseResponse.Create(LWebResponse);
+        {$ENDIF}
         try
           THorseProviderEpoll.Execute(LReq, LRes);
         finally
-          TEpollRawResponse(LRawRes).SendResponse(LRes);
+          LRawRes.SendResponse(LRes);
           LReq.Free;
           LRes.Free;
         end;
       finally
         LWebRequest.Free;
-        LWebResponse.Free;
+        if LWebResponse <> nil then
+          LWebResponse.Free;
+        LRawRes.Free;
       end;
 
       LConnHeader := LRawReq.GetFieldByName('connection');
@@ -1006,8 +1042,13 @@ end;
 
 procedure THorseEpollWorker.Execute;
 var
+  {$IFDEF FPC}
+  LAddr: TInetSockAddr;
+  LAddrLen: TSockLen;
+  {$ELSE}
   LAddr: sockaddr_in;
   LAddrLen: socklen_t;
+  {$ENDIF}
   LEventCount: Integer;
   I: Integer;
   LEvents: array[0..63] of epoll_event;
@@ -1016,11 +1057,26 @@ var
   LOptVal: Integer;
   LContext: TEpollConnectionContext;
 begin
+  {$IFDEF FPC}
+  FEpollFd := epoll_create(1024);
+  if FEpollFd < 0 then
+  begin
+    Writeln('Worker: epoll_create falhou com erro: ', fpGetErrno);
+    Exit;
+  end;
+  {$ELSE}
   FEpollFd := epoll_create1(0);
   if FEpollFd < 0 then Exit;
+  {$ENDIF}
 
-  {$IF DEFINED(FPC)}
-  if fpPipe(FPipeFds) < 0 then Exit;
+  {$IFDEF FPC}
+  Writeln('Worker: Criando pipe...');
+  if fpPipe(FPipeFds) < 0 then
+  begin
+    Writeln('Worker: fpPipe falhou com erro: ', fpGetErrno);
+    Exit;
+  end;
+  Writeln('Worker: Pipe criado. FPipeFds[0] = ', FPipeFds[0], ' FPipeFds[1] = ', FPipeFds[1]);
   fpFcntl(FPipeFds[0], F_SETFL, O_NONBLOCK);
   {$ELSE}
   if pipe(@FPipeFds[0]) < 0 then Exit;
@@ -1036,65 +1092,99 @@ begin
   epoll_ctl(FEpollFd, EPOLL_CTL_ADD, FListenSocket, @LEvent);
 
   FRunning := True;
+  {$IFDEF FPC}
+  Writeln('Worker: Thread iniciada. FListenSocket = ', FListenSocket, ' FEpollFd = ', FEpollFd);
+  {$ENDIF}
 
-  while not Terminated and FRunning do
-  begin
-    LEventCount := epoll_wait(FEpollFd, @LEvents[0], Length(LEvents), 1000);
-    if LEventCount < 0 then
+  try
+    while not Terminated and FRunning do
     begin
-      {$IF DEFINED(FPC)}
-      if SocketError = ESysEINTR then Continue;
-      {$ELSE}
-      if errno = EINTR then Continue;
-      {$ENDIF}
-      Break;
-    end;
-
-    for I := 0 to LEventCount - 1 do
-    begin
-      LEvent := LEvents[I];
-      
-      if LEvent.data.fd = FPipeFds[0] then
-        Exit
-      else if LEvent.data.fd = FListenSocket then
+      LEventCount := epoll_wait(FEpollFd, @LEvents[0], Length(LEvents), 1000);
+      if LEventCount < 0 then
       begin
-        while True do
+        {$IFDEF FPC}
+        if fpGetErrno = 4 then Continue; // EINTR = 4
+        Writeln('Worker: epoll_wait falhou com erro: ', fpGetErrno);
+        {$ELSE}
+        if errno = EINTR then Continue;
+        {$ENDIF}
+        Break;
+      end;
+
+      for I := 0 to LEventCount - 1 do
+      begin
+        LEvent := LEvents[I];
+        
+        {$IFDEF FPC}
+        // No FPC, a uniao epoll_data compartilha o mesmo espaço. Para o pipe e listen, comparamos com fd.
+        if LEvent.data.fd = FPipeFds[0] then
         begin
-          LAddrLen := SizeOf(LAddr);
-          LClientFd := accept(FListenSocket, Psockaddr(@LAddr)^, LAddrLen);
-          if LClientFd < 0 then
+          Writeln('Worker: Sinal de parada recebido via pipe.');
+          Exit;
+        end
+        {$ELSE}
+        if LEvent.data.fd = FPipeFds[0] then
+          Exit
+        {$ENDIF}
+        else if LEvent.data.fd = FListenSocket then
+        begin
+          while True do
           begin
-            {$IF DEFINED(FPC)}
-            if (SocketError = ESysEAGAIN) or (SocketError = ESysEWOULDBLOCK) then
+            LAddrLen := SizeOf(LAddr);
+            {$IFDEF FPC}
+            LClientFd := fpAccept(FListenSocket, psockaddr(@LAddr), @LAddrLen);
             {$ELSE}
-            if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
+            LClientFd := accept(FListenSocket, Psockaddr(@LAddr)^, LAddrLen);
             {$ENDIF}
+            if LClientFd < 0 then
+            begin
+              {$IFDEF FPC}
+              if (fpGetErrno = 11) or (fpGetErrno = 11) then // EAGAIN/EWOULDBLOCK = 11
+              {$ELSE}
+              if (errno = EAGAIN) or (errno = EWOULDBLOCK) then
+              {$ENDIF}
+                Break;
               Break;
-            Break;
+            end;
+
+            {$IFDEF FPC}
+            Writeln('Worker: Conexao aceita no socket = ', LClientFd);
+            fpFcntl(LClientFd, F_SETFL, O_NONBLOCK);
+            {$ELSE}
+            fcntl(LClientFd, F_SETFL, O_NONBLOCK);
+            {$ENDIF}
+
+            LOptVal := 1;
+            {$IFDEF FPC}
+            fpSetsockopt(LClientFd, IPPROTO_TCP, TCP_NODELAY, @LOptVal, SizeOf(LOptVal));
+            {$ELSE}
+            setsockopt(LClientFd, IPPROTO_TCP, TCP_NODELAY, LOptVal, SizeOf(LOptVal));
+            {$ENDIF}
+
+            LContext := TEpollConnectionContext.Create(LClientFd);
+
+            LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+            LEvent.data.ptr := LContext;
+            epoll_ctl(FEpollFd, EPOLL_CTL_ADD, LClientFd, @LEvent);
           end;
-
-          {$IF DEFINED(FPC)}
-          fpFcntl(LClientFd, F_SETFL, O_NONBLOCK);
-          {$ELSE}
-          fcntl(LClientFd, F_SETFL, O_NONBLOCK);
-          {$ENDIF}
-
-          LOptVal := 1;
-          setsockopt(LClientFd, IPPROTO_TCP, TCP_NODELAY, LOptVal, SizeOf(LOptVal));
-
-          LContext := TEpollConnectionContext.Create(LClientFd);
-
-          LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
-          LEvent.data.ptr := LContext;
-          epoll_ctl(FEpollFd, EPOLL_CTL_ADD, LClientFd, @LEvent);
+        end
+        else
+        begin
+          LContext := TEpollConnectionContext(LEvent.data.ptr);
+          try
+            ProcessClientRead(LContext);
+          except
+            on E: Exception do
+            begin
+              {$IFDEF FPC}Writeln('Worker: Excecao ao processar leitura: ', E.ClassName, ' - ', E.Message);{$ENDIF}
+              CloseConnection(LContext);
+            end;
+          end;
         end;
-      end
-      else
-      begin
-        LContext := TEpollConnectionContext(LEvent.data.ptr);
-        ProcessClientRead(LContext);
       end;
     end;
+  finally
+    {$IFDEF FPC}Writeln('Worker: Thread encerrando.');{$ENDIF}
   end;
 end;
 
@@ -1153,7 +1243,11 @@ end;
 
 class procedure THorseProviderEpoll.InternalListen;
 var
+  {$IFDEF FPC}
+  LAddr: TInetSockAddr;
+  {$ELSE}
   LAddr: sockaddr_in;
+  {$ENDIF}
   I: Integer;
   LThreadCount: Integer;
   LWorker: THorseEpollWorker;
@@ -1162,24 +1256,33 @@ var
 begin
   if FRunning then Exit;
 
-  LThreadCount := CPUCount;
+  LThreadCount := TThread.ProcessorCount;
   if LThreadCount <= 0 then
     LThreadCount := 2;
 
   try
     for I := 1 to LThreadCount do
     begin
+      {$IFDEF FPC}
+      LSocket := fpSocket(AF_INET, SOCK_STREAM, 0);
+      {$ELSE}
       LSocket := socket(AF_INET, SOCK_STREAM, 0);
+      {$ENDIF}
       if LSocket < 0 then
         raise EOSError.Create('socket creation failed');
 
       LOptVal := 1;
+      {$IFDEF FPC}
+      fpSetsockopt(LSocket, SOL_SOCKET, SO_REUSEADDR, @LOptVal, SizeOf(LOptVal));
+      fpSetsockopt(LSocket, SOL_SOCKET, SO_REUSEPORT, @LOptVal, SizeOf(LOptVal));
+      fpSetsockopt(LSocket, IPPROTO_TCP, TCP_DEFER_ACCEPT, @LOptVal, SizeOf(LOptVal));
+      {$ELSE}
       setsockopt(LSocket, SOL_SOCKET, SO_REUSEADDR, LOptVal, SizeOf(LOptVal));
       setsockopt(LSocket, SOL_SOCKET, SO_REUSEPORT, LOptVal, SizeOf(LOptVal));
-      
       setsockopt(LSocket, IPPROTO_TCP, TCP_DEFER_ACCEPT, LOptVal, SizeOf(LOptVal));
+      {$ENDIF}
 
-      {$IF DEFINED(FPC)}
+      {$IFDEF FPC}
       fpFcntl(LSocket, F_SETFL, O_NONBLOCK);
       {$ELSE}
       fcntl(LSocket, F_SETFL, O_NONBLOCK);
@@ -1187,16 +1290,28 @@ begin
 
       FillChar(LAddr, SizeOf(LAddr), 0);
       LAddr.sin_family := AF_INET;
+      {$IFDEF FPC}
+      LAddr.sin_port := htons(FPort);
+      if (FHost = '') or (FHost = '0.0.0.0') then
+        LAddr.sin_addr := StrToNetAddr('0.0.0.0')
+      else
+        LAddr.sin_addr := StrToNetAddr(FHost);
+      {$ELSE}
       LAddr.sin_port := htons(FPort);
       if (FHost = '') or (FHost = '0.0.0.0') then
         LAddr.sin_addr.s_addr := INADDR_ANY
       else
         LAddr.sin_addr.s_addr := inet_addr(PAnsiChar(AnsiString(FHost)));
+      {$ENDIF}
 
+      {$IFDEF FPC}
+      if fpBind(LSocket, psockaddr(@LAddr), SizeOf(LAddr)) < 0 then
+      {$ELSE}
       if Posix.SysSocket.bind(LSocket, Psockaddr(@LAddr)^, SizeOf(LAddr)) < 0 then
+      {$ENDIF}
         raise EOSError.Create('bind failed');
 
-      {$IF DEFINED(FPC)}
+      {$IFDEF FPC}
       if fpListen(LSocket, 128) < 0 then
       {$ELSE}
       if Posix.SysSocket.listen(LSocket, 128) < 0 then
