@@ -611,6 +611,9 @@ begin
   AContentLength := 0;
   AHeaders := nil;
 
+  if ALength < 4 then
+    Exit(False);
+
   // 1. Localiza o fim dos cabeçalhos (\r\n\r\n)
   HeaderEnd := -1;
   for I := 0 to ALength - 4 do
@@ -746,7 +749,7 @@ begin
 
   if FHeaders.TryGetValue(LLowerName, LSegment) then
   begin
-    if LSegment.ValueLen > 0 then
+    if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
     begin
       SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
       Result := Trim(string(LRawVal));
@@ -1003,21 +1006,21 @@ begin
       LHexStr := Format('%x'#13#10, [LReadCount]);
       LHexBytes := TEncoding.ASCII.GetBytes(LHexStr);
       {$IFDEF FPC}
-      fpSend(FSocket, @LHexBytes[0], Length(LHexBytes), 0);
-      fpSend(FSocket, @LChunkBuf[0], LReadCount, 0);
-      fpSend(FSocket, PAnsiChar(#13#10), 2, 0);
+      if (fpSend(FSocket, @LHexBytes[0], Length(LHexBytes), 0) < 0) or
+         (fpSend(FSocket, @LChunkBuf[0], LReadCount, 0) < 0) or
+         (fpSend(FSocket, PAnsiChar(#13#10), 2, 0) < 0) then Break;
       {$ELSE}
-      send(FSocket, LHexBytes[0], Length(LHexBytes), 0);
-      send(FSocket, LChunkBuf[0], LReadCount, 0);
-      send(FSocket, PAnsiChar(#13#10)^, 2, 0);
+      if (send(FSocket, LHexBytes[0], Length(LHexBytes), 0) < 0) or
+         (send(FSocket, LChunkBuf[0], LReadCount, 0) < 0) or
+         (send(FSocket, PAnsiChar(#13#10)^, 2, 0) < 0) then Break;
       {$ENDIF}
     end
     else
     begin
       {$IFDEF FPC}
-      fpSend(FSocket, @LChunkBuf[0], LReadCount, 0);
+      if fpSend(FSocket, @LChunkBuf[0], LReadCount, 0) < 0 then Break;
       {$ELSE}
-      send(FSocket, LChunkBuf[0], LReadCount, 0);
+      if send(FSocket, LChunkBuf[0], LReadCount, 0) < 0 then Break;
       {$ENDIF}
     end;
   end;
@@ -1253,7 +1256,14 @@ begin
       AContext.LastActive := GetTickCount64;
 
       if AContext.BytesReceived >= Length(AContext.Buffer) then
+      begin
+        if AContext.BytesReceived > 65536 then
+        begin
+          CloseConnection(AContext);
+          Exit;
+        end;
         SetLength(AContext.Buffer, Length(AContext.Buffer) * 2);
+      end;
     end;
 
     if THorseHttpParser.TryParseRequest(
@@ -1371,6 +1381,8 @@ begin
       AContext.FBodyStream,
       AContext.FTempFileName
     );
+    AContext.FBodyStream := nil;
+    AContext.FTempFileName := '';
     LRawRes := TEpollRawResponse.Create(AContext.Socket);
     LWebRequest := TInterfacedWebRequest.Create(LRawReq);
     
