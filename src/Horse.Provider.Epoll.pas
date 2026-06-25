@@ -395,7 +395,6 @@ var
   LineEnd: Integer;
   Space1: Integer;
   Space2: Integer;
-  UrlEnd: Integer;
   QueryStart: Integer;
   Colon: Integer;
   Key: string;
@@ -441,7 +440,6 @@ begin
   SetString(RawLine, PAnsiChar(@ABuffer[0]), LineEnd);
   AMethod := string(Copy(RawLine, 1, Space1));
   
-  UrlEnd := Space2;
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
   if QueryStart <> -1 then
   begin
@@ -519,7 +517,6 @@ end;
 
 destructor TEpollRawRequest.Destroy;
 begin
-  FHeaders.Free;
   FResolvedHeaders.Free;
   if Assigned(FBodyStream) then
     FBodyStream.Free;
@@ -762,7 +759,9 @@ var
   LPair: TPair<string, string>;
   LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
   LContentType: string;
+  {$IFDEF FPC}
   I: Integer;
+  {$ENDIF}
 begin
   FStatusCode := ARes.Status;
   
@@ -781,10 +780,14 @@ begin
     FReason := 'OK';
   end;
 
+  {$IFDEF FPC}
+  LContentType := ARes.CSContentType;
+  {$ELSE}
   if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.ContentType <> '') then
     LContentType := ARes.RawWebResponse.ContentType
   else
     LContentType := ARes.CSContentType;
+  {$ENDIF}
 
   if LContentType = '' then
     LContentType := 'text/html; charset=utf-8';
@@ -815,8 +818,10 @@ begin
   begin
     if ARes.BodyText <> '' then
       LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
+    {$IFNDEF FPC}
     else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
-      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content);
+      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
+    {$ENDIF};
   end;
 
   FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)));
@@ -991,10 +996,10 @@ begin
       {$ENDIF}
       try
         LReq := THorseRequest.Create(LWebRequest);
-        {$IFDEF FPC}
         LRes := THorseResponse.Create(nil);
-        {$ELSE}
-        LRes := THorseResponse.Create(LWebResponse);
+        {$IFNDEF FPC}
+        LRes.SetCSRawWebResponse(LWebResponse);
+        LWebResponse := nil;
         {$ENDIF}
         try
           THorseProviderEpoll.Execute(LReq, LRes);
