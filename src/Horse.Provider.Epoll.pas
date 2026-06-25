@@ -1413,7 +1413,10 @@ begin
     end;
 
     LConnHeader := LRawReq.GetFieldByName('connection');
-    LKeepAlive := not SameText(LConnHeader, 'close');
+    if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+      LKeepAlive := not SameText(LConnHeader, 'close')
+    else
+      LKeepAlive := SameText(LConnHeader, 'keep-alive');
 
     if LKeepAlive then
     begin
