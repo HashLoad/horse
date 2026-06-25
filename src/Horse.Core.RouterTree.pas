@@ -265,6 +265,10 @@ begin
   finally
     LQueue.Free;
   end;
+{ PATCH-COOKIE-1 â€” emit typed cookies on the Indy path. The handler has run, so
+  all fluent attributes are set. No-op when FWebResponse is nil (CrossSocket /
+  mORMot emit FCookies from their response bridges instead). }
+  AResponse.FlushCookiesToWebResponse;
 end;
 
 function THorseRouterTree.ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
@@ -444,7 +448,7 @@ begin
     // A genuine duplicate is a second ROUTE HANDLER for the same path+method
     // (two .Get('/same', ...) calls). Middleware attached via AddCallback()
     // arrives first with AIsMiddleware=True and shares the same callback list,
-    // so we must NOT treat the pre-existing list as a duplicate — only a
+    // so we must NOT treat the pre-existing list as a duplicate ï¿½ only a
     // previously-registered handler counts. FHandlerMethods tracks exactly
     // that, independent of the middleware entries in FCallBack.
     if (not AIsMiddleware) and (FHandlerMethods.IndexOf(AHTTPType) >= 0) then

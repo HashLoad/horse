@@ -156,6 +156,7 @@ unit Horse;
   {$IF DEFINED(HORSE_HOST_FCGI)}
     {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
   {$ENDIF}
+  {$DEFINE FPC_HAS_EXPLICIT_INTERLOCKED_POINTER}
 {$IFEND}
 
 { Rule 2 — cross-platform Application-type mismatch }
