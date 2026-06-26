@@ -3,6 +3,7 @@ unit Horse.Provider.Epoll;
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
+{$POINTERMATH ON}
 
 interface
 
@@ -60,6 +61,7 @@ type
   private
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
     class function FindCRLF(const ABuffer: TBytes; AStart, AEnd: Integer): Integer; static; inline;
+    class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean; static; inline;
   public
     class function TryParseRequest(
       const ABuffer: TBytes; 
@@ -89,6 +91,8 @@ type
     FBodyStream: TStream;
     FTempFileName: string;
     FResolvedHeaders: TDictionary<string, string>;
+    FClientIP: string;
+    FClientPort: Integer;
     procedure EnsureBodyStream;
     function ResolveHeader(const AName: string): string;
   public
@@ -99,7 +103,9 @@ type
       ABodyOffset: Integer;
       AContentLength: Int64;
       ABodyStream: TStream;
-      const ATempFileName: string
+      const ATempFileName: string;
+      const AClientIP: string;
+      AClientPort: Integer
     );
     destructor Destroy; override;
 
@@ -113,13 +119,15 @@ type
     function GetServerPort: Integer;
     function GetContentType: string;
     function GetContent: string;
-    {$IF DEFINED(FPC)}
+    {$IFDEF FPC}
     function GetContentLength: Integer;
-    {$ELSEIF CompilerVersion >= 32.0}
-    function GetContentLength: Int64;
     {$ELSE}
-    function GetContentLength: Integer;
-    {$IFEND}
+      {$IF CompilerVersion >= 32.0}
+      function GetContentLength: Int64;
+      {$ELSE}
+      function GetContentLength: Integer;
+      {$ENDIF}
+    {$ENDIF}
     function GetFieldByName(const AName: string): string;
 
     procedure PopulateQueryFields(ADest: TStrings);
@@ -138,10 +146,12 @@ type
     FStatusCode: Integer;
     FReason: string;
     FHeaders: TDictionary<string, string>;
+    FIsKeepAlive: Boolean;
+    function PrepareHeaders: TBytes;
     procedure SendHeaders;
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
   public
-    constructor Create(ASocket: Integer);
+    constructor Create(ASocket: Integer; AIsKeepAlive: Boolean = True);
     destructor Destroy; override;
 
     procedure SetCustomHeader(const AName, AValue: string);
@@ -171,6 +181,10 @@ type
     FChunkLineBytes: TBytes;
     FChunkLineLen: Integer;
     FIsKeepAlive: Boolean;
+    FProcessing: Boolean;
+    FClosed: Integer;
+    ClientIP: string;
+    ClientPort: Integer;
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
     procedure ClearRequest;
@@ -181,8 +195,6 @@ type
   { Pool de buffers estático e thread-safe }
   TBufferPool = class
   private
-    class var FPool: TQueue<TBytes>;
-    class var FSync: TCriticalSection;
     const BUFFER_SIZE = 8192;
   public
     class constructor Create;
@@ -203,6 +215,7 @@ type
     {$ENDIF}
     FRunning: Boolean;
     FConnections: TList<TEpollConnectionContext>;
+    FConnectionsSync: TCriticalSection;
     procedure ProcessClientRead(AContext: TEpollConnectionContext);
     procedure CloseConnection(AContext: TEpollConnectionContext);
     procedure CheckTimeouts;
@@ -256,6 +269,67 @@ implementation
 
 {$IFDEF LINUX}
 
+type
+  TLocalBufferPool = record
+  private
+    const MAX_BUFFERS = 64;
+    const BUFFER_SIZE = 8192;
+  public
+    Buffers: array[0..MAX_BUFFERS - 1] of TBytes;
+    Head: Integer;
+    Tail: Integer;
+    Count: Integer;
+    procedure Init;
+    function Acquire: TBytes;
+    procedure Release(var ABuffer: TBytes);
+    procedure DestroyPool;
+  end;
+
+threadvar
+  FLocalPool: TLocalBufferPool;
+  FLocalPoolInitialized: Boolean;
+
+{$IFDEF FPC}
+type
+  TEpollFPCTask = class
+  public
+    Context: TEpollConnectionContext;
+    RawReq: IHorseRawRequest;
+    RawRes: IHorseRawResponse;
+    WebRequest: TInterfacedWebRequest;
+    KeepAlive: Boolean;
+    EpollFd: Integer;
+    Worker: TThread;
+    constructor Create(AContext: TEpollConnectionContext; ARawReq: IHorseRawRequest; ARawRes: IHorseRawResponse; AWebRequest: TInterfacedWebRequest; AKeepAlive: Boolean; AEpollFd: Integer; AWorker: TThread);
+  end;
+
+  TEpollFPCWorkerThread = class(TThread)
+  private
+    FPool: TObject;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(APool: TObject);
+  end;
+
+  TEpollFPCTaskPool = class
+  private
+    FTasks: TQueue<TEpollFPCTask>;
+    FWorkers: TList<TEpollFPCWorkerThread>;
+    FLock: TCriticalSection;
+    FEvent: TEvent;
+    FActive: Boolean;
+    function DequeueTask: TEpollFPCTask;
+  public
+    constructor Create(AThreadCount: Integer);
+    destructor Destroy; override;
+    procedure QueueTask(ATask: TEpollFPCTask);
+  end;
+
+var
+  GTaskPool: TEpollFPCTaskPool = nil;
+{$ENDIF}
+
 const
   EPOLLIN      = $00000001;
   EPOLLOUT     = $00000004;
@@ -273,6 +347,10 @@ const
   TCP_DEFER_ACCEPT = 9;
   TCP_NODELAY = 1;
 
+  EAGAIN = 11;
+  EWOULDBLOCK = 11;
+  EINTR = 4;
+
 type
   epoll_data = record
     case Integer of
@@ -288,7 +366,36 @@ type
   end;
   pepoll_event = ^epoll_event;
 
-{$IF NOT DEFINED(FPC)}
+  iovec = record
+    iov_base: Pointer;
+    iov_len: NativeUInt;
+  end;
+  piovec = ^iovec;
+
+  TEpollFDSet = record
+    fds_bits: array[0..31] of LongInt;
+  end;
+  PEpollFDSet = ^TEpollFDSet;
+
+  TEpollTimeVal = record
+    tv_sec: Int64;
+    tv_usec: Int64;
+  end;
+  PEpollTimeVal = ^TEpollTimeVal;
+
+{$IFDEF FPC}
+function writev(fd: Integer; iov: piovec; iovcnt: Integer): NativeInt; cdecl; external 'libc' name 'writev';
+{$ELSE}
+function writev(fd: Integer; iov: piovec; iovcnt: Integer): NativeInt; cdecl; external libc name 'writev';
+{$ENDIF}
+
+{$IFDEF FPC}
+function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet; timeout: PEpollTimeVal): Integer; cdecl; external 'libc' name 'select';
+{$ELSE}
+function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet; timeout: PEpollTimeVal): Integer; cdecl; external libc name 'select';
+{$ENDIF}
+
+{$IFNDEF FPC}
 const
   RLIMIT_NOFILE = 7;
 
@@ -311,6 +418,10 @@ function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
 function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
 function clock_gettime(clk_id: Integer; var tp: TEpollTimeSpec): Integer; cdecl; external libc name 'clock_gettime';
 
+function sendfile(out_fd: Integer; in_fd: Integer; offset: PInt64; count: NativeUInt): NativeInt; cdecl; external libc name 'sendfile';
+{$ENDIF}
+
+{$IFNDEF FPC}
 function GetTickCount64: Int64;
 var
   LTime: TEpollTimeSpec;
@@ -320,54 +431,363 @@ begin
   else
     Result := 0;
 end;
-{$IFEND}
+{$ENDIF}
+
+procedure Epoll_FD_ZERO(var fds: TEpollFDSet); inline;
+begin
+  FillChar(fds, SizeOf(fds), 0);
+end;
+
+procedure Epoll_FD_SET(fd: Integer; var fds: TEpollFDSet); inline;
+begin
+  if (fd >= 0) and (fd < 1024) then
+    fds.fds_bits[fd div 32] := fds.fds_bits[fd div 32] or (1 shl (fd mod 32));
+end;
+
+function SendAllV(ASocket: Integer; AIov: piovec; AIovCnt: Integer): Boolean;
+var
+  LWritten: NativeInt;
+  LTotalBytes: NativeUInt;
+  I: Integer;
+  LFDSet: TEpollFDSet;
+  LTimeVal: TEpollTimeVal;
+  LRet: Integer;
+  LErr: Integer;
+begin
+  Result := False;
+  LTotalBytes := 0;
+  for I := 0 to AIovCnt - 1 do
+    Inc(LTotalBytes, AIov[I].iov_len);
+
+  while LTotalBytes > 0 do
+  begin
+    LWritten := writev(ASocket, AIov, AIovCnt);
+    if LWritten >= 0 then
+    begin
+      Dec(LTotalBytes, LWritten);
+      if LTotalBytes = 0 then
+      begin
+        Result := True;
+        Exit;
+      end;
+      
+      while (AIovCnt > 0) and (LWritten >= NativeInt(AIov^.iov_len)) do
+      begin
+        Dec(LWritten, AIov^.iov_len);
+        Inc(AIov);
+        Dec(AIovCnt);
+      end;
+      if AIovCnt > 0 then
+      begin
+        AIov^.iov_base := Pointer(PByte(AIov^.iov_base) + LWritten);
+        Dec(AIov^.iov_len, LWritten);
+      end;
+      Continue;
+    end;
+
+    {$IFDEF FPC}
+    LErr := fpGetErrno;
+    {$ELSE}
+    LErr := errno;
+    {$ENDIF}
+
+    if (LErr = EAGAIN) or (LErr = EWOULDBLOCK) or (LErr = EINTR) then
+    begin
+      if LErr = EINTR then
+        Continue;
+
+      Epoll_FD_ZERO(LFDSet);
+      Epoll_FD_SET(ASocket, LFDSet);
+      LTimeVal.tv_sec := 5;
+      LTimeVal.tv_usec := 0;
+      
+      LRet := select(ASocket + 1, nil, @LFDSet, nil, @LTimeVal);
+      if LRet <= 0 then
+        Exit;
+    end
+    else
+    begin
+      Exit;
+    end;
+  end;
+  Result := True;
+end;
+
+function SendAll(ASocket: Integer; ABuffer: Pointer; ALength: Integer): Boolean;
+var
+  LIov: iovec;
+begin
+  if ALength <= 0 then
+    Exit(True);
+  LIov.iov_base := ABuffer;
+  LIov.iov_len := ALength;
+  Result := SendAllV(ASocket, @LIov, 1);
+end;
+
+{ TLocalBufferPool }
+
+procedure TLocalBufferPool.Init;
+var
+  I: Integer;
+begin
+  Head := 0;
+  Tail := 0;
+  Count := MAX_BUFFERS;
+  for I := 0 to MAX_BUFFERS - 1 do
+    SetLength(Buffers[I], BUFFER_SIZE);
+end;
+
+function TLocalBufferPool.Acquire: TBytes;
+begin
+  if Count > 0 then
+  begin
+    Result := Buffers[Head];
+    Buffers[Head] := nil;
+    Head := (Head + 1) mod MAX_BUFFERS;
+    Dec(Count);
+  end
+  else
+  begin
+    SetLength(Result, BUFFER_SIZE);
+  end;
+end;
+
+procedure TLocalBufferPool.Release(var ABuffer: TBytes);
+begin
+  if ABuffer = nil then Exit;
+  if Length(ABuffer) <> BUFFER_SIZE then
+  begin
+    ABuffer := nil;
+    Exit;
+  end;
+
+  if Count < MAX_BUFFERS then
+  begin
+    Buffers[Tail] := ABuffer;
+    ABuffer := nil;
+    Tail := (Tail + 1) mod MAX_BUFFERS;
+    Inc(Count);
+  end
+  else
+  begin
+    ABuffer := nil;
+  end;
+end;
+
+procedure TLocalBufferPool.DestroyPool;
+var
+  I: Integer;
+begin
+  for I := 0 to MAX_BUFFERS - 1 do
+    Buffers[I] := nil;
+  Count := 0;
+  Head := 0;
+  Tail := 0;
+end;
+
+{$IFDEF FPC}
+{ TEpollFPCTask }
+
+constructor TEpollFPCTask.Create(AContext: TEpollConnectionContext; ARawReq: IHorseRawRequest; ARawRes: IHorseRawResponse; AWebRequest: TInterfacedWebRequest; AKeepAlive: Boolean; AEpollFd: Integer; AWorker: TThread);
+begin
+  inherited Create;
+  Context := AContext;
+  RawReq := ARawReq;
+  RawRes := ARawRes;
+  WebRequest := AWebRequest;
+  KeepAlive := AKeepAlive;
+  EpollFd := AEpollFd;
+  Worker := AWorker;
+end;
+
+{ TEpollFPCWorkerThread }
+
+constructor TEpollFPCWorkerThread.Create(APool: TObject);
+begin
+  inherited Create(False);
+  FPool := APool;
+  FreeOnTerminate := False;
+end;
+
+procedure TEpollFPCWorkerThread.Execute;
+var
+  LPool: TEpollFPCTaskPool;
+  LTask: TEpollFPCTask;
+  LHorseReq: THorseRequest;
+  LHorseRes: THorseResponse;
+  LLocalEvent: epoll_event;
+begin
+  LPool := TEpollFPCTaskPool(FPool);
+  
+  if not FLocalPoolInitialized then
+  begin
+    FLocalPool.Init;
+    FLocalPoolInitialized := True;
+  end;
+
+  try
+    while not Terminated and LPool.FActive do
+    begin
+      LTask := LPool.DequeueTask;
+      if LTask = nil then
+      begin
+        if Terminated or not LPool.FActive then
+          Break;
+        LPool.FEvent.WaitFor(1000);
+        Continue;
+      end;
+
+      try
+        LHorseReq := THorseRequest.Create(LTask.WebRequest);
+        LHorseRes := THorseResponse.Create(nil);
+        try
+          THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
+        finally
+          TEpollRawResponse(LTask.RawRes).SendResponse(LHorseRes);
+          LHorseReq.Free;
+          LHorseRes.Free;
+        end;
+      finally
+        LTask.WebRequest.Free;
+        
+        if LTask.KeepAlive then
+        begin
+          LTask.Context.ClearRequest;
+          LTask.Context.Buffer := TBufferPool.Acquire;
+          LTask.Context.FIsKeepAlive := True;
+          LTask.Context.BytesReceived := 0;
+          LTask.Context.FProcessing := False;
+
+          LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+          LLocalEvent.data.ptr := LTask.Context;
+          epoll_ctl(LTask.EpollFd, EPOLL_CTL_MOD, LTask.Context.Socket, @LLocalEvent);
+        end
+        else
+        begin
+          THorseEpollWorker(LTask.Worker).CloseConnection(LTask.Context);
+        end;
+        LTask.Free;
+      end;
+    end;
+  finally
+    if FLocalPoolInitialized then
+    begin
+      FLocalPool.DestroyPool;
+      FLocalPoolInitialized := False;
+    end;
+  end;
+end;
+
+{ TEpollFPCTaskPool }
+
+constructor TEpollFPCTaskPool.Create(AThreadCount: Integer);
+var
+  I: Integer;
+begin
+  inherited Create;
+  FActive := True;
+  FTasks := TQueue<TEpollFPCTask>.Create;
+  FWorkers := TList<TEpollFPCWorkerThread>.Create;
+  FLock := TCriticalSection.Create;
+  FEvent := TEvent.Create(nil, False, False, '');
+  
+  for I := 1 to AThreadCount do
+    FWorkers.Add(TEpollFPCWorkerThread.Create(Self));
+end;
+
+destructor TEpollFPCTaskPool.Destroy;
+var
+  I: Integer;
+  LTask: TEpollFPCTask;
+begin
+  FActive := False;
+  FEvent.SetEvent;
+  
+  for I := 0 to FWorkers.Count - 1 do
+    FWorkers[I].Terminate;
+  
+  FEvent.SetEvent;
+  
+  for I := 0 to FWorkers.Count - 1 do
+  begin
+    FWorkers[I].WaitFor;
+    FWorkers[I].Free;
+  end;
+  FWorkers.Free;
+
+  FLock.Enter;
+  try
+    while FTasks.Count > 0 do
+    begin
+      LTask := FTasks.Dequeue;
+      LTask.WebRequest.Free;
+      LTask.Free;
+    end;
+    FTasks.Free;
+  finally
+    FLock.Leave;
+  end;
+  
+  FLock.Free;
+  FEvent.Free;
+  inherited;
+end;
+
+procedure TEpollFPCTaskPool.QueueTask(ATask: TEpollFPCTask);
+begin
+  FLock.Enter;
+  try
+    if FActive then
+    begin
+      FTasks.Enqueue(ATask);
+      FEvent.SetEvent;
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TEpollFPCTaskPool.DequeueTask: TEpollFPCTask;
+begin
+  Result := nil;
+  FLock.Enter;
+  try
+    if FTasks.Count > 0 then
+      Result := FTasks.Dequeue;
+  finally
+    FLock.Leave;
+  end;
+end;
+{$ENDIF}
 
 { TBufferPool }
 
 class constructor TBufferPool.Create;
 begin
-  FPool := TQueue<TBytes>.Create;
-  FSync := TCriticalSection.Create;
 end;
 
 class destructor TBufferPool.Destroy;
 begin
-  FSync.Enter;
-  try
-    while FPool.Count > 0 do
-      FPool.Dequeue;
-    FPool.Free;
-  finally
-    FSync.Leave;
-    FSync.Free;
-  end;
 end;
 
 class function TBufferPool.Acquire: TBytes;
 begin
-  FSync.Enter;
-  try
-    if FPool.Count > 0 then
-      Result := FPool.Dequeue
-    else
-      SetLength(Result, BUFFER_SIZE);
-  finally
-    FSync.Leave;
+  if not FLocalPoolInitialized then
+  begin
+    FLocalPool.Init;
+    FLocalPoolInitialized := True;
   end;
+  Result := FLocalPool.Acquire;
 end;
 
 class procedure TBufferPool.Release(var ABuffer: TBytes);
 begin
-  if ABuffer = nil then Exit;
-  FSync.Enter;
-  try
-    if FPool.Count < 512 then // Limite de cache no pool
-      FPool.Enqueue(ABuffer)
-    else
-      ABuffer := nil;
-  finally
-    FSync.Leave;
+  if not FLocalPoolInitialized then
+  begin
+    ABuffer := nil;
+    Exit;
   end;
+  FLocalPool.Release(ABuffer);
 end;
 
 { TEpollConnectionContext }
@@ -388,6 +808,10 @@ begin
   SetLength(FChunkLineBytes, 256);
   FChunkLineLen := 0;
   FIsKeepAlive := False;
+  FProcessing := False;
+  FClosed := 0;
+  ClientIP := '';
+  ClientPort := 0;
   LastActive := GetTickCount64;
   ClearRequest;
 end;
@@ -578,6 +1002,23 @@ begin
   Result := -1;
 end;
 
+class function THorseHttpParser.CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if ALen <> Length(AStr) then Exit(False);
+  for I := 0 to ALen - 1 do
+  begin
+    B1 := ABuffer[AStart + I];
+    B2 := Byte(AStr[I + 1]);
+    if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+    if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    if B1 <> B2 then Exit(False);
+  end;
+  Result := True;
+end;
+
 class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
@@ -599,7 +1040,6 @@ var
   QueryStart: Integer;
   Colon: Integer;
   Key: string;
-  ValStr: string;
   Segment: THeaderSegment;
   RawLine: AnsiString;
 begin
@@ -670,22 +1110,40 @@ begin
       Colon := FindByte(ABuffer, LineStart, LineEnd, 58); // ':'
       if Colon <> -1 then
       begin
-        SetString(RawLine, PAnsiChar(@ABuffer[LineStart]), Colon - LineStart);
-        Key := LowerCase(Trim(string(RawLine)));
-        
         Segment.KeyStart := LineStart;
         Segment.KeyLen := Colon - LineStart;
-        Segment.ValueStart := Colon + 1;
-        Segment.ValueLen := LineEnd - (Colon + 1);
         
-        AHeaders.AddOrSetValue(Key, Segment);
+        // Remove espaços do valor (Trim rápido dos bytes)
+        I := Colon + 1;
+        while (I < LineEnd) and (ABuffer[I] = 32) do Inc(I);
+        Segment.ValueStart := I;
+        Segment.ValueLen := LineEnd - I;
 
-        if Key = 'content-length' then
+        // Comparações de bytes direta (Zero-Allocation) para as chaves conhecidas
+        if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-length') then
         begin
-          SetString(RawLine, PAnsiChar(@ABuffer[Segment.ValueStart]), Segment.ValueLen);
-          ValStr := Trim(string(RawLine));
-          AContentLength := StrToInt64Def(ValStr, 0);
+          if Segment.ValueLen > 0 then
+          begin
+            SetString(RawLine, PAnsiChar(@ABuffer[Segment.ValueStart]), Segment.ValueLen);
+            AContentLength := StrToInt64Def(string(RawLine), 0);
+          end;
+          Key := 'content-length';
+        end
+        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'transfer-encoding') then
+          Key := 'transfer-encoding'
+        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'connection') then
+          Key := 'connection'
+        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'host') then
+          Key := 'host'
+        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-type') then
+          Key := 'content-type'
+        else
+        begin
+          SetString(RawLine, PAnsiChar(@ABuffer[Segment.KeyStart]), Segment.KeyLen);
+          Key := LowerCase(Trim(string(RawLine)));
         end;
+
+        AHeaders.AddOrSetValue(Key, Segment);
       end;
     end;
 
@@ -705,7 +1163,9 @@ constructor TEpollRawRequest.Create(
   ABodyOffset: Integer;
   AContentLength: Int64;
   ABodyStream: TStream;
-  const ATempFileName: string
+  const ATempFileName: string;
+  const AClientIP: string;
+  AClientPort: Integer
 );
 begin
   inherited Create;
@@ -719,6 +1179,8 @@ begin
   FContentLength := AContentLength;
   FBodyStream := ABodyStream;
   FTempFileName := ATempFileName;
+  FClientIP := AClientIP;
+  FClientPort := AClientPort;
   FResolvedHeaders := TDictionary<string, string>.Create;
 end;
 
@@ -729,6 +1191,7 @@ begin
     FBodyStream.Free;
   if FTempFileName <> '' then
     DeleteFile(FTempFileName);
+  TBufferPool.Release(FBuffer);
   inherited;
 end;
 
@@ -774,8 +1237,9 @@ end;
 function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
 function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
-function TEpollRawRequest.GetRemoteAddr: string; begin Result := '127.0.0.1'; end;
-function TEpollRawRequest.GetServerPort: Integer; begin Result := 9095; end;
+function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
+// Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
+function TEpollRawRequest.GetServerPort: Integer; begin Result := THorseProviderEpoll.Port; end;
 function TEpollRawRequest.GetContentType: string; begin Result := ResolveHeader('content-type'); end;
 
 function TEpollRawRequest.GetContent: string;
@@ -791,22 +1255,24 @@ begin
   Result := TEncoding.UTF8.GetString(LBytes);
 end;
 
-{$IF DEFINED(FPC)}
+{$IFDEF FPC}
 function TEpollRawRequest.GetContentLength: Integer;
-begin
-  Result := FContentLength;
-end;
-{$ELSEIF CompilerVersion >= 32.0}
-function TEpollRawRequest.GetContentLength: Int64;
 begin
   Result := FContentLength;
 end;
 {$ELSE}
-function TEpollRawRequest.GetContentLength: Integer;
-begin
-  Result := FContentLength;
-end;
-{$IFEND}
+  {$IF CompilerVersion >= 32.0}
+  function TEpollRawRequest.GetContentLength: Int64;
+  begin
+    Result := FContentLength;
+  end;
+  {$ELSE}
+  function TEpollRawRequest.GetContentLength: Integer;
+  begin
+    Result := FContentLength;
+  end;
+  {$ENDIF}
+{$ENDIF}
 
 function TEpollRawRequest.GetFieldByName(const AName: string): string;
 begin
@@ -911,7 +1377,7 @@ end;
 
 { TEpollRawResponse }
 
-constructor TEpollRawResponse.Create(ASocket: Integer);
+constructor TEpollRawResponse.Create(ASocket: Integer; AIsKeepAlive: Boolean);
 begin
   inherited Create;
   FSocket := ASocket;
@@ -919,6 +1385,7 @@ begin
   FStatusCode := 200;
   FReason := 'OK';
   FHeaders := TDictionary<string, string>.Create;
+  FIsKeepAlive := AIsKeepAlive;
 end;
 
 destructor TEpollRawResponse.Destroy;
@@ -931,30 +1398,39 @@ procedure TEpollRawResponse.SetCustomHeader(const AName, AValue: string);
 begin
 end;
 
-procedure TEpollRawResponse.SendHeaders;
+function TEpollRawResponse.PrepareHeaders: TBytes;
 var
   LHeaderStr: string;
-  LHeaderBytes: TBytes;
   LPair: TPair<string, string>;
 begin
-  if FHeadersSent then Exit;
-
   LHeaderStr := Format('HTTP/1.1 %d %s'#13#10, [FStatusCode, FReason]);
   
   if not FHeaders.ContainsKey('Content-Type') then
     FHeaders.Add('Content-Type', 'text/html; charset=utf-8');
 
+  if not FHeaders.ContainsKey('Connection') then
+  begin
+    if FIsKeepAlive then
+      FHeaders.Add('Connection', 'keep-alive')
+    else
+      FHeaders.Add('Connection', 'close');
+  end;
+
   for LPair in FHeaders do
     LHeaderStr := LHeaderStr + Format('%s: %s'#13#10, [LPair.Key, LPair.Value]);
 
   LHeaderStr := LHeaderStr + #13#10;
-  LHeaderBytes := TEncoding.UTF8.GetBytes(LHeaderStr);
+  Result := TEncoding.UTF8.GetBytes(LHeaderStr);
+end;
 
-  {$IFDEF FPC}
-  fpSend(FSocket, @LHeaderBytes[0], Length(LHeaderBytes), 0);
-  {$ELSE}
-  send(FSocket, LHeaderBytes[0], Length(LHeaderBytes), 0);
-  {$ENDIF}
+procedure TEpollRawResponse.SendHeaders;
+var
+  LHeaderBytes: TBytes;
+begin
+  if FHeadersSent then Exit;
+  LHeaderBytes := PrepareHeaders;
+  if Length(LHeaderBytes) > 0 then
+    SendAll(FSocket, @LHeaderBytes[0], Length(LHeaderBytes));
   FHeadersSent := True;
 end;
 
@@ -968,8 +1444,13 @@ var
   LTermStr: string;
   LTermBytes: TBytes;
   LHasChunkedHeader: Boolean;
+  LChunkIov: array[0..2] of iovec;
   {$IFDEF FPC}
   I: Integer;
+  {$ENDIF}
+  {$IF NOT DEFINED(FPC)}
+  LFileHandle: THandle;
+  LCount: Int64;
   {$ENDIF}
 begin
   LHasChunkedHeader := False;
@@ -992,6 +1473,23 @@ begin
     FHeaders.Remove('Content-Length');
   end;
 
+  {$IF NOT DEFINED(FPC)}
+  // Otimização Zero-Copy com sendfile do Linux para TFileStream
+  if (not LUseChunked) and (AStream is TFileStream) then
+  begin
+    LFileHandle := TFileStream(AStream).Handle;
+    LCount := AStream.Size - AStream.Position;
+    if LCount > 0 then
+    begin
+      FHeaders.AddOrSetValue('Content-Length', IntToStr(LCount));
+      SendHeaders;
+      if sendfile(FSocket, LFileHandle, nil, LCount) >= 0 then
+        Exit; // Sucesso com Zero-Copy
+      // Se falhar (por exemplo, socket não aceitar ou erro), cai no fallback de cópia normal
+    end;
+  end;
+  {$ENDIF}
+
   SendHeaders;
 
   SetLength(LChunkBuf, 8192);
@@ -1005,23 +1503,17 @@ begin
     begin
       LHexStr := Format('%x'#13#10, [LReadCount]);
       LHexBytes := TEncoding.ASCII.GetBytes(LHexStr);
-      {$IFDEF FPC}
-      if (fpSend(FSocket, @LHexBytes[0], Length(LHexBytes), 0) < 0) or
-         (fpSend(FSocket, @LChunkBuf[0], LReadCount, 0) < 0) or
-         (fpSend(FSocket, PAnsiChar(#13#10), 2, 0) < 0) then Break;
-      {$ELSE}
-      if (send(FSocket, LHexBytes[0], Length(LHexBytes), 0) < 0) or
-         (send(FSocket, LChunkBuf[0], LReadCount, 0) < 0) or
-         (send(FSocket, PAnsiChar(#13#10)^, 2, 0) < 0) then Break;
-      {$ENDIF}
+      LChunkIov[0].iov_base := @LHexBytes[0];
+      LChunkIov[0].iov_len := Length(LHexBytes);
+      LChunkIov[1].iov_base := @LChunkBuf[0];
+      LChunkIov[1].iov_len := LReadCount;
+      LChunkIov[2].iov_base := PAnsiChar(#13#10);
+      LChunkIov[2].iov_len := 2;
+      if not SendAllV(FSocket, @LChunkIov[0], 3) then Break;
     end
     else
     begin
-      {$IFDEF FPC}
-      if fpSend(FSocket, @LChunkBuf[0], LReadCount, 0) < 0 then Break;
-      {$ELSE}
-      if send(FSocket, LChunkBuf[0], LReadCount, 0) < 0 then Break;
-      {$ENDIF}
+      if not SendAll(FSocket, @LChunkBuf[0], LReadCount) then Break;
     end;
   end;
 
@@ -1029,11 +1521,7 @@ begin
   begin
     LTermStr := '0'#13#10#13#10;
     LTermBytes := TEncoding.ASCII.GetBytes(LTermStr);
-    {$IFDEF FPC}
-    fpSend(FSocket, @LTermBytes[0], Length(LTermBytes), 0);
-    {$ELSE}
-    send(FSocket, LTermBytes[0], Length(LTermBytes), 0);
-    {$ENDIF}
+    SendAll(FSocket, @LTermBytes[0], Length(LTermBytes));
   end;
 end;
 
@@ -1043,6 +1531,8 @@ var
   LPair: TPair<string, string>;
   LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
   LContentType: string;
+  LHeaderBytes: TBytes;
+  LIov: array[0..1] of iovec;
   {$IFDEF FPC}
   I: Integer;
   {$ENDIF}
@@ -1108,14 +1598,27 @@ begin
 
   FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)));
 
-  SendHeaders;
-  if Length(LBodyBytes) > 0 then
+  if not FHeadersSent then
   begin
-    {$IFDEF FPC}
-    fpSend(FSocket, @LBodyBytes[0], Length(LBodyBytes), 0);
-    {$ELSE}
-    send(FSocket, LBodyBytes[0], Length(LBodyBytes), 0);
-    {$ENDIF}
+    LHeaderBytes := PrepareHeaders;
+    FHeadersSent := True;
+    if Length(LBodyBytes) > 0 then
+    begin
+      LIov[0].iov_base := @LHeaderBytes[0];
+      LIov[0].iov_len := Length(LHeaderBytes);
+      LIov[1].iov_base := @LBodyBytes[0];
+      LIov[1].iov_len := Length(LBodyBytes);
+      SendAllV(FSocket, @LIov[0], 2);
+    end
+    else
+    begin
+      SendAll(FSocket, @LHeaderBytes[0], Length(LHeaderBytes));
+    end;
+  end
+  else
+  begin
+    if Length(LBodyBytes) > 0 then
+      SendAll(FSocket, @LBodyBytes[0], Length(LBodyBytes));
   end;
 end;
 
@@ -1130,6 +1633,7 @@ begin
   FPipeFds[0] := -1;
   FPipeFds[1] := -1;
   FConnections := TList<TEpollConnectionContext>.Create;
+  FConnectionsSync := TCriticalSection.Create;
   FreeOnTerminate := False;
 end;
 
@@ -1139,6 +1643,7 @@ begin
   while FConnections.Count > 0 do
     CloseConnection(FConnections[0]);
   FConnections.Free;
+  FConnectionsSync.Free;
   inherited;
 end;
 
@@ -1181,7 +1686,16 @@ end;
 
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
 begin
-  FConnections.Remove(AContext);
+  if AContext = nil then Exit;
+  if TInterlocked.CompareExchange(AContext.FClosed, 1, 0) <> 0 then
+    Exit;
+
+  FConnectionsSync.Enter;
+  try
+    FConnections.Remove(AContext);
+  finally
+    FConnectionsSync.Leave;
+  end;
   epoll_ctl(FEpollFd, EPOLL_CTL_DEL, AContext.Socket, nil);
   {$IF DEFINED(FPC)}
   fpClose(AContext.Socket);
@@ -1195,11 +1709,13 @@ procedure THorseEpollWorker.ProcessClientRead(AContext: TEpollConnectionContext)
 var
   LBytesRead: Integer;
   LRawReq: IHorseRawRequest;
-  LRawRes: TEpollRawResponse;
+  LRawRes: IHorseRawResponse;
   LWebRequest: TInterfacedWebRequest;
   LWebResponse: TInterfacedWebResponse;
+  {$IFDEF FPC}
   LReq: THorseRequest;
   LRes: THorseResponse;
+  {$ENDIF}
   LEvent: epoll_event;
   LKeepAlive: Boolean;
   LConnHeader: string;
@@ -1208,6 +1724,7 @@ var
   LIsChunked: Boolean;
   LSegment: THeaderSegment;
   LRawVal: AnsiString;
+  LBodyReadBuf: TBytes;
 begin
   LRequestComplete := False;
 
@@ -1316,12 +1833,13 @@ begin
   end
   else
   begin
+    SetLength(LBodyReadBuf, 8192);
     while True do
     begin
       {$IFDEF FPC}
-      LBytesRead := fpRecv(AContext.Socket, @AContext.Buffer[0], 8192, 0);
+      LBytesRead := fpRecv(AContext.Socket, @LBodyReadBuf[0], 8192, 0);
       {$ELSE}
-      LBytesRead := recv(AContext.Socket, AContext.Buffer[0], 8192, 0);
+      LBytesRead := recv(AContext.Socket, LBodyReadBuf[0], 8192, 0);
       {$ENDIF}
 
       if LBytesRead = 0 then
@@ -1349,12 +1867,12 @@ begin
 
       if AContext.FChunked then
       begin
-        LRequestComplete := AContext.ProcessChunkedBytes(AContext.Buffer, 0, LBytesRead);
+        LRequestComplete := AContext.ProcessChunkedBytes(LBodyReadBuf, 0, LBytesRead);
         if LRequestComplete then Break;
       end
       else
       begin
-        AContext.WriteToBodyStream(AContext.Buffer, 0, LBytesRead);
+        AContext.WriteToBodyStream(LBodyReadBuf, 0, LBytesRead);
         AContext.BytesReceived := AContext.BytesReceived + LBytesRead;
         LRequestComplete := AContext.BytesReceived >= AContext.BodyOffset + AContext.ContentLength;
         if LRequestComplete then Break;
@@ -1379,38 +1897,13 @@ begin
       AContext.BodyOffset,
       AContext.ContentLength,
       AContext.FBodyStream,
-      AContext.FTempFileName
+      AContext.FTempFileName,
+      AContext.ClientIP,
+      AContext.ClientPort
     );
+    AContext.Buffer := nil;
     AContext.FBodyStream := nil;
     AContext.FTempFileName := '';
-    LRawRes := TEpollRawResponse.Create(AContext.Socket);
-    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-    
-    {$IFDEF FPC}
-    LWebResponse := nil;
-    {$ELSE}
-    LWebResponse := TInterfacedWebResponse.Create(LRawRes);
-    {$ENDIF}
-    try
-      LReq := THorseRequest.Create(LWebRequest);
-      LRes := THorseResponse.Create(nil);
-      {$IFNDEF FPC}
-      LRes.SetCSRawWebResponse(LWebResponse);
-      LWebResponse := nil;
-      {$ENDIF}
-      try
-        THorseProviderEpoll.Execute(LReq, LRes);
-      finally
-        LRawRes.SendResponse(LRes);
-        LReq.Free;
-        LRes.Free;
-      end;
-    finally
-      LWebRequest.Free;
-      if LWebResponse <> nil then
-        LWebResponse.Free;
-      LRawRes.Free;
-    end;
 
     LConnHeader := LRawReq.GetFieldByName('connection');
     if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
@@ -1418,18 +1911,112 @@ begin
     else
       LKeepAlive := SameText(LConnHeader, 'keep-alive');
 
-    if LKeepAlive then
-    begin
-      AContext.ClearRequest;
-      AContext.FIsKeepAlive := True;
-      AContext.BytesReceived := 0;
+    LRawRes := TEpollRawResponse.Create(AContext.Socket, LKeepAlive);
+    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+    
+    {$IFDEF FPC}
+    LWebResponse := nil;
+    {$ELSE}
+    LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+    {$ENDIF}
 
-      LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
-      LEvent.data.ptr := AContext;
-      epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
+    AContext.FProcessing := True;
+
+    {$IF NOT DEFINED(FPC)}
+    // Delphi Linux: Executa rotas assincronamente no Task Parallel Library
+    TTask.Run(
+      procedure
+      var
+        LHorseReq: THorseRequest;
+        LHorseRes: THorseResponse;
+        LLocalEvent: epoll_event;
+        LLocalEpollFd: Integer;
+        LLocalContext: TEpollConnectionContext;
+        LLocalRawRes: IHorseRawResponse;
+        LLocalKeepAlive: Boolean;
+      begin
+        LLocalEpollFd := FEpollFd;
+        LLocalContext := AContext;
+        LLocalRawRes := LRawRes;
+        LLocalKeepAlive := LKeepAlive;
+        try
+          LHorseReq := THorseRequest.Create(LWebRequest);
+          LHorseRes := THorseResponse.Create(nil);
+          LHorseRes.SetCSRawWebResponse(LWebResponse);
+          try
+            THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
+          finally
+            TEpollRawResponse(LLocalRawRes).SendResponse(LHorseRes);
+            LHorseReq.Free;
+            LHorseRes.Free;
+          end;
+        finally
+          LWebRequest.Free;
+          
+          if LLocalKeepAlive then
+          begin
+            LLocalContext.ClearRequest;
+            LLocalContext.Buffer := TBufferPool.Acquire;
+            LLocalContext.FIsKeepAlive := True;
+            LLocalContext.BytesReceived := 0;
+            LLocalContext.FProcessing := False;
+
+            LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+            LLocalEvent.data.ptr := LLocalContext;
+            epoll_ctl(LLocalEpollFd, EPOLL_CTL_MOD, LLocalContext.Socket, @LLocalEvent);
+          end
+          else
+          begin
+            CloseConnection(LLocalContext);
+          end;
+        end;
+      end);
+    {$ELSE}
+    // Lazarus FPC: Despacha as rotas via GTaskPool de forma assíncrona
+    if GTaskPool <> nil then
+    begin
+      GTaskPool.QueueTask(TEpollFPCTask.Create(
+        AContext,
+        LRawReq,
+        LRawRes,
+        LWebRequest,
+        LKeepAlive,
+        FEpollFd,
+        Self
+      ));
     end
     else
-      CloseConnection(AContext);
+    begin
+      try
+        LReq := THorseRequest.Create(LWebRequest);
+        LRes := THorseResponse.Create(nil);
+        try
+          THorseProviderEpoll.Execute(LReq, LRes);
+        finally
+          TEpollRawResponse(LRawRes).SendResponse(LRes);
+          LReq.Free;
+          LRes.Free;
+        end;
+      finally
+        LWebRequest.Free;
+      end;
+
+      if LKeepAlive then
+      begin
+        AContext.ClearRequest;
+        AContext.Buffer := TBufferPool.Acquire;
+        AContext.FIsKeepAlive := True;
+        AContext.BytesReceived := 0;
+        AContext.FProcessing := False;
+
+        LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+        LEvent.data.ptr := AContext;
+        epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
+      end
+      else
+        CloseConnection(AContext);
+    end;
+    {$ENDIF}
   end
   else if AContext.BodyOffset <> -1 then
   begin
@@ -1450,21 +2037,38 @@ var
   LNow: Int64;
   I: Integer;
   LContext: TEpollConnectionContext;
+  LExpired: TList<TEpollConnectionContext>;
 begin
   LNow := GetTickCount64;
-  for I := FConnections.Count - 1 downto 0 do
-  begin
-    LContext := FConnections[I];
-    if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
-    begin
-      if LNow - LContext.LastActive > 60000 then
-        CloseConnection(LContext);
-    end
-    else
-    begin
-      if LNow - LContext.LastActive > 5000 then
-        CloseConnection(LContext);
+  LExpired := TList<TEpollConnectionContext>.Create;
+  try
+    FConnectionsSync.Enter;
+    try
+      for I := FConnections.Count - 1 downto 0 do
+      begin
+        LContext := FConnections[I];
+        if LContext.FProcessing then
+          Continue;
+
+        if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
+        begin
+          if LNow - LContext.LastActive > 60000 then
+            LExpired.Add(LContext);
+        end
+        else
+        begin
+          if LNow - LContext.LastActive > 5000 then
+            LExpired.Add(LContext);
+        end;
+      end;
+    finally
+      FConnectionsSync.Leave;
     end;
+
+    for LContext in LExpired do
+      CloseConnection(LContext);
+  finally
+    LExpired.Free;
   end;
 end;
 
@@ -1484,6 +2088,8 @@ var
   LClientFd: Integer;
   LOptVal: Integer;
   LContext: TEpollConnectionContext;
+  LLastTimeoutCheck: Int64;
+  LCurrentTime: Int64;
 begin
   {$IFDEF FPC}
   FEpollFd := epoll_create(1024);
@@ -1523,6 +2129,7 @@ begin
   {$IFDEF FPC}
   Writeln('Worker: Thread iniciada. FListenSocket = ', FListenSocket, ' FEpollFd = ', FEpollFd);
   {$ENDIF}
+  LLastTimeoutCheck := GetTickCount64;
 
   try
     while not Terminated and FRunning do
@@ -1590,7 +2197,19 @@ begin
             {$ENDIF}
 
             LContext := TEpollConnectionContext.Create(LClientFd);
-            FConnections.Add(LContext);
+            {$IFDEF FPC}
+            LContext.ClientIP := NetAddrToStr(LAddr.sin_addr);
+            LContext.ClientPort := ntohs(LAddr.sin_port);
+            {$ELSE}
+            LContext.ClientIP := string(AnsiString(inet_ntoa(LAddr.sin_addr)));
+            LContext.ClientPort := ntohs(LAddr.sin_port);
+            {$ENDIF}
+            FConnectionsSync.Enter;
+            try
+              FConnections.Add(LContext);
+            finally
+              FConnectionsSync.Leave;
+            end;
 
             LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
             LEvent.data.ptr := LContext;
@@ -1612,10 +2231,20 @@ begin
         end;
       end;
 
-      CheckTimeouts;
+      LCurrentTime := GetTickCount64;
+      if LCurrentTime - LLastTimeoutCheck > 1000 then
+      begin
+        CheckTimeouts;
+        LLastTimeoutCheck := LCurrentTime;
+      end;
     end;
   finally
     {$IFDEF FPC}Writeln('Worker: Thread encerrando.');{$ENDIF}
+    if FLocalPoolInitialized then
+    begin
+      FLocalPool.DestroyPool;
+      FLocalPoolInitialized := False;
+    end;
   end;
 end;
 
@@ -1642,6 +2271,8 @@ begin
   fpSetrlimit(RLIMIT_NOFILE, @LRLimit);
   {$ELSE}
   setrlimit(RLIMIT_NOFILE, LRLimit);
+  TThreadPool.Default.MaxWorkerThreads := 2048;
+  TThreadPool.Default.MinWorkerThreads := TThread.ProcessorCount * 8;
   {$ENDIF}
 end;
 
@@ -1705,6 +2336,11 @@ begin
   LThreadCount := TThread.ProcessorCount;
   if LThreadCount <= 0 then
     LThreadCount := 2;
+
+  {$IFDEF FPC}
+  if GTaskPool = nil then
+    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 4);
+  {$ENDIF}
 
   try
     for I := 1 to LThreadCount do
@@ -1789,6 +2425,14 @@ begin
   if not FRunning then Exit;
 
   FRunning := False;
+
+  {$IFDEF FPC}
+  if GTaskPool <> nil then
+  begin
+    GTaskPool.Free;
+    GTaskPool := nil;
+  end;
+  {$ENDIF}
 
   for I := 0 to FWorkers.Count - 1 do
     FWorkers[I].TerminateWorker;

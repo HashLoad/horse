@@ -1,0 +1,23 @@
+FROM ubuntu:22.04
+
+# Evita prompts interativos
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instala curl para podermos testar as rotas de dentro/fora do contêiner e bibliotecas de sistema necessárias
+RUN apt-get update && apt-get install -y \
+    curl \
+    libc6 \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Copia o executável compilado do Windows
+COPY samples/delphi/epoll/EpollConsole /usr/src/app/EpollConsole
+
+# Permissões de execução no executável
+RUN chmod +x /usr/src/app/EpollConsole
+
+EXPOSE 9095
+
+CMD ["./EpollConsole"]

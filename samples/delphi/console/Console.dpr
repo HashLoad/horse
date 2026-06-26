@@ -1,11 +1,34 @@
 program Console;
 
+{$IFDEF FPC}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
 {$APPTYPE CONSOLE}
+{$IFDEF MSWINDOWS}
 {$R *.res}
+{$ENDIF}
 
 uses
+  {$IFDEF UNIX}
+    cthreads,
+  {$ENDIF}
   Horse,
-  System.SysUtils;
+  {$IFDEF FPC}
+    SysUtils;
+  {$ELSE}
+    System.SysUtils;
+  {$ENDIF}
+
+procedure DoPing(Req: THorseRequest; Res: THorseResponse);
+begin
+  Res.Send('Ping');
+end;
+
+procedure DoListen;
+begin
+  Writeln(Format('Server is running on port %d...', [THorse.Port]));
+end;
 
 begin
   {$IFDEF MSWINDOWS}
@@ -13,16 +36,10 @@ begin
     ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
 
-  THorse.Get('/ping',
-    procedure(Req: THorseRequest; Res: THorseResponse)
-    begin
-      Res.Send('Ping');
-    end);
+  THorse.Get('/ping', DoPing);
 
-  THorse.Listen(9000,
-    procedure
-    begin
-      Writeln(Format('Server is runing on port %d...', [THorse.Port]));
-      Readln;
-    end);
+  THorse.Listen(9000, DoListen);
+
+  while THorse.IsRunning do
+    Sleep(1000);
 end.
