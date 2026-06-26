@@ -1726,7 +1726,7 @@ end;
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
 begin
   if AContext = nil then Exit;
-  if TInterlocked.CompareExchange(AContext.FClosed, 1, 0) <> 0 then
+  if InterlockedCompareExchange(AContext.FClosed, 1, 0) <> 0 then
     Exit;
 
   FConnectionsSync.Enter;
