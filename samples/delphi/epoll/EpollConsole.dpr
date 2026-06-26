@@ -191,6 +191,26 @@ begin
   end;
 end;
 
+procedure DoGetIP(Req: THorseRequest; Res: THorseResponse);
+var
+  LJSON: TJSONObject;
+begin
+  LJSON := TJSONObject.Create;
+  try
+    {$IFDEF FPC}
+    LJSON.Add('remote_addr', Req.RawWebRequest.RemoteAddr);
+    LJSON.Add('server_port', Req.RawWebRequest.ServerPort);
+    Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('remote_addr', Req.RawWebRequest.RemoteAddr);
+    LJSON.AddPair('server_port', TJSONNumber.Create(Req.RawWebRequest.ServerPort));
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
+  finally
+    LJSON.Free;
+  end;
+end;
+
 procedure DoListen;
 begin
   Writeln('--------------------------------------------------');
@@ -216,6 +236,7 @@ begin
 
   THorse.Get('/', DoIndex);
   THorse.Get('/ping', DoPing);
+  THorse.Get('/ip', DoGetIP);
   THorse.Get('/users/:id', DoGetUsers);
   THorse.Post('/users', DoPostUsers);
   THorse.Post('/upload', DoUpload);

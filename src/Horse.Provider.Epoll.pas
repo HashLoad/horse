@@ -91,6 +91,8 @@ type
     FBodyStream: TStream;
     FTempFileName: string;
     FResolvedHeaders: TDictionary<string, string>;
+    FClientIP: string;
+    FClientPort: Integer;
     procedure EnsureBodyStream;
     function ResolveHeader(const AName: string): string;
   public
@@ -101,7 +103,9 @@ type
       ABodyOffset: Integer;
       AContentLength: Int64;
       ABodyStream: TStream;
-      const ATempFileName: string
+      const ATempFileName: string;
+      const AClientIP: string;
+      AClientPort: Integer
     );
     destructor Destroy; override;
 
@@ -177,6 +181,10 @@ type
     FChunkLineBytes: TBytes;
     FChunkLineLen: Integer;
     FIsKeepAlive: Boolean;
+    FProcessing: Boolean;
+    FClosed: Integer;
+    ClientIP: string;
+    ClientPort: Integer;
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
     procedure ClearRequest;
@@ -645,8 +653,10 @@ begin
         if LTask.KeepAlive then
         begin
           LTask.Context.ClearRequest;
+          LTask.Context.Buffer := TBufferPool.Acquire;
           LTask.Context.FIsKeepAlive := True;
           LTask.Context.BytesReceived := 0;
+          LTask.Context.FProcessing := False;
 
           LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
           LLocalEvent.data.ptr := LTask.Context;
@@ -798,6 +808,10 @@ begin
   SetLength(FChunkLineBytes, 256);
   FChunkLineLen := 0;
   FIsKeepAlive := False;
+  FProcessing := False;
+  FClosed := 0;
+  ClientIP := '';
+  ClientPort := 0;
   LastActive := GetTickCount64;
   ClearRequest;
 end;
@@ -1149,7 +1163,9 @@ constructor TEpollRawRequest.Create(
   ABodyOffset: Integer;
   AContentLength: Int64;
   ABodyStream: TStream;
-  const ATempFileName: string
+  const ATempFileName: string;
+  const AClientIP: string;
+  AClientPort: Integer
 );
 begin
   inherited Create;
@@ -1163,6 +1179,8 @@ begin
   FContentLength := AContentLength;
   FBodyStream := ABodyStream;
   FTempFileName := ATempFileName;
+  FClientIP := AClientIP;
+  FClientPort := AClientPort;
   FResolvedHeaders := TDictionary<string, string>.Create;
 end;
 
@@ -1173,6 +1191,7 @@ begin
     FBodyStream.Free;
   if FTempFileName <> '' then
     DeleteFile(FTempFileName);
+  TBufferPool.Release(FBuffer);
   inherited;
 end;
 
@@ -1218,8 +1237,9 @@ end;
 function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
 function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
-function TEpollRawRequest.GetRemoteAddr: string; begin Result := '127.0.0.1'; end;
-function TEpollRawRequest.GetServerPort: Integer; begin Result := 9095; end;
+function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
+// Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
+function TEpollRawRequest.GetServerPort: Integer; begin Result := THorseProviderEpoll.Port; end;
 function TEpollRawRequest.GetContentType: string; begin Result := ResolveHeader('content-type'); end;
 
 function TEpollRawRequest.GetContent: string;
@@ -1666,6 +1686,10 @@ end;
 
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
 begin
+  if AContext = nil then Exit;
+  if TInterlocked.CompareExchange(AContext.FClosed, 1, 0) <> 0 then
+    Exit;
+
   FConnectionsSync.Enter;
   try
     FConnections.Remove(AContext);
@@ -1873,8 +1897,11 @@ begin
       AContext.BodyOffset,
       AContext.ContentLength,
       AContext.FBodyStream,
-      AContext.FTempFileName
+      AContext.FTempFileName,
+      AContext.ClientIP,
+      AContext.ClientPort
     );
+    AContext.Buffer := nil;
     AContext.FBodyStream := nil;
     AContext.FTempFileName := '';
 
@@ -1892,6 +1919,8 @@ begin
     {$ELSE}
     LWebResponse := TInterfacedWebResponse.Create(LRawRes);
     {$ENDIF}
+
+    AContext.FProcessing := True;
 
     {$IF NOT DEFINED(FPC)}
     // Delphi Linux: Executa rotas assincronamente no Task Parallel Library
@@ -1927,8 +1956,10 @@ begin
           if LLocalKeepAlive then
           begin
             LLocalContext.ClearRequest;
+            LLocalContext.Buffer := TBufferPool.Acquire;
             LLocalContext.FIsKeepAlive := True;
             LLocalContext.BytesReceived := 0;
+            LLocalContext.FProcessing := False;
 
             LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
             LLocalEvent.data.ptr := LLocalContext;
@@ -1973,8 +2004,10 @@ begin
       if LKeepAlive then
       begin
         AContext.ClearRequest;
+        AContext.Buffer := TBufferPool.Acquire;
         AContext.FIsKeepAlive := True;
         AContext.BytesReceived := 0;
+        AContext.FProcessing := False;
 
         LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
         LEvent.data.ptr := AContext;
@@ -2014,6 +2047,9 @@ begin
       for I := FConnections.Count - 1 downto 0 do
       begin
         LContext := FConnections[I];
+        if LContext.FProcessing then
+          Continue;
+
         if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
         begin
           if LNow - LContext.LastActive > 60000 then
@@ -2161,6 +2197,13 @@ begin
             {$ENDIF}
 
             LContext := TEpollConnectionContext.Create(LClientFd);
+            {$IFDEF FPC}
+            LContext.ClientIP := NetAddrToStr(LAddr.sin_addr);
+            LContext.ClientPort := ntohs(LAddr.sin_port);
+            {$ELSE}
+            LContext.ClientIP := string(AnsiString(inet_ntoa(LAddr.sin_addr)));
+            LContext.ClientPort := ntohs(LAddr.sin_port);
+            {$ENDIF}
             FConnectionsSync.Enter;
             try
               FConnections.Add(LContext);
