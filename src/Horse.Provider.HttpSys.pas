@@ -283,14 +283,31 @@ type
   THttpSysListenerThread = class;
 
   {$IF DEFINED(FPC)}
-  THttpSysRequestThread = class(TThread)
+  THttpSysThreadPool = class;
+
+  THttpSysWorkerThread = class(TThread)
   private
+    FPool: THttpSysThreadPool;
     FReqQueue: THandle;
-    FBuffer: TBytes;
   protected
     procedure Execute; override;
   public
-    constructor Create(AReqQueue: THandle; ABuffer: TBytes);
+    constructor Create(APool: THttpSysThreadPool; AReqQueue: THandle);
+  end;
+
+  THttpSysThreadPool = class
+  private
+    FQueue: TQueue<TBytes>;
+    FSync: TCriticalSection;
+    FEvent: TSimpleEvent;
+    FWorkers: TList<TThread>;
+    FActive: Boolean;
+    class var FInstance: THttpSysThreadPool;
+  public
+    constructor Create(AMaxThreads: Integer);
+    destructor Destroy; override;
+    procedure QueueRequest(const ABuffer: TBytes);
+    class property Instance: THttpSysThreadPool read FInstance;
   end;
   {$ENDIF}
 
@@ -299,7 +316,9 @@ type
   private
     FRequest: PHTTP_REQUEST;
     FBuffer: TBytes;
-    FBodyStream: TMemoryStream;
+    FBodyStream: TStream;
+    FTempFileName: string;
+    FHeadersCache: TDictionary<string, string>;
     procedure EnsureBodyStream;
   public
     constructor Create(ARequest: PHTTP_REQUEST; const ABuffer: TBytes);
@@ -433,19 +452,40 @@ implementation
 
 {$IFDEF MSWINDOWS}
 
-{$IF DEFINED(FPC)}
-{ THttpSysRequestThread }
-
-constructor THttpSysRequestThread.Create(AReqQueue: THandle; ABuffer: TBytes);
+function GetWindowsTempPath: string;
+var
+  LBuffer: array[0..MAX_PATH] of Char;
 begin
-  inherited Create(False);
-  FReqQueue := AReqQueue;
-  FBuffer := ABuffer;
-  FreeOnTerminate := True;
+  if GetTempPath(MAX_PATH, LBuffer) > 0 then
+    Result := string(LBuffer)
+  else
+    Result := 'C:\Temp\';
+  Result := IncludeTrailingPathDelimiter(Result);
 end;
 
-procedure THttpSysRequestThread.Execute;
+function HttpSysDeleteFile(const AFileName: string): Boolean;
+begin
+  {$IF DEFINED(FPC)}
+  Result := SysUtils.DeleteFile(AFileName);
+  {$ELSE}
+  Result := System.SysUtils.DeleteFile(AFileName);
+  {$ENDIF}
+end;
+
+{$IF DEFINED(FPC)}
+{ THttpSysWorkerThread }
+
+constructor THttpSysWorkerThread.Create(APool: THttpSysThreadPool; AReqQueue: THandle);
+begin
+  inherited Create(False);
+  FPool := APool;
+  FReqQueue := AReqQueue;
+  FreeOnTerminate := False;
+end;
+
+procedure THttpSysWorkerThread.Execute;
 var
+  LBuffer: TBytes;
   LRawReq: IHorseRawRequest;
   LRawRes: IHorseRawResponse;
   LConcreteRes: THttpSysRawResponse;
@@ -454,33 +494,115 @@ var
   LReq: THorseRequest;
   LRes: THorseResponse;
   LRequest: PHTTP_REQUEST;
+  LHasItem: Boolean;
 begin
-  try
-    LRequest := PHTTP_REQUEST(@FBuffer[0]);
-    LRawReq := THttpSysRawRequest.Create(LRequest, FBuffer);
-    LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
-    LRawRes := LConcreteRes;
-    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-    LWebResponse := THttpSysWebResponse.Create(LRawRes);
+  while not Terminated and FPool.FActive do
+  begin
+    LHasItem := False;
+    LBuffer := nil;
+
+    FPool.FSync.Enter;
     try
-      LReq := THorseRequest.Create(LWebRequest);
-      LRes := THorseResponse.Create(LWebResponse);
-      try
-        THorseProviderHttpSys.Execute(LReq, LRes);
-      finally
-        LConcreteRes.SendResponse(LRes);
-        LReq.Free;
-        LRes.Free;
+      if FPool.FQueue.Count > 0 then
+      begin
+        LBuffer := FPool.FQueue.Dequeue;
+        LHasItem := True;
       end;
     finally
-      LWebRequest.Free;
-      LWebResponse.Free;
+      FPool.FSync.Leave;
     end;
-  except
-    on E: Exception do
-      // Silencia erros de Dispatch
-      ;
+
+    if LHasItem then
+    begin
+      try
+        LRequest := PHTTP_REQUEST(@LBuffer[0]);
+        LRawReq := THttpSysRawRequest.Create(LRequest, LBuffer);
+        LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
+        LRawRes := LConcreteRes;
+        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+        LWebResponse := THttpSysWebResponse.Create(LRawRes);
+        try
+          LReq := THorseRequest.Create(LWebRequest);
+          LRes := THorseResponse.Create(LWebResponse);
+          try
+            THorseProviderHttpSys.Execute(LReq, LRes);
+          finally
+            LConcreteRes.SendResponse(LRes);
+            LReq.Free;
+            LRes.Free;
+          end;
+        finally
+          LWebRequest.Free;
+          LWebResponse.Free;
+        end;
+      except
+        on E: Exception do
+          // Silencia erros de Dispatch
+          ;
+      end;
+      LBuffer := nil;
+    end
+    else
+    begin
+      FPool.FEvent.WaitFor(1000);
+    end;
   end;
+end;
+
+{ THttpSysThreadPool }
+
+constructor THttpSysThreadPool.Create(AMaxThreads: Integer);
+var
+  I: Integer;
+begin
+  FQueue := TQueue<TBytes>.Create;
+  FSync := TCriticalSection.Create;
+  FEvent := TSimpleEvent.Create;
+  FWorkers := TList<TThread>.Create;
+  FActive := True;
+
+  for I := 0 to AMaxThreads - 1 do
+    FWorkers.Add(THttpSysWorkerThread.Create(Self, THorseProviderHttpSys.ReqQueue));
+end;
+
+destructor THttpSysThreadPool.Destroy;
+var
+  LWorker: TThread;
+begin
+  FActive := False;
+  FEvent.SetEvent;
+
+  for LWorker in FWorkers do
+    LWorker.Terminate;
+
+  FEvent.SetEvent;
+
+  for LWorker in FWorkers do
+  begin
+    LWorker.WaitFor;
+    LWorker.Free;
+  end;
+
+  FWorkers.Free;
+  FEvent.Free;
+
+  while FQueue.Count > 0 do
+    FQueue.Dequeue;
+  FQueue.Free;
+
+  FSync.Free;
+  inherited;
+end;
+
+procedure THttpSysThreadPool.QueueRequest(const ABuffer: TBytes);
+begin
+  FSync.Enter;
+  try
+    FQueue.Enqueue(ABuffer);
+  finally
+    FSync.Leave;
+  end;
+  FEvent.SetEvent;
 end;
 {$ENDIF}
 
@@ -492,12 +614,18 @@ begin
   FRequest := ARequest;
   FBuffer := ABuffer;
   FBodyStream := nil;
+  FTempFileName := '';
+  FHeadersCache := nil;
 end;
 
 destructor THttpSysRawRequest.Destroy;
 begin
   if Assigned(FBodyStream) then
     FBodyStream.Free;
+  if FTempFileName <> '' then
+    HttpSysDeleteFile(FTempFileName);
+  if Assigned(FHeadersCache) then
+    FHeadersCache.Free;
   inherited;
 end;
 
@@ -508,62 +636,131 @@ var
   BytesReceived: ULONG;
   Ret: ULONG;
   TempBuf: TBytes;
+  LTempPath, LTempFile: string;
+  LFileStream: TFileStream;
+  LContentLength: Int64;
+  LChunkLength: ULONG;
 begin
   if FBodyStream <> nil then Exit;
 
-  FBodyStream := TMemoryStream.Create;
-  
-  // 1. Copy initial body chunk if any
-  if (FRequest.EntityChunkCount > 0) and (FRequest.pEntityChunks <> nil) then
+  LContentLength := GetContentLength;
+
+  if (LContentLength > 0) and (LContentLength >= 2097152) then
   begin
-    PChunk := PHTTP_DATA_CHUNK_INMEMORY(FRequest.pEntityChunks);
-    for I := 0 to FRequest.EntityChunkCount - 1 do
-    begin
-      if PChunk.DataChunkType = hctFromMemory then
-      begin
-        if (PChunk.pBuffer <> nil) and (PChunk.BufferLength > 0) then
-          FBodyStream.WriteBuffer(PChunk.pBuffer^, PChunk.BufferLength);
-      end;
-      Inc(PChunk);
-    end;
+    LTempPath := GetWindowsTempPath;
+    LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+    FTempFileName := LTempFile;
+    FBodyStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
+  end
+  else
+  begin
+    FBodyStream := TMemoryStream.Create;
   end;
 
-  // 2. Retrieve remaining request body entity chunks from HTTP.sys queue
-  if (FRequest.Flags and HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS) <> 0 then
-  begin
-    SetLength(TempBuf, 32768);
-    while True do
+  try
+    // 1. Copy initial body chunk if any
+    if (FRequest.EntityChunkCount > 0) and (FRequest.pEntityChunks <> nil) then
     begin
-      BytesReceived := 0;
-      Ret := HttpReceiveRequestEntityBody(
-        THorseProviderHttpSys.ReqQueue,
-        FRequest.RequestId,
-        0,
-        @TempBuf[0],
-        Length(TempBuf),
-        BytesReceived,
-        nil
-      );
-      
-      if Ret = ERROR_SUCCESS then
+      PChunk := PHTTP_DATA_CHUNK_INMEMORY(FRequest.pEntityChunks);
+      for I := 0 to FRequest.EntityChunkCount - 1 do
       begin
-        if BytesReceived > 0 then
-          FBodyStream.WriteBuffer(TempBuf[0], BytesReceived)
+        if PChunk.DataChunkType = hctFromMemory then
+        begin
+          if (PChunk.pBuffer <> nil) and (PChunk.BufferLength > 0) then
+          begin
+            LChunkLength := PChunk.BufferLength;
+
+            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
+            begin
+              LTempPath := GetWindowsTempPath;
+              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+              FTempFileName := LTempFile;
+              LFileStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
+              try
+                if FBodyStream.Size > 0 then
+                begin
+                  TMemoryStream(FBodyStream).Position := 0;
+                  LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
+                end;
+                FBodyStream.Free;
+                FBodyStream := LFileStream;
+              except
+                LFileStream.Free;
+                HttpSysDeleteFile(LTempFile);
+                raise;
+              end;
+            end;
+
+            FBodyStream.WriteBuffer(PChunk.pBuffer^, LChunkLength);
+          end;
+        end;
+        Inc(PChunk);
+      end;
+    end;
+
+    // 2. Retrieve remaining request body entity chunks from HTTP.sys queue
+    if (FRequest.Flags and HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS) <> 0 then
+    begin
+      SetLength(TempBuf, 65536);
+      while True do
+      begin
+        BytesReceived := 0;
+        Ret := HttpReceiveRequestEntityBody(
+          THorseProviderHttpSys.ReqQueue,
+          FRequest.RequestId,
+          0,
+          @TempBuf[0],
+          Length(TempBuf),
+          BytesReceived,
+          nil
+        );
+
+        if (Ret = ERROR_SUCCESS) or (Ret = ERROR_HANDLE_EOF) then
+        begin
+          if BytesReceived > 0 then
+          begin
+            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
+            begin
+              LTempPath := GetWindowsTempPath;
+              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+              FTempFileName := LTempFile;
+              LFileStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
+              try
+                if FBodyStream.Size > 0 then
+                begin
+                  TMemoryStream(FBodyStream).Position := 0;
+                  LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
+                end;
+                FBodyStream.Free;
+                FBodyStream := LFileStream;
+              except
+                LFileStream.Free;
+                HttpSysDeleteFile(LTempFile);
+                raise;
+              end;
+            end;
+
+            FBodyStream.WriteBuffer(TempBuf[0], BytesReceived);
+          end;
+
+          if Ret = ERROR_HANDLE_EOF then
+            Break;
+        end
         else
           Break;
-      end
-      else if Ret = ERROR_HANDLE_EOF then
-      begin
-        if BytesReceived > 0 then
-          FBodyStream.WriteBuffer(TempBuf[0], BytesReceived);
-        Break;
-      end
-      else
-        Break;
+      end;
     end;
-  end;
 
-  FBodyStream.Position := 0;
+    FBodyStream.Position := 0;
+  except
+    FreeAndNil(FBodyStream);
+    if FTempFileName <> '' then
+    begin
+      HttpSysDeleteFile(FTempFileName);
+      FTempFileName := '';
+    end;
+    raise;
+  end;
 end;
 
 function THttpSysRawRequest.GetMethod: string;
@@ -697,28 +894,37 @@ function THttpSysRawRequest.GetFieldByName(const AName: string): string;
 var
   LIndex: Integer;
   I: Integer;
-  LUnknownName: string;
+  LUnknownName, LUnknownVal: string;
 begin
+  if FHeadersCache = nil then
+  begin
+    {$IF DEFINED(FPC)}
+    FHeadersCache := TDictionary<string, string>.Create;
+    {$ELSE}
+    FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+    {$ENDIF}
+
+    if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
+    begin
+      for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
+      begin
+        SetString(LUnknownName, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pName), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].NameLength);
+        SetString(LUnknownVal, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pRawValue), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].RawValueLength);
+        FHeadersCache.AddOrSetValue(LUnknownName, LUnknownVal);
+      end;
+    end;
+  end;
+
+  if FHeadersCache.TryGetValue(AName, Result) then
+    Exit;
+
   Result := '';
   if THorseProviderHttpSys.KnownRequestHeadersMap.TryGetValue(AName, LIndex) then
   begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
     begin
       SetString(Result, PAnsiChar(FRequest.Headers.KnownHeaders[LIndex].pRawValue), FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
-      Exit;
-    end;
-  end;
-
-  if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
-  begin
-    for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
-    begin
-      SetString(LUnknownName, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pName), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].NameLength);
-      if SameText(LUnknownName, AName) then
-      begin
-        SetString(Result, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pRawValue), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].RawValueLength);
-        Exit;
-      end;
+      FHeadersCache.Add(AName, Result);
     end;
   end;
 end;
@@ -854,6 +1060,8 @@ var
   I: Integer;
   LContentLengthAnsi: AnsiString;
   LHeaderStrings: TArray<AnsiString>;
+  LChunkBytesRead: Integer;
+  LSendFlags: ULONG;
 begin
   FillChar(LResponse, SizeOf(LResponse), 0);
   
@@ -926,60 +1134,105 @@ begin
     LResponse.Headers.pUnknownHeaders := @LHeaders[0];
   end;
 
-  // Read Body Stream if any
-  if ARes.ContentStream <> nil then
+  if (ARes.ContentStream <> nil) and (ARes.ContentStream.Size > 0) then
   begin
-    SetLength(LBodyBytes, ARes.ContentStream.Size);
-    ARes.ContentStream.Position := 0;
-    if ARes.ContentStream.Size > 0 then
-      ARes.ContentStream.ReadBuffer(LBodyBytes[0], ARes.ContentStream.Size);
-  end;
+    LContentLengthAnsi := AnsiString(IntToStr(ARes.ContentStream.Size));
+    LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
+    LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
 
-  // Fallback to BodyText or WebResponse.Content
-  if Length(LBodyBytes) = 0 then
+    LResponse.EntityChunkCount := 0;
+    LResponse.pEntityChunks := nil;
+
+    LRet := HttpSendHttpResponse(
+      FReqQueue,
+      FRequestId,
+      HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+      @LResponse,
+      nil,
+      LBytesSent,
+      nil,
+      0,
+      nil,
+      nil
+    );
+    if LRet <> ERROR_SUCCESS then
+      raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+
+    ARes.ContentStream.Position := 0;
+    SetLength(LBodyBytes, 65536);
+    while ARes.ContentStream.Position < ARes.ContentStream.Size do
+    begin
+      LChunkBytesRead := ARes.ContentStream.Read(LBodyBytes[0], Length(LBodyBytes));
+      if LChunkBytesRead <= 0 then Break;
+
+      FillChar(LChunk, SizeOf(LChunk), 0);
+      LChunk.DataChunkType := hctFromMemory;
+      LChunk.pBuffer := @LBodyBytes[0];
+      LChunk.BufferLength := LChunkBytesRead;
+
+      if ARes.ContentStream.Position < ARes.ContentStream.Size then
+        LSendFlags := HTTP_SEND_RESPONSE_FLAG_MORE_DATA
+      else
+        LSendFlags := 0;
+
+      LRet := HttpSendResponseEntityBody(
+        FReqQueue,
+        FRequestId,
+        LSendFlags,
+        1,
+        @LChunk,
+        LBytesSent,
+        nil,
+        nil,
+        nil,
+        nil
+      );
+      if LRet <> ERROR_SUCCESS then
+        raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+    end;
+  end
+  else
   begin
     if ARes.BodyText <> '' then
       LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
     else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
       LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content);
+
+    if Length(LBodyBytes) > 0 then
+    begin
+      LContentLengthAnsi := AnsiString(IntToStr(Length(LBodyBytes)));
+      LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
+      LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
+
+      FillChar(LChunk, SizeOf(LChunk), 0);
+      LChunk.DataChunkType := hctFromMemory;
+      LChunk.pBuffer := @LBodyBytes[0];
+      LChunk.BufferLength := Length(LBodyBytes);
+
+      LResponse.EntityChunkCount := 1;
+      LResponse.pEntityChunks := @LChunk;
+    end
+    else
+    begin
+      LResponse.Headers.KnownHeaders[11].pRawValue := '0';
+      LResponse.Headers.KnownHeaders[11].RawValueLength := 1;
+    end;
+
+    LRet := HttpSendHttpResponse(
+      FReqQueue,
+      FRequestId,
+      0,
+      @LResponse,
+      nil,
+      LBytesSent,
+      nil,
+      0,
+      nil,
+      nil
+    );
+    if LRet <> ERROR_SUCCESS then
+      raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
   end;
-
-  if Length(LBodyBytes) > 0 then
-  begin
-    // Set Content-Length
-    LContentLengthAnsi := AnsiString(IntToStr(Length(LBodyBytes)));
-    LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
-    LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
-
-    FillChar(LChunk, SizeOf(LChunk), 0);
-    LChunk.DataChunkType := hctFromMemory;
-    LChunk.pBuffer := @LBodyBytes[0];
-    LChunk.BufferLength := Length(LBodyBytes);
-
-    LResponse.EntityChunkCount := 1;
-    LResponse.pEntityChunks := @LChunk;
-  end
-  else
-  begin
-    // Set Content-Length to 0
-    LResponse.Headers.KnownHeaders[11].pRawValue := '0';
-    LResponse.Headers.KnownHeaders[11].RawValueLength := 1;
-  end;
-
-  LRet := HttpSendHttpResponse(
-    FReqQueue,
-    FRequestId,
-    0,
-    @LResponse,
-    nil,
-    LBytesSent,
-    nil,
-    0,
-    nil,
-    nil
-  );
-  if LRet <> ERROR_SUCCESS then
-    raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
 end;
 
 
@@ -1071,7 +1324,8 @@ end;
 procedure THttpSysListenerThread.DispatchRequest(ABuffer: TBytes);
 begin
   {$IF DEFINED(FPC)}
-  THttpSysRequestThread.Create(FReqQueue, ABuffer);
+  if Assigned(THttpSysThreadPool.Instance) then
+    THttpSysThreadPool.Instance.QueueRequest(ABuffer);
   {$ELSE}
   TTask.Run(
     procedure
@@ -1292,6 +1546,9 @@ begin
 
         // 6. Start Listener Thread
         FRunning := True;
+        {$IF DEFINED(FPC)}
+        THttpSysThreadPool.FInstance := THttpSysThreadPool.Create(32);
+        {$ENDIF}
         FListenerThread := THttpSysListenerThread.Create(FReqQueue);
         FListenerThread.Running := True;
         FListenerThread.Start;
@@ -1310,6 +1567,13 @@ begin
           HttpCloseRequestQueue(FReqQueue);
           FReqQueue := 0;
         end;
+        {$IF DEFINED(FPC)}
+        if Assigned(THttpSysThreadPool.FInstance) then
+        begin
+          THttpSysThreadPool.FInstance.Free;
+          THttpSysThreadPool.FInstance := nil;
+        end;
+        {$ENDIF}
         raise;
       end;
     except
@@ -1357,6 +1621,14 @@ begin
     FListenerThread.WaitFor;
     FreeAndNil(FListenerThread);
   end;
+
+  {$IF DEFINED(FPC)}
+  if Assigned(THttpSysThreadPool.FInstance) then
+  begin
+    THttpSysThreadPool.FInstance.Free;
+    THttpSysThreadPool.FInstance := nil;
+  end;
+  {$ENDIF}
 
   if FUrlGroupId <> 0 then
   begin

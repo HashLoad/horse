@@ -31,12 +31,22 @@ const
     '<h1>Horse Server API &mdash; Delphi HTTP.sys (Windows)</h1>' +
     '<p>Bem-vindo ao servidor Horse! Use os links abaixo para testar as rotas:</p>' +
     '<ul>' +
-    '<li><span class="method get">GET</span><a href="/ping">/ping</a><div class="desc">Retorna a resposta simples de ping (pong)</div></li>' +
-    '<li><span class="method get">GET</span><a href="/users/123?nome=Regys">/users/123?nome=Regys</a><div class="desc">Retorna JSON a partir do ID e QueryParam</div></li>' +
-    '<li><span class="method post">POST</span><a href="#" onclick="fetch(''/users'', {method: ''POST''}).then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users</a><div class="desc">Executa requisição POST e exibe o JSON resultante</div></li>' +
-    '<li><span class="method put">PUT</span><a href="#" onclick="fetch(''/users/123'', {method: ''PUT''}).then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a><div class="desc">Executa requisição PUT e exibe o JSON resultante</div></li>' +
-    '<li><span class="method patch">PATCH</span><a href="#" onclick="fetch(''/users/123'', {method: ''PATCH''}).then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a><div class="desc">Executa requisição PATCH e exibe o JSON resultante</div></li>' +
-    '<li><span class="method delete">DELETE</span><a href="#" onclick="fetch(''/users/123'', {method: ''DELETE''}).then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a><div class="desc">Executa requisição DELETE e exibe o JSON resultante</div></li>' +
+    '<li><span class="method get">GET</span><a href="/ping">/ping</a>' +
+    '<div class="desc">Retorna a resposta simples de ping (pong)</div></li>' +
+    '<li><span class="method get">GET</span><a href="/users/123?nome=Regys">/users/123?nome=Regys</a>' +
+    '<div class="desc">Retorna JSON a partir do ID e QueryParam</div></li>' +
+    '<li><span class="method post">POST</span><a href="#" onclick="fetch(''/users'', {method: ''POST''})' +
+    '.then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users</a>' +
+    '<div class="desc">Executa requisição POST e exibe o JSON resultante</div></li>' +
+    '<li><span class="method put">PUT</span><a href="#" onclick="fetch(''/users/123'', {method: ''PUT''})' +
+    '.then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a>' +
+    '<div class="desc">Executa requisição PUT e exibe o JSON resultante</div></li>' +
+    '<li><span class="method patch">PATCH</span><a href="#" onclick="fetch(''/users/123'', {method: ''PATCH''})' +
+    '.then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a>' +
+    '<div class="desc">Executa requisição PATCH e exibe o JSON resultante</div></li>' +
+    '<li><span class="method delete">DELETE</span><a href="#" onclick="fetch(''/users/123'', {method: ''DELETE''})' +
+    '.then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a>' +
+    '<div class="desc">Executa requisição DELETE e exibe o JSON resultante</div></li>' +
     '</ul></body></html>';
 
 begin
