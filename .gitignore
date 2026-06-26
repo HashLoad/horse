@@ -86,3 +86,8 @@ __recovery/
 
 # Test files and local paserver
 tests/LinuxPAServer23.0.tar.gz
+
+# FPC / Linux compiled outputs
+samples/delphi/epoll/EpollConsole
+samples/delphi/console/Console
+*.or
