@@ -33,11 +33,13 @@ O **Provider padrão depende do compilador**:
 - O Provider **CrossSocket** opcional substitui *ambos* os padrões por um transporte assíncrono entre compiladores.
 
 | Provider | Define de compilação | Status | Delphi | Lazarus |
-|---|---|---|:---:|:---:|
-| **Indy** | _(nenhum no Delphi)_ | Padrão para self-hosted no Delphi | ✔ | n/a |
-| **`fphttpserver`** | _(nenhum no FPC)_ | Padrão para self-hosted no FPC | n/a | ✔ |
-| **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Opcional, pacote externo | ✔ | ✔ |
-| **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Opcional, pacote externo | ✔ | ✔ |
+| ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
+| **Indy** _(padrão Delphi para self-hosted)_                                                     | _(nenhum)_              | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
+| **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| **HTTP.sys** | `HORSE_PROVIDER_HTTPSYS` | Opcional, embutido (modo kernel Windows) | ✔ | ✔ |
+| **epoll** | `HORSE_PROVIDER_EPOLL` | Opcional, embutido (event loop assíncrono Linux) | ✔ | ✔ |
 
 > **Qual biblioteca faz o trabalho de HTTP, por Tipo de aplicação?** Esta é a pergunta-chave — e a resposta *nem sempre* é Indy. A abstração unificadora em todas as linhas é `Web.HTTPApp.TWebRequest` no Delphi ou `fpHTTP.TRequest` no FPC; abaixo disso, a biblioteca concreta difere.
 >
@@ -47,6 +49,8 @@ O **Provider padrão depende do compilador**:
 > | Daemon / HTTPApplication / LCL | FPC | **`fphttpserver`** | ✘ |
 > | Qualquer self-hosted + `HORSE_CROSSSOCKET` | Qualquer um | **`Delphi-Cross-Socket`** | ✘ |
 > | Qualquer self-hosted + `HORSE_PROVIDER_MORMOT` | Qualquer um | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
+> | Qualquer self-hosted + `HORSE_PROVIDER_HTTPSYS` | Qualquer um | **`HTTP.sys`** (Driver de Kernel do Windows) | ✘ |
+> | Qualquer self-hosted + `HORSE_PROVIDER_EPOLL` | Qualquer um | **`epoll`** (API epoll nativa do Linux) | ✘ |
 > | Módulo Apache | Qualquer um | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **CGI runner do webserver** (via `Web.HTTPApp.TCGIRequest`) | ✘ |
@@ -171,6 +175,43 @@ Ambos os providers usam IOCP/epoll e um pool de objetos de contexto, portanto a 
 Para configuração (`ServerKind`, `ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) e as implementações para cada tipo de aplicação  (VCL, Serviço Windows, daemon Linux), veja a [documentação do próprio provider](https://github.com/freitasjca/horse-provider-mormot#readme).
 
 > **Instalação do mORMot2** — o mORMot2 não está disponível via `boss install`. Clone [synopse/mORMot2](https://github.com/synopse/mORMot2) e adicione `<mORMot2>/src`, `<mORMot2>/src/core`, `<mORMot2>/src/net` ao search path do compilador.
+
+### HTTP.sys (opcional, nativo do Windows)
+
+O provedor HTTP.sys utiliza a pilha de protocolos HTTP em modo kernel do Windows (`http.sys`). Ele é embutido diretamente no Horse — nenhum pacote externo é necessário. Como o tratamento de sockets, parseamento de HTTP e gerenciamento de fila de requisições acontecem diretamente no Ring 0 (espaço de kernel), o overhead de troca de contexto (context-switch) é drasticamente reduzido, permitindo altíssima vazão e estabilidade extrema no Windows.
+
+Nos Defines de Compilação do seu projeto: `HORSE_PROVIDER_HTTPSYS`.
+
+**Propriedades:**
+- **Exclusivo para Windows:** Nativo a partir do Windows 7 e Windows Server 2008 ou superior.
+- **Parseamento em Modo Kernel:** O processamento de rede e cabeçalhos HTTP é feito pelo próprio kernel do SO, poupando CPU no espaço de usuário (User-Space).
+- **Compartilhamento de Porta (Port Sharing):** Permite que múltiplos processos/aplicativos compartilhem a mesma porta física (ex: porta 80 ou 443) registrando diferentes prefixos de URL (ex: `http://+:80/app1/` e `http://+:80/app2/`).
+- **Privilégios Administrativos:** Registrar prefixos de URL no HTTP.sys exige direitos de Administrador ou um cadastro prévio das URLs usando `netsh http add urlacl`.
+- **Desempenho:** Atinge facilmente ~12.000+ req/s com latências nulas.
+
+**Escolha este quando:**
+- Suas aplicações rodam exclusivamente em ambiente Windows.
+- Você precisa compartilhar portas com o IIS ou outros serviços Windows.
+- Deseja delegação de criptografia SSL/TLS transparente gerenciada nativamente pelo Windows.
+
+### epoll (opcional, nativo do Linux)
+
+O provedor `epoll` é um transporte assíncrono e não-bloqueante nativo do Linux, utilizando a API `epoll` do kernel (via `epoll_wait`). Assim como o HTTP.sys, ele é nativo e vem embutido no core do Horse. Após as otimizações da Phase 2, o provedor conta com Thread-Local Buffer Pools para eliminar contenção por locks globais, parseador de cabeçalhos sem alocação dinâmica de memória, escrita vetorizada (`writev`) e envio de arquivos com cópia zero via kernel (`sendfile`).
+
+Nos Defines de Compilação do seu projeto: `HORSE_PROVIDER_EPOLL`.
+
+**Propriedades:**
+- **Exclusivo para Linux:** Event loop nativo para distribuições Linux (ideal para Ubuntu, Debian, Alpine e containers Docker).
+- **Event Loop Assíncrono:** Lida com milhares de conexões TCP abertas usando um pool estático e fixo de threads de E/S e workers, superando o gargalo físico de threads bloqueantes do Indy (*thread-per-connection*).
+- **Proteções de Produção:** Proteção nativa integrada contra ataques Slowloris (timeout automático de 5 segundos para drenagem de sockets ociosos) e elevação automática dos limites de File Descriptors do processo (`RLIMIT_NOFILE` elevado para 65535).
+- **Decodificação de Chunked Payload:** Suporte completo para requests usando *Chunked Transfer-Encoding*.
+- **Cópia Zero de Arquivos:** Envio de streams de arquivo (`TFileStream`) delegado ao kernel Linux via chamada de sistema `sendfile`.
+- **Desempenho:** Registrou taxas brutais de até **29.209 req/s** com zero falhas sob estresse concorrente de 1.000 conexõesKeep-Alive consecutivas, enquanto a Indy foi derrubada por estouro de recursos.
+
+**Escolha este quando:**
+- Seu ambiente de produção é Linux (servidores físicos, VMs ou containers Docker).
+- Você precisa suportar picos extremos de concorrência com baixo consumo de memória RAM (~15 MB).
+- Deseja alta performance assíncrona pura sem depender de bibliotecas externas complexas.
 
 ### Providers futuros
 

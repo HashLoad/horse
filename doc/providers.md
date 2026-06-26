@@ -38,6 +38,8 @@ The **default Provider depends on the compiler**:
 | **`fphttpserver`** | _(none on FPC)_ | Default for FPC self-hosted | n/a | ✔ |
 | **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Optional, external package | ✔ | ✔ |
 | **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Optional, external package | ✔ | ✔ |
+| **HTTP.sys** | `HORSE_PROVIDER_HTTPSYS` | Optional, built-in (Windows kernel mode) | ✔ | ✔ |
+| **epoll** | `HORSE_PROVIDER_EPOLL` | Optional, built-in (Linux async event loop) | ✔ | ✔ |
 
 > **What library does the HTTP work, per Application type?** This is the deciding question — and it's *not* always Indy. The unifying abstraction across every row is `Web.HTTPApp.TWebRequest` on Delphi or `fpHTTP.TRequest` on FPC; below that, the concrete library differs.
 >
@@ -47,6 +49,8 @@ The **default Provider depends on the compiler**:
 > | Daemon / HTTPApplication / LCL | FPC | **`fphttpserver`** | ✘ |
 > | Any self-hosted + `HORSE_CROSSSOCKET` | Either | **`Delphi-Cross-Socket`** | ✘ |
 > | Any self-hosted + `HORSE_PROVIDER_MORMOT` | Either | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
+> | Any self-hosted + `HORSE_PROVIDER_HTTPSYS` | Either | **`HTTP.sys`** (Windows Kernel Driver) | ✘ |
+> | Any self-hosted + `HORSE_PROVIDER_EPOLL` | Either | **`epoll`** (Linux kernel epoll API) | ✘ |
 > | Apache module | Either | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **Web server's CGI runner** (via `Web.HTTPApp.TCGIRequest`) | ✘ |
@@ -173,6 +177,43 @@ Both providers use IOCP/epoll and a context object pool, so throughput is compar
 For configuration (`ServerKind`, `ThreadPool`, `MaxBodyBytes`, `DrainTimeoutMs`, `ServerBanner`) and application-type wrappers (VCL, Windows Service, Linux daemon), see the [provider's own documentation](https://github.com/freitasjca/horse-provider-mormot#readme).
 
 > **mORMot2 installation** — mORMot2 is not available via `boss install`. Clone [synopse/mORMot2](https://github.com/synopse/mORMot2) and add `<mORMot2>/src`, `<mORMot2>/src/core`, `<mORMot2>/src/net` to the compiler search path.
+
+### HTTP.sys (optional, Windows-native)
+
+The HTTP.sys provider utilizes the Windows kernel-mode HTTP protocol stack (`http.sys`). It is built directly into Horse — no external packages are required. Since HTTP parsing and queue management are handled directly in Ring 0 (kernel mode), context-switching overhead is drastically reduced, enabling high throughput and stability under Windows.
+
+In your project's Conditional Defines: `HORSE_PROVIDER_HTTPSYS`.
+
+**Properties:**
+- **Windows-only:** Native to Windows 7/Server 2008 and above.
+- **Kernel-Mode Parsing:** Sockets and HTTP protocol processing are managed directly by the kernel, freeing up User-Space CPU.
+- **Port Sharing:** Allows multiple applications to share the same port (e.g., port 80/443) by registering distinct URL prefixes (e.g., `http://+:80/app1/` and `http://+:80/app2/`).
+- **Administrative Privileges:** Registering URL prefixes with HTTP.sys requires Administrator rights or a one-time setup using `netsh http add urlacl`.
+- **Performance:** Reaches ~12 000+ req/s with very low latencies.
+
+**Pick this when:**
+- You deploy exclusively on Windows environments.
+- You want port-sharing capabilities with IIS or other HTTP.sys-based applications.
+- You require enterprise-level SSL/TLS termination managed directly by Windows.
+
+### epoll (optional, Linux-native)
+
+The `epoll` provider is an asynchronous, non-blocking transport layer native to Linux, leveraging the kernel's `epoll` API (via `epoll_wait`). Like HTTP.sys, it is built directly into Horse. After the Phase 2 optimizations, it has a dedicated Thread-Local Buffer Pool, zero-allocation header parsing, vectorised writing (`writev`), and zero-copy file streaming (`sendfile`).
+
+In your project's Conditional Defines: `HORSE_PROVIDER_EPOLL`.
+
+**Properties:**
+- **Linux-only:** Native event loop for Linux (ideal for Ubuntu, Debian, Alpine, Docker containers).
+- **Asynchronous Event Loop:** Handles thousands of concurrent sockets using a fixed IO/Worker thread pool, completely avoiding the thread-per-connection scaling wall.
+- **Enhanced Protections:** Includes native Slowloris timeout protection (5 seconds socket drain) and automatic file descriptor limit elevation (`RLIMIT_NOFILE` raised to 65535).
+- **Chunked Encoding:** Fully supports non-deterministic request payload decoding.
+- **Zero-Copy streaming:** Replaces user-space file buffers with Linux kernel's `sendfile` system call.
+- **Performance:** Processed up to **29 209 req/s** with zero errors under 1 000 concurrent Keep-Alive connections in stess benchmarks, while Indy crashed due to thread exhausion.
+
+**Pick this when:**
+- You deploy on Linux (bare-metal, VMs, or Docker containers).
+- You expect high concurrent loads (1 000+ simultaneous connections) and want a lightweight RAM footprint (~15 MB).
+- You want native non-blocking networking without external Pascal wrappers.
 
 ### Future providers
 
