@@ -36,6 +36,8 @@ begin
     ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
 
+  THorse.ListenQueue := 4096;
+
   THorse.Get('/ping', DoPing);
 
   THorse.Listen(9000, DoListen);

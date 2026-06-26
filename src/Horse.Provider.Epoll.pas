@@ -2403,9 +2403,9 @@ begin
         raise EOSError.Create('bind failed');
 
       {$IFDEF FPC}
-      if fpListen(LSocket, 128) < 0 then
+      if fpListen(LSocket, 4096) < 0 then
       {$ELSE}
-      if Posix.SysSocket.listen(LSocket, 128) < 0 then
+      if Posix.SysSocket.listen(LSocket, 4096) < 0 then
       {$ENDIF}
         raise EOSError.Create('listen failed');
 
