@@ -64,6 +64,7 @@ type
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
     class function FindCRLF(const ABuffer: TBytes; AStart, AEnd: Integer): Integer; static; inline;
     class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean; static; inline;
+    class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
   public
     class function TryParseRequest(
       const ABuffer: TBytes; 
@@ -99,7 +100,7 @@ type
     function ResolveHeader(const AName: string): string;
   public
     constructor Create(
-      const ABuffer: TBytes;
+      var ABuffer: TBytes;
       const AMethod, APath, AQuery, AVersion: string;
       AHeaders: THeaderSegments;
       ABodyOffset: Integer;
@@ -1023,6 +1024,32 @@ begin
   Result := True;
 end;
 
+class function THorseHttpParser.GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string;
+begin
+  case ALen of
+    3:
+      if (ABuffer[AStart] = 71) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 84) then
+        Exit('GET')
+      else if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 85) and (ABuffer[AStart+2] = 84) then
+        Exit('PUT');
+    4:
+      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 79) and (ABuffer[AStart+2] = 83) and (ABuffer[AStart+3] = 84) then
+        Exit('POST')
+      else if (ABuffer[AStart] = 72) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 65) and (ABuffer[AStart+3] = 68) then
+        Exit('HEAD');
+    5:
+      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 65) and (ABuffer[AStart+2] = 84) and (ABuffer[AStart+3] = 67) and (ABuffer[AStart+4] = 72) then
+        Exit('PATCH');
+    6:
+      if (ABuffer[AStart] = 68) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 76) and (ABuffer[AStart+3] = 69) and (ABuffer[AStart+4] = 84) and (ABuffer[AStart+5] = 69) then
+        Exit('DELETE');
+    7:
+      if (ABuffer[AStart] = 79) and (ABuffer[AStart+1] = 80) and (ABuffer[AStart+2] = 84) and (ABuffer[AStart+3] = 73) and (ABuffer[AStart+4] = 79) and (ABuffer[AStart+5] = 78) and (ABuffer[AStart+6] = 83) then
+        Exit('OPTIONS');
+  end;
+  Result := TEncoding.UTF8.GetString(ABuffer, AStart, ALen);
+end;
+
 class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
@@ -1045,7 +1072,6 @@ var
   Colon: Integer;
   Segment: THeaderSegment;
   SegCount: Integer;
-  RawLine: AnsiString;
 begin
   AMethod := '';
   APath := '';
@@ -1082,23 +1108,28 @@ begin
   Space2 := FindByte(ABuffer, Space1 + 1, LineEnd, 32);
   if Space2 = -1 then Exit(False);
 
-  // Extração rápida de Método, Path, Query e Versão
-  SetString(RawLine, PAnsiChar(@ABuffer[0]), LineEnd);
-  AMethod := string(Copy(RawLine, 1, Space1));
+  // Method (cached/optimized)
+  AMethod := GetMethodString(ABuffer, 0, Space1);
   
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
   if QueryStart <> -1 then
   begin
-    APath := string(Copy(RawLine, Space1 + 2, QueryStart - (Space1 + 1)));
-    AQuery := string(Copy(RawLine, QueryStart + 1, Space2 - QueryStart));
+    if (QueryStart - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
+      APath := '/'
+    else
+      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, QueryStart - (Space1 + 1));
+    AQuery := TEncoding.UTF8.GetString(ABuffer, QueryStart + 1, Space2 - (QueryStart + 1));
   end
   else
   begin
-    APath := string(Copy(RawLine, Space1 + 2, Space2 - (Space1 + 1)));
+    if (Space2 - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
+      APath := '/'
+    else
+      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
     AQuery := '';
   end;
 
-  AVersion := string(Copy(RawLine, Space2 + 2, LineEnd - (Space2 + 1)));
+  AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
 
   // 3. Processa os cabeçalhos linha a linha indexando os offsets
   SegCount := 0;
@@ -1154,7 +1185,7 @@ end;
 { TEpollRawRequest }
 
 constructor TEpollRawRequest.Create(
-  const ABuffer: TBytes;
+  var ABuffer: TBytes;
   const AMethod, APath, AQuery, AVersion: string;
   AHeaders: THeaderSegments;
   ABodyOffset: Integer;
@@ -1166,7 +1197,13 @@ constructor TEpollRawRequest.Create(
 );
 begin
   inherited Create;
-  FBuffer := ABuffer;
+  if ABodyOffset > 0 then
+    FBuffer := Copy(ABuffer, 0, ABodyOffset)
+  else
+    FBuffer := nil;
+
+  TBufferPool.Release(ABuffer);
+
   FMethod := AMethod;
   FPath := APath;
   FQuery := AQuery;
@@ -1188,7 +1225,6 @@ begin
     FBodyStream.Free;
   if FTempFileName <> '' then
     DeleteFile(FTempFileName);
-  TBufferPool.Release(FBuffer);
   inherited;
 end;
 
@@ -1690,7 +1726,11 @@ end;
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
 begin
   if AContext = nil then Exit;
+  {$IFDEF FPC}
+  if InterlockedCompareExchange(AContext.FClosed, 1, 0) <> 0 then
+  {$ELSE}
   if TInterlocked.CompareExchange(AContext.FClosed, 1, 0) <> 0 then
+  {$ENDIF}
     Exit;
 
   FConnectionsSync.Enter;
