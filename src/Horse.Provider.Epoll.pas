@@ -2228,6 +2228,8 @@ begin
   fpSetrlimit(RLIMIT_NOFILE, @LRLimit);
   {$ELSE}
   setrlimit(RLIMIT_NOFILE, LRLimit);
+  TThreadPool.Default.MaxWorkerThreads := 2048;
+  TThreadPool.Default.MinWorkerThreads := TThread.ProcessorCount * 8;
   {$ENDIF}
 end;
 
