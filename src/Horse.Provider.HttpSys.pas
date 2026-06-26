@@ -280,7 +280,17 @@ function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP
 {$MINENUMSIZE 1}
 
 type
-  THttpSysBufferPool = class;
+  THttpSysBufferPool = class
+  private
+    FBuffers: TQueue<TBytes>;
+    FSync: TCriticalSection;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Acquire(AMinSize: Integer): TBytes;
+    procedure Release(var ABuffer: TBytes);
+  end;
+
   THttpSysListenerThread = class;
 
   {$IF DEFINED(FPC)}
@@ -475,17 +485,7 @@ begin
   {$ENDIF}
 end;
 
-type
-  THttpSysBufferPool = class
-  private
-    FBuffers: TQueue<TBytes>;
-    FSync: TCriticalSection;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    function Acquire(AMinSize: Integer): TBytes;
-    procedure Release(var ABuffer: TBytes);
-  end;
+
 
 { THttpSysBufferPool }
 
