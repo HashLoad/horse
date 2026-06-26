@@ -55,6 +55,8 @@ type
     ValueLen: Integer;
   end;
 
+  THeaderSegments = TArray<THeaderSegment>;
+
   { Parser HTTP incremental e extremamente rápido que opera diretamente sobre
     buffers de bytes, realizando Lazy Parsing nos cabeçalhos. }
   THorseHttpParser = class
@@ -70,7 +72,7 @@ type
       out APath: string;
       out AQuery: string;
       out AVersion: string;
-      out AHeaders: TDictionary<string, THeaderSegment>;
+      out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
       out AContentLength: Int64
     ): Boolean; static;
@@ -87,7 +89,7 @@ type
     FVersion: string;
     FBodyOffset: Integer;
     FContentLength: Int64;
-    FHeaders: TDictionary<string, THeaderSegment>;
+    FHeaders: THeaderSegments;
     FBodyStream: TStream;
     FTempFileName: string;
     FResolvedHeaders: TDictionary<string, string>;
@@ -99,7 +101,7 @@ type
     constructor Create(
       const ABuffer: TBytes;
       const AMethod, APath, AQuery, AVersion: string;
-      AHeaders: TDictionary<string, THeaderSegment>;
+      AHeaders: THeaderSegments;
       ABodyOffset: Integer;
       AContentLength: Int64;
       ABodyStream: TStream;
@@ -109,6 +111,7 @@ type
     );
     destructor Destroy; override;
 
+    // Interface redirects
     function GetMethod: string;
     function GetProtocolVersion: string;
     function GetURL: string;
@@ -128,6 +131,7 @@ type
       function GetContentLength: Integer;
       {$ENDIF}
     {$ENDIF}
+    // Interface redirects (cont)
     function GetFieldByName(const AName: string): string;
 
     procedure PopulateQueryFields(ADest: TStrings);
@@ -168,7 +172,7 @@ type
     Path: string;
     Query: string;
     Version: string;
-    Headers: TDictionary<string, THeaderSegment>;
+    Headers: THeaderSegments;
     BodyOffset: Integer;
     ContentLength: Int64;
     LastActive: Int64;
@@ -798,7 +802,7 @@ begin
   Socket := ASocket;
   Buffer := TBufferPool.Acquire;
   BytesReceived := 0;
-  Headers := TDictionary<string, THeaderSegment>.Create;
+  Headers := nil;
   FBodyStream := nil;
   FTempFileName := '';
   FChunked := False;
@@ -818,7 +822,7 @@ end;
 
 destructor TEpollConnectionContext.Destroy;
 begin
-  Headers.Free;
+  Headers := nil;
   TBufferPool.Release(Buffer);
   if Assigned(FBodyStream) then
     FBodyStream.Free;
@@ -833,7 +837,7 @@ begin
   Path := '';
   Query := '';
   Version := '';
-  Headers.Clear;
+  Headers := nil;
   BodyOffset := -1;
   ContentLength := 0;
   FBodyStream := nil;
@@ -1026,7 +1030,7 @@ class function THorseHttpParser.TryParseRequest(
   out APath: string;
   out AQuery: string;
   out AVersion: string;
-  out AHeaders: TDictionary<string, THeaderSegment>;
+  out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
   out AContentLength: Int64
 ): Boolean;
@@ -1039,8 +1043,8 @@ var
   Space2: Integer;
   QueryStart: Integer;
   Colon: Integer;
-  Key: string;
   Segment: THeaderSegment;
+  SegCount: Integer;
   RawLine: AnsiString;
 begin
   AMethod := '';
@@ -1049,7 +1053,7 @@ begin
   AVersion := '';
   ABodyOffset := -1;
   AContentLength := 0;
-  AHeaders := nil;
+  SetLength(AHeaders, 0);
 
   if ALength < 4 then
     Exit(False);
@@ -1067,8 +1071,6 @@ begin
 
   if HeaderEnd = -1 then
     Exit(False);
-
-  AHeaders := TDictionary<string, THeaderSegment>.Create;
 
   // 2. Processa a linha inicial (Request Line)
   LineEnd := FindCRLF(ABuffer, 0, HeaderEnd);
@@ -1099,6 +1101,9 @@ begin
   AVersion := string(Copy(RawLine, Space2 + 2, LineEnd - (Space2 + 1)));
 
   // 3. Processa os cabeçalhos linha a linha indexando os offsets
+  SegCount := 0;
+  SetLength(AHeaders, 16);
+
   LineStart := LineEnd + 2;
   while LineStart < HeaderEnd do
   begin
@@ -1119,37 +1124,29 @@ begin
         Segment.ValueStart := I;
         Segment.ValueLen := LineEnd - I;
 
-        // Comparações de bytes direta (Zero-Allocation) para as chaves conhecidas
+        if SegCount >= Length(AHeaders) then
+          SetLength(AHeaders, SegCount + 8);
+
+        AHeaders[SegCount] := Segment;
+        Inc(SegCount);
+
+        // Parsing rápido de Content-Length diretamente dos bytes
         if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-length') then
         begin
-          if Segment.ValueLen > 0 then
+          AContentLength := 0;
+          for I := 0 to Segment.ValueLen - 1 do
           begin
-            SetString(RawLine, PAnsiChar(@ABuffer[Segment.ValueStart]), Segment.ValueLen);
-            AContentLength := StrToInt64Def(string(RawLine), 0);
+            if (ABuffer[Segment.ValueStart + I] >= 48) and (ABuffer[Segment.ValueStart + I] <= 57) then
+              AContentLength := AContentLength * 10 + (ABuffer[Segment.ValueStart + I] - 48);
           end;
-          Key := 'content-length';
-        end
-        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'transfer-encoding') then
-          Key := 'transfer-encoding'
-        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'connection') then
-          Key := 'connection'
-        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'host') then
-          Key := 'host'
-        else if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-type') then
-          Key := 'content-type'
-        else
-        begin
-          SetString(RawLine, PAnsiChar(@ABuffer[Segment.KeyStart]), Segment.KeyLen);
-          Key := LowerCase(Trim(string(RawLine)));
         end;
-
-        AHeaders.AddOrSetValue(Key, Segment);
       end;
     end;
 
     LineStart := LineEnd + 2;
   end;
 
+  SetLength(AHeaders, SegCount);
   ABodyOffset := HeaderEnd + 4;
   Result := True;
 end;
@@ -1159,7 +1156,7 @@ end;
 constructor TEpollRawRequest.Create(
   const ABuffer: TBytes;
   const AMethod, APath, AQuery, AVersion: string;
-  AHeaders: TDictionary<string, THeaderSegment>;
+  AHeaders: THeaderSegments;
   ABodyOffset: Integer;
   AContentLength: Int64;
   ABodyStream: TStream;
@@ -1205,24 +1202,30 @@ var
   LSegment: THeaderSegment;
   LRawVal: AnsiString;
   LLowerName: string;
+  I: Integer;
 begin
   LLowerName := LowerCase(AName);
   if FResolvedHeaders.TryGetValue(LLowerName, Result) then
     Exit;
 
-  if FHeaders.TryGetValue(LLowerName, LSegment) then
+  for I := 0 to Length(FHeaders) - 1 do
   begin
-    if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
+    LSegment := FHeaders[I];
+    if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, LLowerName) then
     begin
-      SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
-      Result := Trim(string(LRawVal));
-    end
-    else
-      Result := '';
-    FResolvedHeaders.Add(LLowerName, Result);
-  end
-  else
-    Result := '';
+      if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
+      begin
+        SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
+        Result := Trim(string(LRawVal));
+      end
+      else
+        Result := '';
+      FResolvedHeaders.Add(LLowerName, Result);
+      Exit;
+    end;
+  end;
+
+  Result := '';
 end;
 
 function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
@@ -1725,6 +1728,7 @@ var
   LSegment: THeaderSegment;
   LRawVal: AnsiString;
   LBodyReadBuf: TBytes;
+  I: Integer;
 begin
   LRequestComplete := False;
 
@@ -1796,12 +1800,17 @@ begin
     ) then
     begin
       LIsChunked := False;
-      if AContext.Headers.TryGetValue('transfer-encoding', LSegment) then
+      for I := 0 to Length(AContext.Headers) - 1 do
       begin
-        if LSegment.ValueLen > 0 then
+        LSegment := AContext.Headers[I];
+        if THorseHttpParser.CompareBytesCI(AContext.Buffer, LSegment.KeyStart, LSegment.KeyLen, 'transfer-encoding') then
         begin
-          SetString(LRawVal, PAnsiChar(@AContext.Buffer[LSegment.ValueStart]), LSegment.ValueLen);
-          LIsChunked := SameText(Trim(string(LRawVal)), 'chunked');
+          if LSegment.ValueLen > 0 then
+          begin
+            SetString(LRawVal, PAnsiChar(@AContext.Buffer[LSegment.ValueStart]), LSegment.ValueLen);
+            LIsChunked := SameText(Trim(string(LRawVal)), 'chunked');
+          end;
+          Break;
         end;
       end;
 
@@ -2394,9 +2403,9 @@ begin
         raise EOSError.Create('bind failed');
 
       {$IFDEF FPC}
-      if fpListen(LSocket, 128) < 0 then
+      if fpListen(LSocket, 4096) < 0 then
       {$ELSE}
-      if Posix.SysSocket.listen(LSocket, 128) < 0 then
+      if Posix.SysSocket.listen(LSocket, 4096) < 0 then
       {$ENDIF}
         raise EOSError.Create('listen failed');
 
