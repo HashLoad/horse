@@ -76,6 +76,10 @@ type
     procedure InitializeParams;
     procedure InitializeContentFields;
     procedure InitializeCookie;
+{ PATCH-COOKIE-2 — RFC 6265 single-pair parser shared by InitializeCookie and
+  PopulateCookiesFromHeader: split on the FIRST '=' only (values may contain
+  '='), trim OWS, strip one layer of surrounding quotes. Adds to FCookie. }
+    procedure AddCookiePair(const APair: string);
     function IsMultipartForm: Boolean;
     function IsFormURLEncoded: Boolean;
     function CanLoadContentFields: Boolean;
@@ -511,11 +515,7 @@ begin
 end;
 
 procedure THorseRequest.InitializeCookie;
-const
-  KEY = 0;
-  VALUE = 1;
 var
-  LParam: TArray<string>;
   LItem: string;
 begin
   FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
@@ -526,11 +526,33 @@ begin
   if not Assigned(FWebRequest) then
     Exit;
 { end PATCH-REQ-4 }
+{ PATCH-COOKIE-2 — each CookieFields entry is one "name=value"; parse with the
+  shared RFC 6265 helper. Replaces the old Split(['=']) + [0]/[1] which
+  truncated values containing '=' (base64/JWT) and could index out of bounds. }
   for LItem in FWebRequest.CookieFields do
-  begin
-    LParam := LItem.Split(['=']);
-    FCookie.Dictionary.AddOrSetValue(LParam[KEY], LParam[VALUE]);
-  end;
+    AddCookiePair(LItem);
+end;
+
+{ PATCH-COOKIE-2 — shared single-pair cookie parser. }
+procedure THorseRequest.AddCookiePair(const APair: string);
+var
+  EqPos: Integer;
+  CName, CValue: string;
+begin
+  if not Assigned(FCookie) then
+    FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
+  EqPos := Pos('=', APair);
+  if EqPos < 2 then
+    Exit;                                   // no/empty name — skip
+  CName  := Trim(Copy(APair, 1, EqPos - 1));
+  CValue := Trim(Copy(APair, EqPos + 1, MaxInt));
+  if CName = '' then
+    Exit;
+  // strip one layer of surrounding DQUOTEs from a quoted value (RFC 6265 §4.1.1)
+  if (Length(CValue) >= 2) and (CValue[1] = '"') and
+     (CValue[Length(CValue)] = '"') then
+    CValue := Copy(CValue, 2, Length(CValue) - 2);
+  FCookie.Dictionary.AddOrSetValue(CName, CValue);
 end;
 
 procedure THorseRequest.InitializeParams;
@@ -733,29 +755,21 @@ end;
   =========================================================================== }
 procedure THorseRequest.PopulateCookiesFromHeader(const ACookieHeader: string);
 var
-  Pairs:    TArray<string>;
-  Pair:     string;
-  EqPos:    Integer;
-  CName, CValue: string;
+  Pairs: TArray<string>;
+  Pair:  string;
 begin
   if ACookieHeader = '' then
     Exit;
 
-  // Ensure FCookie is initialised (InitializeCookie is idempotent — it will
-  // return immediately after creating an empty collection on CrossSocket path)
+  // Ensure FCookie is initialised (AddCookiePair also guards this).
   if not Assigned(FCookie) then
     FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
 
+{ PATCH-COOKIE-2 — split the raw header on ';' then delegate each pair to the
+  shared RFC 6265 parser (first-'=' split, trim, quote-strip). }
   Pairs := ACookieHeader.Split([';']);
   for Pair in Pairs do
-  begin
-    EqPos := Pos('=', Pair);
-    if EqPos < 2 then Continue;   // skip malformed / empty-name pairs
-    CName  := Trim(Copy(Pair, 1, EqPos - 1));
-    CValue := Trim(Copy(Pair, EqPos + 1, MaxInt));
-    if CName = '' then Continue;
-    FCookie.Dictionary.AddOrSetValue(CName, CValue);
-  end;
+    AddCookiePair(Pair);
 end;
 { =========================================================================== }
 

@@ -9,6 +9,7 @@ interface
 uses
 {$IF DEFINED(FPC)}
   Classes,
+  Generics.Collections,
   fpHTTP,
   HTTPDefs,
 {$ELSE}
@@ -27,7 +28,8 @@ uses
   System.Generics.Collections,
 {$ENDIF}
 { =========================================================================== }
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core.Cookie;
 
 type
   THorseResponse = class
@@ -49,6 +51,14 @@ type
     FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
 { =========================================================================== }
 { ===========================================================================
+  PATCH-COOKIE-1 — typed Set-Cookie list (RFC 6265).
+  A key-value header map cannot hold multiple Set-Cookie headers, so cookies
+  added via AddCookie/Cookie are kept here (owned) and each response bridge
+  emits one Set-Cookie line per entry.  Lazy-created; nil when no cookie set.
+  =========================================================================== }
+    FCookies: TObjectList<THorseCookie>;
+{ =========================================================================== }
+{ ===========================================================================
   PATCH-RES-4 — CrossSocket shadow fields
   Reason: On the CrossSocket path FWebResponse is nil (no TWebResponse exists).
   Every public method that previously wrote to FWebResponse now checks for nil
@@ -63,7 +73,12 @@ type
     FCSStatusCode:    Integer;
     FCSBody:          string;
     FCSContentType:   string;
-    FCSContentStream: TStream;   // non-owning — caller retains ownership
+    FCSContentStream: TStream;   // see FCSOwnsContentStream
+{ PATCH-SENDFILE-1 — SendFile/Download on the shadow (CrossSocket/mORMot) path
+  COPY the source into a response-owned stream so the caller may free their own
+  stream immediately; the provider flushes AFTER the handler returns.  When
+  FCSOwnsContentStream is True, Clear/Destroy free FCSContentStream. }
+    FCSOwnsContentStream: Boolean;
 { =========================================================================== }
 { ===========================================================================
   PATCH-RES-6 — owned RawWebResponse adapter for CrossSocket path
@@ -103,6 +118,17 @@ type
     function Status: Integer; overload; virtual;
     function AddHeader(const AName, AValue: string): THorseResponse; virtual;
     function RemoveHeader(const AName: string): THorseResponse; virtual;
+{ PATCH-COOKIE-1 — typed Set-Cookie API (RFC 6265). AddCookie takes ownership of
+  ACookie; Cookie(name,value) creates one, adds it, and returns it for fluent
+  attribute setting. Each provider bridge emits one Set-Cookie line per entry. }
+    function AddCookie(const ACookie: THorseCookie): THorseResponse;
+    function Cookie(const AName, AValue: string): THorseCookie;
+{ PATCH-COOKIE-1 (Indy) — called by THorseRouterTree.Execute after the pipeline.
+  Maps the typed cookie list onto the WebBroker TWebResponse.Cookies so Indy
+  emits one Set-Cookie line per cookie. No-op when FWebResponse is nil
+  (CrossSocket/mORMot read FCookies directly in their bridges). }
+    procedure FlushCookiesToWebResponse;
+{ end PATCH-COOKIE-1 }
     function Content: TObject; overload; virtual;
     function Content(const AContent: TObject): THorseResponse; overload; virtual;
     function ContentType(const AContentType: string): THorseResponse; virtual;
@@ -131,6 +157,12 @@ type
   iterates only; all writes go through AddHeader as before.
   =========================================================================== }
     property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
+{ =========================================================================== }
+{ ===========================================================================
+  PATCH-COOKIE-1 — read-only cookie list for the response bridges. nil until
+  the first AddCookie/Cookie call.
+  =========================================================================== }
+    property Cookies: TObjectList<THorseCookie> read FCookies;
 { =========================================================================== }
 { ===========================================================================
   PATCH-RES-4 — read-only properties for the CrossSocket bridge
@@ -250,7 +282,12 @@ begin
 { PATCH-RES-4 — wipe CrossSocket shadow fields }
   FCSBody          := '';
   FCSContentType   := '';
-  FCSContentStream := nil;   // non-owning — never free here
+{ PATCH-SENDFILE-1 — free the owned copy (SendFile/Download); else just nil it. }
+  if FCSOwnsContentStream and Assigned(FCSContentStream) then
+    FreeAndNil(FCSContentStream)
+  else
+    FCSContentStream := nil;
+  FCSOwnsContentStream := False;
   FCSStatusCode    := 200;
 { end PATCH-RES-4 }
 { PATCH-RES-6 — free the per-request TWebResponse adapter (owned).
@@ -258,6 +295,10 @@ begin
   if Assigned(FCSRawWebResponse) then
     FreeAndNil(FCSRawWebResponse);
 { end PATCH-RES-6 }
+{ PATCH-COOKIE-1 — drop the owned cookies on pool recycle. }
+  if Assigned(FCookies) then
+    FCookies.Clear;
+{ end PATCH-COOKIE-1 }
 end;
 { =========================================================================== }
 
@@ -287,6 +328,12 @@ begin
   if Assigned(FCSRawWebResponse) then
     FCSRawWebResponse.Free;
 { end PATCH-RES-6 }
+{ PATCH-SENDFILE-1 — free the owned SendFile/Download copy if still held. }
+  if FCSOwnsContentStream and Assigned(FCSContentStream) then
+    FreeAndNil(FCSContentStream);
+{ PATCH-COOKIE-1 — free the owned cookie list. }
+  if Assigned(FCookies) then
+    FreeAndNil(FCookies);
   inherited;
 end;
 
@@ -391,6 +438,67 @@ begin
   Result := Self;
 end;
 
+{ ===========================================================================
+  PATCH-COOKIE-1 — typed Set-Cookie API implementation
+  =========================================================================== }
+function THorseResponse.AddCookie(const ACookie: THorseCookie): THorseResponse;
+begin
+  Result := Self;
+  if ACookie = nil then
+    Exit;
+  if FCookies = nil then
+    FCookies := TObjectList<THorseCookie>.Create(True {AOwnsObjects});
+  FCookies.Add(ACookie);
+end;
+
+function THorseResponse.Cookie(const AName, AValue: string): THorseCookie;
+begin
+  Result := THorseCookie.Create(AName, AValue);
+  AddCookie(Result);
+end;
+
+procedure THorseResponse.FlushCookiesToWebResponse;
+{ Indy path only. On FPC the fphttpserver TResponse.Cookies mapping is a
+  follow-up (CrossSocket is the FPC transport); kept a no-op so FPC builds are
+  unaffected. CrossSocket/mORMot never reach the body (FWebResponse is nil). }
+{$IFNDEF FPC}
+var
+  LCookie:    THorseCookie;
+  LState:     THorseCookieState;
+  LWebCookie: TCookie;
+{$ENDIF}
+begin
+{$IFNDEF FPC}
+  if (FWebResponse = nil) or (FCookies = nil) then
+    Exit;
+  for LCookie in FCookies do
+  begin
+    LState := LCookie.State;
+    LWebCookie := FWebResponse.Cookies.Add;
+    LWebCookie.Name  := LState.Name;
+    LWebCookie.Value := LState.Value;
+    if LState.Domain <> '' then
+      LWebCookie.Domain := LState.Domain;
+    if LState.Path <> '' then
+      LWebCookie.Path := LState.Path;
+    if LState.HasExpires then
+      LWebCookie.Expires := LState.Expires;   // TCookie has no Max-Age — use .Expires() on Indy
+    LWebCookie.Secure := LState.Secure;
+{$IF CompilerVersion >= 31}   // Delphi 10.1 Berlin+ — TCookie.HttpOnly
+    LWebCookie.HttpOnly := LState.HttpOnly;
+{$IFEND}
+{$IF CompilerVersion >= 34}   // Delphi 10.4 Sydney+ — TCookie.SameSite (string)
+    case LState.SameSite of
+      ssStrict: LWebCookie.SameSite := 'Strict';
+      ssLax:    LWebCookie.SameSite := 'Lax';
+      ssNone:   LWebCookie.SameSite := 'None';
+    end;
+{$IFEND}
+  end;
+{$ENDIF}
+end;
+{ end PATCH-COOKIE-1 }
+
 function THorseResponse.Status(const AStatus: THTTPStatus): THorseResponse;
 begin
 { PATCH-RES-4 — nil-guard }
@@ -416,15 +524,26 @@ begin
   if LContentType = EmptyStr then
     LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-{ PATCH-RES-4 — nil-guard: CrossSocket path captures stream + type as shadow fields }
+{ PATCH-RES-4 / PATCH-SENDFILE-1 — nil-guard: on the CrossSocket/mORMot path,
+  COPY the source into a response-owned stream.  The response is flushed AFTER
+  the handler returns, so a non-owning reference would dangle the moment the
+  caller frees AFileStream (the common `try SendFile finally FreeAndNil` idiom);
+  copying decouples us from the caller's stream lifetime. }
   if not Assigned(FWebResponse) then
   begin
-    FCSContentStream := AFileStream;   // non-owning
+    if FCSOwnsContentStream and Assigned(FCSContentStream) then
+      FreeAndNil(FCSContentStream);
+    FCSContentStream := TMemoryStream.Create;
+    AFileStream.Position := 0;
+    if AFileStream.Size > 0 then
+      TMemoryStream(FCSContentStream).CopyFrom(AFileStream, AFileStream.Size);
+    FCSContentStream.Position := 0;
+    FCSOwnsContentStream := True;
     FCSContentType   := LContentType;
     AddHeader('Content-Disposition', Format('inline; filename="%s"', [LFileName]));
     Exit;
   end;
-{ end PATCH-RES-4 }
+{ end PATCH-RES-4 / PATCH-SENDFILE-1 }
 
   FWebResponse.FreeContentStream := False;
   FWebResponse.ContentLength := AFileStream.Size;
@@ -472,15 +591,23 @@ begin
   if LContentType = EmptyStr then
     LContentType := Horse.Mime.THorseMimeTypes.GetFileType(LFileName);
 
-{ PATCH-RES-4 — nil-guard }
+{ PATCH-RES-4 / PATCH-SENDFILE-1 — nil-guard: copy into a response-owned stream
+  so the caller may free AFileStream immediately (flush happens post-handler). }
   if not Assigned(FWebResponse) then
   begin
-    FCSContentStream := AFileStream;   // non-owning
+    if FCSOwnsContentStream and Assigned(FCSContentStream) then
+      FreeAndNil(FCSContentStream);
+    FCSContentStream := TMemoryStream.Create;
+    AFileStream.Position := 0;
+    if AFileStream.Size > 0 then
+      TMemoryStream(FCSContentStream).CopyFrom(AFileStream, AFileStream.Size);
+    FCSContentStream.Position := 0;
+    FCSOwnsContentStream := True;
     FCSContentType   := LContentType;
     AddHeader('Content-Disposition', Format('attachment; filename="%s"', [LFileName]));
     Exit;
   end;
-{ end PATCH-RES-4 }
+{ end PATCH-RES-4 / PATCH-SENDFILE-1 }
 
   FWebResponse.FreeContentStream := False;
   FWebResponse.ContentLength := AFileStream.Size;
