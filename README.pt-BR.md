@@ -81,14 +81,14 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 
 Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). Os Providers opcionais **CrossSocket** e **mORMot2** substituem ambos por E/S assíncrona **IOCP / epoll / kqueue**.
 
-| Provider | Define | Delphi | Lazarus |
-|---|---|:---:|:---:|
-| **Indy** _(padrão Delphi)_ | _(nenhum)_ | ✔️ | n/a |
-| **`fphttpserver`** _(padrão FPC)_ | _(nenhum)_ | n/a | ✔️ |
-| 🆕 **[crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)** | `HORSE_CROSSSOCKET` | ✔️ | ✔️ |
-| 🆕 **[mormot](https://github.com/freitasjca/horse-provider-mormot)** | `HORSE_PROVIDER_MORMOT` | ✔️ | ✔️ |
-| 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** | `HORSE_PROVIDER_HTTPSYS` | ✔️ | ✔️ |
-| 🆕 **[epoll](./doc/epoll.pt-BR.md)** | `HORSE_PROVIDER_EPOLL` | ✔️ | ✔️ |
+| Provider | Define de compilação | Delphi | Lazarus |
+| ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
+| **Indy** _(padrão Delphi para self-hosted)_                                                     | _(nenhum)_              | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
+| **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** _(driver de modo kernel do Windows para ultra-baixa latência)_ | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[epoll](./doc/epoll.pt-BR.md)** _(event loop assíncrono nativo do Linux)_                  | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
