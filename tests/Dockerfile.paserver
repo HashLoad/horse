@@ -1,0 +1,32 @@
+FROM ubuntu:22.04
+
+# Evita perguntas interativas durante a instalação de pacotes
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instala pacotes necessários para compilação Delphi Linux e PAServer
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libcurl4-gnutls-dev \
+    zlib1g-dev \
+    libssl-dev \
+    curl \
+    unzip \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /paserver
+
+# Copia o instalador do PAServer da pasta de contexto
+COPY LinuxPAServer23.0.tar.gz .
+
+# Descompacta o PAServer e limpa os temporários
+RUN tar -xvzf LinuxPAServer23.0.tar.gz && \
+    rm LinuxPAServer23.0.tar.gz && \
+    mv PAServer-23.0/* . && \
+    rm -rf PAServer-23.0
+
+# Expõe a porta padrão do PAServer
+EXPOSE 64211
+
+# Inicia o PAServer sem senha para facilitar a conexão da IDE
+CMD ["./paserver", "-password="]

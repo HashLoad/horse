@@ -461,6 +461,8 @@ begin
     FRawReq.PopulateQueryFields(QueryFields);
     FRawReq.PopulateContentFields(ContentFields);
     FRawReq.PopulateCookieFields(CookieFields);
+    Content         := FRawReq.GetContent;
+    ContentLength   := FRawReq.GetContentLength;
   end;
 end;
 

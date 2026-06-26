@@ -47,6 +47,9 @@ packages/bpl/
 *.a
 *.stat
 *.skincfg
+*.dsv
+*.dproj
+*.dsk
 
 # Mac
 *.DS_Store
@@ -80,3 +83,6 @@ __recovery/
 *.identcache
 *.tvsconfig
 *.dsk
+
+# Test files and local paserver
+tests/LinuxPAServer23.0.tar.gz

@@ -1,9 +1,9 @@
-program HttpSys;
+program EpollConsole;
 
 {$APPTYPE CONSOLE}
 
-// Habilita o provider HTTP.sys nativo do Windows
-{$DEFINE HORSE_PROVIDER_HTTPSYS}
+// Habilita o novo provider Epoll nativo de Linux
+{$DEFINE HORSE_PROVIDER_EPOLL}
 
 uses
   Horse,
@@ -28,7 +28,7 @@ const
     'a:hover { text-decoration: underline; }' +
     '.desc { margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8; }' +
     '</style></head><body>' +
-    '<h1>Horse Server API &mdash; Delphi HTTP.sys (Windows)</h1>' +
+    '<h1>Horse Server API &mdash; Delphi Epoll (Linux)</h1>' +
     '<p>Bem-vindo ao servidor Horse! Use os links abaixo para testar as rotas:</p>' +
     '<ul>' +
     '<li><span class="method get">GET</span><a href="/ping">/ping</a><div class="desc">Retorna a resposta simples de ping (pong)</div></li>' +
@@ -50,14 +50,14 @@ begin
       Res.Send(HTML_ROOT);
     end);
 
-  // Rota simples de ping
+  // 1. Rota de ping simples
   THorse.Get('/ping',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
       Res.Send('pong');
     end);
 
-  // Rota para demonstrar leitura de parâmetros de rota, query string e envio de JSON
+  // 2. Rota complexa retornando JSON e processando parâmetros
   THorse.Get('/users/:id',
     procedure(Req: THorseRequest; Res: THorseResponse)
     var
@@ -74,8 +74,8 @@ begin
       try
         LJSON.AddPair('id', LUserId);
         LJSON.AddPair('nome', LUserName);
-        LJSON.AddPair('provedor', 'HTTP.sys');
-        LJSON.AddPair('mensagem', 'Exemplo de integração funcionando perfeitamente!');
+        LJSON.AddPair('provedor', 'Epoll (Linux)');
+        LJSON.AddPair('mensagem', 'Exemplo de integracao funcionando perfeitamente!');
         
         Res.Send(LJSON.ToJSON);
       finally
@@ -83,7 +83,7 @@ begin
       end;
     end);
 
-  // Rota POST
+  // 3. Rota POST
   THorse.Post('/users',
     procedure(Req: THorseRequest; Res: THorseResponse)
     var
@@ -109,7 +109,7 @@ begin
       Res.Send('Tamanho: ' + IntToStr(Length(LBody)) + ' / Inicio: ' + Copy(LBody, 1, 50));
     end);
 
-  // Rota PUT
+  // 4. Rota PUT
   THorse.Put('/users/:id',
     procedure(Req: THorseRequest; Res: THorseResponse)
     var
@@ -126,7 +126,7 @@ begin
       end;
     end);
 
-  // Rota PATCH
+  // 5. Rota PATCH
   THorse.Patch('/users/:id',
     procedure(Req: THorseRequest; Res: THorseResponse)
     var
@@ -143,7 +143,7 @@ begin
       end;
     end);
 
-  // Rota DELETE
+  // 6. Rota DELETE
   THorse.Delete('/users/:id',
     procedure(Req: THorseRequest; Res: THorseResponse)
     var
@@ -160,12 +160,12 @@ begin
       end;
     end);
 
-  // Escuta em localhost:9095 (evita necessidade de executar como Administrador no Windows HTTP.sys)
-  THorse.Listen(9095, 'localhost',
+  // Escuta na porta 9095 em 0.0.0.0 (acessÃ­vel de fora do container Docker)
+  THorse.Listen(9095, '0.0.0.0',
     procedure
     begin
       Writeln('--------------------------------------------------');
-      Writeln(' Servidor Horse HTTP.sys Iniciado Localmente');
+      Writeln(' Servidor Horse Epoll Iniciado (Linux)');
       Writeln(Format(' Escutando em: http://%s:%d/', [THorse.Host, THorse.Port]));
       Writeln('--------------------------------------------------');
       Writeln(' Rotas disponiveis para teste:');
@@ -177,7 +177,9 @@ begin
       Writeln('  - PATCH  http://localhost:9095/users/123');
       Writeln('  - DELETE http://localhost:9095/users/123');
       Writeln('--------------------------------------------------');
-      Writeln(' Pressione [Enter] para encerrar.');
-      Readln;
+      Writeln(' Pressione Ctrl+C para encerrar.');
     end);
+
+  while THorse.IsRunning do
+    Sleep(1000);
 end.
