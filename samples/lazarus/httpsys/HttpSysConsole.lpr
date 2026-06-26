@@ -155,9 +155,8 @@ begin
   Writeln('  - PUT    http://localhost:9095/users/123');
   Writeln('  - PATCH  http://localhost:9095/users/123');
   Writeln('  - DELETE http://localhost:9095/users/123');
-  Writeln('--------------------------------------------------');
   Writeln(' Pressione [Enter] para encerrar.');
-  Readln;
+  while True do Sleep(1000);
 end;
 
 begin

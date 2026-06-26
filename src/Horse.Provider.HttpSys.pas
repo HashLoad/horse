@@ -11,10 +11,10 @@ uses
   {$IF DEFINED(FPC)}
     SysUtils,
     Classes,
-    SyncObjs,
     Generics.Collections,
     Generics.Defaults,
     Windows,
+    SyncObjs,
     httpprotocol,
   {$ELSE}
     System.SysUtils,
@@ -299,7 +299,7 @@ type
   private
     FQueue: TQueue<TBytes>;
     FSync: TCriticalSection;
-    FEvent: TSimpleEvent;
+    FEvent: TEvent;
     FWorkers: TList<TThread>;
     FActive: Boolean;
     class var FInstance: THttpSysThreadPool;
@@ -501,7 +501,7 @@ begin
     LHasItem := False;
     LBuffer := nil;
 
-    FPool.FSync.Enter;
+    FPool.FSync.Acquire;
     try
       if FPool.FQueue.Count > 0 then
       begin
@@ -509,7 +509,7 @@ begin
         LHasItem := True;
       end;
     finally
-      FPool.FSync.Leave;
+      FPool.FSync.Release;
     end;
 
     if LHasItem then
@@ -557,7 +557,7 @@ var
 begin
   FQueue := TQueue<TBytes>.Create;
   FSync := TCriticalSection.Create;
-  FEvent := TSimpleEvent.Create;
+  FEvent := TEvent.Create(nil, False, False, '');
   FWorkers := TList<TThread>.Create;
   FActive := True;
 
@@ -596,11 +596,11 @@ end;
 
 procedure THttpSysThreadPool.QueueRequest(const ABuffer: TBytes);
 begin
-  FSync.Enter;
+  FSync.Acquire;
   try
     FQueue.Enqueue(ABuffer);
   finally
-    FSync.Leave;
+    FSync.Release;
   end;
   FEvent.SetEvent;
 end;
@@ -1322,11 +1322,14 @@ begin
 end;
 
 procedure THttpSysListenerThread.DispatchRequest(ABuffer: TBytes);
+var
+  LBuf: TBytes;
 begin
   {$IF DEFINED(FPC)}
   if Assigned(THttpSysThreadPool.Instance) then
     THttpSysThreadPool.Instance.QueueRequest(ABuffer);
   {$ELSE}
+  LBuf := Copy(ABuffer);
   TTask.Run(
     procedure
     var
@@ -1340,8 +1343,8 @@ begin
       LRequest: PHTTP_REQUEST;
     begin
       try
-        LRequest := PHTTP_REQUEST(@ABuffer[0]);
-        LRawReq := THttpSysRawRequest.Create(LRequest, ABuffer);
+        LRequest := PHTTP_REQUEST(@LBuf[0]);
+        LRawReq := THttpSysRawRequest.Create(LRequest, LBuf);
         LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
         LRawRes := LConcreteRes;
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
