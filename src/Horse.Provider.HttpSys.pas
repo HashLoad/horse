@@ -280,6 +280,17 @@ function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP
 {$MINENUMSIZE 1}
 
 type
+  THttpSysBufferPool = class
+  private
+    FBuffers: TQueue<TBytes>;
+    FSync: TCriticalSection;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Acquire(AMinSize: Integer): TBytes;
+    procedure Release(var ABuffer: TBytes);
+  end;
+
   THttpSysListenerThread = class;
 
   {$IF DEFINED(FPC)}
@@ -412,6 +423,7 @@ type
     class var FListenerThread: THttpSysListenerThread;
     class var FKnownRequestHeadersMap: TDictionary<string, Integer>;
     class var FKnownResponseHeadersMap: TDictionary<string, Integer>;
+    class var FBufferPool: THttpSysBufferPool;
 
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetHost(const AValue: string); static;
@@ -439,6 +451,7 @@ type
     class property ReqQueue: THandle read FReqQueue;
     class property KnownRequestHeadersMap: TDictionary<string, Integer> read FKnownRequestHeadersMap;
     class property KnownResponseHeadersMap: TDictionary<string, Integer> read FKnownResponseHeadersMap;
+    class property BufferPool: THttpSysBufferPool read FBufferPool;
 
     class constructor CreateClass;
     class destructor DestroyClass;
@@ -470,6 +483,120 @@ begin
   {$ELSE}
   Result := System.SysUtils.DeleteFile(AFileName);
   {$ENDIF}
+end;
+
+
+
+{ THttpSysBufferPool }
+
+constructor THttpSysBufferPool.Create;
+begin
+  inherited Create;
+  FBuffers := TQueue<TBytes>.Create;
+  FSync := TCriticalSection.Create;
+end;
+
+destructor THttpSysBufferPool.Destroy;
+begin
+  FSync.Acquire;
+  try
+    while FBuffers.Count > 0 do
+      FBuffers.Dequeue;
+    FBuffers.Free;
+  finally
+    FSync.Release;
+    FSync.Free;
+  end;
+  inherited;
+end;
+
+function THttpSysBufferPool.Acquire(AMinSize: Integer): TBytes;
+begin
+  FSync.Acquire;
+  try
+    if FBuffers.Count > 0 then
+    begin
+      Result := FBuffers.Dequeue;
+      if Length(Result) < AMinSize then
+        SetLength(Result, AMinSize);
+    end
+    else
+    begin
+      SetLength(Result, AMinSize);
+    end;
+  finally
+    FSync.Release;
+  end;
+end;
+
+procedure THttpSysBufferPool.Release(var ABuffer: TBytes);
+begin
+  if ABuffer = nil then Exit;
+  FSync.Acquire;
+  try
+    if (FBuffers.Count < 1000) and (Length(ABuffer) <= 65536) then
+    begin
+      FBuffers.Enqueue(ABuffer);
+    end;
+  finally
+    FSync.Release;
+  end;
+  ABuffer := nil;
+end;
+
+function AnsiStrEqualNoCase(const AStr1: PAnsiChar; const AStr2: PAnsiChar; ALen: Integer): Boolean;
+var
+  I: Integer;
+  C1, C2: Byte;
+begin
+  for I := 0 to ALen - 1 do
+  begin
+    C1 := Byte(AStr1[I]);
+    C2 := Byte(AStr2[I]);
+    if C1 <> C2 then
+    begin
+      if (C1 >= 65) and (C1 <= 90) then Inc(C1, 32);
+      if (C2 >= 65) and (C2 <= 90) then Inc(C2, 32);
+      if C1 <> C2 then
+        Exit(False);
+    end;
+  end;
+  Result := True;
+end;
+
+function FastIntToAnsiString(AValue: Int64): AnsiString;
+var
+  LBuffer: array[0..31] of AnsiChar;
+  LPtr: PAnsiChar;
+  LVal: UInt64;
+  LDigit: UInt64;
+begin
+  if AValue = 0 then
+    Exit('0');
+  
+  LPtr := @LBuffer[31];
+  LPtr^ := #0;
+  
+  if AValue < 0 then
+    LVal := UInt64(-AValue)
+  else
+    LVal := UInt64(AValue);
+    
+  while LVal > 0 do
+  begin
+    Dec(LPtr);
+    LDigit := LVal mod 10;
+    LPtr^ := AnsiChar(Ord('0') + LDigit);
+    LVal := LVal div 10;
+  end;
+  
+  if AValue < 0 then
+  begin
+    Dec(LPtr);
+    LPtr^ := '-';
+  end;
+  
+  SetString(Result, LPtr, @LBuffer[31] - LPtr);
 end;
 
 {$IF DEFINED(FPC)}
@@ -540,7 +667,7 @@ begin
           // Silencia erros de Dispatch
           ;
       end;
-      LBuffer := nil;
+      THorseProviderHttpSys.BufferPool.Release(LBuffer);
     end
     else
     begin
@@ -784,7 +911,14 @@ end;
 
 function THttpSysRawRequest.GetProtocolVersion: string;
 begin
-  Result := Format('HTTP/%d.%d', [FRequest.Version.MajorVersion, FRequest.Version.MinorVersion]);
+  if (FRequest.Version.MajorVersion = 1) and (FRequest.Version.MinorVersion = 1) then
+    Result := 'HTTP/1.1'
+  else if (FRequest.Version.MajorVersion = 1) and (FRequest.Version.MinorVersion = 0) then
+    Result := 'HTTP/1.0'
+  else if (FRequest.Version.MajorVersion = 2) and (FRequest.Version.MinorVersion = 0) then
+    Result := 'HTTP/2.0'
+  else
+    Result := Format('HTTP/%d.%d', [FRequest.Version.MajorVersion, FRequest.Version.MinorVersion]);
 end;
 
 function THttpSysRawRequest.GetURL: string;
@@ -894,37 +1028,56 @@ function THttpSysRawRequest.GetFieldByName(const AName: string): string;
 var
   LIndex: Integer;
   I: Integer;
-  LUnknownName, LUnknownVal: string;
+  LAnsiName: AnsiString;
 begin
-  if FHeadersCache = nil then
+  if FHeadersCache <> nil then
   begin
-    {$IF DEFINED(FPC)}
-    FHeadersCache := TDictionary<string, string>.Create;
-    {$ELSE}
-    FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
-    {$ENDIF}
-
-    if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
-    begin
-      for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
-      begin
-        SetString(LUnknownName, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pName), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].NameLength);
-        SetString(LUnknownVal, PAnsiChar(PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].pRawValue), PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I].RawValueLength);
-        FHeadersCache.AddOrSetValue(LUnknownName, LUnknownVal);
-      end;
-    end;
+    if FHeadersCache.TryGetValue(AName, Result) then
+      Exit;
   end;
 
-  if FHeadersCache.TryGetValue(AName, Result) then
-    Exit;
-
   Result := '';
+  
   if THorseProviderHttpSys.KnownRequestHeadersMap.TryGetValue(AName, LIndex) then
   begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
     begin
       SetString(Result, PAnsiChar(FRequest.Headers.KnownHeaders[LIndex].pRawValue), FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
+      if FHeadersCache = nil then
+      begin
+        {$IF DEFINED(FPC)}
+        FHeadersCache := TDictionary<string, string>.Create;
+        {$ELSE}
+        FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+        {$ENDIF}
+      end;
       FHeadersCache.Add(AName, Result);
+      Exit;
+    end;
+  end;
+
+  if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
+  begin
+    LAnsiName := AnsiString(AName);
+    for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
+    begin
+      with PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I] do
+      begin
+        if (NameLength = Length(LAnsiName)) and AnsiStrEqualNoCase(pName, PAnsiChar(LAnsiName), NameLength) then
+        begin
+          SetString(Result, pRawValue, RawValueLength);
+          if FHeadersCache = nil then
+          begin
+            {$IF DEFINED(FPC)}
+            FHeadersCache := TDictionary<string, string>.Create;
+            {$ELSE}
+            FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+            {$ENDIF}
+          end;
+          FHeadersCache.AddOrSetValue(AName, Result);
+          Exit;
+        end;
+      end;
     end;
   end;
 end;
@@ -1136,7 +1289,7 @@ begin
 
   if (ARes.ContentStream <> nil) and (ARes.ContentStream.Size > 0) then
   begin
-    LContentLengthAnsi := AnsiString(IntToStr(ARes.ContentStream.Size));
+    LContentLengthAnsi := FastIntToAnsiString(ARes.ContentStream.Size);
     LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
     LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
 
@@ -1200,7 +1353,7 @@ begin
 
     if Length(LBodyBytes) > 0 then
     begin
-      LContentLengthAnsi := AnsiString(IntToStr(Length(LBodyBytes)));
+      LContentLengthAnsi := FastIntToAnsiString(Length(LBodyBytes));
       LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
       LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
 
@@ -1329,7 +1482,7 @@ begin
   if Assigned(THttpSysThreadPool.Instance) then
     THttpSysThreadPool.Instance.QueueRequest(ABuffer);
   {$ELSE}
-  LBuf := Copy(ABuffer);
+  LBuf := ABuffer;
   TTask.Run(
     procedure
     var
@@ -1341,10 +1494,12 @@ begin
       LReq: THorseRequest;
       LRes: THorseResponse;
       LRequest: PHTTP_REQUEST;
+      LCurrentBuf: TBytes;
     begin
+      LCurrentBuf := LBuf;
       try
-        LRequest := PHTTP_REQUEST(@LBuf[0]);
-        LRawReq := THttpSysRawRequest.Create(LRequest, LBuf);
+        LRequest := PHTTP_REQUEST(@LCurrentBuf[0]);
+        LRawReq := THttpSysRawRequest.Create(LRequest, LCurrentBuf);
         LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
         LRawRes := LConcreteRes;
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
@@ -1367,6 +1522,7 @@ begin
         on E: Exception do
           Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
       end;
+      THorseProviderHttpSys.BufferPool.Release(LCurrentBuf);
     end
   );
   {$ENDIF}
@@ -1379,14 +1535,17 @@ var
   LBytesReturned: ULONG;
   LRet: ULONG;
   LRequestId: HTTP_REQUEST_ID;
+  LCurrentSize: Integer;
 begin
   LRequestId := 0;
+  LBuffer := nil;
   LRequest := nil;
+  LCurrentSize := 16384;
   while not Terminated and FRunning do
   begin
     if LRequestId = 0 then
     begin
-      SetLength(LBuffer, 16384); // Pre-allocated 16KB Request Buffer
+      LBuffer := THorseProviderHttpSys.BufferPool.Acquire(LCurrentSize);
       LRequest := PHTTP_REQUEST(@LBuffer[0]);
       FillChar(LRequest^, SizeOf(HTTP_REQUEST), 0);
     end;
@@ -1404,26 +1563,33 @@ begin
 
     if LRet = ERROR_SUCCESS then
     begin
-      // Dispatch processing concurrently to Delphi Thread Pool
+      // Dispatch processing concurrently
       DispatchRequest(LBuffer);
+      LBuffer := nil;
       LRequestId := 0;
+      LCurrentSize := 16384;
     end
     else if LRet = ERROR_MORE_DATA then
     begin
       // Re-allocate enough space for large request headers and try again
       LRequestId := LRequest.RequestId;
-      SetLength(LBuffer, LBytesReturned);
+      LCurrentSize := LBytesReturned;
+      SetLength(LBuffer, LCurrentSize);
       LRequest := PHTTP_REQUEST(@LBuffer[0]);
     end
     else
     begin
       LRequestId := 0;
+      if LBuffer <> nil then
+        THorseProviderHttpSys.BufferPool.Release(LBuffer);
       if (LRet = 1229) or (LRet = ERROR_CONNECTION_INVALID) then // 1229 = ERROR_CONNECTION_INVALID
         // Connection lost, continue
       else if not FRunning then
         Break;
     end;
   end;
+  if LBuffer <> nil then
+    THorseProviderHttpSys.BufferPool.Release(LBuffer);
 end;
 
 
@@ -1440,6 +1606,7 @@ begin
   FUrlGroupId := 0;
   FReqQueue := 0;
   FListenerThread := nil;
+  FBufferPool := THttpSysBufferPool.Create;
 
   {$IF DEFINED(FPC)}
   FKnownRequestHeadersMap := TDictionary<string, Integer>.Create;
@@ -1462,6 +1629,7 @@ class destructor THorseProviderHttpSys.DestroyClass;
 begin
   FKnownRequestHeadersMap.Free;
   FKnownResponseHeadersMap.Free;
+  FBufferPool.Free;
 end;
 
 class procedure THorseProviderHttpSys.SetPort(const AValue: Integer);
