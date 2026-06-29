@@ -1,4 +1,4 @@
-﻿unit Horse.Core.RouterTree;
+unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -30,6 +30,7 @@ type
     FIsInitialized: Boolean;
     function GetQueuePath(APath: string; const AUsePrefix: Boolean = True): TQueue<string>;
     function ForcePath(const APath: string): THorseRouterTree;
+    procedure PopulateQueuePath(AQueue: TQueue<string>; APath: string; const AUsePrefix: Boolean = True);
   private
     FPart: string;
     FTag: string;
@@ -73,11 +74,84 @@ implementation
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
+  SyncObjs,
 {$ELSE}
   System.SysUtils,
   System.RegularExpressions,
+  System.SyncObjs,
 {$ENDIF}
   Horse.Core.RouterTree.NextCaller;
+
+type
+  TQueueString = TQueue<string>;
+  TQueueStringList = TList<TQueueString>;
+
+var
+  GQueuePool: TQueueStringList = nil;
+  GQueuePoolCS: TCriticalSection = nil;
+
+function AcquireQueue: TQueue<string>;
+begin
+  GQueuePoolCS.Enter;
+  try
+    if GQueuePool.Count > 0 then
+    begin
+      Result := GQueuePool.Items[GQueuePool.Count - 1];
+      GQueuePool.Delete(GQueuePool.Count - 1);
+    end
+    else
+    begin
+      Result := TQueue<string>.Create;
+    end;
+  finally
+    GQueuePoolCS.Leave;
+  end;
+end;
+
+procedure ReleaseQueue(AQueue: TQueue<string>);
+begin
+  if AQueue = nil then Exit;
+  AQueue.Clear;
+  GQueuePoolCS.Enter;
+  try
+    GQueuePool.Add(AQueue);
+  finally
+    GQueuePoolCS.Leave;
+  end;
+end;
+
+var
+  GNextCallerPool: TList<TNextCaller> = nil;
+  GNextCallerPoolCS: TCriticalSection = nil;
+
+function AcquireNextCaller: TNextCaller;
+begin
+  GNextCallerPoolCS.Enter;
+  try
+    if GNextCallerPool.Count > 0 then
+    begin
+      Result := GNextCallerPool.Items[GNextCallerPool.Count - 1];
+      GNextCallerPool.Delete(GNextCallerPool.Count - 1);
+    end
+    else
+    begin
+      Result := TNextCaller.Create;
+    end;
+  finally
+    GNextCallerPoolCS.Leave;
+  end;
+end;
+
+procedure ReleaseNextCaller(ANextCaller: TNextCaller);
+begin
+  if ANextCaller = nil then Exit;
+  GNextCallerPoolCS.Enter;
+  try
+    GNextCallerPool.Add(ANextCaller);
+  finally
+    GNextCallerPoolCS.Leave;
+  end;
+end;
 
 // All named path params (e.g. :id, :name, :userId) are normalized to a
 // single canonical key ':_param'. This means /foo/:id/bar and /foo/:name/bar
@@ -248,22 +322,24 @@ begin
   end;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
-  LQueue := GetQueuePath(LPathInfo, False);
+  LQueue := AcquireQueue;
   try
+    PopulateQueuePath(LQueue, LPathInfo, False);
     Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
     if not Result then
     begin
-      LQueueNotFound := GetQueuePath('/*', False);
+      LQueueNotFound := AcquireQueue;
       try
+        PopulateQueuePath(LQueueNotFound, '/*', False);
         Result := ExecuteInternal(LQueueNotFound, LMethodType, ARequest, AResponse);
         if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
           AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
       finally
-        LQueueNotFound.Free;
+        ReleaseQueue(LQueueNotFound);
       end;
     end;
   finally
-    LQueue.Free;
+    ReleaseQueue(LQueue);
   end;
 { PATCH-COOKIE-1 â€” emit typed cookies on the Indy path. The handler has run, so
   all fluent attributes are set. No-op when FWebResponse is nil (CrossSocket /
@@ -278,24 +354,26 @@ var
   LFound: Boolean;
 begin
   LFound := False;
-  LNextCaller := TNextCaller.Create;
+  LNextCaller := AcquireNextCaller;
   try
-    LNextCaller.SetCallback(FCallBack);
-    LNextCaller.SetPath(APath);
-    LNextCaller.SetHTTPType(AHTTPType);
-    LNextCaller.SetRequest(ARequest);
-    LNextCaller.SetResponse(AResponse);
-    LNextCaller.SetIsGroup(AIsGroup);
-    LNextCaller.SetMiddleware(FMiddleware);
-    LNextCaller.SetTag(FTag);
-    LNextCaller.SetIsParamsKey(FIsParamsKey);
-    LNextCaller.SetOnCallNextPath(CallNextPath);
-    LNextCaller.SetFound(LFound);
+    LNextCaller.Configure(
+      FCallBack,
+      APath,
+      AHTTPType,
+      ARequest,
+      AResponse,
+      AIsGroup,
+      FMiddleware,
+      FTag,
+      FIsParamsKey,
+      CallNextPath,
+      LFound
+    );
     LNextCaller.Init;
     LNextCaller.Next;
-  finally
-    LNextCaller.Free;
     Result := LFound;
+  finally
+    ReleaseNextCaller(LNextCaller);
   end;
 end;
 
@@ -324,22 +402,47 @@ begin
 end;
 
 function THorseRouterTree.GetQueuePath(APath: string; const AUsePrefix: Boolean = True): TQueue<string>;
-var
-  LPart: string;
-  LSplitedPath: TArray<string>;
 begin
   Result := TQueue<string>.Create;
+  PopulateQueuePath(Result, APath, AUsePrefix);
+end;
+
+procedure THorseRouterTree.PopulateQueuePath(AQueue: TQueue<string>; APath: string; const AUsePrefix: Boolean = True);
+var
+  LStart, LLen, LPathLen: Integer;
+  LPart: string;
+begin
   if AUsePrefix then
+  begin
     if not APath.StartsWith('/') then
       APath := (FPrefix + '/' + APath)
     else
       APath := (FPrefix + APath);
-  LSplitedPath := APath.Split(['/']);
-  for LPart in LSplitedPath do
+  end;
+
+  if APath.StartsWith('/') then
+    AQueue.Enqueue(EmptyStr);
+
+  LPathLen := Length(APath);
+  LStart := 1;
+  while LStart <= LPathLen do
   begin
-    if (Result.Count > 0) and LPart.IsEmpty then
-      Continue;
-    Result.Enqueue(LPart);
+    while (LStart <= LPathLen) and (APath[LStart] = '/') do
+      Inc(LStart);
+    
+    if LStart > LPathLen then
+      Break;
+      
+    LLen := 0;
+    while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
+      Inc(LLen);
+      
+    if LLen > 0 then
+    begin
+      LPart := Copy(APath, LStart, LLen);
+      AQueue.Enqueue(LPart);
+      LStart := LStart + LLen;
+    end;
   end;
 end;
 
@@ -515,5 +618,34 @@ begin
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
 end;
+
+initialization
+  GQueuePool := TQueueStringList.Create;
+  GQueuePoolCS := TCriticalSection.Create;
+  GNextCallerPool := TList<TNextCaller>.Create;
+  GNextCallerPoolCS := TCriticalSection.Create;
+
+finalization
+  if Assigned(GQueuePool) then
+  begin
+    while GQueuePool.Count > 0 do
+    begin
+      GQueuePool.Items[GQueuePool.Count - 1].Free;
+      GQueuePool.Delete(GQueuePool.Count - 1);
+    end;
+    GQueuePool.Free;
+  end;
+  GQueuePoolCS.Free;
+
+  if Assigned(GNextCallerPool) then
+  begin
+    while GNextCallerPool.Count > 0 do
+    begin
+      GNextCallerPool.Items[GNextCallerPool.Count - 1].Free;
+      GNextCallerPool.Delete(GNextCallerPool.Count - 1);
+    end;
+    GNextCallerPool.Free;
+  end;
+  GNextCallerPoolCS.Free;
 
 end.

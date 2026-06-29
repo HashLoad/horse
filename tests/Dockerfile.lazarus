@@ -15,7 +15,7 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Compila o exemplo Lazarus/FPC via linha de comando
-RUN fpc -Mdelphi -O3 -dHORSE_PROVIDER_EPOLL -Fusrc samples/lazarus/epoll/EpollConsole.lpr -oEpollConsole && mv samples/lazarus/epoll/EpollConsole .
+RUN fpc -Mdelphi -gl -dHORSE_PROVIDER_EPOLL -Fusrc samples/lazarus/epoll/EpollConsole.lpr -oEpollConsole && mv samples/lazarus/epoll/EpollConsole .
 
 # Expõe a porta padrão do exemplo Epoll
 EXPOSE 9095

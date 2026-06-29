@@ -198,6 +198,19 @@ type
   end;
   PHTTP_DATA_CHUNK_INMEMORY = ^HTTP_DATA_CHUNK_INMEMORY;
 
+  HTTP_DATA_CHUNK_FILE = record
+    DataChunkType: THttpChunkType;
+    {$IFDEF CPUX64}
+    Reserved1: ULONG;
+    {$ENDIF}
+    StartingOffset: UInt64;
+    Length: UInt64;
+    FileHandle: THandle;
+    {$IFNDEF CPUX64}
+    Reserved2: array[0..1] of ULONG;
+    {$ENDIF}
+  end;
+
   HTTP_RESPONSE = record
     Flags: ULONG;
     Version: HTTP_VERSION;
@@ -1196,6 +1209,7 @@ procedure THttpSysRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LResponse: HTTP_RESPONSE;
   LChunk: HTTP_DATA_CHUNK_INMEMORY;
+  LFileChunk: HTTP_DATA_CHUNK_FILE;
   LBytesSent: ULONG;
   LRet: ULONG;
   LBodyBytes: TBytes;
@@ -1293,55 +1307,84 @@ begin
     LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
     LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
 
-    LResponse.EntityChunkCount := 0;
-    LResponse.pEntityChunks := nil;
-
-    LRet := HttpSendHttpResponse(
-      FReqQueue,
-      FRequestId,
-      HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
-      @LResponse,
-      nil,
-      LBytesSent,
-      nil,
-      0,
-      nil,
-      nil
-    );
-    if LRet <> ERROR_SUCCESS then
-      raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
-
-    ARes.ContentStream.Position := 0;
-    SetLength(LBodyBytes, 65536);
-    while ARes.ContentStream.Position < ARes.ContentStream.Size do
+    if ARes.ContentStream is TFileStream then
     begin
-      LChunkBytesRead := ARes.ContentStream.Read(LBodyBytes[0], Length(LBodyBytes));
-      if LChunkBytesRead <= 0 then Break;
+      FillChar(LFileChunk, SizeOf(LFileChunk), 0);
+      LFileChunk.DataChunkType := hctFromFileHandle;
+      LFileChunk.StartingOffset := ARes.ContentStream.Position;
+      LFileChunk.Length := ARes.ContentStream.Size - ARes.ContentStream.Position;
+      LFileChunk.FileHandle := TFileStream(ARes.ContentStream).Handle;
 
-      FillChar(LChunk, SizeOf(LChunk), 0);
-      LChunk.DataChunkType := hctFromMemory;
-      LChunk.pBuffer := @LBodyBytes[0];
-      LChunk.BufferLength := LChunkBytesRead;
+      LResponse.EntityChunkCount := 1;
+      LResponse.pEntityChunks := @LFileChunk;
 
-      if ARes.ContentStream.Position < ARes.ContentStream.Size then
-        LSendFlags := HTTP_SEND_RESPONSE_FLAG_MORE_DATA
-      else
-        LSendFlags := 0;
-
-      LRet := HttpSendResponseEntityBody(
+      LRet := HttpSendHttpResponse(
         FReqQueue,
         FRequestId,
-        LSendFlags,
-        1,
-        @LChunk,
+        0,
+        @LResponse,
+        nil,
         LBytesSent,
         nil,
-        nil,
+        0,
         nil,
         nil
       );
       if LRet <> ERROR_SUCCESS then
-        raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+    end
+    else
+    begin
+      LResponse.EntityChunkCount := 0;
+      LResponse.pEntityChunks := nil;
+
+      LRet := HttpSendHttpResponse(
+        FReqQueue,
+        FRequestId,
+        HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+        @LResponse,
+        nil,
+        LBytesSent,
+        nil,
+        0,
+        nil,
+        nil
+      );
+      if LRet <> ERROR_SUCCESS then
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+
+      ARes.ContentStream.Position := 0;
+      SetLength(LBodyBytes, 65536);
+      while ARes.ContentStream.Position < ARes.ContentStream.Size do
+      begin
+        LChunkBytesRead := ARes.ContentStream.Read(LBodyBytes[0], Length(LBodyBytes));
+        if LChunkBytesRead <= 0 then Break;
+
+        FillChar(LChunk, SizeOf(LChunk), 0);
+        LChunk.DataChunkType := hctFromMemory;
+        LChunk.pBuffer := @LBodyBytes[0];
+        LChunk.BufferLength := LChunkBytesRead;
+
+        if ARes.ContentStream.Position < ARes.ContentStream.Size then
+          LSendFlags := HTTP_SEND_RESPONSE_FLAG_MORE_DATA
+        else
+          LSendFlags := 0;
+
+        LRet := HttpSendResponseEntityBody(
+          FReqQueue,
+          FRequestId,
+          LSendFlags,
+          1,
+          @LChunk,
+          LBytesSent,
+          nil,
+          nil,
+          nil,
+          nil
+        );
+        if LRet <> ERROR_SUCCESS then
+          raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+      end;
     end;
   end
   else

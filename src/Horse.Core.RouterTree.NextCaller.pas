@@ -37,18 +37,20 @@ type
     FIsParamsKey: Boolean;
     FFound: ^Boolean;
   public
-    function Init: TNextCaller;
-    function SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;
-    function SetPath(const APath: TQueue<string>): TNextCaller;
-    function SetHTTPType(const AHTTPType: TMethodType): TNextCaller;
-    function SetRequest(const ARequest: THorseRequest): TNextCaller;
-    function SetResponse(const AResponse: THorseResponse): TNextCaller;
-    function SetIsGroup(const AIsGroup: Boolean): TNextCaller;
-    function SetMiddleware(const AMiddleware: TList<THorseCallback>): TNextCaller;
-    function SetTag(const ATag: string): TNextCaller;
-    function SetIsParamsKey(const AIsParamsKey: Boolean): TNextCaller;
-    function SetOnCallNextPath(const ACallNextPath: TCallNextPath): TNextCaller;
-    function SetFound(var AFound: Boolean): TNextCaller;
+    procedure Configure(
+      const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+      const APath: TQueue<string>;
+      const AHTTPType: TMethodType;
+      const ARequest: THorseRequest;
+      const AResponse: THorseResponse;
+      const AIsGroup: Boolean;
+      const AMiddleware: TList<THorseCallback>;
+      const ATag: string;
+      const AIsParamsKey: Boolean;
+      const ACallNextPath: TCallNextPath;
+      var AFound: Boolean
+    );
+    procedure Init;
     procedure Next;
   end;
 
@@ -64,11 +66,37 @@ uses
   Horse.Exception,
   Horse.Exception.Interrupted;
 
-function TNextCaller.Init: TNextCaller;
+procedure TNextCaller.Configure(
+  const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+  const APath: TQueue<string>;
+  const AHTTPType: TMethodType;
+  const ARequest: THorseRequest;
+  const AResponse: THorseResponse;
+  const AIsGroup: Boolean;
+  const AMiddleware: TList<THorseCallback>;
+  const ATag: string;
+  const AIsParamsKey: Boolean;
+  const ACallNextPath: TCallNextPath;
+  var AFound: Boolean
+);
+begin
+  FCallBack := ACallback;
+  FPath := APath;
+  FHTTPType := AHTTPType;
+  FRequest := ARequest;
+  FResponse := AResponse;
+  FIsGroup := AIsGroup;
+  FMiddleware := AMiddleware;
+  FTag := ATag;
+  FIsParamsKey := AIsParamsKey;
+  FCallNextPath := ACallNextPath;
+  FFound := @AFound;
+end;
+
+procedure TNextCaller.Init;
 var
   LCurrent: string;
 begin
-  Result := Self;
   if not FIsGroup then
     LCurrent := FPath.Dequeue;
   FIndex := -1;
@@ -128,72 +156,6 @@ begin
     FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
   if not FFound^ then
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
-end;
-
-function TNextCaller.SetCallback(const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>): TNextCaller;
-begin
-  FCallBack := ACallback;
-  Result := Self;
-end;
-
-function TNextCaller.SetFound(var AFound: Boolean): TNextCaller;
-begin
-  FFound := @AFound;
-  Result := Self;
-end;
-
-function TNextCaller.SetHTTPType(const AHTTPType: TMethodType): TNextCaller;
-begin
-  FHTTPType := AHTTPType;
-  Result := Self;
-end;
-
-function TNextCaller.SetIsGroup(const AIsGroup: Boolean): TNextCaller;
-begin
-  FIsGroup := AIsGroup;
-  Result := Self;
-end;
-
-function TNextCaller.SetIsParamsKey(const AIsParamsKey: Boolean): TNextCaller;
-begin
-  FIsParamsKey := AIsParamsKey;
-  Result := Self;
-end;
-
-function TNextCaller.SetMiddleware(const AMiddleware: TList<THorseCallback>): TNextCaller;
-begin
-  FMiddleware := AMiddleware;
-  Result := Self;
-end;
-
-function TNextCaller.SetOnCallNextPath(const ACallNextPath: TCallNextPath): TNextCaller;
-begin
-  FCallNextPath := ACallNextPath;
-  Result := Self;
-end;
-
-function TNextCaller.SetPath(const APath: TQueue<string>): TNextCaller;
-begin
-  FPath := APath;
-  Result := Self;
-end;
-
-function TNextCaller.SetRequest(const ARequest: THorseRequest): TNextCaller;
-begin
-  FRequest := ARequest;
-  Result := Self;
-end;
-
-function TNextCaller.SetResponse(const AResponse: THorseResponse): TNextCaller;
-begin
-  FResponse := AResponse;
-  Result := Self;
-end;
-
-function TNextCaller.SetTag(const ATag: string): TNextCaller;
-begin
-  FTag := ATag;
-  Result := Self;
 end;
 
 end.
