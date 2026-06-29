@@ -1419,9 +1419,7 @@ end;
 procedure TEpollRawRequest.PopulateQueryFields(ADest: TStrings);
 var
   LQuery: string;
-  LFields: TArray<string>;
-  LField: string;
-  LPos: Integer;
+  I, LStart, LLen, LEqPos: Integer;
   LName, LValue: string;
 begin
   LQuery := GetQueryString;
@@ -1429,30 +1427,47 @@ begin
   if LQuery.StartsWith('?') then
     LQuery := LQuery.Substring(1);
 
-  LFields := LQuery.Split(['&']);
-  for LField in LFields do
+  LStart := 1;
+  LLen := Length(LQuery);
+  while LStart <= LLen do
   begin
-    LPos := LField.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    LEqPos := 0;
+    while (I <= LLen) and (LQuery[I] <> '&') do
     begin
-      LName := LField.Substring(0, LPos);
-      LValue := LField.Substring(LPos + 1);
-      ADest.Add(
-        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
-        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
-      );
+      if (LQuery[I] = '=') and (LEqPos = 0) then
+        LEqPos := I;
+      Inc(I);
+    end;
+
+    if LEqPos > 0 then
+    begin
+      LName := Copy(LQuery, LStart, LEqPos - LStart);
+      LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
+      
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      if Pos('%', LValue) > 0 then
+        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+        
+      ADest.Add(LName + '=' + LValue);
     end
     else
-      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
+    begin
+      LName := Copy(LQuery, LStart, I - LStart);
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      ADest.Add(LName + '=');
+    end;
+
+    LStart := I + 1;
   end;
 end;
 
 procedure TEpollRawRequest.PopulateContentFields(ADest: TStrings);
 var
   LBody: string;
-  LFields: TArray<string>;
-  LField: string;
-  LPos: Integer;
+  I, LStart, LLen, LEqPos: Integer;
   LName, LValue: string;
 begin
   if not SameText(GetContentType, 'application/x-www-form-urlencoded') then
@@ -1461,47 +1476,73 @@ begin
   LBody := GetContent;
   if LBody = '' then Exit;
 
-  LFields := LBody.Split(['&']);
-  for LField in LFields do
+  LStart := 1;
+  LLen := Length(LBody);
+  while LStart <= LLen do
   begin
-    LPos := LField.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    LEqPos := 0;
+    while (I <= LLen) and (LBody[I] <> '&') do
     begin
-      LName := LField.Substring(0, LPos);
-      LValue := LField.Substring(LPos + 1);
-      ADest.Add(
-        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
-        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
-      );
+      if (LBody[I] = '=') and (LEqPos = 0) then
+        LEqPos := I;
+      Inc(I);
+    end;
+
+    if LEqPos > 0 then
+    begin
+      LName := Copy(LBody, LStart, LEqPos - LStart);
+      LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
+      
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      if Pos('%', LValue) > 0 then
+        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+        
+      ADest.Add(LName + '=' + LValue);
     end
     else
-      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
+    begin
+      LName := Copy(LBody, LStart, I - LStart);
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      ADest.Add(LName + '=');
+    end;
+
+    LStart := I + 1;
   end;
 end;
 
 procedure TEpollRawRequest.PopulateCookieFields(ADest: TStrings);
 var
   LCookies: string;
-  LParts: TArray<string>;
-  LPart: string;
-  LPartTrimmed: string;
-  LPos: Integer;
-  LName, LValue: string;
+  I, LStart, LLen, LEqPos: Integer;
+  LName, LValue, LPart: string;
 begin
   LCookies := GetFieldByName('Cookie');
   if LCookies = '' then Exit;
 
-  LParts := LCookies.Split([';']);
-  for LPart in LParts do
+  LStart := 1;
+  LLen := Length(LCookies);
+  while LStart <= LLen do
   begin
-    LPartTrimmed := LPart.Trim;
-    LPos := LPartTrimmed.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    while (I <= LLen) and (LCookies[I] <> ';') do
+      Inc(I);
+
+    LPart := Trim(Copy(LCookies, LStart, I - LStart));
+    if LPart <> '' then
     begin
-      LName := LPartTrimmed.Substring(0, LPos);
-      LValue := LPartTrimmed.Substring(LPos + 1);
-      ADest.Add(LName + '=' + LValue);
+      LEqPos := Pos('=', LPart);
+      if LEqPos > 0 then
+      begin
+        LName := Copy(LPart, 1, LEqPos - 1);
+        LValue := Copy(LPart, LEqPos + 1, Length(LPart) - LEqPos);
+        ADest.Add(LName + '=' + LValue);
+      end;
     end;
+
+    LStart := I + 1;
   end;
 end;
 
