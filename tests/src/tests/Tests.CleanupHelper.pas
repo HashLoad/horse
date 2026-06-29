@@ -25,7 +25,12 @@ begin
     THorse.Routes.Free;
   THorse.Routes := THorseRouterTree.Create;
 
-  // 3. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore via RTTI
+  // 3. Reseta propriedades estaticas de rede para o baseline padrao
+  THorse.Port := 9000;
+  THorse.Host := '0.0.0.0';
+  THorse.MaxConnections := 0;
+
+  // 4. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore via RTTI
   LContext := TRttiContext.Create;
   try
     LType := LContext.GetType(THorseCore) as TRttiInstanceType;

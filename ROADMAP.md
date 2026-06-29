@@ -1,10 +1,10 @@
 # Roadmap & Backlog de Evolução Técnica: Horse Framework
 
-Este documento detalha o planejamento de melhorias arquiteturais de longo prazo e evolução da suíte de testes do framework Horse.
+Este documento detalha o planejamento de melhorias arquiteturais de longo prazo no framework Horse.
 
 ---
 
-## 🗺️ Roadmap de Evolução Arquitetural
+## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
 
 ### 1. Refatoração Multi-Instance (`THorseInstance`)
 * **Descrição:** Desacoplar o estado estático global de classe (`FRoutes`, `FCallbacks`, `FPort`, `FHost`) movendo-o para uma classe de instância chamada `THorseInstance`.
@@ -22,16 +22,16 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 
 ---
 
-## 🧪 Backlog de Expansão de Testes
+## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
 
-### 1. Testes de Conexões Persistentes (HTTP Keep-Alive Avançado)
-* **Descrição:** Criar testes de integração que simulam conexões consecutivas usando a mesma conexão TCP física ativa.
-* **Objetivo:** Garantir a estabilidade e conformidade do protocolo HTTP/1.1 em todos os providers sob Keep-Alive de longa duração.
+### 1. Testes de Conexões Persistentes (HTTP Keep-Alive)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvida a unit `Tests.Integration.KeepAlive.pas` validando a persistência e a conformidade dos cabeçalhos do protocolo HTTP/1.1 sob requisições sucessivas sobre o mesmo socket de conexão física.
 
 ### 2. Testes de Payload Volumoso (Stress de Heap)
-* **Descrição:** Criar testes enviando payloads gigantes (20MB+) e monitorando a variável de heap `AllocMemSize`.
-* **Objetivo:** Certificar empiricamente que os providers e o Core limpam e desalocam toda a memória consumida sem causar vazamentos residuais.
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvida a unit `Tests.Integration.LargePayload.pas` que realiza uploads de volumes pesados de dados (10MB) monitorando a variável de heap `AllocMemSize` para atestar a liberação e limpeza total de memória após o ciclo de vida.
 
-### 3. Automação de CI/CD Multiplataforma (Linux / FPC)
-* **Descrição:** Criar um pipeline de CI/CD (GitHub Actions / GitLab) integrado com contêineres Docker (rodando Linux e FPC).
-* **Objetivo:** Executar e compilar a suíte completa de testes no Linux automaticamente a cada commit, validando a estabilidade da unit de alta performance `Horse.Provider.Epoll.pas`.
+### 3. Automação de CI/CD Multiplataforma Real (Linux / FPC / GitHub Actions)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Refatorado o arquivo `.github/workflows/tests.yml` do GitHub Actions para compilar de forma dinâmica a suíte de testes de console a partir das fontes usando o compilador FPC (Free Pascal Compiler) e executar em ambiente Linux (Ubuntu) real a cada push e pull request.
