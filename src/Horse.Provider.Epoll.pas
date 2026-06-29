@@ -523,8 +523,14 @@ function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
 function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
 function clock_gettime(clk_id: Integer; var tp: TEpollTimeSpec): Integer; cdecl; external libc name 'clock_gettime';
 
-function sendfile(out_fd: Integer; in_fd: Integer; offset: PInt64; count: NativeUInt): NativeInt; cdecl; external libc name 'sendfile';
 {$ENDIF}
+
+{$IFDEF FPC}
+const
+  libc = 'libc.so.6';
+{$ENDIF}
+
+function sendfile(out_fd: Integer; in_fd: Integer; offset: PInt64; count: NativeUInt): NativeInt; cdecl; external libc name 'sendfile';
 
 {$IFNDEF FPC}
 function GetTickCount64: Int64;
@@ -1754,7 +1760,7 @@ begin
 
   LStreamSize := AStream.Size - AStream.Position;
 
-  {$IF NOT DEFINED(FPC)}
+  
   if (not LHasChunkedHeader) and (AStream is TFileStream) then
   begin
     LFileHandle := TFileStream(AStream).Handle;
@@ -1766,7 +1772,6 @@ begin
         Exit;
     end;
   end;
-  {$ENDIF}
 
   if (LStreamSize > 0) and (LStreamSize <= 10485760) then
   begin
@@ -2577,7 +2582,7 @@ begin
 
         if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
         begin
-          if LNow - LContext.LastActive > 60000 then
+          if LNow - LContext.LastActive > 5000 then
             LExpired.Add(LContext);
         end
         else
