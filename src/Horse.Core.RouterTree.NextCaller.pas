@@ -102,7 +102,12 @@ begin
   FIndex := -1;
   FIndexCallback := -1;
   if FIsParamsKey then
-    FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF});
+  begin
+    if Pos('%', LCurrent) > 0 then
+      FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF})
+    else
+      FRequest.Params.Dictionary.AddOrSetValue(FTag, LCurrent);
+  end;
 end;
 
 procedure TNextCaller.Next;

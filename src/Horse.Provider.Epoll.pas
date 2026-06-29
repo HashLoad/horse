@@ -1192,6 +1192,7 @@ begin
   end;
 
   Result := '';
+  FResolvedHeaders.Add(LLowerName, '');
 end;
 
 function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
