@@ -1740,9 +1740,7 @@ var
   {$IFDEF FPC}
   I: Integer;
   {$ENDIF}
-  {$IF NOT DEFINED(FPC)}
   LFileHandle: THandle;
-  {$ENDIF}
   LStreamSize: Int64;
   LBodyBytes: TBytes;
 begin
