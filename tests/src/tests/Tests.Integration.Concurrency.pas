@@ -4,7 +4,8 @@ interface
 
 uses
   DUnitX.TestFramework, Horse, Horse.Commons, RESTRequest4D, System.SysUtils,
-  System.Classes, System.Threading, System.Generics.Collections;
+  System.Classes, System.Threading, System.Generics.Collections,
+  Tests.CleanupHelper;
 
 type
   [TestFixture]
@@ -44,7 +45,7 @@ end;
 
 procedure TTestIntegrationConcurrency.TearDownFixture;
 begin
-  THorse.StopListen;
+  ClearGlobalState;
   Sleep(100);
 end;
 

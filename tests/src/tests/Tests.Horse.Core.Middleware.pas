@@ -5,6 +5,7 @@ interface
 uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
   Horse.Commons, System.SysUtils, System.Generics.Collections,
+  Horse.Exception.Interrupted,
   {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
 
 type
@@ -98,11 +99,12 @@ var
 begin
   LTrace := TList<string>.Create;
   try
-    // Middleware 1 interrompe o fluxo (não chama Next)
+    // Middleware 1 interrompe o fluxo lancando EHorseCallbackInterrupted
     FRouterTree.RegisterMiddleware(
       procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
       begin
         LTrace.Add('M1_INTERRUPT');
+        raise EHorseCallbackInterrupted.Create;
       end);
 
     // Middleware 2 que nunca deve rodar
@@ -121,7 +123,13 @@ begin
       end);
 
     FRequest.Populate('GET', mtGet, '/test', '', '');
-    Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+
+    Assert.WillRaise(
+      procedure
+      begin
+        FRouterTree.Execute(FRequest, FResponse);
+      end,
+      EHorseCallbackInterrupted);
 
     // Apenas o Middleware 1 deve ter executado
     Assert.AreEqual(1, LTrace.Count);

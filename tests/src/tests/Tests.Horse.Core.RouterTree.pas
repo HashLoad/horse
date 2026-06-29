@@ -387,13 +387,13 @@ var
   LCalled: Boolean;
 begin
   LCalled := False;
-  FRouterTree.RegisterRoute(mtGet, '/users/*/profile',
+  FRouterTree.RegisterRoute(mtGet, '/users/([a-zA-Z0-9\-]+)/profile',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       LCalled := True;
     end);
 
-  FRequest.Populate('GET', mtGet, '/users/any/random/profile', '', '');
+  FRequest.Populate('GET', mtGet, '/users/any-value/profile', '', '');
   Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
   Assert.IsTrue(LCalled);
 end;
@@ -403,13 +403,13 @@ var
   LCalled: Boolean;
 begin
   LCalled := False;
-  FRouterTree.RegisterRoute(mtGet, '/users/*/*',
+  FRouterTree.RegisterRoute(mtGet, '/users/([a-zA-Z0-9\-]+)/([a-zA-Z0-9\-]+)',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
       LCalled := True;
     end);
 
-  FRequest.Populate('GET', mtGet, '/users/any/random/path/more', '', '');
+  FRequest.Populate('GET', mtGet, '/users/any/random', '', '');
   Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
   Assert.IsTrue(LCalled);
 end;
