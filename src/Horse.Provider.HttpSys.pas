@@ -1093,6 +1093,16 @@ begin
       end;
     end;
   end;
+
+  if FHeadersCache = nil then
+  begin
+    {$IF DEFINED(FPC)}
+    FHeadersCache := TDictionary<string, string>.Create;
+    {$ELSE}
+    FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+    {$ENDIF}
+  end;
+  FHeadersCache.Add(AName, '');
 end;
 
 procedure THttpSysRawRequest.PopulateQueryFields(ADest: TStrings);
