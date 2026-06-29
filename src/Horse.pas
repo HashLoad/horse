@@ -230,6 +230,12 @@ uses
     {$ELSE}
     {$MESSAGE ERROR 'HORSE_PROVIDER_EPOLL is only supported on Linux.'}
     {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+    {$IFDEF MSWINDOWS}
+    Horse.Provider.IOCP,
+    {$ELSE}
+    {$MESSAGE ERROR 'HORSE_PROVIDER_IOCP is only supported on Windows.'}
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
   {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
@@ -260,6 +266,13 @@ uses
   System.SysUtils,
   {$IFDEF LINUX}
   Horse.Provider.Epoll,
+  {$ELSE}
+  Horse.Provider.Console,
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+  System.SysUtils,
+  {$IFDEF MSWINDOWS}
+  Horse.Provider.IOCP,
   {$ELSE}
   Horse.Provider.Console,
   {$ENDIF}
@@ -361,6 +374,13 @@ type
   THorseProvider =
   {$IFDEF LINUX}
     Horse.Provider.Epoll.THorseProviderEpoll;
+  {$ELSE}
+    Horse.Provider.Console.THorseProvider;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+  THorseProvider =
+  {$IFDEF MSWINDOWS}
+    Horse.Provider.IOCP.THorseProviderIOCP;
   {$ELSE}
     Horse.Provider.Console.THorseProvider;
   {$ENDIF}
