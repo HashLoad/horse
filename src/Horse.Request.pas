@@ -1,4 +1,4 @@
-﻿unit Horse.Request;
+unit Horse.Request;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -344,13 +344,13 @@ begin
   if Assigned(FHeaders) then
     FHeaders.Clear;
   if Assigned(FQuery) then
-    FreeAndNil(FQuery);
+    FQuery.Clear;
   if Assigned(FParams) then
     FParams.Clear;
   if Assigned(FContentFields) then
-    FreeAndNil(FContentFields);
+    FContentFields.Clear;
   if Assigned(FCookie) then
-    FreeAndNil(FCookie);
+    FCookie.Clear;
 { PATCH-SES-1 � reuse the existing THorseSessions object across pool recycles.
   THorseSessions.Clear calls TObjectDictionary.Clear which frees owned TSession
   values before emptying the map � no allocation on the hot path. }

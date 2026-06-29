@@ -478,6 +478,65 @@ implementation
 
 {$IFDEF MSWINDOWS}
 
+type
+  PHttpSysWorkItemData = ^THttpSysWorkItemData;
+  THttpSysWorkItemData = record
+    Buffer: TBytes;
+    ReqQueue: THandle;
+  end;
+
+function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL; stdcall; external 'kernel32.dll' name 'QueueUserWorkItem';
+const
+  WT_EXECUTEDEFAULT = $00000000;
+
+function HttpSysWorkItemCallback(LPParameter: Pointer): DWORD; stdcall;
+var
+  LData: PHttpSysWorkItemData;
+  LRawReq: IHorseRawRequest;
+  LRawRes: IHorseRawResponse;
+  LConcreteRes: THttpSysRawResponse;
+  LWebRequest: TInterfacedWebRequest;
+  LWebResponse: TInterfacedWebResponse;
+  LReq: THorseRequest;
+  LRes: THorseResponse;
+  LRequest: PHTTP_REQUEST;
+  LCurrentBuf: TBytes;
+begin
+  Result := 0;
+  LData := PHttpSysWorkItemData(LPParameter);
+  LCurrentBuf := LData.Buffer;
+  try
+    try
+      LRequest := PHTTP_REQUEST(@LCurrentBuf[0]);
+      LRawReq := THttpSysRawRequest.Create(LRequest, LCurrentBuf);
+      LConcreteRes := THttpSysRawResponse.Create(LData.ReqQueue, LRequest.RequestId);
+      LRawRes := LConcreteRes;
+      LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+      LWebResponse := THttpSysWebResponse.Create(LRawRes);
+      try
+        LReq := THorseRequest.Create(LWebRequest);
+        LRes := THorseResponse.Create(LWebResponse);
+        try
+          THorseProviderHttpSys.Execute(LReq, LRes);
+        finally
+          LConcreteRes.SendResponse(LRes);
+          LReq.Free;
+          LRes.Free;
+        end;
+      finally
+        LWebRequest.Free;
+        LWebResponse.Free;
+      end;
+    except
+      on E: Exception do
+        Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
+    end;
+  finally
+    THorseProviderHttpSys.BufferPool.Release(LCurrentBuf);
+    Dispose(LData);
+  end;
+end;
+
 function GetWindowsTempPath: string;
 var
   LBuffer: array[0..MAX_PATH] of Char;
@@ -1384,6 +1443,31 @@ begin
       if LRet <> ERROR_SUCCESS then
         raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
     end
+    else if ARes.ContentStream is TCustomMemoryStream then
+    begin
+      FillChar(LChunk, SizeOf(LChunk), 0);
+      LChunk.DataChunkType := hctFromMemory;
+      LChunk.pBuffer := TCustomMemoryStream(ARes.ContentStream).Memory;
+      LChunk.BufferLength := ARes.ContentStream.Size - ARes.ContentStream.Position;
+
+      LResponse.EntityChunkCount := 1;
+      LResponse.pEntityChunks := @LChunk;
+
+      LRet := HttpSendHttpResponse(
+        FReqQueue,
+        FRequestId,
+        0,
+        @LResponse,
+        nil,
+        LBytesSent,
+        nil,
+        0,
+        nil,
+        nil
+      );
+      if LRet <> ERROR_SUCCESS then
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+    end
     else
     begin
       LResponse.EntityChunkCount := 0;
@@ -1570,55 +1654,20 @@ end;
 
 procedure THttpSysListenerThread.DispatchRequest(ABuffer: TBytes);
 var
-  LBuf: TBytes;
+  LData: PHttpSysWorkItemData;
 begin
   {$IF DEFINED(FPC)}
   if Assigned(THttpSysThreadPool.Instance) then
     THttpSysThreadPool.Instance.QueueRequest(ABuffer);
   {$ELSE}
-  LBuf := ABuffer;
-  TTask.Run(
-    procedure
-    var
-      LRawReq: IHorseRawRequest;
-      LRawRes: IHorseRawResponse;
-      LConcreteRes: THttpSysRawResponse;
-      LWebRequest: TInterfacedWebRequest;
-      LWebResponse: TInterfacedWebResponse;
-      LReq: THorseRequest;
-      LRes: THorseResponse;
-      LRequest: PHTTP_REQUEST;
-      LCurrentBuf: TBytes;
-    begin
-      LCurrentBuf := LBuf;
-      try
-        LRequest := PHTTP_REQUEST(@LCurrentBuf[0]);
-        LRawReq := THttpSysRawRequest.Create(LRequest, LCurrentBuf);
-        LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
-        LRawRes := LConcreteRes;
-        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-        LWebResponse := THttpSysWebResponse.Create(LRawRes);
-        try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(LWebResponse);
-          try
-            THorseProviderHttpSys.Execute(LReq, LRes);
-          finally
-            LConcreteRes.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
-          end;
-        finally
-          LWebRequest.Free;
-          LWebResponse.Free;
-        end;
-      except
-        on E: Exception do
-          Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
-      end;
-      THorseProviderHttpSys.BufferPool.Release(LCurrentBuf);
-    end
-  );
+  New(LData);
+  LData.Buffer := ABuffer;
+  LData.ReqQueue := FReqQueue;
+  if not QueueUserWorkItem(@HttpSysWorkItemCallback, LData, WT_EXECUTEDEFAULT) then
+  begin
+    THorseProviderHttpSys.BufferPool.Release(ABuffer);
+    Dispose(LData);
+  end;
   {$ENDIF}
 end;
 

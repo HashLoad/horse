@@ -25,7 +25,8 @@ type
   private
     FIndex: Integer;
     FIndexCallback: Integer;
-    FPath: TQueue<string>;
+    FSegments: TArray<string>;
+    FIndexSegment: Integer;
     FHTTPType: TMethodType;
     FRequest: THorseRequest;
     FResponse: THorseResponse;
@@ -39,7 +40,8 @@ type
   public
     procedure Configure(
       const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
-      const APath: TQueue<string>;
+      const ASegments: TArray<string>;
+      AIndexSegment: Integer;
       const AHTTPType: TMethodType;
       const ARequest: THorseRequest;
       const AResponse: THorseResponse;
@@ -68,7 +70,8 @@ uses
 
 procedure TNextCaller.Configure(
   const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
-  const APath: TQueue<string>;
+  const ASegments: TArray<string>;
+  AIndexSegment: Integer;
   const AHTTPType: TMethodType;
   const ARequest: THorseRequest;
   const AResponse: THorseResponse;
@@ -81,7 +84,8 @@ procedure TNextCaller.Configure(
 );
 begin
   FCallBack := ACallback;
-  FPath := APath;
+  FSegments := ASegments;
+  FIndexSegment := AIndexSegment;
   FHTTPType := AHTTPType;
   FRequest := ARequest;
   FResponse := AResponse;
@@ -97,11 +101,15 @@ procedure TNextCaller.Init;
 var
   LCurrent: string;
 begin
-  if not FIsGroup then
-    LCurrent := FPath.Dequeue;
+  LCurrent := '';
+  if (not FIsGroup) and (FIndexSegment < Length(FSegments)) then
+  begin
+    LCurrent := FSegments[FIndexSegment];
+    Inc(FIndexSegment);
+  end;
   FIndex := -1;
   FIndexCallback := -1;
-  if FIsParamsKey then
+  if FIsParamsKey and (LCurrent <> '') then
   begin
     if Pos('%', LCurrent) > 0 then
       FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF})
@@ -122,7 +130,7 @@ begin
     if (FMiddleware.Count > FIndex) then
       Next;
   end
-  else if (FPath.Count = 0) and Assigned(FCallBack) then
+  else if (FIndexSegment = Length(FSegments)) and Assigned(FCallBack) then
   begin
     Inc(FIndexCallback);
     if FCallBack.TryGetValue(FHTTPType, LCallback) then
@@ -158,7 +166,7 @@ begin
     end;
   end
   else
-    FFound^ := FCallNextPath(FPath, FHTTPType, FRequest, FResponse);
+    FFound^ := FCallNextPath(FSegments, FIndexSegment, FHTTPType, FRequest, FResponse);
   if not FFound^ then
     FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
 end;

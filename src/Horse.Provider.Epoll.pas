@@ -1773,11 +1773,18 @@ begin
 
   if (LStreamSize > 0) and (LStreamSize <= 10485760) then
   begin
-    SetLength(LBodyBytes, LStreamSize);
-    AStream.ReadBuffer(LBodyBytes[0], LStreamSize);
     FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
     SendHeaders;
-    WriteNonBlocking(@LBodyBytes[0], LStreamSize);
+    if AStream is TCustomMemoryStream then
+    begin
+      WriteNonBlocking(TCustomMemoryStream(AStream).Memory, LStreamSize);
+    end
+    else
+    begin
+      SetLength(LBodyBytes, LStreamSize);
+      AStream.ReadBuffer(LBodyBytes[0], LStreamSize);
+      WriteNonBlocking(@LBodyBytes[0], LStreamSize);
+    end;
     Exit;
   end;
 

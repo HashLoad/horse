@@ -105,6 +105,7 @@ begin
   FParams.Free;
   FContent.Free;
   ClearFields;
+  FreeAndNil(FFields);
   { PATCH-PARAM-1 — free owned streams (no-op when none were transferred).
     FFiles is non-owning, so order vs. FreeAndNil(FFiles) is irrelevant. }
   FreeAndNil(FOwnedStreams);
@@ -262,7 +263,7 @@ begin
   begin
     for LField in FFields.Values do
       LField.Free;
-    FreeAndNil(FFields);
+    FFields.Clear;
   end;
 end;
 

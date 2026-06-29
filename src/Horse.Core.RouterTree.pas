@@ -40,19 +40,15 @@ type
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
-    // Methods (mtGet, mtPost, ...) that already have a ROUTE HANDLER registered
-    // on this leaf node. Distinct from FCallBack, which also holds middleware
-    // attached via AddCallback(). Used to detect genuine duplicate routes
-    // (two .Get('/same') calls) without false-positiving on middleware.
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
-    function ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
-    function CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+    function GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
+    function ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
+    function CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     function HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
     function CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
-    // Normalize a path param key so :id and :name map to the same node
     class function NormalizeParamKey(const APart: string): string; static;
   public
     function CreateRouter(const APath: string): THorseRouterTree;
@@ -82,81 +78,32 @@ uses
 {$ENDIF}
   Horse.Core.RouterTree.NextCaller;
 
-type
-  TQueueString = TQueue<string>;
-  TQueueStringList = TList<TQueueString>;
+threadvar
+  TlsNextCaller: TNextCaller;
 
 var
-  GQueuePool: TQueueStringList = nil;
+  GAllNextCallers: TList<TNextCaller> = nil;
+  GAllNextCallersCS: TCriticalSection = nil;
+  GQueuePool: TList<TQueue<string>> = nil;
   GQueuePoolCS: TCriticalSection = nil;
-
-function AcquireQueue: TQueue<string>;
-begin
-  GQueuePoolCS.Enter;
-  try
-    if GQueuePool.Count > 0 then
-    begin
-      Result := GQueuePool.Items[GQueuePool.Count - 1];
-      GQueuePool.Delete(GQueuePool.Count - 1);
-    end
-    else
-    begin
-      Result := TQueue<string>.Create;
-    end;
-  finally
-    GQueuePoolCS.Leave;
-  end;
-end;
-
-procedure ReleaseQueue(AQueue: TQueue<string>);
-begin
-  if AQueue = nil then Exit;
-  AQueue.Clear;
-  GQueuePoolCS.Enter;
-  try
-    GQueuePool.Add(AQueue);
-  finally
-    GQueuePoolCS.Leave;
-  end;
-end;
-
-var
   GNextCallerPool: TList<TNextCaller> = nil;
   GNextCallerPoolCS: TCriticalSection = nil;
 
-function AcquireNextCaller: TNextCaller;
+function GetNextCaller: TNextCaller;
 begin
-  GNextCallerPoolCS.Enter;
-  try
-    if GNextCallerPool.Count > 0 then
-    begin
-      Result := GNextCallerPool.Items[GNextCallerPool.Count - 1];
-      GNextCallerPool.Delete(GNextCallerPool.Count - 1);
-    end
-    else
-    begin
-      Result := TNextCaller.Create;
+  if TlsNextCaller = nil then
+  begin
+    TlsNextCaller := TNextCaller.Create;
+    GAllNextCallersCS.Enter;
+    try
+      GAllNextCallers.Add(TlsNextCaller);
+    finally
+      GAllNextCallersCS.Leave;
     end;
-  finally
-    GNextCallerPoolCS.Leave;
   end;
+  Result := TlsNextCaller;
 end;
 
-procedure ReleaseNextCaller(ANextCaller: TNextCaller);
-begin
-  if ANextCaller = nil then Exit;
-  GNextCallerPoolCS.Enter;
-  try
-    GNextCallerPool.Add(ANextCaller);
-  finally
-    GNextCallerPoolCS.Leave;
-  end;
-end;
-
-// All named path params (e.g. :id, :name, :userId) are normalized to a
-// single canonical key ':_param'. This means /foo/:id/bar and /foo/:name/bar
-// share the same tree node, preventing duplicate route registration where
-// only the param name differs.
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
 begin
   if APart.StartsWith(':') then
@@ -177,10 +124,6 @@ begin
   end;
 end;
 
-// Called by THorseCore.RegisterCallbacksRoute when flushing AddCallback()
-// middleware onto a route.  AIsMiddleware=True so the duplicate guard is
-// suppressed - the route handler is registered separately by RegisterRoute
-// and appending middleware to the same callback list is intentional.
 procedure THorseRouterTree.RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
@@ -193,45 +136,33 @@ begin
   end;
 end;
 
-// When multiple parameterized routes match (e.g. /test/:p1/test and
-// /test/:p1/:p2), we now score each candidate by counting how many of its
-// remaining segments are literals (not params). The route with more literal
-// segments is more specific and should be preferred.
-function THorseRouterTree.CallNextPath(var APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+function THorseRouterTree.CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse): Boolean;
 var
   LCurrent, LKey: string;
   LAcceptable: THorseRouterTree;
   LFound, LIsGroup: Boolean;
-  LPathOrigin: TQueue<string>;
   LBestAcceptable: THorseRouterTree;
   LBestScore, LScore: Integer;
-  LPathArray: TArray<string>;
 begin
   LIsGroup := False;
-  LPathOrigin := APath;
-  LCurrent := APath.Peek;
+  LCurrent := ASegments[AIndex];
   LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
   if (not LFound) then
   begin
     LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
-    if (LFound) then
-      APath := LPathOrigin;
     LIsGroup := LFound;
   end;
   if (not LFound) and (FRegexedKeys.Count > 0) then
   begin
     LBestAcceptable := nil;
     LBestScore := -1;
-    LPathArray := APath.ToArray;
     for LKey in FRegexedKeys do
     begin
       FRoute.TryGetValue(LKey, LAcceptable);
-      if LAcceptable.HasNext(AHTTPType, LPathArray) then
+      if LAcceptable.HasNext(AHTTPType, ASegments, AIndex) then
       begin
-        // Score = number of literal (non-param) segments in the remainder of
-        // the matched route. Higher score = more specific = preferred.
-        LScore := LAcceptable.CountLiteralSegments(AHTTPType, LPathArray);
+        LScore := LAcceptable.CountLiteralSegments(AHTTPType, ASegments, AIndex);
         if (LBestAcceptable = nil) or (LScore > LBestScore) then
         begin
           LBestAcceptable := LAcceptable;
@@ -240,10 +171,10 @@ begin
       end;
     end;
     if LBestAcceptable <> nil then
-      LFound := LBestAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse);
+      LFound := LBestAcceptable.ExecuteInternal(ASegments, AIndex, AHTTPType, ARequest, AResponse);
   end
   else if LFound then
-    LFound := LAcceptable.ExecuteInternal(APath, AHTTPType, ARequest, AResponse, LIsGroup);
+    LFound := LAcceptable.ExecuteInternal(ASegments, AIndex, AHTTPType, ARequest, AResponse, LIsGroup);
   Result := LFound;
 end;
 
@@ -272,49 +203,18 @@ end;
 function THorseRouterTree.Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 var
   LPathInfo: string;
-  LQueue, LQueueNotFound: TQueue<string>;
+  LSegments, LSegmentsNotFound: TArray<string>;
   LMethodType: TMethodType;
-{ PATCH-TREE-1: LRawWebRequest stores the result of ARequest.RawWebRequest so
-  we can pass it to Assigned(). Assigned() requires a variable - it cannot
-  accept a function-call expression (dcc32 E2036 "Variable required"). }
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 begin
-{ ===========================================================================
-  PATCH-TREE-1 - nil-guard for the CrossSocket path.
-
-  The original code accessed ARequest.RawWebRequest directly:
-    Delphi/Indy: ARequest.RawWebRequest.RawPathInfo
-                 ARequest.RawWebRequest.MethodType
-    FPC/Indy:    ARequest.RawWebRequest.PathInfo
-                 StringCommandToMethodType(ARequest.RawWebRequest.Method)
-
-  On the CrossSocket path FWebRequest is always nil (no TWebRequest is ever
-  created), so those direct accesses raise an Access Violation on every request.
-
-  Fix strategy: store RawWebRequest in a local variable, test it once, branch.
-
-    Indy path (LRawWebRequest <> nil):
-      Use the EXACT original expressions for both compilers - zero behaviour
-      change for any existing Indy/FPC user.  The upstream code is reproduced
-      verbatim inside the else branch, now referencing the local variable.
-
-    CrossSocket path (LRawWebRequest = nil):
-      Use the nil-guarded accessors on THorseRequest:
-        ARequest.RawPathInfo   (PATCH-REQ-5) - returns FCSPathInfo shadow field
-        ARequest.MethodType    (PATCH-REQ-3) - returns FCSMethodType shadow field
-      Both fields are populated by TRequestBridge.Populate before the pipeline
-      is entered, so they are always valid at this point.
-  =========================================================================== }
   LRawWebRequest := ARequest.RawWebRequest;
   if not Assigned(LRawWebRequest) then
   begin
-    // CrossSocket path: shadow fields set by TRequestBridge.Populate
     LPathInfo   := ARequest.RawPathInfo;
     LMethodType := ARequest.MethodType;
   end
   else
   begin
-    // Indy path: original upstream expressions - not changed from HashLoad/horse
     LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
                  {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
     LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
@@ -322,59 +222,43 @@ begin
   end;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
-  LQueue := AcquireQueue;
-  try
-    PopulateQueuePath(LQueue, LPathInfo, False);
-    Result := ExecuteInternal(LQueue, LMethodType, ARequest, AResponse);
-    if not Result then
-    begin
-      LQueueNotFound := AcquireQueue;
-      try
-        PopulateQueuePath(LQueueNotFound, '/*', False);
-        Result := ExecuteInternal(LQueueNotFound, LMethodType, ARequest, AResponse);
-        if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
-          AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
-      finally
-        ReleaseQueue(LQueueNotFound);
-      end;
-    end;
-  finally
-    ReleaseQueue(LQueue);
+  LSegments := GetArrayPath(LPathInfo, False);
+  Result := ExecuteInternal(LSegments, 0, LMethodType, ARequest, AResponse);
+  if not Result then
+  begin
+    LSegmentsNotFound := GetArrayPath('/*', False);
+    Result := ExecuteInternal(LSegmentsNotFound, 0, LMethodType, ARequest, AResponse);
+    if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
+      AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
   end;
-{ PATCH-COOKIE-1 â€” emit typed cookies on the Indy path. The handler has run, so
-  all fluent attributes are set. No-op when FWebResponse is nil (CrossSocket /
-  mORMot emit FCookies from their response bridges instead). }
   AResponse.FlushCookiesToWebResponse;
 end;
 
-function THorseRouterTree.ExecuteInternal(const APath: TQueue<string>; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+function THorseRouterTree.ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
 var
   LNextCaller: TNextCaller;
   LFound: Boolean;
 begin
   LFound := False;
-  LNextCaller := AcquireNextCaller;
-  try
-    LNextCaller.Configure(
-      FCallBack,
-      APath,
-      AHTTPType,
-      ARequest,
-      AResponse,
-      AIsGroup,
-      FMiddleware,
-      FTag,
-      FIsParamsKey,
-      CallNextPath,
-      LFound
-    );
-    LNextCaller.Init;
-    LNextCaller.Next;
-    Result := LFound;
-  finally
-    ReleaseNextCaller(LNextCaller);
-  end;
+  LNextCaller := GetNextCaller;
+  LNextCaller.Configure(
+    FCallBack,
+    ASegments,
+    AIndex,
+    AHTTPType,
+    ARequest,
+    AResponse,
+    AIsGroup,
+    FMiddleware,
+    FTag,
+    FIsParamsKey,
+    CallNextPath,
+    LFound
+  );
+  LNextCaller.Init;
+  LNextCaller.Next;
+  Result := LFound;
 end;
 
 function THorseRouterTree.ForcePath(const APath: string): THorseRouterTree;
@@ -446,8 +330,52 @@ begin
   end;
 end;
 
-// Count how many literal (non-param) segments a route has starting from AIndex+1.
-// Used to score route specificity: more literals = more specific = preferred.
+function THorseRouterTree.GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
+var
+  LStart, LLen, LPathLen: Integer;
+  LPart: string;
+  LList: TList<string>;
+begin
+  if AUsePrefix then
+  begin
+    if not APath.StartsWith('/') then
+      APath := (FPrefix + '/' + APath)
+    else
+      APath := (FPrefix + APath);
+  end;
+
+  LList := TList<string>.Create;
+  try
+    if APath.StartsWith('/') then
+      LList.Add(EmptyStr);
+
+    LPathLen := Length(APath);
+    LStart := 1;
+    while LStart <= LPathLen do
+    begin
+      while (LStart <= LPathLen) and (APath[LStart] = '/') do
+        Inc(LStart);
+      
+      if LStart > LPathLen then
+        Break;
+        
+      LLen := 0;
+      while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
+        Inc(LLen);
+        
+      if LLen > 0 then
+      begin
+        LPart := Copy(APath, LStart, LLen);
+        LList.Add(LPart);
+        LStart := LStart + LLen;
+      end;
+    end;
+    Result := LList.ToArray;
+  finally
+    LList.Free;
+  end;
+end;
+
 function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
 var
   LNext, LKey: string;
@@ -457,7 +385,6 @@ begin
   if (Length(APaths) <= AIndex) then
     Exit;
 
-  // At the last segment
   if (Length(APaths) - 1 = AIndex) then
   begin
     if not FIsParamsKey then
@@ -468,14 +395,12 @@ begin
   LNext := APaths[AIndex + 1];
   Inc(AIndex);
 
-  // Try literal child first
   if FRoute.TryGetValue(LNext, LNextRoute) then
   begin
     Result := 1 + LNextRoute.CountLiteralSegments(AMethod, APaths, AIndex);
     Exit;
   end;
 
-  // Try param children
   for LKey in FRegexedKeys do
   begin
     if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then
@@ -520,7 +445,7 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean);
+procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
 var
   LNextPart: string;
   LNormalizedNextPart: string;
@@ -534,8 +459,6 @@ begin
     FPart := LRawPart;
 
     FIsParamsKey := FPart.StartsWith(':');
-    // Store the actual param name as the tag for URL param extraction,
-    // but we will use a normalized key in the parent's FRoute dictionary.
     FTag := FPart.Substring(1, Length(FPart) - 1);
 
     FIsRouterRegex := FPart.StartsWith('(') and FPart.EndsWith(')');
@@ -548,12 +471,6 @@ begin
 
   if APath.Count = 0 then
   begin
-    // A genuine duplicate is a second ROUTE HANDLER for the same path+method
-    // (two .Get('/same', ...) calls). Middleware attached via AddCallback()
-    // arrives first with AIsMiddleware=True and shares the same callback list,
-    // so we must NOT treat the pre-existing list as a duplicate ï¿½ only a
-    // previously-registered handler counts. FHandlerMethods tracks exactly
-    // that, independent of the middleware entries in FCallBack.
     if (not AIsMiddleware) and (FHandlerMethods.IndexOf(AHTTPType) >= 0) then
       raise Exception.Create(Format('Duplicate route detected: [%s] %s',
         [AHTTPType.ToString.ToUpper, AFullPath]));
@@ -572,21 +489,13 @@ begin
   if APath.Count > 0 then
   begin
     LNextPart := APath.Peek;
-    // normalize param keys so :id and :name share the same node.
     LNormalizedNextPart := NormalizeParamKey(LNextPart);
 
     LForceRouter := ForcePath(LNormalizedNextPart);
 
-    // The child node needs to know its real param tag (e.g. "id" or "name"),
-    // so we set FPart and FTag on first initialization inside RegisterInternal.
-    // But since ForcePath reuses existing nodes, we only set the tag on the
-    // first registration. Subsequent registrations with a different param name
-    // but same structure will reuse the existing node (correct behaviour for
-    // Problem 1: they are the same route).
     LForceRouter.RegisterInternal(AHTTPType, APath, ACallback, AFullPath, AIsMiddleware);
     if LForceRouter.FIsParamsKey or LForceRouter.FIsRouterRegex then
     begin
-      // Only add to FRegexedKeys once (avoid duplicates)
       if not FRegexedKeys.Contains(LNormalizedNextPart) then
         FRegexedKeys.Add(LNormalizedNextPart);
     end;
@@ -620,10 +529,12 @@ begin
 end;
 
 initialization
-  GQueuePool := TQueueStringList.Create;
+  GQueuePool := TList<TQueue<string>>.Create;
   GQueuePoolCS := TCriticalSection.Create;
   GNextCallerPool := TList<TNextCaller>.Create;
   GNextCallerPoolCS := TCriticalSection.Create;
+  GAllNextCallers := TList<TNextCaller>.Create;
+  GAllNextCallersCS := TCriticalSection.Create;
 
 finalization
   if Assigned(GQueuePool) then
@@ -647,5 +558,21 @@ finalization
     GNextCallerPool.Free;
   end;
   GNextCallerPoolCS.Free;
+
+  if Assigned(GAllNextCallers) then
+  begin
+    GAllNextCallersCS.Enter;
+    try
+      while GAllNextCallers.Count > 0 do
+      begin
+        GAllNextCallers.Items[GAllNextCallers.Count - 1].Free;
+        GAllNextCallers.Delete(GAllNextCallers.Count - 1);
+      end;
+      GAllNextCallers.Free;
+    finally
+      GAllNextCallersCS.Leave;
+    end;
+  end;
+  GAllNextCallersCS.Free;
 
 end.

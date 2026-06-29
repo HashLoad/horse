@@ -149,6 +149,8 @@ type
     FIsKeepAlive: Boolean;
     FStatusCode: Integer;
     FStatusReason: string;
+    function PrepareHeaders: TBytes;
+    procedure WriteV(const AHeaderBytes, ABodyBytes: TBytes);
     procedure SendHeaders;
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     procedure FinalizeResponse;
@@ -761,15 +763,12 @@ begin
   FHeaders.AddOrSetValue(AName, AValue);
 end;
 
-procedure TIocpRawResponse.SendHeaders;
+function TIocpRawResponse.PrepareHeaders: TBytes;
 var
   LBuilder: TStringBuilder;
   LPair: TPair<string, string>;
   LHeaderStr: string;
-  LHeaderBytes: TBytes;
 begin
-  if FHeadersSent then Exit;
-
   LBuilder := TStringBuilder.Create;
   try
     LBuilder.Append('HTTP/1.1 ').Append(FStatusCode).Append(' ').Append(FStatusReason).Append(#13#10);
@@ -797,9 +796,49 @@ begin
     LBuilder.Free;
   end;
 
-  LHeaderBytes := TEncoding.UTF8.GetBytes(LHeaderStr);
+  Result := TEncoding.UTF8.GetBytes(LHeaderStr);
+end;
+
+procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
+var
+  LBufs: array[0..1] of TWSABUF;
+  LBufCount: DWORD;
+  LBytesSent: DWORD;
+  LFlags: DWORD;
+begin
+  LBufCount := 0;
   
-  send(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
+  if Length(AHeaderBytes) > 0 then
+  begin
+    LBufs[LBufCount].buf := PAnsiChar(@AHeaderBytes[0]);
+    LBufs[LBufCount].len := Length(AHeaderBytes);
+    Inc(LBufCount);
+  end;
+  
+  if Length(ABodyBytes) > 0 then
+  begin
+    LBufs[LBufCount].buf := PAnsiChar(@ABodyBytes[0]);
+    LBufs[LBufCount].len := Length(ABodyBytes);
+    Inc(LBufCount);
+  end;
+  
+  if LBufCount > 0 then
+  begin
+    LFlags := 0;
+    LBytesSent := 0;
+    WSASend(FContext.Socket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil);
+  end;
+  FHeadersSent := True;
+end;
+
+procedure TIocpRawResponse.SendHeaders;
+var
+  LHeaderBytes: TBytes;
+begin
+  if FHeadersSent then Exit;
+  LHeaderBytes := PrepareHeaders;
+  if Length(LHeaderBytes) > 0 then
+    send(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
   FHeadersSent := True;
 end;
 
@@ -855,9 +894,12 @@ end;
 procedure TIocpRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LBodyBytes: TBytes;
+  LHeaderBytes: TBytes;
   LPair: TPair<string, string>;
   LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
+  {$IFDEF FPC}
   LStatusCode: Integer;
+  {$ENDIF}
 begin
   FStatusCode := ARes.Status;
   
@@ -893,10 +935,15 @@ begin
   else
     FHeaders.AddOrSetValue('Content-Length', '0');
 
-  SendHeaders;
-
-  if Length(LBodyBytes) > 0 then
+  if not FHeadersSent then
+  begin
+    LHeaderBytes := PrepareHeaders;
+    WriteV(LHeaderBytes, LBodyBytes);
+  end
+  else if Length(LBodyBytes) > 0 then
+  begin
     send(FContext.Socket, LBodyBytes[0], Length(LBodyBytes), 0);
+  end;
     
   FinalizeResponse;
 end;
