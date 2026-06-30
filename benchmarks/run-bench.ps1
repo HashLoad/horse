@@ -35,7 +35,7 @@ Write-Host "`n==> Compilando o servidor Delphi (HTTP.sys)..." -ForegroundColor C
 Push-Location suites\delphi-horse-httpsys
 if (Test-Path "HorseBench.exe") { Remove-Item "HorseBench.exe" -Force }
 # Compila utilizando dcc64 (PATH)
-& dcc64 -Q -W -H -GD -$D- -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
+& dcc64 -Q -W -H -GD -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
 if (-not (Test-Path "HorseBench.exe")) {
     Write-Error "❌ Falha ao compilar o HorseBench.exe (Delphi)"
     Pop-Location
