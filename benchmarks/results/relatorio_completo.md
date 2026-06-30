@@ -6,6 +6,33 @@ O cenário avaliou o throughput (RPS) e latência do endpoint `/ping` (plain tex
 
 ---
 
+## 🛠️ Metodologia de Teste
+
+Para assegurar a imparcialidade e a precisão científica dos dados coletados, foi adotada a seguinte metodologia sistemática:
+
+### 1. Ambiente e Isolamento de Recursos
+* **Host do Delphi**: O servidor Delphi rodou nativamente no sistema operacional Windows Host para avaliar a performance nativa do provider `HTTP.sys`.
+* **Hipervisor Docker**: Os servidores Linux (.NET, Java, Go, Node, FPC Default e FPC epoll) rodaram em contêineres Docker independentes orquestrados via `docker-compose`.
+* **Restrição de Hardware**: Cada contêiner Linux teve seus recursos limitados rigidamente no Docker Engine para:
+  * **Processamento**: Limite estrito de **2.0 CPUs** (`cpus: 2.0`).
+  * **Memória RAM**: Limite físico de **512 MB** (`memory: 512m`).
+  * **Swap**: Desabilitado para evitar mascaramento de gargalos de memória.
+
+### 2. Protocolo de Teste de Carga
+* **Ferramenta de Benchmark**: Foi utilizada a ferramenta **`bombardier`** (escrita em Go, altamente eficiente para geração de concorrência HTTP).
+* **Endpoint e Payload**: Rota `/ping` respondendo com o payload `pong` (MIME: `text/plain`). Esta rota simples foca a medição estritamente no throughput do parser HTTP, roteador interno e latência da pilha TCP/IP do framework.
+* **Ciclo de Carga por Tecnologia**:
+  1. **Inicialização & Cooldown Inicial**: Inicialização do servidor com um intervalo de espera de **5 segundos** antes do início do tráfego.
+  2. **Fase de Aquecimento (Warm-up)**: Carga contínua com a concorrência correspondente durante **10 segundos**. Esta fase é vital para o compilador JIT (Java JVM e .NET CLR) e para o compilador dinâmico V8 (NodeJS) aquecerem e otimizarem os caminhos de código.
+  3. **Fase de Medição Oficial**: Teste de carga ativa de **30 segundos** por concorrência.
+  4. **Cooldown de Socket**: Pausa de **2 segundos** entre as baterias para permitir a limpeza segura dos sockets TCP no estado `TIME_WAIT` do sistema operacional.
+
+### 3. Coleta de Métricas
+* **Vazão (RPS) e Latências**: Coletadas diretamente dos relatórios de distribuição de percentis estruturados do `bombardier`.
+* **Recursos (CPU e RAM)**: Capturados em tempo real durante a execução da carga através de chamadas instantâneas à API `docker stats --no-stream` do Docker Engine, calculando a média real consumida pelo contêiner.
+
+---
+
 ## 📊 Tabela Consolidada de Resultados
 
 ### ⚡ Cenário 1: Concorrência de 128 Conexões Simultâneas
@@ -45,7 +72,23 @@ O cenário avaliou o throughput (RPS) e latência do endpoint `/ping` (plain tex
 | Delphi 11 (Alexandria) | Horse (HTTP.sys) | Windows (Host) | 5.952,49 | 172,22ms | 753,54ms | 0,00%* | 38,11 MiB |
 | Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 1.699,85 | 642,32ms | 6,03s | 125,19% | 4,43 MiB |
 
-> \* *Nota: O consumo de CPU do Delphi HTTP.sys é listado como 0% porque ele rodou diretamente no Host Windows (fora da coleta do subsistema Docker stats).*
+> \* *Nota: O consumo de CPU do Delphi HTTP.sys é listado as 0% porque ele rodou diretamente no Host Windows (fora da coleta do subsistema Docker stats).*
+
+---
+
+## 📈 Estabilidade e Distribuição de Latência (Concorrência de 1024 Conexões)
+
+Apenas olhar as latências médias mascara o comportamento real do servidor sob estresse extremo. A distribuição de percentis a seguir detalha a latência na concorrência limite (1024):
+
+| Linguagem / Framework | S.O. | p50 (Mediana) | p90 | p99 (Cauda Longa) | Comportamento sob Carga |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **C# (.NET 8) - ASP.NET Core** | Linux | **12,84ms** | 16,85ms | **27,26ms** | **Excepcional**: Desvio mínimo entre mediana e p99. |
+| **Free Pascal (FPC) - Horse (epoll)** | Linux | **23,44ms** | 65,59ms | **77,75ms** | **Excelente**: Altamente estável, abaixo de 80ms sob concorrência máxima. |
+| **Go 1.21 - Fiber** | Linux | **21,84ms** | 75,11ms | **92,87ms** | **Ótimo**: Muito estável, mantendo a cauda longa em double-digits. |
+| **Java 17 - Spring Boot** | Linux | **29,72ms** | 81,50ms | **652,81ms** | **Instável**: p99 sobe 8x devido a contenção do Tomcat/GC JVM. |
+| **Delphi 11 - Horse (HTTP.sys)** | Windows | **0,62ms (620µs)** | 500,98ms | **753,54ms** | **Alta Variabilidade**: Mediana ultrarrápida no Host, mas p99 alto. |
+| **JavaScript (Node.js 20) - Express** | Linux | **17,42ms** | 23,18ms | **6,02s** | **Crítico**: Event loop bloqueado, enfileiramento severo de segundos. |
+| **Free Pascal (FPC) - fphttpserver** | Linux | **72,46ms** | 2,07s | **6,03s** | **Crítico**: Saturação total do modelo síncrono bloqueante. |
 
 ---
 
@@ -53,8 +96,8 @@ O cenário avaliou o throughput (RPS) e latência do endpoint `/ping` (plain tex
 
 ### 1. FPC/Lazarus (epoll) vs FPC/Lazarus (Default)
 O resultado mais marcante do benchmark é a disparidade entre as duas camadas de transporte do Pascal:
-* O driver padrão do FPC (`fphttpserver`) é baseado em sockets síncronos bloqueantes que exigem a alocação de threads ativas ou sofrem contenção na fila sob concorrência. Ele registrou apenas **1.699 RPS** sob 1024 conexões simultâneas, com uma latência média pesada de **642ms**.
-* Ao mudarmos para o provider **`HORSE_PROVIDER_EPOLL`** (o event loop assíncrono nativo do Linux), o Throughput saltou para incríveis **33.159 RPS** (um ganho de **mais de 19x** de performance bruta) e a latência despencou para apenas **32ms**! Isso comprova a eficácia da arquitetura reativa assíncrona para I/O de rede massivo.
+* O driver padrão do FPC (`fphttpserver`) é baseado em sockets síncronos bloqueantes que exigem a alocação de threads ativas ou sofrem contenção na fila sob concorrência. Ele registrou apenas **1.699 RPS** sob 1024 conexões simultâneas, com uma latência média de **642ms** e p99 que travou nos **6,03 segundos**.
+* Ao mudarmos para o provider **`HORSE_PROVIDER_EPOLL`** (o event loop assíncrono nativo do Linux), o Throughput saltou para incríveis **33.159 RPS** (um ganho de **mais de 19x** de performance bruta) e o p99 de latência ficou contido em excelentes **77,75ms**! Isso comprova a eficácia da arquitetura reativa assíncrona para I/O de rede massivo.
 
 ### 2. .NET (Kestrel) e FPC (epoll)
 O **.NET Minimal API (Kestrel)** liderou o throughput em todos os cenários, registrando picos de **40.115 RPS**. A Microsoft fez otimizações brilhantes no pool de sockets do Kestrel nos últimos anos.
@@ -66,8 +109,8 @@ O grande diferencial aqui é a **eficiência de recursos**:
 ### 3. Java (Spring Boot) e a JVM
 O Java com Spring Boot entregou uma performance robusta (~23k RPS de pico), mas sofreu com a latência de p99 e foi de longe o maior consumidor de hardware, precisando de **191,6 MB de RAM** (mais de **12 vezes** o consumo do FPC epoll) devido ao peso do runtime da JVM e à inicialização do ecossistema do Spring Boot.
 
-### 4. Node.js (Express)
-Ficou no meio da tabela (~8.4k a 9.3k RPS). O loop de eventos single-thread do Node.js sofre de gargalos quando o middleware de processamento do Express é empilhado, e o consumo de memória sob carga alta aumentou moderadamente para ~29 MB.
+### 4. Node.js (Express) e o Gargalo de Thread Única
+O Node.js com Express teve boa performance e latência em cargas moderadas (~9.3k RPS). No entanto, sob 1024 conexões, o fato de o Event Loop rodar em uma única thread gerou um grande enfileiramento de requisições HTTP, fazendo com que a cauda longa (p99) de latência saltasse para **6,02 segundos**. Isso mostra que o Node.js Express atinge o seu limite de estabilidade de latência em cenários de saturação extrema de sockets.
 
 ### 5. Delphi (HTTP.sys)
 O Delphi rodando no Windows Host via driver de kernel HTTP.sys manteve estabilidade (~5.2k a 5.9k RPS). Ele operou com baixo consumo de memória (~38MB), mas seu throughput absoluto foi menor que as soluções Linux rodando em Epoll/Kestrel. Isso ocorre porque o HTTP.sys, por operar em nível de kernel, realiza muitas transições de contexto (user-mode <-> kernel-mode) para processar cada pacote individual HTTP, o que gera overhead em rotas simples com payloads curtos (como `/ping`).
