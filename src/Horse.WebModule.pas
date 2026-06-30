@@ -32,7 +32,7 @@ type
   public
     property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
-  	class function GetInstance: THorseWebModule;
+    class function GetInstance: THorseWebModule;
   end;
 
 var
