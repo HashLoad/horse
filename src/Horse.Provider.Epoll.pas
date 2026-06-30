@@ -71,10 +71,10 @@ type
     class function TryParseRequest(
       const ABuffer: TBytes; 
       ALength: Integer;
-      out AMethod: string;
-      out APath: string;
-      out AQuery: string;
-      out AVersion: string;
+      out AMethod: THorseBufferSlice;
+      out APath: THorseBufferSlice;
+      out AQuery: THorseBufferSlice;
+      out AVersion: THorseBufferSlice;
       out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
       out AContentLength: Int64
@@ -91,10 +91,10 @@ type
   TEpollRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
     FBuffer: TBytes;
-    FMethod: string;
-    FPath: string;
-    FQuery: string;
-    FVersion: string;
+    FMethodSlice: THorseBufferSlice;
+    FPathSlice: THorseBufferSlice;
+    FQuerySlice: THorseBufferSlice;
+    FVersionSlice: THorseBufferSlice;
     FBodyOffset: Integer;
     FContentLength: Int64;
     FHeaders: THeaderSegments;
@@ -108,7 +108,7 @@ type
   public
     constructor Create(
       var ABuffer: TBytes;
-      const AMethod, APath, AQuery, AVersion: string;
+      const AMethod, APath, AQuery, AVersion: THorseBufferSlice;
       AHeaders: THeaderSegments;
       ABodyOffset: Integer;
       AContentLength: Int64;
@@ -180,10 +180,10 @@ type
     EpollFd: Integer;
     Buffer: TBytes;
     BytesReceived: Integer;
-    Method: string;
-    Path: string;
-    Query: string;
-    Version: string;
+    MethodSlice: THorseBufferSlice;
+    PathSlice: THorseBufferSlice;
+    QuerySlice: THorseBufferSlice;
+    VersionSlice: THorseBufferSlice;
     Headers: THeaderSegments;
     BodyOffset: Integer;
     ContentLength: Int64;
@@ -664,7 +664,7 @@ var
   LHorseRes: THorseResponse;
   LLocalEvent: epoll_event;
   HasPendingWrite: Boolean;
-  LMethod, LPath, LQuery, LVersion: string;
+  LMethod, LPath, LQuery, LVersion: THorseBufferSlice;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -703,10 +703,10 @@ begin
             LContentLength
           ) then
           begin
-            LTask.Context.Method := LMethod;
-            LTask.Context.Path := LPath;
-            LTask.Context.Query := LQuery;
-            LTask.Context.Version := LVersion;
+            LTask.Context.MethodSlice := LMethod;
+            LTask.Context.PathSlice := LPath;
+            LTask.Context.QuerySlice := LQuery;
+            LTask.Context.VersionSlice := LVersion;
             LTask.Context.Headers := LHeaders;
             LTask.Context.BodyOffset := LBodyOffset;
             LTask.Context.ContentLength := LContentLength;
@@ -714,10 +714,10 @@ begin
 
           LRawReq := TEpollRawRequest.Create(
             LTask.Context.Buffer,
-            LTask.Context.Method,
-            LTask.Context.Path,
-            LTask.Context.Query,
-            LTask.Context.Version,
+            LTask.Context.MethodSlice,
+            LTask.Context.PathSlice,
+            LTask.Context.QuerySlice,
+            LTask.Context.VersionSlice,
             LTask.Context.Headers,
             LTask.Context.BodyOffset,
             LTask.Context.ContentLength,
@@ -923,10 +923,10 @@ end;
 
 procedure TEpollConnectionContext.ClearRequest;
 begin
-  Method := '';
-  Path := '';
-  Query := '';
-  Version := '';
+  MethodSlice := THorseBufferSlice.Empty;
+  PathSlice := THorseBufferSlice.Empty;
+  QuerySlice := THorseBufferSlice.Empty;
+  VersionSlice := THorseBufferSlice.Empty;
   Headers := nil;
   BodyOffset := -1;
   ContentLength := 0;
@@ -1145,10 +1145,10 @@ end;
 class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
-  out AMethod: string;
-  out APath: string;
-  out AQuery: string;
-  out AVersion: string;
+  out AMethod: THorseBufferSlice;
+  out APath: THorseBufferSlice;
+  out AQuery: THorseBufferSlice;
+  out AVersion: THorseBufferSlice;
   out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
   out AContentLength: Int64
@@ -1165,10 +1165,10 @@ var
   Segment: THeaderSegment;
   SegCount: Integer;
 begin
-  AMethod := '';
-  APath := '';
-  AQuery := '';
-  AVersion := '';
+  AMethod := THorseBufferSlice.Empty;
+  APath := THorseBufferSlice.Empty;
+  AQuery := THorseBufferSlice.Empty;
+  AVersion := THorseBufferSlice.Empty;
   ABodyOffset := -1;
   AContentLength := 0;
   SetLength(AHeaders, 0);
@@ -1200,28 +1200,22 @@ begin
   Space2 := FindByte(ABuffer, Space1 + 1, LineEnd, 32);
   if Space2 = -1 then Exit(False);
 
-  // Method (cached/optimized)
-  AMethod := GetMethodString(ABuffer, 0, Space1);
+  // Method (zero-alloc)
+  AMethod := THorseBufferSlice.Create(ABuffer, 0, Space1);
   
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
   if QueryStart <> -1 then
   begin
-    if (QueryStart - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
-      APath := '/'
-    else
-      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, QueryStart - (Space1 + 1));
-    AQuery := TEncoding.UTF8.GetString(ABuffer, QueryStart + 1, Space2 - (QueryStart + 1));
+    APath := THorseBufferSlice.Create(ABuffer, Space1 + 1, QueryStart - (Space1 + 1));
+    AQuery := THorseBufferSlice.Create(ABuffer, QueryStart + 1, Space2 - (QueryStart + 1));
   end
   else
   begin
-    if (Space2 - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
-      APath := '/'
-    else
-      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
-    AQuery := '';
+    APath := THorseBufferSlice.Create(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
+    AQuery := THorseBufferSlice.Empty;
   end;
 
-  AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
+  AVersion := THorseBufferSlice.Create(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
 
   // 3. Processa os cabeçalhos linha a linha indexando os offsets
   SegCount := 0;
@@ -1289,7 +1283,7 @@ end;
 
 constructor TEpollRawRequest.Create(
   var ABuffer: TBytes;
-  const AMethod, APath, AQuery, AVersion: string;
+  const AMethod, APath, AQuery, AVersion: THorseBufferSlice;
   AHeaders: THeaderSegments;
   ABodyOffset: Integer;
   AContentLength: Int64;
@@ -1312,10 +1306,10 @@ begin
 
   ABuffer := nil;
 
-  FMethod := AMethod;
-  FPath := APath;
-  FQuery := AQuery;
-  FVersion := AVersion;
+  FMethodSlice := AMethod;
+  FPathSlice := APath;
+  FQuerySlice := AQuery;
+  FVersionSlice := AVersion;
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
@@ -1379,17 +1373,43 @@ begin
   FResolvedHeaders.Add(LLowerName, '');
 end;
 
-function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
-function TEpollRawRequest.GetProtocolVersion: string; begin Result := FVersion; end;
+function TEpollRawRequest.GetMethod: string;
+begin
+  if FMethodSlice.Compare('GET', True) then Result := 'GET'
+  else if FMethodSlice.Compare('POST', True) then Result := 'POST'
+  else if FMethodSlice.Compare('PUT', True) then Result := 'PUT'
+  else if FMethodSlice.Compare('DELETE', True) then Result := 'DELETE'
+  else if FMethodSlice.Compare('PATCH', True) then Result := 'PATCH'
+  else if FMethodSlice.Compare('HEAD', True) then Result := 'HEAD'
+  else if FMethodSlice.Compare('OPTIONS', True) then Result := 'OPTIONS'
+  else Result := FMethodSlice.ToString;
+end;
+
+function TEpollRawRequest.GetProtocolVersion: string;
+begin
+  if FVersionSlice.Compare('HTTP/1.1', True) then Result := 'HTTP/1.1'
+  else if FVersionSlice.Compare('HTTP/1.0', True) then Result := 'HTTP/1.0'
+  else if FVersionSlice.Compare('HTTP/2.0', True) then Result := 'HTTP/2.0'
+  else Result := FVersionSlice.ToString;
+end;
+
 function TEpollRawRequest.GetURL: string;
 begin
-  if FQuery <> '' then
-    Result := FPath + '?' + FQuery
+  if not FQuerySlice.IsEmpty then
+    Result := FPathSlice.ToString + '?' + FQuerySlice.ToString
   else
-    Result := FPath;
+    Result := FPathSlice.ToString;
 end;
-function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
-function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
+
+function TEpollRawRequest.GetPathInfo: string;
+begin
+  Result := FPathSlice.ToString;
+end;
+
+function TEpollRawRequest.GetQueryString: string;
+begin
+  Result := FQuerySlice.ToString;
+end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
 function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
 // Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
@@ -2052,10 +2072,10 @@ var
   LBodyReadBuf: TBytes;
   I: Integer;
   HasPendingWrite: Boolean;
-  LMethod: string;
-  LPath: string;
-  LQuery: string;
-  LVersion: string;
+  LMethod: THorseBufferSlice;
+  LPath: THorseBufferSlice;
+  LQuery: THorseBufferSlice;
+  LVersion: THorseBufferSlice;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -2289,7 +2309,7 @@ begin
         LWebResponse: TInterfacedWebResponse;
         LKeepAlive: Boolean;
         LConnHeader: string;
-        LMethod, LPath, LQuery, LVersion: string;
+        LMethod, LPath, LQuery, LVersion: THorseBufferSlice;
         LHeaders: THeaderSegments;
         LBodyOffset: Integer;
         LContentLength: Int64;
@@ -2310,10 +2330,10 @@ begin
             LContentLength
           ) then
           begin
-            LLocalContext.Method := LMethod;
-            LLocalContext.Path := LPath;
-            LLocalContext.Query := LQuery;
-            LLocalContext.Version := LVersion;
+            LLocalContext.MethodSlice := LMethod;
+            LLocalContext.PathSlice := LPath;
+            LLocalContext.QuerySlice := LQuery;
+            LLocalContext.VersionSlice := LVersion;
             LLocalContext.Headers := LHeaders;
             LLocalContext.BodyOffset := LBodyOffset;
             LLocalContext.ContentLength := LContentLength;
@@ -2321,10 +2341,10 @@ begin
 
           LRawReq := TEpollRawRequest.Create(
             LLocalContext.Buffer,
-            LLocalContext.Method,
-            LLocalContext.Path,
-            LLocalContext.Query,
-            LLocalContext.Version,
+            LLocalContext.MethodSlice,
+            LLocalContext.PathSlice,
+            LLocalContext.QuerySlice,
+            LLocalContext.VersionSlice,
             LLocalContext.Headers,
             LLocalContext.BodyOffset,
             LLocalContext.ContentLength,
@@ -2416,10 +2436,10 @@ begin
           LContentLength
         ) then
         begin
-          AContext.Method := LMethod;
-          AContext.Path := LPath;
-          AContext.Query := LQuery;
-          AContext.Version := LVersion;
+          AContext.MethodSlice := LMethod;
+          AContext.PathSlice := LPath;
+          AContext.QuerySlice := LQuery;
+          AContext.VersionSlice := LVersion;
           AContext.Headers := LHeaders;
           AContext.BodyOffset := LBodyOffset;
           AContext.ContentLength := LContentLength;
@@ -2427,10 +2447,10 @@ begin
 
         LRawReq := TEpollRawRequest.Create(
           AContext.Buffer,
-          AContext.Method,
-          AContext.Path,
-          AContext.Query,
-          AContext.Version,
+          AContext.MethodSlice,
+          AContext.PathSlice,
+          AContext.QuerySlice,
+          AContext.VersionSlice,
           AContext.Headers,
           AContext.BodyOffset,
           AContext.ContentLength,
