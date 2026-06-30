@@ -2048,7 +2048,9 @@ var
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
+  LWorker: THorseEpollWorker;
 begin
+  LWorker := Self;
   LRequestComplete := False;
 
   if AContext.BodyOffset = -1 then
@@ -2065,7 +2067,7 @@ begin
       {$ELSE}
       LBytesRead := recv(
         AContext.Socket, 
-        PByte(AContext.Buffer) + AContext.BytesReceived, 
+        PByte(AContext.Buffer)[AContext.BytesReceived], 
         Length(AContext.Buffer) - AContext.BytesReceived, 
         0
       );
@@ -2165,7 +2167,7 @@ begin
         {$ELSE}
         LBytesRead := recv(
           AContext.Socket, 
-          PByte(AContext.Buffer) + AContext.BytesReceived, 
+          PByte(AContext.Buffer)[AContext.BytesReceived], 
           AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
           0
         );
@@ -2282,7 +2284,7 @@ begin
         LContentLength: Int64;
         HasPendingWrite: Boolean;
       begin
-        LLocalEpollFd := FEpollFd;
+        LLocalEpollFd := LWorker.FEpollFd;
         LLocalContext := AContext;
         try
           if THorseHttpParser.TryParseRequest(
@@ -2370,7 +2372,7 @@ begin
             end
             else
             begin
-              CloseConnection(LLocalContext);
+              LWorker.CloseConnection(LLocalContext);
             end;
           end;
         except

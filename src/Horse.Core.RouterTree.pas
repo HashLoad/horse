@@ -81,10 +81,14 @@ uses
 threadvar
   TlsNextCaller: TNextCaller;
 
+type
+  TQueueString = TQueue<string>;
+  TQueueStringList = TList<TQueueString>;
+
 var
   GAllNextCallers: TList<TNextCaller> = nil;
   GAllNextCallersCS: TCriticalSection = nil;
-  GQueuePool: TList<TQueue<string>> = nil;
+  GQueuePool: TQueueStringList = nil;
   GQueuePoolCS: TCriticalSection = nil;
   GNextCallerPool: TList<TNextCaller> = nil;
   GNextCallerPoolCS: TCriticalSection = nil;
@@ -529,7 +533,7 @@ begin
 end;
 
 initialization
-  GQueuePool := TList<TQueue<string>>.Create;
+  GQueuePool := TQueueStringList.Create;
   GQueuePoolCS := TCriticalSection.Create;
   GNextCallerPool := TList<TNextCaller>.Create;
   GNextCallerPoolCS := TCriticalSection.Create;
