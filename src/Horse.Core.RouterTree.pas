@@ -37,9 +37,9 @@ type
     FIsParamsKey: Boolean;
     FRouterRegex: string;
     FIsRouterRegex: Boolean;
-    FMiddleware: TList<THorseCallback>;
+    FMiddleware: TArray<THorseCallback>;
     FRegexedKeys: TList<string>;
-    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    FCallBack: TDictionary<TMethodType, TArray<THorseCallback>>;
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
@@ -197,10 +197,10 @@ end;
 
 constructor THorseRouterTree.Create;
 begin
-  FMiddleware := TList<THorseCallback>.Create;
+  FMiddleware := nil;
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
-  FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
+  FCallBack := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
   FHandlerMethods := TList<TMethodType>.Create;
   FPrefix := '';
   FIsRouterRegex := False;
@@ -208,7 +208,7 @@ end;
 
 destructor THorseRouterTree.Destroy;
 begin
-  FMiddleware.Free;
+  FMiddleware := nil;
   FreeAndNil(FRoute);
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
@@ -469,7 +469,7 @@ procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var AP
 var
   LNextPart: string;
   LNormalizedNextPart: string;
-  LCallbacks: TList<THorseCallback>;
+  LCallbacks: TArray<THorseCallback>;
   LForceRouter: THorseRouterTree;
   LRawPart: string;
 begin
@@ -497,10 +497,10 @@ begin
 
     if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
     begin
-      LCallbacks := TList<THorseCallback>.Create;
-      FCallBack.Add(AHTTPType, LCallbacks);
+      LCallbacks := [];
     end;
-    LCallbacks.Add(ACallback);
+    LCallbacks := LCallbacks + [ACallback];
+    FCallBack.AddOrSetValue(AHTTPType, LCallbacks);
 
     if not AIsMiddleware then
       FHandlerMethods.Add(AHTTPType);
@@ -524,7 +524,7 @@ end;
 
 procedure THorseRouterTree.RegisterMiddleware(const AMiddleware: THorseCallback);
 begin
-  FMiddleware.Add(AMiddleware);
+  FMiddleware := FMiddleware + [AMiddleware];
 end;
 
 procedure THorseRouterTree.RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback);
@@ -543,7 +543,7 @@ procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>;
 begin
   APath.Dequeue;
   if APath.Count = 0 then
-    FMiddleware.Add(AMiddleware)
+    FMiddleware := FMiddleware + [AMiddleware]
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
 end;

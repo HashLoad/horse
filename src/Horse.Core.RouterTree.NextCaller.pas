@@ -30,8 +30,8 @@ type
     FHTTPType: TMethodType;
     FRequest: THorseRequest;
     FResponse: THorseResponse;
-    FMiddleware: TList<THorseCallback>;
-    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    FMiddleware: TArray<THorseCallback>;
+    FCallBack: TDictionary<TMethodType, TArray<THorseCallback>>;
     FCallNextPath: TCallNextPath;
     FIsGroup: Boolean;
     FTag: string;
@@ -39,14 +39,14 @@ type
     FFound: ^Boolean;
   public
     procedure Configure(
-      const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+      const ACallback: TDictionary<TMethodType, TArray<THorseCallback>>;
       const ASegments: TArray<string>;
       AIndexSegment: Integer;
       const AHTTPType: TMethodType;
       const ARequest: THorseRequest;
       const AResponse: THorseResponse;
       const AIsGroup: Boolean;
-      const AMiddleware: TList<THorseCallback>;
+      const AMiddleware: TArray<THorseCallback>;
       const ATag: string;
       const AIsParamsKey: Boolean;
       const ACallNextPath: TCallNextPath;
@@ -69,14 +69,14 @@ uses
   Horse.Exception.Interrupted;
 
 procedure TNextCaller.Configure(
-  const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+  const ACallback: TDictionary<TMethodType, TArray<THorseCallback>>;
   const ASegments: TArray<string>;
   AIndexSegment: Integer;
   const AHTTPType: TMethodType;
   const ARequest: THorseRequest;
   const AResponse: THorseResponse;
   const AIsGroup: Boolean;
-  const AMiddleware: TList<THorseCallback>;
+  const AMiddleware: TArray<THorseCallback>;
   const ATag: string;
   const AIsParamsKey: Boolean;
   const ACallNextPath: TCallNextPath;
@@ -120,14 +120,14 @@ end;
 
 procedure TNextCaller.Next;
 var
-  LCallback: TList<THorseCallback>;
+  LCallback: TArray<THorseCallback>;
 begin
   Inc(FIndex);
-  if (FMiddleware.Count > FIndex) then
+  if (Length(FMiddleware) > FIndex) then
   begin
     FFound^ := True;
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
-    if (FMiddleware.Count > FIndex) then
+    Self.FMiddleware[FIndex](FRequest, FResponse, Next);
+    if (Length(FMiddleware) > FIndex) then
       Next;
   end
   else if (FIndexSegment = Length(FSegments)) and Assigned(FCallBack) then
@@ -135,11 +135,11 @@ begin
     Inc(FIndexCallback);
     if FCallBack.TryGetValue(FHTTPType, LCallback) then
     begin
-      if (LCallback.Count > FIndexCallback) then
+      if (Length(LCallback) > FIndexCallback) then
       begin
         try
           FFound^ := True;
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
+          LCallback[FIndexCallback](FRequest, FResponse, Next);
         except
           on E: Exception do
           begin

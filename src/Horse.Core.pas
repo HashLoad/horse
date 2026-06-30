@@ -9,10 +9,14 @@ interface
 uses
 {$IF DEFINED(FPC)}
   Generics.Collections,
+  SyncObjs,
 {$ELSE}
   System.Generics.Collections,
+  System.SyncObjs,
   Web.HTTPApp,
 {$ENDIF}
+  Horse.Request,
+  Horse.Response,
   Horse.Core.RouterTree,
   Horse.Callback,
   Horse.Core.Group.Contract,
@@ -126,6 +130,34 @@ type
     class function Version: string;
   end;
 
+  THorseContext = class
+  private
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Reset;
+    property Request: THorseRequest read FRequest;
+    property Response: THorseResponse read FResponse;
+  end;
+
+  THorseContextPool = class
+  private
+    FList: TQueue<THorseContext>;
+    FLock: TCriticalSection;
+    FMaxCount: Integer;
+    FAllocatedCount: Integer;
+    class var FInstance: THorseContextPool;
+  public
+    constructor Create(const AMaxCount: Integer = 1024);
+    destructor Destroy; override;
+    function Acquire: THorseContext;
+    procedure Release(const AContext: THorseContext);
+    procedure WarmUp(const ACount: Integer);
+    class property Instance: THorseContextPool read FInstance;
+  end;
+
 implementation
 
 uses
@@ -133,8 +165,6 @@ uses
   SysUtils,
 {$ELSE}
   System.SysUtils,
-  Horse.Request,
-  Horse.Response,
 {$ENDIF}
   Horse.Core.Route,
   Horse.Core.Group,
@@ -540,5 +570,123 @@ function THorseModule.GetSelfInstance: PHorseCore;
 begin
   Result := FSelfInstance;
 end;
+
+{ THorseContext }
+
+constructor THorseContext.Create;
+begin
+  inherited Create;
+  FRequest := THorseRequest.Create;
+  FResponse := THorseResponse.Create(nil);
+end;
+
+destructor THorseContext.Destroy;
+begin
+  FRequest.Free;
+  FResponse.Free;
+  inherited;
+end;
+
+procedure THorseContext.Reset;
+begin
+  FRequest.Clear;
+  FResponse.Clear;
+end;
+
+{ THorseContextPool }
+
+constructor THorseContextPool.Create(const AMaxCount: Integer);
+begin
+  inherited Create;
+  FList := TQueue<THorseContext>.Create;
+  FLock := TCriticalSection.Create;
+  FMaxCount := AMaxCount;
+  FAllocatedCount := 0;
+end;
+
+destructor THorseContextPool.Destroy;
+var
+  LContext: THorseContext;
+begin
+  FLock.Enter;
+  try
+    while FList.Count > 0 do
+    begin
+      LContext := FList.Dequeue;
+      LContext.Free;
+    end;
+    FList.Free;
+  finally
+    FLock.Leave;
+  end;
+  FLock.Free;
+  inherited;
+end;
+
+function THorseContextPool.Acquire: THorseContext;
+begin
+  FLock.Enter;
+  try
+    if FList.Count > 0 then
+    begin
+      Result := FList.Dequeue;
+    end
+    else
+    begin
+      Result := THorseContext.Create;
+      Inc(FAllocatedCount);
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+procedure THorseContextPool.Release(const AContext: THorseContext);
+begin
+  if AContext = nil then Exit;
+  AContext.Reset;
+  
+  FLock.Enter;
+  try
+    if FList.Count < FMaxCount then
+    begin
+      FList.Enqueue(AContext);
+    end
+    else
+    begin
+      AContext.Free;
+      Dec(FAllocatedCount);
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+procedure THorseContextPool.WarmUp(const ACount: Integer);
+var
+  I: Integer;
+  LContext: THorseContext;
+begin
+  FLock.Enter;
+  try
+    for I := 1 to ACount do
+    begin
+      if FAllocatedCount < FMaxCount then
+      begin
+        LContext := THorseContext.Create;
+        FList.Enqueue(LContext);
+        Inc(FAllocatedCount);
+      end;
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+initialization
+  THorseContextPool.FInstance := THorseContextPool.Create(1024);
+
+finalization
+  THorseContextPool.FInstance.Free;
 
 end.
