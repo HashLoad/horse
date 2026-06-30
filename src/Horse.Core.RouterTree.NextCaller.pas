@@ -25,7 +25,7 @@ type
   private
     FIndex: Integer;
     FIndexCallback: Integer;
-    FSegments: TArray<string>;
+    FSegments: TArray<THorseBufferSlice>;
     FIndexSegment: Integer;
     FHTTPType: TMethodType;
     FRequest: THorseRequest;
@@ -40,7 +40,7 @@ type
   public
     procedure Configure(
       const ACallback: TDictionary<TMethodType, TArray<THorseCallback>>;
-      const ASegments: TArray<string>;
+      const ASegments: TArray<THorseBufferSlice>;
       AIndexSegment: Integer;
       const AHTTPType: TMethodType;
       const ARequest: THorseRequest;
@@ -70,7 +70,7 @@ uses
 
 procedure TNextCaller.Configure(
   const ACallback: TDictionary<TMethodType, TArray<THorseCallback>>;
-  const ASegments: TArray<string>;
+  const ASegments: TArray<THorseBufferSlice>;
   AIndexSegment: Integer;
   const AHTTPType: TMethodType;
   const ARequest: THorseRequest;
@@ -99,22 +99,24 @@ end;
 
 procedure TNextCaller.Init;
 var
-  LCurrent: string;
+  LCurrent: THorseBufferSlice;
+  LCurrentStr: string;
 begin
-  LCurrent := '';
+  LCurrentStr := '';
   if (not FIsGroup) and (FIndexSegment < Length(FSegments)) then
   begin
     LCurrent := FSegments[FIndexSegment];
+    LCurrentStr := LCurrent.ToString;
     Inc(FIndexSegment);
   end;
   FIndex := -1;
   FIndexCallback := -1;
-  if FIsParamsKey and (LCurrent <> '') then
+  if FIsParamsKey and (LCurrentStr <> '') then
   begin
-    if Pos('%', LCurrent) > 0 then
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF})
+    if Pos('%', LCurrentStr) > 0 then
+      FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrentStr){$ELSE}TNetEncoding.URL.Decode(LCurrentStr){$ENDIF})
     else
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, LCurrent);
+      FRequest.Params.Dictionary.AddOrSetValue(FTag, LCurrentStr);
   end;
 end;
 

@@ -21,8 +21,7 @@ begin
   THorse.StopListen;
 
   // 2. Reseta a arvore de rotas global
-  if Assigned(THorse.Routes) then
-    THorse.Routes.Free;
+  THorse.Routes := nil;
   THorse.Routes := THorseRouterTree.Create;
 
   // 3. Reseta propriedades estaticas de rede para o baseline padrao
