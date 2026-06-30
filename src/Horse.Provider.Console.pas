@@ -207,7 +207,6 @@ var
   LAttach: string;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
 begin
-  inherited;
   if FPort <= 0 then
     FPort := GetDefaultPort;
 
