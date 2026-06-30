@@ -176,7 +176,7 @@ begin
     begin
       LRequest := TIdHTTPRequestInfo(LObject);
       Result.Text := LRequest.RawHeaders.Text;
-    end
+    end;
 {$ENDIF}
   except
     Result.Free;

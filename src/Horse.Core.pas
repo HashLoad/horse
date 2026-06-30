@@ -163,7 +163,7 @@ begin
     raise Exception.Create('The Horse instance has already been created');
   if FRoutes = nil then
     FRoutes := THorseRouterTree.Create;
-  FDefaultHorse := Self
+  FDefaultHorse := Self;
 end;
 
 class function THorseCore.GetInstance: THorseCore;

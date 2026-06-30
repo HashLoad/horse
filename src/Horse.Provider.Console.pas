@@ -248,7 +248,7 @@ begin
     begin
       while FRunning do
         GetDefaultEvent.WaitFor();
-    end
+    end;
   except
     on E: Exception do
     begin
