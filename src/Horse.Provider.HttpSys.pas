@@ -433,7 +433,7 @@ type
     class var FServerSessionId: HTTP_SERVER_SESSION_ID;
     class var FUrlGroupId: HTTP_URL_GROUP_ID;
     class var FReqQueue: THandle;
-    class var FListenerThread: THttpSysListenerThread;
+    class var FListenerThreads: TList<THttpSysListenerThread>;
     class var FKnownRequestHeadersMap: TDictionary<string, Integer>;
     class var FKnownResponseHeadersMap: TDictionary<string, Integer>;
     class var FBufferPool: THttpSysBufferPool;
@@ -1748,7 +1748,7 @@ begin
   FServerSessionId := 0;
   FUrlGroupId := 0;
   FReqQueue := 0;
-  FListenerThread := nil;
+  FListenerThreads := nil;
   FBufferPool := THttpSysBufferPool.Create;
 
   {$IF DEFINED(FPC)}
@@ -1773,6 +1773,7 @@ begin
   FKnownRequestHeadersMap.Free;
   FKnownResponseHeadersMap.Free;
   FBufferPool.Free;
+  FListenerThreads.Free;
 end;
 
 class procedure THorseProviderHttpSys.SetPort(const AValue: Integer);
@@ -1810,6 +1811,9 @@ var
   LPrefix: string;
   LRet: ULONG;
   LBinding: HTTP_BINDING_INFO;
+  I: Integer;
+  LThreadCount: Integer;
+  LListener: THttpSysListenerThread;
 begin
   if FRunning then Exit;
 
@@ -1858,14 +1862,24 @@ begin
         if LRet <> ERROR_SUCCESS then
           raise EOSError.Create('HttpAddUrlToUrlGroup failed to register ' + LPrefix + ' with error code: ' + IntToStr(LRet));
 
-        // 6. Start Listener Thread
+        // 6. Start Listener Threads (Listen Paralelo Concorrente)
         FRunning := True;
         {$IF DEFINED(FPC)}
         THttpSysThreadPool.FInstance := THttpSysThreadPool.Create(32);
         {$ENDIF}
-        FListenerThread := THttpSysListenerThread.Create(FReqQueue);
-        FListenerThread.Running := True;
-        FListenerThread.Start;
+
+        FListenerThreads := TList<THttpSysListenerThread>.Create;
+        LThreadCount := TThread.ProcessorCount;
+        if LThreadCount < 1 then
+          LThreadCount := 1;
+
+        for I := 1 to LThreadCount do
+        begin
+          LListener := THttpSysListenerThread.Create(FReqQueue);
+          LListener.Running := True;
+          LListener.Start;
+          FListenerThreads.Add(LListener);
+        end;
 
         DoOnListen;
 
@@ -1911,16 +1925,21 @@ begin
 end;
 
 class procedure THorseProviderHttpSys.InternalStopListen;
+var
+  LListener: THttpSysListenerThread;
 begin
   if not FRunning then Exit;
 
   FRunning := False;
 
-  // Signal and stop listener thread
-  if FListenerThread <> nil then
+  // Signal and stop listener threads
+  if FListenerThreads <> nil then
   begin
-    FListenerThread.Running := False;
-    FListenerThread.Terminate;
+    for LListener in FListenerThreads do
+    begin
+      LListener.Running := False;
+      LListener.Terminate;
+    end;
   end;
 
   // Closing the request queue cancels any pending HttpReceiveHttpRequest API calls, forcing thread to exit
@@ -1930,10 +1949,14 @@ begin
     FReqQueue := 0;
   end;
 
-  if FListenerThread <> nil then
+  if FListenerThreads <> nil then
   begin
-    FListenerThread.WaitFor;
-    FreeAndNil(FListenerThread);
+    for LListener in FListenerThreads do
+    begin
+      LListener.WaitFor;
+      LListener.Free;
+    end;
+    FreeAndNil(FListenerThreads);
   end;
 
   {$IF DEFINED(FPC)}
