@@ -133,13 +133,13 @@ foreach ($cand in $candidatos) {
 
     # Verificar se servidor está respondendo
     try {
-        $testReq = Invoke-WebRequest -Uri "http://localhost:$($cand.Porta)/ping" -UseBasicParsing -TimeoutSec 5
+        $testReq = Invoke-WebRequest -Uri "http://127.0.0.1:$($cand.Porta)/ping" -UseBasicParsing -TimeoutSec 5
         if ($testReq.Content -notlike "*pong*") {
             throw "Resposta inesperada: $($testReq.Content)"
         }
         Write-Host "✅ Servidor respondendo OK." -ForegroundColor Green
     } catch {
-        Write-Error "❌ Servidor não está respondendo em http://localhost:$($cand.Porta)/ping: $_"
+        Write-Error "❌ Servidor não está respondendo em http://127.0.0.1:$($cand.Porta)/ping: $_"
         if ($cand.Tipo -eq "host") {
             Stop-Process -Id $processJob.Id -Force -ErrorAction SilentlyContinue
         } else {
@@ -150,7 +150,7 @@ foreach ($cand in $candidatos) {
 
     # Fase de Aquecimento (Warm-up)
     Write-Host "Executando Aquecimento ($warmupDuration)..." -ForegroundColor DarkGray
-    & $bombardier -c 128 -d $warmupDuration -l "http://localhost:$($cand.Porta)/ping" | Out-Null
+    & $bombardier -c 128 -d $warmupDuration -l "http://127.0.0.1:$($cand.Porta)/ping" | Out-Null
     Start-Sleep -Seconds 2
 
     # Loop de Concorrência
@@ -196,7 +196,7 @@ foreach ($cand in $candidatos) {
         $bombardierJob = Start-Job -ScriptBlock {
             param($exe, $conn, $dur, $url)
             & $exe -c $conn -d $dur -l $url
-        } -ArgumentList $bombardier, $connections, $testDuration, "http://localhost:$($cand.Porta)/ping"
+        } -ArgumentList $bombardier, $connections, $testDuration, "http://127.0.0.1:$($cand.Porta)/ping"
 
         # Capturar métricas durante o teste (1 amostra a cada 2 segundos)
         $elapsed = 0

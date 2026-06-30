@@ -16,7 +16,7 @@ begin
       end);
 
     Writeln('Servidor Horse (HTTP.sys) rodando na porta 9090...');
-    THorse.Listen(9090, 'localhost');
+    THorse.Listen(9090, '127.0.0.1');
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
