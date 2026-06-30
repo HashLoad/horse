@@ -185,7 +185,7 @@ end;
 
 function THorseCoreParam.GetCount: Integer;
 begin
-  Result := FParams.Count;
+  Result := Integer(FParams.Count);
 end;
 
 function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;

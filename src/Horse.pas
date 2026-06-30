@@ -315,7 +315,8 @@ uses
   Horse.Exception.Interrupted,
   Horse.Core.Param.Config,
   Horse.Callback,
-  Horse.Provider.Config;
+  Horse.Provider.Config,
+  Horse.Core.Router.Radix;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -337,6 +338,7 @@ type
   PHorseCore = Horse.Core.PHorseCore;
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
+  THorseRadixRouter = Horse.Core.Router.Radix.THorseRadixRouter;
 
 { PATCH-HORSE-2 — THorseProvider resolution follows the same three-axis model
   as the uses clause above:
