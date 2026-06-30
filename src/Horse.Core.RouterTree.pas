@@ -108,6 +108,19 @@ begin
   Result := TlsNextCaller;
 end;
 
+function StringCommandToMethodType(const ACommand: string): TMethodType;
+begin
+  Result := TMethodType.mtAny;
+  if ACommand = 'GET' then
+    Result := TMethodType.mtGet
+  else if ACommand = 'POST' then
+    Result := TMethodType.mtPost
+  else if ACommand = 'PUT' then
+    Result := TMethodType.mtPut
+  else if ACommand = 'HEAD' then
+    Result := TMethodType.mtHead;
+end;
+
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
 begin
   if APart.StartsWith(':') then
@@ -221,8 +234,7 @@ begin
   begin
     LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
                  {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
-    LMethodType := {$IF DEFINED(FPC)}StringCommandToMethodType(LRawWebRequest.Method)
-                   {$ELSE}LRawWebRequest.MethodType{$ENDIF};
+    LMethodType := StringCommandToMethodType(LRawWebRequest.Method);
   end;
   if LPathInfo.IsEmpty then
     LPathInfo := '/';
@@ -245,23 +257,27 @@ var
   LFound: Boolean;
 begin
   LFound := False;
-  LNextCaller := GetNextCaller;
-  LNextCaller.Configure(
-    FCallBack,
-    ASegments,
-    AIndex,
-    AHTTPType,
-    ARequest,
-    AResponse,
-    AIsGroup,
-    FMiddleware,
-    FTag,
-    FIsParamsKey,
-    CallNextPath,
-    LFound
-  );
-  LNextCaller.Init;
-  LNextCaller.Next;
+  LNextCaller := TNextCaller.Create;
+  try
+    LNextCaller.Configure(
+      FCallBack,
+      ASegments,
+      AIndex,
+      AHTTPType,
+      ARequest,
+      AResponse,
+      AIsGroup,
+      FMiddleware,
+      FTag,
+      FIsParamsKey,
+      CallNextPath,
+      LFound
+    );
+    LNextCaller.Init;
+    LNextCaller.Next;
+  finally
+    LNextCaller.Free;
+  end;
   Result := LFound;
 end;
 
