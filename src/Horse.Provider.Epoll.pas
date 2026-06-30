@@ -226,12 +226,11 @@ type
     {$ENDIF}
     FRunning: Boolean;
     FConnections: TList<TEpollConnectionContext>;
-    FConnectionsSync: TCriticalSection;
     FListenContext: TEpollConnectionContext;
     FPipeContext: TEpollConnectionContext;
     procedure ProcessClientRead(AContext: TEpollConnectionContext);
     procedure ProcessClientWrite(AContext: TEpollConnectionContext);
-    procedure CloseConnection(AContext: TEpollConnectionContext);
+    procedure CloseConnectionInternal(AContext: TEpollConnectionContext);
     procedure CheckTimeouts;
   protected
     procedure Execute; override;
@@ -239,6 +238,7 @@ type
     constructor Create(AListenSocket: Integer);
     destructor Destroy; override;
     procedure TerminateWorker;
+    procedure CloseConnection(AContext: TEpollConnectionContext);
   end;
 
   { Classe de Provider concreta do Horse para Linux baseada no Epoll }
@@ -1972,7 +1972,6 @@ begin
   FPipeFds[0] := -1;
   FPipeFds[1] := -1;
   FConnections := TList<TEpollConnectionContext>.Create;
-  FConnectionsSync := TCriticalSection.Create;
   FListenContext := TEpollConnectionContext.Create(AListenSocket);
   FPipeContext := TEpollConnectionContext.Create(0);
   FreeOnTerminate := False;
@@ -1982,9 +1981,8 @@ destructor THorseEpollWorker.Destroy;
 begin
   TerminateWorker;
   while FConnections.Count > 0 do
-    CloseConnection(FConnections[0]);
+    CloseConnectionInternal(FConnections[0]);
   FConnections.Free;
-  FConnectionsSync.Free;
   FListenContext.Free;
   FPipeContext.Free;
   inherited;
@@ -1992,18 +1990,18 @@ end;
 
 procedure THorseEpollWorker.TerminateWorker;
 var
-  LByte: Byte;
+  LContext: Pointer;
 begin
   if not FRunning then Exit;
   FRunning := False;
 
   if FPipeFds[1] >= 0 then
   begin
-    LByte := 1;
+    LContext := nil;
     {$IF DEFINED(FPC)}
-    fpWrite(FPipeFds[1], LByte, 1);
+    fpWrite(FPipeFds[1], LContext, SizeOf(Pointer));
     {$ELSE}
-    __write(FPipeFds[1], @LByte, 1);
+    __write(FPipeFds[1], @LContext, SizeOf(Pointer));
     {$ENDIF}
   end;
 
@@ -2028,6 +2026,29 @@ begin
 end;
 
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
+var
+  LContextPtr: Pointer;
+begin
+  if AContext = nil then Exit;
+  if TThread.CurrentThread.ThreadID = Self.ThreadID then
+  begin
+    CloseConnectionInternal(AContext);
+  end
+  else
+  begin
+    LContextPtr := AContext;
+    if FPipeFds[1] >= 0 then
+    begin
+      {$IF DEFINED(FPC)}
+      fpWrite(FPipeFds[1], LContextPtr, SizeOf(Pointer));
+      {$ELSE}
+      __write(FPipeFds[1], @LContextPtr, SizeOf(Pointer));
+      {$ENDIF}
+    end;
+  end;
+end;
+
+procedure THorseEpollWorker.CloseConnectionInternal(AContext: TEpollConnectionContext);
 begin
   if AContext = nil then Exit;
   {$IFDEF FPC}
@@ -2037,12 +2058,7 @@ begin
   {$ENDIF}
     Exit;
 
-  FConnectionsSync.Enter;
-  try
-    FConnections.Remove(AContext);
-  finally
-    FConnectionsSync.Leave;
-  end;
+  FConnections.Remove(AContext);
   epoll_ctl(FEpollFd, EPOLL_CTL_DEL, AContext.Socket, nil);
   {$IF DEFINED(FPC)}
   fpClose(AContext.Socket);
@@ -2617,31 +2633,26 @@ begin
   LNow := GetTickCount64;
   LExpired := TList<TEpollConnectionContext>.Create;
   try
-    FConnectionsSync.Enter;
-    try
-      for I := FConnections.Count - 1 downto 0 do
-      begin
-        LContext := FConnections[I];
-        if LContext.FProcessing then
-          Continue;
+    for I := FConnections.Count - 1 downto 0 do
+    begin
+      LContext := FConnections[I];
+      if LContext.FProcessing then
+        Continue;
 
-        if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
-        begin
-          if LNow - LContext.LastActive > 60000 then
-            LExpired.Add(LContext);
-        end
-        else
-        begin
-          if LNow - LContext.LastActive > 60000 then
-            LExpired.Add(LContext);
-        end;
+      if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
+      begin
+        if LNow - LContext.LastActive > 60000 then
+          LExpired.Add(LContext);
+      end
+      else
+      begin
+        if LNow - LContext.LastActive > 60000 then
+          LExpired.Add(LContext);
       end;
-    finally
-      FConnectionsSync.Leave;
     end;
 
     for LContext in LExpired do
-      CloseConnection(LContext);
+      CloseConnectionInternal(LContext);
   finally
     LExpired.Free;
   end;
@@ -2665,6 +2676,8 @@ var
   LContext: TEpollConnectionContext;
   LLastTimeoutCheck: Int64;
   LCurrentTime: Int64;
+  LTargetContext: TEpollConnectionContext;
+  LBytesRead: Integer;
 begin
   {$IFDEF FPC}
   FEpollFd := epoll_create(1024);
@@ -2731,11 +2744,34 @@ begin
         LContext := TEpollConnectionContext(LEvent.data.ptr);
         if LContext = FPipeContext then
         begin
-          {$IFDEF FPC}
-          Writeln('Worker: Sinal de parada recebido via pipe.');
-          Flush(Output);
-          {$ENDIF}
-          Exit;
+          while True do
+          begin
+            {$IF DEFINED(FPC)}
+            LBytesRead := fpRead(FPipeFds[0], LTargetContext, SizeOf(Pointer));
+            {$ELSE}
+            LBytesRead := __read(FPipeFds[0], @LTargetContext, SizeOf(Pointer));
+            {$ENDIF}
+            if LBytesRead <= 0 then
+              Break;
+
+            if LBytesRead = SizeOf(Pointer) then
+            begin
+              if LTargetContext = nil then
+              begin
+                {$IFDEF FPC}
+                Writeln('Worker: Sinal de parada recebido via pipe.');
+                Flush(Output);
+                {$ENDIF}
+                FRunning := False;
+                Exit;
+              end
+              else
+              begin
+                CloseConnectionInternal(LTargetContext);
+              end;
+            end;
+          end;
+          Continue;
         end
         else if LContext = FListenContext then
         begin
@@ -2782,12 +2818,7 @@ begin
             LContext.ClientIP := string(AnsiString(inet_ntoa(LAddr.sin_addr)));
             LContext.ClientPort := ntohs(LAddr.sin_port);
             {$ENDIF}
-            FConnectionsSync.Enter;
-            try
-              FConnections.Add(LContext);
-            finally
-              FConnectionsSync.Leave;
-            end;
+            FConnections.Add(LContext);
 
             LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
             LEvent.data.ptr := LContext;

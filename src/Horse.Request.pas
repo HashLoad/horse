@@ -792,6 +792,7 @@ var
   LPathLen: Integer;
   LByteCount: Integer;
   LBytes: TBytes;
+  LTempBytes: TBytes;
   LSlice: THorseBufferSlice;
   LStartOffset: Integer;
   I, LLen: Integer;
@@ -808,12 +809,14 @@ begin
     FOwnsArena := True;
   end;
 
-  LByteCount := TEncoding.UTF8.GetByteCount(LPath);
+  LTempBytes := TEncoding.UTF8.GetBytes(LPath);
+  LByteCount := Length(LTempBytes);
   LSlice := FArena.Allocate(LByteCount);
   LBytes := LSlice.Buffer;
   LStartOffset := LSlice.Start;
-
-  TEncoding.UTF8.GetBytes(LPath, 1, LPathLen, LBytes, LStartOffset);
+  
+  if LByteCount > 0 then
+    Move(LTempBytes[0], LBytes[LStartOffset], LByteCount);
 
   SetLength(Result, 0);
   LStart := LStartOffset;
@@ -895,6 +898,7 @@ begin
   if Assigned(FCSRawWebRequest) and (FCSRawWebRequest <> ARawWebRequest) then
     FreeAndNil(FCSRawWebRequest);
   FCSRawWebRequest := ARawWebRequest;
+  FWebRequest := ARawWebRequest;
 end;
 { =========================================================================== }
 
