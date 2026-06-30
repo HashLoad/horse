@@ -56,48 +56,62 @@ Write-Host "✅ Imagens Docker prontas!" -ForegroundColor Green
 # 4. Configuração dos Candidatos de Benchmark
 $candidatos = @(
     @{
-        Nome = "Delphi (HTTP.sys) - Windows Host"
+        Nome = "Delphi 11 (Alexandria)"
+        Framework = "Horse (HTTP.sys)"
+        Plataforma = "Windows (Host)"
         Tipo = "host"
         Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
         Porta = 9090
     },
     @{
-        Nome = "FPC/Lazarus (Default) - Linux Docker"
+        Nome = "Free Pascal (FPC)"
+        Framework = "Horse (fphttpserver)"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "fpc-horse-default"
         Container = "fpc-horse-default"
         Porta = 9090
     },
     @{
-        Nome = "FPC/Lazarus (epoll) - Linux Docker"
+        Nome = "Free Pascal (FPC)"
+        Framework = "Horse (epoll)"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "fpc-horse-epoll"
         Container = "fpc-horse-epoll"
         Porta = 9090
     },
     @{
-        Nome = ".NET (Minimal API) - Linux Docker"
+        Nome = "C# (.NET 8)"
+        Framework = "ASP.NET Core (Minimal API)"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "dotnet-minimal-api"
         Container = "dotnet-minimal-api"
         Porta = 9090
     },
     @{
-        Nome = "Node.js (Express) - Linux Docker"
+        Nome = "JavaScript (Node.js 20)"
+        Framework = "Express"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "nodejs-express"
         Container = "nodejs-express"
         Porta = 9090
     },
     @{
-        Nome = "Java (Spring Boot) - Linux Docker"
+        Nome = "Java 17"
+        Framework = "Spring Boot"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "java-springboot"
         Container = "java-springboot"
         Porta = 9090
     },
     @{
-        Nome = "Go (Fiber) - Linux Docker"
+        Nome = "Go 1.21"
+        Framework = "Fiber"
+        Plataforma = "Linux (Docker)"
         Tipo = "docker"
         Service = "go-fiber"
         Container = "go-fiber"
@@ -273,6 +287,8 @@ foreach ($cand in $candidatos) {
         # Salvar resultados consolidados
         $resultsSummary += [PSCustomObject]@{
             Tecnologia = $cand.Nome
+            Framework = $cand.Framework
+            Plataforma = $cand.Plataforma
             Concorrencia = $connections
             RPS = $rps
             LatenciaMedia = $avgLatency
@@ -303,12 +319,12 @@ $mdReport += "Limites Docker: 2 CPUs, 512MB RAM`n`n"
 
 foreach ($conn in $concurrencias) {
     $mdReport += "## ⚡ Concorrência: $conn Conexões Simultâneas`n`n"
-    $mdReport += "| Tecnologia | RPS (Throughput) | Latência Média | Latência p99 | CPU Média | Memória Final |`n"
-    $mdReport += "| :--- | :--- | :--- | :--- | :--- | :--- |`n"
+    $mdReport += "| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | Latência Média | Latência p99 | CPU Média | Memória Final |`n"
+    $mdReport += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |`n"
     
     $filtered = $resultsSummary | Where-Object { $_.Concorrencia -eq $conn } | Sort-Object -Property {[double]$_.RPS} -Descending
     foreach ($r in $filtered) {
-        $mdReport += "| $($r.Tecnologia) | $($r.RPS) | $($r.LatenciaMedia) | $($r.Latenciap99) | $($r.CPUMedia) | $($r.Memoria) |`n"
+        $mdReport += "| $($r.Tecnologia) | $($r.Framework) | $($r.Plataforma) | $($r.RPS) | $($r.LatenciaMedia) | $($r.Latenciap99) | $($r.CPUMedia) | $($r.Memoria) |`n"
     }
     $mdReport += "`n"
 }
