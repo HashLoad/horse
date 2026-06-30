@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # 1. Horse Lazarus/FPC com fphttpserver (Default)
+  fpc-horse-default:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/fpc-horse-default/Dockerfile
+    container_name: fpc-horse-default
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 2. Horse Lazarus/FPC com epoll
+  fpc-horse-epoll:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/fpc-horse-epoll/Dockerfile
+    container_name: fpc-horse-epoll
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 3. .NET Minimal API
+  dotnet-minimal-api:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/dotnet-minimal-api/Dockerfile
+    container_name: dotnet-minimal-api
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 4. Node.js Express
+  nodejs-express:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/nodejs-express/Dockerfile
+    container_name: nodejs-express
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 5. Java Spring Boot
+  java-springboot:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/java-springboot/Dockerfile
+    container_name: java-springboot
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 6. Go Fiber
+  go-fiber:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/go-fiber/Dockerfile
+    container_name: go-fiber
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M

@@ -1,0 +1,23 @@
+program HorseBench;
+
+{$MODE DELPHI}{$H+}
+
+uses
+  SysUtils,
+  Horse;
+
+procedure GetPing(Req: THorseRequest; Res: THorseResponse);
+begin
+  Res.Send('pong');
+end;
+
+begin
+  try
+    THorse.Get('/ping', GetPing);
+    Writeln('Servidor FPC/Horse (epoll) rodando na porta 9090...');
+    THorse.Listen(9090);
+  except
+    on E: Exception do
+      Writeln(E.ClassName, ': ', E.Message);
+  end;
+end.
