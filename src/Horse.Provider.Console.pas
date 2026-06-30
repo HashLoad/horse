@@ -115,7 +115,7 @@ end;
 
 class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
-  VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
+  VUseSSL := (FHorseProviderIOHandleSSL <> nil) and FHorseProviderIOHandleSSL.Active;
 end;
 
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
