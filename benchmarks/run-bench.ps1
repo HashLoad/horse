@@ -236,7 +236,7 @@ foreach ($cand in $candidatos) {
         
         $rpsLine = $bombardierOutput | Where-Object { $_ -like "*Reqs/sec*" }
         if ($rpsLine) {
-            if ($rpsLine -match "(\d+(\.\d+)?)\s*Reqs/sec") {
+            if ($rpsLine -match "Reqs/sec\s+(\d+(\.\d+)?)") {
                 $rps = $Matches[1]
             }
         } else {

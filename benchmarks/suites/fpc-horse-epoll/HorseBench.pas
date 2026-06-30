@@ -3,6 +3,9 @@ program HorseBench;
 {$MODE DELPHI}{$H+}
 
 uses
+  {$IFDEF UNIX}
+  cthreads,
+  {$ENDIF}
   SysUtils,
   Horse;
 
