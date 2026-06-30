@@ -225,7 +225,7 @@ type
   end;
   PHTTP_RESPONSE = ^HTTP_RESPONSE;
 
-  HTTP_SERVER_PROPERTY = (
+  THTTP_SERVER_PROPERTY = (
     HttpServerAuthenticationProperty,
     HttpServerLoggingProperty,
     HttpServerQosProperty,
@@ -288,7 +288,7 @@ function HttpReceiveHttpRequest(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST
 function HttpReceiveRequestEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pBuffer: Pointer; BufferLength: ULONG; var BytesReceived: ULONG; pOverlapped: POverlapped): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpSendHttpResponse(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pHttpResponse: PHTTP_RESPONSE; pReserved1: Pointer; var BytesSent: ULONG; pReserved2: Pointer; Reserved3: ULONG; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpSendResponseEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; EntityChunkCount: USHORT; pEntityChunks: Pointer; var BytesSent: ULONG; pReserved1: Pointer; pReserved2: Pointer; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: HTTP_SERVER_PROPERTY; pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: THTTP_SERVER_PROPERTY; pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
 
 {$MINENUMSIZE 1}
 
