@@ -91,3 +91,4 @@ tests/LinuxPAServer23.0.tar.gz
 samples/delphi/epoll/EpollConsole
 samples/delphi/console/Console
 *.or
+benchmarks/linux_comparison/

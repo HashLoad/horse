@@ -198,6 +198,19 @@ type
   end;
   PHTTP_DATA_CHUNK_INMEMORY = ^HTTP_DATA_CHUNK_INMEMORY;
 
+  HTTP_DATA_CHUNK_FILE = record
+    DataChunkType: THttpChunkType;
+    {$IFDEF CPUX64}
+    Reserved1: ULONG;
+    {$ENDIF}
+    StartingOffset: UInt64;
+    Length: UInt64;
+    FileHandle: THandle;
+    {$IFNDEF CPUX64}
+    Reserved2: array[0..1] of ULONG;
+    {$ENDIF}
+  end;
+
   HTTP_RESPONSE = record
     Flags: ULONG;
     Version: HTTP_VERSION;
@@ -464,6 +477,65 @@ type
 implementation
 
 {$IFDEF MSWINDOWS}
+
+type
+  PHttpSysWorkItemData = ^THttpSysWorkItemData;
+  THttpSysWorkItemData = record
+    Buffer: TBytes;
+    ReqQueue: THandle;
+  end;
+
+function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL; stdcall; external 'kernel32.dll' name 'QueueUserWorkItem';
+const
+  WT_EXECUTEDEFAULT = $00000000;
+
+function HttpSysWorkItemCallback(LPParameter: Pointer): DWORD; stdcall;
+var
+  LData: PHttpSysWorkItemData;
+  LRawReq: IHorseRawRequest;
+  LRawRes: IHorseRawResponse;
+  LConcreteRes: THttpSysRawResponse;
+  LWebRequest: TInterfacedWebRequest;
+  LWebResponse: TInterfacedWebResponse;
+  LReq: THorseRequest;
+  LRes: THorseResponse;
+  LRequest: PHTTP_REQUEST;
+  LCurrentBuf: TBytes;
+begin
+  Result := 0;
+  LData := PHttpSysWorkItemData(LPParameter);
+  LCurrentBuf := LData.Buffer;
+  try
+    try
+      LRequest := PHTTP_REQUEST(@LCurrentBuf[0]);
+      LRawReq := THttpSysRawRequest.Create(LRequest, LCurrentBuf);
+      LConcreteRes := THttpSysRawResponse.Create(LData.ReqQueue, LRequest.RequestId);
+      LRawRes := LConcreteRes;
+      LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+      LWebResponse := THttpSysWebResponse.Create(LRawRes);
+      try
+        LReq := THorseRequest.Create(LWebRequest);
+        LRes := THorseResponse.Create(LWebResponse);
+        try
+          THorseProviderHttpSys.Execute(LReq, LRes);
+        finally
+          LConcreteRes.SendResponse(LRes);
+          LReq.Free;
+          LRes.Free;
+        end;
+      finally
+        LWebRequest.Free;
+        LWebResponse.Free;
+      end;
+    except
+      on E: Exception do
+        Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
+    end;
+  finally
+    THorseProviderHttpSys.BufferPool.Release(LCurrentBuf);
+    Dispose(LData);
+  end;
+end;
 
 function GetWindowsTempPath: string;
 var
@@ -1080,14 +1152,22 @@ begin
       end;
     end;
   end;
+
+  if FHeadersCache = nil then
+  begin
+    {$IF DEFINED(FPC)}
+    FHeadersCache := TDictionary<string, string>.Create;
+    {$ELSE}
+    FHeadersCache := TDictionary<string, string>.Create(TIStringComparer.Ordinal);
+    {$ENDIF}
+  end;
+  FHeadersCache.Add(AName, '');
 end;
 
 procedure THttpSysRawRequest.PopulateQueryFields(ADest: TStrings);
 var
   LQuery: string;
-  LFields: TArray<string>;
-  LField: string;
-  LPos: Integer;
+  I, LStart, LLen, LEqPos: Integer;
   LName, LValue: string;
 begin
   LQuery := GetQueryString;
@@ -1095,30 +1175,47 @@ begin
   if LQuery.StartsWith('?') then
     LQuery := LQuery.Substring(1);
 
-  LFields := LQuery.Split(['&']);
-  for LField in LFields do
+  LStart := 1;
+  LLen := Length(LQuery);
+  while LStart <= LLen do
   begin
-    LPos := LField.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    LEqPos := 0;
+    while (I <= LLen) and (LQuery[I] <> '&') do
     begin
-      LName := LField.Substring(0, LPos);
-      LValue := LField.Substring(LPos + 1);
-      ADest.Add(
-        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
-        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
-      );
+      if (LQuery[I] = '=') and (LEqPos = 0) then
+        LEqPos := I;
+      Inc(I);
+    end;
+
+    if LEqPos > 0 then
+    begin
+      LName := Copy(LQuery, LStart, LEqPos - LStart);
+      LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
+      
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      if Pos('%', LValue) > 0 then
+        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+        
+      ADest.Add(LName + '=' + LValue);
     end
     else
-      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
+    begin
+      LName := Copy(LQuery, LStart, I - LStart);
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      ADest.Add(LName + '=');
+    end;
+
+    LStart := I + 1;
   end;
 end;
 
 procedure THttpSysRawRequest.PopulateContentFields(ADest: TStrings);
 var
   LBody: string;
-  LFields: TArray<string>;
-  LField: string;
-  LPos: Integer;
+  I, LStart, LLen, LEqPos: Integer;
   LName, LValue: string;
 begin
   if not SameText(GetContentType, 'application/x-www-form-urlencoded') then
@@ -1127,47 +1224,73 @@ begin
   LBody := GetContent;
   if LBody = '' then Exit;
 
-  LFields := LBody.Split(['&']);
-  for LField in LFields do
+  LStart := 1;
+  LLen := Length(LBody);
+  while LStart <= LLen do
   begin
-    LPos := LField.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    LEqPos := 0;
+    while (I <= LLen) and (LBody[I] <> '&') do
     begin
-      LName := LField.Substring(0, LPos);
-      LValue := LField.Substring(LPos + 1);
-      ADest.Add(
-        {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF} + '=' +
-        {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF}
-      );
+      if (LBody[I] = '=') and (LEqPos = 0) then
+        LEqPos := I;
+      Inc(I);
+    end;
+
+    if LEqPos > 0 then
+    begin
+      LName := Copy(LBody, LStart, LEqPos - LStart);
+      LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
+      
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      if Pos('%', LValue) > 0 then
+        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+        
+      ADest.Add(LName + '=' + LValue);
     end
     else
-      ADest.Add({$IF DEFINED(FPC)}HTTPDecode(LField){$ELSE}TNetEncoding.URL.Decode(LField){$ENDIF} + '=');
+    begin
+      LName := Copy(LBody, LStart, I - LStart);
+      if Pos('%', LName) > 0 then
+        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      ADest.Add(LName + '=');
+    end;
+
+    LStart := I + 1;
   end;
 end;
 
 procedure THttpSysRawRequest.PopulateCookieFields(ADest: TStrings);
 var
   LCookies: string;
-  LParts: TArray<string>;
-  LPart: string;
-  LPartTrimmed: string;
-  LPos: Integer;
-  LName, LValue: string;
+  I, LStart, LLen, LEqPos: Integer;
+  LName, LValue, LPart: string;
 begin
   LCookies := GetFieldByName('Cookie');
   if LCookies = '' then Exit;
 
-  LParts := LCookies.Split([';']);
-  for LPart in LParts do
+  LStart := 1;
+  LLen := Length(LCookies);
+  while LStart <= LLen do
   begin
-    LPartTrimmed := LPart.Trim;
-    LPos := LPartTrimmed.IndexOf('=');
-    if LPos >= 0 then
+    I := LStart;
+    while (I <= LLen) and (LCookies[I] <> ';') do
+      Inc(I);
+
+    LPart := Trim(Copy(LCookies, LStart, I - LStart));
+    if LPart <> '' then
     begin
-      LName := LPartTrimmed.Substring(0, LPos);
-      LValue := LPartTrimmed.Substring(LPos + 1);
-      ADest.Add(LName + '=' + LValue);
+      LEqPos := Pos('=', LPart);
+      if LEqPos > 0 then
+      begin
+        LName := Copy(LPart, 1, LEqPos - 1);
+        LValue := Copy(LPart, LEqPos + 1, Length(LPart) - LEqPos);
+        ADest.Add(LName + '=' + LValue);
+      end;
     end;
+
+    LStart := I + 1;
   end;
 end;
 
@@ -1196,6 +1319,7 @@ procedure THttpSysRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LResponse: HTTP_RESPONSE;
   LChunk: HTTP_DATA_CHUNK_INMEMORY;
+  LFileChunk: HTTP_DATA_CHUNK_FILE;
   LBytesSent: ULONG;
   LRet: ULONG;
   LBodyBytes: TBytes;
@@ -1293,55 +1417,109 @@ begin
     LResponse.Headers.KnownHeaders[11].pRawValue := PAnsiChar(LContentLengthAnsi);
     LResponse.Headers.KnownHeaders[11].RawValueLength := Length(LContentLengthAnsi);
 
-    LResponse.EntityChunkCount := 0;
-    LResponse.pEntityChunks := nil;
-
-    LRet := HttpSendHttpResponse(
-      FReqQueue,
-      FRequestId,
-      HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
-      @LResponse,
-      nil,
-      LBytesSent,
-      nil,
-      0,
-      nil,
-      nil
-    );
-    if LRet <> ERROR_SUCCESS then
-      raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
-
-    ARes.ContentStream.Position := 0;
-    SetLength(LBodyBytes, 65536);
-    while ARes.ContentStream.Position < ARes.ContentStream.Size do
+    if ARes.ContentStream is TFileStream then
     begin
-      LChunkBytesRead := ARes.ContentStream.Read(LBodyBytes[0], Length(LBodyBytes));
-      if LChunkBytesRead <= 0 then Break;
+      FillChar(LFileChunk, SizeOf(LFileChunk), 0);
+      LFileChunk.DataChunkType := hctFromFileHandle;
+      LFileChunk.StartingOffset := ARes.ContentStream.Position;
+      LFileChunk.Length := ARes.ContentStream.Size - ARes.ContentStream.Position;
+      LFileChunk.FileHandle := TFileStream(ARes.ContentStream).Handle;
 
-      FillChar(LChunk, SizeOf(LChunk), 0);
-      LChunk.DataChunkType := hctFromMemory;
-      LChunk.pBuffer := @LBodyBytes[0];
-      LChunk.BufferLength := LChunkBytesRead;
+      LResponse.EntityChunkCount := 1;
+      LResponse.pEntityChunks := @LFileChunk;
 
-      if ARes.ContentStream.Position < ARes.ContentStream.Size then
-        LSendFlags := HTTP_SEND_RESPONSE_FLAG_MORE_DATA
-      else
-        LSendFlags := 0;
-
-      LRet := HttpSendResponseEntityBody(
+      LRet := HttpSendHttpResponse(
         FReqQueue,
         FRequestId,
-        LSendFlags,
-        1,
-        @LChunk,
+        0,
+        @LResponse,
+        nil,
         LBytesSent,
         nil,
-        nil,
+        0,
         nil,
         nil
       );
       if LRet <> ERROR_SUCCESS then
-        raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+    end
+    else if ARes.ContentStream is TCustomMemoryStream then
+    begin
+      FillChar(LChunk, SizeOf(LChunk), 0);
+      LChunk.DataChunkType := hctFromMemory;
+      LChunk.pBuffer := TCustomMemoryStream(ARes.ContentStream).Memory;
+      LChunk.BufferLength := ARes.ContentStream.Size - ARes.ContentStream.Position;
+
+      LResponse.EntityChunkCount := 1;
+      LResponse.pEntityChunks := @LChunk;
+
+      LRet := HttpSendHttpResponse(
+        FReqQueue,
+        FRequestId,
+        0,
+        @LResponse,
+        nil,
+        LBytesSent,
+        nil,
+        0,
+        nil,
+        nil
+      );
+      if LRet <> ERROR_SUCCESS then
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+    end
+    else
+    begin
+      LResponse.EntityChunkCount := 0;
+      LResponse.pEntityChunks := nil;
+
+      LRet := HttpSendHttpResponse(
+        FReqQueue,
+        FRequestId,
+        HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+        @LResponse,
+        nil,
+        LBytesSent,
+        nil,
+        0,
+        nil,
+        nil
+      );
+      if LRet <> ERROR_SUCCESS then
+        raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+
+      ARes.ContentStream.Position := 0;
+      SetLength(LBodyBytes, 65536);
+      while ARes.ContentStream.Position < ARes.ContentStream.Size do
+      begin
+        LChunkBytesRead := ARes.ContentStream.Read(LBodyBytes[0], Length(LBodyBytes));
+        if LChunkBytesRead <= 0 then Break;
+
+        FillChar(LChunk, SizeOf(LChunk), 0);
+        LChunk.DataChunkType := hctFromMemory;
+        LChunk.pBuffer := @LBodyBytes[0];
+        LChunk.BufferLength := LChunkBytesRead;
+
+        if ARes.ContentStream.Position < ARes.ContentStream.Size then
+          LSendFlags := HTTP_SEND_RESPONSE_FLAG_MORE_DATA
+        else
+          LSendFlags := 0;
+
+        LRet := HttpSendResponseEntityBody(
+          FReqQueue,
+          FRequestId,
+          LSendFlags,
+          1,
+          @LChunk,
+          LBytesSent,
+          nil,
+          nil,
+          nil,
+          nil
+        );
+        if LRet <> ERROR_SUCCESS then
+          raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+      end;
     end;
   end
   else
@@ -1476,55 +1654,20 @@ end;
 
 procedure THttpSysListenerThread.DispatchRequest(ABuffer: TBytes);
 var
-  LBuf: TBytes;
+  LData: PHttpSysWorkItemData;
 begin
   {$IF DEFINED(FPC)}
   if Assigned(THttpSysThreadPool.Instance) then
     THttpSysThreadPool.Instance.QueueRequest(ABuffer);
   {$ELSE}
-  LBuf := ABuffer;
-  TTask.Run(
-    procedure
-    var
-      LRawReq: IHorseRawRequest;
-      LRawRes: IHorseRawResponse;
-      LConcreteRes: THttpSysRawResponse;
-      LWebRequest: TInterfacedWebRequest;
-      LWebResponse: TInterfacedWebResponse;
-      LReq: THorseRequest;
-      LRes: THorseResponse;
-      LRequest: PHTTP_REQUEST;
-      LCurrentBuf: TBytes;
-    begin
-      LCurrentBuf := LBuf;
-      try
-        LRequest := PHTTP_REQUEST(@LCurrentBuf[0]);
-        LRawReq := THttpSysRawRequest.Create(LRequest, LCurrentBuf);
-        LConcreteRes := THttpSysRawResponse.Create(FReqQueue, LRequest.RequestId);
-        LRawRes := LConcreteRes;
-        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-        LWebResponse := THttpSysWebResponse.Create(LRawRes);
-        try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(LWebResponse);
-          try
-            THorseProviderHttpSys.Execute(LReq, LRes);
-          finally
-            LConcreteRes.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
-          end;
-        finally
-          LWebRequest.Free;
-          LWebResponse.Free;
-        end;
-      except
-        on E: Exception do
-          Writeln('Erro no Dispatch: ' + E.ClassName + ': ' + E.Message);
-      end;
-      THorseProviderHttpSys.BufferPool.Release(LCurrentBuf);
-    end
-  );
+  New(LData);
+  LData.Buffer := ABuffer;
+  LData.ReqQueue := FReqQueue;
+  if not QueueUserWorkItem(@HttpSysWorkItemCallback, LData, WT_EXECUTEDEFAULT) then
+  begin
+    THorseProviderHttpSys.BufferPool.Release(ABuffer);
+    Dispose(LData);
+  end;
   {$ENDIF}
 end;
 

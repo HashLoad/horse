@@ -153,6 +153,12 @@ end;
 
 procedure TApiTest.Setup;
 begin
+  Writeln('TApiTest.Setup INICIADO!');
+  {$IFDEF HORSE_PROVIDER_IOCP}
+  Writeln('DIRECTIVE HORSE_PROVIDER_IOCP IS DEFINED!');
+  {$ELSE}
+  Writeln('DIRECTIVE HORSE_PROVIDER_IOCP IS NOT DEFINED!!!');
+  {$ENDIF}
   if (not THorse.IsRunning) then
   begin
     TThread.CreateAnonymousThread(
@@ -168,6 +174,7 @@ begin
         {$ENDIF}
         THorse.Listen;
       end).Start;
+    Sleep(500);
   end;
 end;
 

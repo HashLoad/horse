@@ -4,6 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework,
+  Tests.AssertHelper,
   Horse.Exception,
   Horse.Core.Param,
   System.Generics.Collections,

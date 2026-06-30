@@ -2,18 +2,39 @@ name: tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, perf/epoll-core-optimizations ]
   pull_request:
     branches: [ master ]
 
 jobs:
   test:
-
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Launch Console Tests
-      run: ./tests/Console.exe
-    - name: Launch VCL Tests
-      run: ./tests/VCL.exe
+
+    - name: Install Free Pascal Compiler (FPC)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fpc
+
+    - name: Install Boss Dependency Manager
+      run: |
+        curl -L https://github.com/hashload/boss/releases/latest/download/boss-linux -o boss
+        chmod +x boss
+        sudo mv boss /usr/local/bin/boss
+
+    - name: Install Boss Dependencies
+      run: |
+        cd tests/src
+        boss install
+
+    - name: Compile Console Tests
+      run: |
+        cd tests/src
+        fpc -Mdelphi -Sh -O2 -FE.. -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:controllers:tests" "-dRR4D_INDY" "-dHORSE_CONSOLE" Console.dpr
+
+    - name: Run Console Tests
+      run: |
+        cd tests
+        ./Console -exit:Continue
