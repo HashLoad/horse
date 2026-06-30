@@ -19,12 +19,13 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core.Router.Contract;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
 
-  THorseRouterTree = class
+  THorseRouterTree = class(TInterfacedObject, IHorseRouter)
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
