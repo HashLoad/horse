@@ -1074,7 +1074,7 @@ begin
       begin
         LContext := FConnections[I];
         if LContext.Processing then Continue;
-        if LNow - LContext.LastActive > 5000 then // Keep-Alive timeout de 5s
+        if LNow - LContext.LastActive > 60000 then // Keep-Alive timeout de 60s
           LExpired.Add(LContext);
       end;
     finally

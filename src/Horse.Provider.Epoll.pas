@@ -690,92 +690,103 @@ begin
       end;
 
       try
-        if THorseHttpParser.TryParseRequest(
-          LTask.Context.Buffer,
-          LTask.Context.BytesReceived,
-          LMethod,
-          LPath,
-          LQuery,
-          LVersion,
-          LHeaders,
-          LBodyOffset,
-          LContentLength
-        ) then
-        begin
-          LTask.Context.Method := LMethod;
-          LTask.Context.Path := LPath;
-          LTask.Context.Query := LQuery;
-          LTask.Context.Version := LVersion;
-          LTask.Context.Headers := LHeaders;
-          LTask.Context.BodyOffset := LBodyOffset;
-          LTask.Context.ContentLength := LContentLength;
-        end;
-
-        LRawReq := TEpollRawRequest.Create(
-          LTask.Context.Buffer,
-          LTask.Context.Method,
-          LTask.Context.Path,
-          LTask.Context.Query,
-          LTask.Context.Version,
-          LTask.Context.Headers,
-          LTask.Context.BodyOffset,
-          LTask.Context.ContentLength,
-          LTask.Context.FBodyStream,
-          LTask.Context.FTempFileName,
-          LTask.Context.ClientIP,
-          LTask.Context.ClientPort
-        );
-        LTask.Context.Buffer := nil;
-        LTask.Context.FBodyStream := nil;
-        LTask.Context.FTempFileName := '';
-
-        LConnHeader := LRawReq.GetFieldByName('connection');
-        if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
-          LTask.KeepAlive := not SameText(LConnHeader, 'close')
-        else
-          LTask.KeepAlive := SameText(LConnHeader, 'keep-alive');
-
-        LRawResObj := TEpollRawResponse.Create(LTask.Context, LTask.KeepAlive);
-        LRawRes := LRawResObj;
-        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-        LWebResponse := TInterfacedWebResponse.Create(LRawRes);
-
         try
-          LHorseReq := THorseRequest.Create(LWebRequest);
-          LHorseRes := THorseResponse.Create(nil);
-          LHorseRes.SetCSRawWebResponse(LWebResponse);
-          try
-            THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
-          finally
-            LRawResObj.SendResponse(LHorseRes);
-            LHorseReq.Free;
-            LHorseRes.Free;
+          if THorseHttpParser.TryParseRequest(
+            LTask.Context.Buffer,
+            LTask.Context.BytesReceived,
+            LMethod,
+            LPath,
+            LQuery,
+            LVersion,
+            LHeaders,
+            LBodyOffset,
+            LContentLength
+          ) then
+          begin
+            LTask.Context.Method := LMethod;
+            LTask.Context.Path := LPath;
+            LTask.Context.Query := LQuery;
+            LTask.Context.Version := LVersion;
+            LTask.Context.Headers := LHeaders;
+            LTask.Context.BodyOffset := LBodyOffset;
+            LTask.Context.ContentLength := LContentLength;
           end;
-        finally
-          LWebRequest.Free;
-        end;
 
-        HasPendingWrite := False;
-        if LTask.Context <> nil then
-          HasPendingWrite := LTask.Context.FWriteLen > 0;
+          LRawReq := TEpollRawRequest.Create(
+            LTask.Context.Buffer,
+            LTask.Context.Method,
+            LTask.Context.Path,
+            LTask.Context.Query,
+            LTask.Context.Version,
+            LTask.Context.Headers,
+            LTask.Context.BodyOffset,
+            LTask.Context.ContentLength,
+            LTask.Context.FBodyStream,
+            LTask.Context.FTempFileName,
+            LTask.Context.ClientIP,
+            LTask.Context.ClientPort
+          );
+          LTask.Context.Buffer := nil;
+          LTask.Context.FBodyStream := nil;
+          LTask.Context.FTempFileName := '';
 
-        if not HasPendingWrite then
-        begin
-          if LTask.KeepAlive then
-          begin
-            LTask.Context.ClearRequest;
-            SetLength(LTask.Context.Buffer, 8192);
-            LTask.Context.FIsKeepAlive := True;
-            LTask.Context.BytesReceived := 0;
-            LTask.Context.FProcessing := False;
-
-            LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
-            LLocalEvent.data.ptr := LTask.Context;
-            epoll_ctl(LTask.EpollFd, EPOLL_CTL_MOD, LTask.Context.Socket, @LLocalEvent);
-          end
+          LConnHeader := LRawReq.GetFieldByName('connection');
+          if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+            LTask.KeepAlive := not SameText(LConnHeader, 'close')
           else
+            LTask.KeepAlive := SameText(LConnHeader, 'keep-alive');
+
+          LRawResObj := TEpollRawResponse.Create(LTask.Context, LTask.KeepAlive);
+          LRawRes := LRawResObj;
+          LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+          LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
+          try
+            LHorseReq := THorseRequest.Create(LWebRequest);
+            LHorseRes := THorseResponse.Create(nil);
+            LHorseRes.SetCSRawWebResponse(LWebResponse);
+            try
+              THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
+            finally
+              LRawResObj.SendResponse(LHorseRes);
+              LHorseReq.Free;
+              LHorseRes.Free;
+            end;
+          finally
+            LWebRequest.Free;
+          end;
+
+          HasPendingWrite := False;
+          if LTask.Context <> nil then
+            HasPendingWrite := LTask.Context.FWriteLen > 0;
+
+          if not HasPendingWrite then
           begin
-            THorseEpollWorker(LTask.Worker).CloseConnection(LTask.Context);
+            if LTask.KeepAlive then
+            begin
+              LTask.Context.ClearRequest;
+              SetLength(LTask.Context.Buffer, 8192);
+              LTask.Context.FIsKeepAlive := True;
+              LTask.Context.BytesReceived := 0;
+              LTask.Context.FProcessing := False;
+
+              LLocalEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+              LLocalEvent.data.ptr := LTask.Context;
+              epoll_ctl(LTask.EpollFd, EPOLL_CTL_MOD, LTask.Context.Socket, @LLocalEvent);
+            end
+            else
+            begin
+              THorseEpollWorker(LTask.Worker).CloseConnection(LTask.Context);
+            end;
+          end;
+        except
+          on E: Exception do
+          begin
+            try
+              if (LTask <> nil) and (LTask.Context <> nil) and (LTask.Worker <> nil) then
+                THorseEpollWorker(LTask.Worker).CloseConnection(LTask.Context);
+            except
+            end;
           end;
         end;
       finally
@@ -2060,14 +2071,14 @@ begin
       {$IFDEF FPC}
       LBytesRead := fpRecv(
         AContext.Socket, 
-        PByte(AContext.Buffer) + AContext.BytesReceived, 
+        @AContext.Buffer[AContext.BytesReceived], 
         Length(AContext.Buffer) - AContext.BytesReceived, 
         0
       );
       {$ELSE}
       LBytesRead := recv(
         AContext.Socket, 
-        PByte(AContext.Buffer)[AContext.BytesReceived], 
+        @AContext.Buffer[AContext.BytesReceived], 
         Length(AContext.Buffer) - AContext.BytesReceived, 
         0
       );
@@ -2160,14 +2171,14 @@ begin
         {$IFDEF FPC}
         LBytesRead := fpRecv(
           AContext.Socket, 
-          PByte(AContext.Buffer) + AContext.BytesReceived, 
+          @AContext.Buffer[AContext.BytesReceived], 
           AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
           0
         );
         {$ELSE}
         LBytesRead := recv(
           AContext.Socket, 
-          PByte(AContext.Buffer)[AContext.BytesReceived], 
+          @AContext.Buffer[AContext.BytesReceived], 
           AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
           0
         );
@@ -2589,12 +2600,12 @@ begin
 
         if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
         begin
-          if LNow - LContext.LastActive > 5000 then
+          if LNow - LContext.LastActive > 60000 then
             LExpired.Add(LContext);
         end
         else
         begin
-          if LNow - LContext.LastActive > 5000 then
+          if LNow - LContext.LastActive > 60000 then
             LExpired.Add(LContext);
         end;
       end;
