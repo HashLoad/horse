@@ -36,6 +36,7 @@ type
     FSession: TObject;
     FOwnsSession: Boolean;
     FSessions: THorseSessions;
+    FArena: THorseArenaAllocator;
 { ===========================================================================
   PATCH-REQ-3 � CrossSocket shadow fields (populated by Populate, nil by default)
   =========================================================================== }
@@ -111,6 +112,7 @@ type
 { =========================================================================== }
     function ContentType: string; virtual;
     function Host: string; virtual;
+    property Arena: THorseArenaAllocator read FArena write FArena;
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}); overload;
