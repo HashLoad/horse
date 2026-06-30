@@ -134,12 +134,14 @@ type
   private
     FRequest: THorseRequest;
     FResponse: THorseResponse;
+    FArena: THorseArenaAllocator;
   public
     constructor Create;
     destructor Destroy; override;
     procedure Reset;
     property Request: THorseRequest read FRequest;
     property Response: THorseResponse read FResponse;
+    property Arena: THorseArenaAllocator read FArena;
   end;
 
   THorseContextPool = class
@@ -578,12 +580,15 @@ begin
   inherited Create;
   FRequest := THorseRequest.Create;
   FResponse := THorseResponse.Create(nil);
+  FArena := THorseArenaAllocator.Create(65536);
+  FRequest.Arena := FArena;
 end;
 
 destructor THorseContext.Destroy;
 begin
   FRequest.Free;
   FResponse.Free;
+  FArena.Free;
   inherited;
 end;
 
@@ -591,6 +596,7 @@ procedure THorseContext.Reset;
 begin
   FRequest.Clear;
   FResponse.Clear;
+  FArena.Reset;
 end;
 
 { THorseContextPool }

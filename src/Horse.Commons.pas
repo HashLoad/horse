@@ -134,6 +134,18 @@ type
     property IsEmpty: Boolean read GetIsEmpty;
   end;
 
+  THorseArenaAllocator = class
+  private
+    FBuffer: TBytes;
+    FOffset: Integer;
+    FSize: Integer;
+  public
+    constructor Create(ASize: Integer);
+    destructor Destroy; override;
+    function Allocate(ALen: Integer): THorseBufferSlice;
+    procedure Reset;
+  end;
+
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
   end;
@@ -462,6 +474,38 @@ begin
     if FBuffer[FStart + I] = AByte then
       Exit(I);
   end;
+end;
+
+{ THorseArenaAllocator }
+
+constructor THorseArenaAllocator.Create(ASize: Integer);
+begin
+  inherited Create;
+  FSize := ASize;
+  SetLength(FBuffer, FSize);
+  FOffset := 0;
+end;
+
+destructor THorseArenaAllocator.Destroy;
+begin
+  FBuffer := nil;
+  inherited;
+end;
+
+function THorseArenaAllocator.Allocate(ALen: Integer): THorseBufferSlice;
+begin
+  if FOffset + ALen > FSize then
+  begin
+    FSize := (FOffset + ALen) * 2;
+    SetLength(FBuffer, FSize);
+  end;
+  Result := THorseBufferSlice.Create(FBuffer, FOffset, ALen);
+  FOffset := FOffset + ALen;
+end;
+
+procedure THorseArenaAllocator.Reset;
+begin
+  FOffset := 0;
 end;
 
 end.

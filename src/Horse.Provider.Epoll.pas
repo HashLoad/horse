@@ -43,7 +43,8 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core;
 
 type
   { Estrutura que representa os segmentos de cabeçalhos indexados durante o
@@ -662,6 +663,7 @@ var
   LTask: TEpollFPCTask;
   LHorseReq: THorseRequest;
   LHorseRes: THorseResponse;
+  LHorseContextObj: THorseContext;
   LLocalEvent: epoll_event;
   HasPendingWrite: Boolean;
   LMethod, LPath, LQuery, LVersion: THorseBufferSlice;
@@ -742,15 +744,16 @@ begin
           LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
           try
-            LHorseReq := THorseRequest.Create(LWebRequest);
-            LHorseRes := THorseResponse.Create(nil);
+            LHorseContextObj := THorseContextPool.Instance.Acquire;
+            LHorseReq := LHorseContextObj.Request;
+            LHorseReq.SetCSRawWebRequest(LWebRequest);
+            LHorseRes := LHorseContextObj.Response;
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
               LRawResObj.SendResponse(LHorseRes);
-              LHorseReq.Free;
-              LHorseRes.Free;
+              THorseContextPool.Instance.Release(LHorseContextObj);
             end;
           finally
             LWebRequest.Free;
@@ -2060,6 +2063,7 @@ var
   {$IFDEF FPC}
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LHorseContextObj: THorseContext;
   {$ENDIF}
   LEvent: epoll_event;
   LKeepAlive: Boolean;
@@ -2299,6 +2303,7 @@ begin
       var
         LHorseReq: THorseRequest;
         LHorseRes: THorseResponse;
+        LHorseContextObj: THorseContext;
         LLocalEvent: epoll_event;
         LLocalEpollFd: Integer;
         LLocalContext: TEpollConnectionContext;
@@ -2369,15 +2374,16 @@ begin
           LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
           try
-            LHorseReq := THorseRequest.Create(LWebRequest);
-            LHorseRes := THorseResponse.Create(nil);
+            LHorseContextObj := THorseContextPool.Instance.Acquire;
+            LHorseReq := LHorseContextObj.Request;
+            LHorseReq.SetCSRawWebRequest(LWebRequest);
+            LHorseRes := LHorseContextObj.Response;
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
               LRawResObj.SendResponse(LHorseRes);
-              LHorseReq.Free;
-              LHorseRes.Free;
+              THorseContextPool.Instance.Release(LHorseContextObj);
             end;
           finally
             LWebRequest.Free;
@@ -2475,15 +2481,16 @@ begin
         LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
         try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(nil);
+          LHorseContextObj := THorseContextPool.Instance.Acquire;
+          LReq := LHorseContextObj.Request;
+          LReq.SetCSRawWebRequest(LWebRequest);
+          LRes := LHorseContextObj.Response;
           LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderEpoll.Execute(LReq, LRes);
           finally
             LRawResObj.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            THorseContextPool.Instance.Release(LHorseContextObj);
           end;
         finally
           LWebRequest.Free;

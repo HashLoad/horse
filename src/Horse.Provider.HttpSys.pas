@@ -33,7 +33,8 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core;
 
 const
   HTTPAPI_DLL = 'httpapi.dll';
@@ -499,6 +500,7 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LCurrentBuf: TBytes;
 begin
@@ -514,14 +516,16 @@ begin
       LWebRequest := TInterfacedWebRequest.Create(LRawReq);
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
-        LReq := THorseRequest.Create(LWebRequest);
-        LRes := THorseResponse.Create(LWebResponse);
+        LContextObj := THorseContextPool.Instance.Acquire;
+        LReq := LContextObj.Request;
+        LReq.SetCSRawWebRequest(LWebRequest);
+        LRes := LContextObj.Response;
+        LRes.SetCSRawWebResponse(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
         finally
           LConcreteRes.SendResponse(LRes);
-          LReq.Free;
-          LRes.Free;
+          THorseContextPool.Instance.Release(LContextObj);
         end;
       finally
         LWebRequest.Free;
@@ -692,6 +696,7 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LHasItem: Boolean;
 begin
@@ -721,14 +726,16 @@ begin
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(LWebResponse);
+          LContextObj := THorseContextPool.Instance.Acquire;
+          LReq := LContextObj.Request;
+          LReq.SetCSRawWebRequest(LWebRequest);
+          LRes := LContextObj.Response;
+          LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);
           finally
             LConcreteRes.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            THorseContextPool.Instance.Release(LContextObj);
           end;
         finally
           LWebRequest.Free;
