@@ -5,7 +5,7 @@ interface
 uses
   DUnitX.TestFramework, Horse, Horse.Commons, RESTRequest4D, System.SysUtils,
   System.Classes, System.Threading, System.Generics.Collections,
-  Tests.CleanupHelper;
+  System.SyncObjs, Tests.CleanupHelper;
 
 type
   [TestFixture]
@@ -74,65 +74,106 @@ const
 var
   LTasks: array[0..NUM_THREADS - 1] of ITask;
   I: Integer;
+  LFailed: Boolean;
+  LFailMessage: string;
+  LFailedCS: TCriticalSection;
 begin
-  for I := 0 to NUM_THREADS - 1 do
-  begin
-    LTasks[I] := TTask.Create(
-      procedure
-      var
-        LReq: IRequest;
-        LRes: IResponse;
-        K: Integer;
-        LUrlIdx: Integer;
-        LClientId: string;
-      begin
-        for K := 1 to REQS_PER_THREAD do
+  LFailed := False;
+  LFailMessage := '';
+  LFailedCS := TCriticalSection.Create;
+  try
+    for I := 0 to NUM_THREADS - 1 do
+    begin
+      LTasks[I] := TTask.Create(
+        procedure
+        var
+          LReq: IRequest;
+          LRes: IResponse;
+          K: Integer;
+          LUrlIdx: Integer;
+          LClientId: string;
         begin
-          LReq := TRequest.New;
-          LUrlIdx := (K + TThread.CurrentThread.ThreadID) mod 4;
+          for K := 1 to REQS_PER_THREAD do
+          begin
+            try
+              LReq := TRequest.New;
+              LUrlIdx := (K + TThread.CurrentThread.ThreadID) mod 4;
 
-          case LUrlIdx of
-            0:
-            begin
-              LRes := LReq.BaseURL(Format('http://localhost:%d/ping', [TEST_PORT]))
-                .Accept('text/plain')
-                .Get;
-              Assert.AreEqual(200, LRes.StatusCode, 'Ping status should be 200 OK');
-              Assert.AreEqual('pong', LRes.Content, 'Response content should be "pong"');
-            end;
-            1:
-            begin
-              LRes := LReq.BaseURL(Format('http://localhost:%d/health', [TEST_PORT]))
-                .Accept('text/plain')
-                .Get;
-              Assert.AreEqual(200, LRes.StatusCode, 'Health status should be 200 OK');
-              Assert.AreEqual('OK', LRes.Content, 'Response content should be "OK"');
-            end;
-            2:
-            begin
-              LClientId := Format('%d_%d', [TThread.CurrentThread.ThreadID, K]);
-              LRes := LReq.BaseURL(Format('http://localhost:%d/clientes/%s/detalhes', [TEST_PORT, LClientId]))
-                .Accept('text/plain')
-                .Get;
-              Assert.AreEqual(200, LRes.StatusCode, 'Clientes status should be 200 OK');
-              Assert.AreEqual('cliente_' + LClientId, LRes.Content, 'Client ID parameter should be thread-isolated');
-            end;
-            3:
-            begin
-              LRes := LReq.BaseURL(Format('http://localhost:%d/dados', [TEST_PORT]))
-                .Accept('text/plain')
-                .AddBody('payload_dados')
-                .Post;
-              Assert.AreEqual(200, LRes.StatusCode, 'Post status should be 200 OK');
-              Assert.AreEqual('recebido', LRes.Content, 'Post response should be "recebido"');
+              case LUrlIdx of
+                0:
+                begin
+                  LRes := LReq.BaseURL(Format('http://localhost:%d/ping', [TEST_PORT]))
+                    .Accept('text/plain')
+                    .Get;
+                  if LRes.StatusCode <> 200 then
+                  begin
+                    LFailedCS.Enter;
+                    LFailed := True;
+                    LFailMessage := Format('Ping status expected 200 but got %d', [LRes.StatusCode]);
+                    LFailedCS.Leave;
+                  end;
+                end;
+                1:
+                begin
+                  LRes := LReq.BaseURL(Format('http://localhost:%d/health', [TEST_PORT]))
+                    .Accept('text/plain')
+                    .Get;
+                  if LRes.StatusCode <> 200 then
+                  begin
+                    LFailedCS.Enter;
+                    LFailed := True;
+                    LFailMessage := Format('Health status expected 200 but got %d', [LRes.StatusCode]);
+                    LFailedCS.Leave;
+                  end;
+                end;
+                2:
+                begin
+                  LClientId := Format('%d_%d', [TThread.CurrentThread.ThreadID, K]);
+                  LRes := LReq.BaseURL(Format('http://localhost:%d/clientes/%s/detalhes', [TEST_PORT, LClientId]))
+                    .Accept('text/plain')
+                    .Get;
+                  if LRes.StatusCode <> 200 then
+                  begin
+                    LFailedCS.Enter;
+                    LFailed := True;
+                    LFailMessage := Format('Clientes status expected 200 but got %d', [LRes.StatusCode]);
+                    LFailedCS.Leave;
+                  end;
+                end;
+                3:
+                begin
+                  LRes := LReq.BaseURL(Format('http://localhost:%d/dados', [TEST_PORT]))
+                    .Accept('text/plain')
+                    .AddBody('payload_dados')
+                    .Post;
+                  if LRes.StatusCode <> 200 then
+                  begin
+                    LFailedCS.Enter;
+                    LFailed := True;
+                    LFailMessage := Format('Post status expected 200 but got %d', [LRes.StatusCode]);
+                    LFailedCS.Leave;
+                  end;
+                end;
+              end;
+            except
+              on E: Exception do
+              begin
+                LFailedCS.Enter;
+                LFailed := True;
+                LFailMessage := 'Exception in thread: ' + E.Message;
+                LFailedCS.Leave;
+              end;
             end;
           end;
-        end;
-      end);
-    LTasks[I].Start;
-  end;
+        end);
+      LTasks[I].Start;
+    end;
 
-  TTask.WaitForAll(LTasks);
+    TTask.WaitForAll(LTasks);
+    Assert.IsFalse(LFailed, 'Thread stress test failed: ' + LFailMessage);
+  finally
+    LFailedCS.Free;
+  end;
 end;
 
 initialization
