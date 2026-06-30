@@ -8,12 +8,7 @@ uses
 type
 
   THorseEnvironmentVariables = class
-  private
-    { private declarations }
-  protected
-    { protected declarations }
   public
-    { public declarations }
     class function GetEnvironmentVariables: TStringList;
     class function GetEnvironmentVariable(const AName: string): string;
   end;
