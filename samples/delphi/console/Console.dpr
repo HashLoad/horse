@@ -32,7 +32,7 @@ end;
 
 begin
   {$IFDEF MSWINDOWS}
-    IsConsole := False;
+    IsConsole := True;
     ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
 

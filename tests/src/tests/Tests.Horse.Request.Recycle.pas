@@ -65,9 +65,9 @@ begin
   Assert.IsNotNull(FRequest.Query, 'Query wrapper should remain allocated');
 
   // E os dicionários devem estar vazios
-  Assert.AreEqual(0, FRequest.Headers.Dictionary.Count, 'Headers should be empty post-recycle');
-  Assert.AreEqual(0, FRequest.Params.Dictionary.Count, 'Params should be empty post-recycle');
-  Assert.AreEqual(0, FRequest.Query.Dictionary.Count, 'Query should be empty post-recycle');
+  Assert.AreEqual<Integer>(0, FRequest.Headers.Dictionary.Count, 'Headers should be empty post-recycle');
+  Assert.AreEqual<Integer>(0, FRequest.Params.Dictionary.Count, 'Params should be empty post-recycle');
+  Assert.AreEqual<Integer>(0, FRequest.Query.Dictionary.Count, 'Query should be empty post-recycle');
 
   // Segunda requisição reutilizando a mesma instância
   FRequest.Populate('GET', mtGet, '/api/other', 'text/html', '192.168.0.1');
@@ -79,9 +79,9 @@ begin
   Assert.AreEqual('Value2', FRequest.Headers.Dictionary.Items['X-Test-Header']);
   Assert.AreEqual('200', FRequest.Params.Dictionary.Items['id']);
   Assert.AreEqual('inactive', FRequest.Query.Dictionary.Items['filter']);
-  Assert.AreEqual(1, FRequest.Headers.Dictionary.Count);
-  Assert.AreEqual(1, FRequest.Params.Dictionary.Count);
-  Assert.AreEqual(1, FRequest.Query.Dictionary.Count);
+  Assert.AreEqual<Integer>(1, FRequest.Headers.Dictionary.Count);
+  Assert.AreEqual<Integer>(1, FRequest.Params.Dictionary.Count);
+  Assert.AreEqual<Integer>(1, FRequest.Query.Dictionary.Count);
 end;
 
 initialization
