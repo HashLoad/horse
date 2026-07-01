@@ -110,12 +110,21 @@ end;
 procedure TRadixFlow.Next;
 var
   LIndex: Integer;
+  {$IF DEFINED(FPC)}
+  LTempArray: TArray<Pointer>;
+  {$ENDIF}
 begin
   if (FIndex < FCallbacks.Count) and FActive then
   begin
     LIndex := FIndex;
     Inc(FIndex);
     try
+      {$IF DEFINED(FPC)}
+      LTempArray := TArray<Pointer>(Pointer(FCallbacks.ToArray));
+      Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
+      Writeln('DEBUG: Callback address = ', HexStr(LTempArray[LIndex]));
+      Flush(Output);
+      {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);
     except
       on E: Exception do

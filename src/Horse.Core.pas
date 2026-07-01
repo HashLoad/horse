@@ -590,6 +590,7 @@ begin
   begin
     GCallbacks2[GCallbacks2Count] := ACallbackRequest;
     Result := GWrapperList2[GCallbacks2Count];
+    Writeln('DEBUG: Registered callback address = ', HexStr(Pointer((@Result)^))); Flush(Output);
     Inc(GCallbacks2Count);
   end
   else
