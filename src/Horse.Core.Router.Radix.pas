@@ -54,8 +54,8 @@ type
       const AHTTPType: TMethodType; var AMiddlewares: TList<THorseCallback>; var AParams: TDictionary<string, string>): TRadixNode;
     procedure InsertRoute(const APath: string; const AHTTPType: TMethodType; const ACallback: THorseCallback; const AIsMiddleware: Boolean);
   protected
-    function _AddRef: Integer; stdcall;
-    function _Release: Integer; stdcall;
+    function _AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+    function _Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
   public
     constructor Create;
     destructor Destroy; override;
@@ -178,12 +178,12 @@ end;
 
 { THorseRadixRouter }
 
-function THorseRadixRouter._AddRef: Integer;
+function THorseRadixRouter._AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 begin
   Result := -1;
 end;
 
-function THorseRadixRouter._Release: Integer;
+function THorseRadixRouter._Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 begin
   Result := -1;
 end;

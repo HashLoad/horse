@@ -66,8 +66,8 @@ type
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
   protected
-    function _AddRef: Integer; stdcall;
-    function _Release: Integer; stdcall;
+    function _AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+    function _Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
   public
     constructor Create;
     destructor Destroy; override;
@@ -208,12 +208,12 @@ begin
   Result := LFound;
 end;
 
-function THorseRouterTree._AddRef: Integer;
+function THorseRouterTree._AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 begin
   Result := -1;
 end;
 
-function THorseRouterTree._Release: Integer;
+function THorseRouterTree._Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 begin
   Result := -1;
 end;
