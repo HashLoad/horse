@@ -73,12 +73,16 @@ end;
 function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
 var
   I: Integer;
-  LStr: string;
+  LChar: Char;
 begin
   Result := 5381;
-  LStr := LowerCase(Value);
-  for I := 1 to Length(LStr) do
-    Result := ((Result shl 5) + Result) + Ord(LStr[I]);
+  for I := 1 to Length(Value) do
+  begin
+    LChar := Value[I];
+    if LChar in ['A'..'Z'] then
+      Inc(LChar, 32);
+    Result := ((Result shl 5) + Result) + Ord(LChar);
+  end;
 end;
 {$ENDIF}
 
