@@ -589,15 +589,11 @@ begin
   if GCallbacks2Count < 64 then
   begin
     GCallbacks2[GCallbacks2Count] := ACallbackRequest;
-    case GCallbacks2Count of
-      0: Result := @W2_0;
-      else Result := GWrapperList2[GCallbacks2Count];
-    end;
-    Writeln('DEBUG: Registered callback address = ', HexStr(Pointer((@Result)^))); Flush(Output);
+    Result := GWrapperList2[GCallbacks2Count];
     Inc(GCallbacks2Count);
   end
   else
-    Pointer(@Result) := @ACallbackRequest;
+    Result := THorseCallback(ACallbackRequest);
   {$IFEND}
 {$ELSE}
   Result :=

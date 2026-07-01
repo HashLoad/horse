@@ -95,13 +95,7 @@ constructor TRadixFlow.Create(ACallbacks: TList<THorseCallback>; AReq: THorseReq
 begin
   FIndex := 0;
   FCallbacks := TList<THorseCallback>.Create;
-  {$IF DEFINED(FPC)}
-  Writeln('DEBUG: TRadixFlow.Create - FCallbacks = ', HexStr(Pointer(FCallbacks)));
-  {$ENDIF}
   FCallbacks.AddRange(ACallbacks);
-  {$IF DEFINED(FPC)}
-  Writeln('DEBUG: TRadixFlow.Create - FCallbacks Count = ', FCallbacks.Count); Flush(Output);
-  {$ENDIF}
   FRequest := AReq;
   FResponse := ARes;
   FActive := True;
@@ -116,29 +110,13 @@ end;
 procedure TRadixFlow.Next;
 var
   LIndex: Integer;
-  {$IF DEFINED(FPC)}
-  LTempArray: TArray<Pointer>;
-  {$ENDIF}
 begin
-  {$IF DEFINED(FPC)}
-  Writeln('DEBUG: TRadixFlow.Next - Self = ', HexStr(Pointer(Self)));
-  Writeln('DEBUG: TRadixFlow.Next - FCallbacks = ', HexStr(Pointer(FCallbacks))); Flush(Output);
-  {$ENDIF}
   if (FIndex < FCallbacks.Count) and FActive then
   begin
     LIndex := FIndex;
     Inc(FIndex);
     try
-      {$IF DEFINED(FPC)}
-      LTempArray := TArray<Pointer>(Pointer(FCallbacks.ToArray));
-      Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
-      Writeln('DEBUG: Callback address = ', HexStr(LTempArray[LIndex]));
-      Flush(Output);
-      {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);
-      {$IF DEFINED(FPC)}
-      Writeln('DEBUG: TRadixFlow.Next retorno do callback!'); Flush(Output);
-      {$ENDIF}
     except
       on E: Exception do
       begin
@@ -404,14 +382,7 @@ begin
               LCallbacksList.Add(RadixNotFoundFinalizer);
           end;
 
-          {$IF DEFINED(FPC)}
-          Writeln('DEBUG: LCallbacksList populated successfully! Count = ', LCallbacksList.Count); Flush(Output);
-          {$ENDIF}
-
           LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
-          {$IF DEFINED(FPC)}
-          Writeln('DEBUG: LFlow created at address = ', HexStr(Pointer(LFlow))); Flush(Output);
-          {$ENDIF}
           try
             LFlow.Next;
           finally

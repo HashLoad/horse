@@ -68,37 +68,19 @@ end;
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
-  try
-    {$IF DEFINED(FPC)}
-    inherited CreateNew(AOwner, 0);
-    {$ELSE}
-    inherited;
-    {$ENDIF}
-    FHorse := THorseCore.GetInstance;
-    FInstance := Self;
-  except
-    on E: Exception do
-    begin
-      {$IF DEFINED(FPC)}
-      Writeln('DEBUG: Excecao no construtor do WebModule: ', E.ClassName, ': ', E.Message); Flush(Output);
-      {$ENDIF}
-      raise;
-    end;
-  end;
+  {$IF DEFINED(FPC)}
+  inherited CreateNew(AOwner, 0);
+  {$ELSE}
+  inherited;
+  {$ENDIF}
+  FHorse := THorseCore.GetInstance;
+  FInstance := Self;
 end;
 
 {$IF DEFINED(FPC)}
 procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
 begin
-  try
-    HandlerAction(Self, ARequest, AResponse, AHandled);
-  except
-    on E: Exception do
-    begin
-      Writeln('DEBUG: Excecao no DoOnRequest: ', E.ClassName, ': ', E.Message); Flush(Output);
-      raise;
-    end;
-  end;
+  HandlerAction(Self, ARequest, AResponse, AHandled);
 end;
 {$ENDIF}
 
@@ -108,44 +90,24 @@ var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
 begin
-  {$IF DEFINED(FPC)}
-  Writeln('DEBUG: HandlerAction INICIADO!');
-  Writeln('DEBUG: FHorse Assigned = ', Assigned(FHorse));
-  if Assigned(FHorse) then
-    Writeln('DEBUG: Routes Assigned = ', Assigned(FHorse.Routes));
-  Flush(Output);
-  {$ENDIF}
   Handled := True;
+  LRequest := THorseRequest.Create(Request);
+  LResponse := THorseResponse.Create(Response);
   try
-    LRequest := THorseRequest.Create(Request);
-    LResponse := THorseResponse.Create(Response);
     try
-      try
-        FHorse.Routes.Execute(LRequest, LResponse)
-      except
-        on E: Exception do
-        begin
-          {$IF DEFINED(FPC)}
-          Writeln('DEBUG: Excecao no Execute: ', E.ClassName, ': ', E.Message); Flush(Output);
-          {$ENDIF}
-          if not E.InheritsFrom(EHorseCallbackInterrupted) then
-            raise;
-        end;
+      FHorse.Routes.Execute(LRequest, LResponse)
+    except
+      on E: Exception do
+      begin
+        if not E.InheritsFrom(EHorseCallbackInterrupted) then
+          raise;
       end;
-    finally
-      if LRequest.Body<TObject> = LResponse.Content then
-        LResponse.Content(nil);
-      LRequest.Free;
-      LResponse.Free;
     end;
-  except
-    on E: Exception do
-    begin
-      {$IF DEFINED(FPC)}
-      Writeln('DEBUG: Excecao na criacao do Request/Response: ', E.ClassName, ': ', E.Message); Flush(Output);
-      {$ENDIF}
-      raise;
-    end;
+  finally
+    if LRequest.Body<TObject> = LResponse.Content then
+      LResponse.Content(nil);
+    LRequest.Free;
+    LResponse.Free;
   end;
 end;
 
