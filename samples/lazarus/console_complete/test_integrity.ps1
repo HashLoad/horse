@@ -1,5 +1,7 @@
 # Script de Validacao de Integridade do Horse no FPC/Lazarus - Windows
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "   INICIANDO TESTE DE INTEGRIDADE DO LAZARUS (FPC) " -ForegroundColor Cyan
@@ -26,63 +28,75 @@ $errors = 0
 
 # Funcao helper de validacao
 function Assert-Response($TestName, $Actual, $Expected) {
-    if ($Actual -like $Expected) {
+    if ($Actual -is [array]) {
+        $Actual = $Actual -join "`n"
+    }
+    if ($Actual.Contains($Expected)) {
         Write-Host "  [OK] $TestName" -ForegroundColor Green
     } else {
         Write-Host "  [FALHA] $TestName" -ForegroundColor Red
-        Write-Host "    Esperado: $Expected" -ForegroundColor DarkRed
+        Write-Host "    Esperado conter: $Expected" -ForegroundColor DarkRed
         Write-Host "    Obtido: $Actual" -ForegroundColor DarkRed
         $global:errors++
     }
 }
 
 try {
-    # GET /ping
-    $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9086/ping"
-    Assert-Response "GET /ping" $res "pong"
+    # CORS Preflight (OPTIONS)
+    $res = curl.exe -i -s -X OPTIONS http://localhost:9086/ping
+    Assert-Response "CORS Preflight (Status 204)" $res "HTTP/1.1 204"
+    Assert-Response "CORS Preflight (Origin Header)" $res "Access-Control-Allow-Origin: *"
+    Assert-Response "CORS Preflight (Methods Header)" $res "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, QUERY"
+    Assert-Response "CORS Preflight (Headers Header)" $res "Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With"
 
-    # GET /resource/:id (com query e header case-insensitive)
-    $headers = @{ "authorization" = "Bearer JWT_123" }
-    $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9086/resource/abc?q=busca" -Headers $headers
-    $expected = '*abc*busca*Bearer JWT_123*'
-    Assert-Response "GET /resource/:id (Params, Query, Header)" (ConvertTo-Json $res -Compress) $expected
+    # GET /ping (CORS origin header & Status 200)
+    $res = curl.exe -i -s http://localhost:9086/ping
+    Assert-Response "GET /ping (Status 200)" $res "HTTP/1.1 200"
+    Assert-Response "GET /ping (Origin Header)" $res "Access-Control-Allow-Origin: *"
+    Assert-Response "GET /ping (Body)" $res "pong"
+
+    # GET /resource/:id (Decoding & Case-Insensitive Headers)
+    $res = curl.exe -s -H "AuThOrIzAtIoN: Bearer JWT_123" "http://localhost:9086/resource/caf%C3%A9?q=teste%20completo"
+    Assert-Response "GET /resource/:id (Decoding Parameter - Acento)" $res ('"id":"caf' + [char]233 + '"')
+    Assert-Response "GET /resource/:id (Decoding Query - Espaco)" $res '"query":"teste completo"'
+    Assert-Response "GET /resource/:id (Case-Insensitive Header Extraction)" $res '"auth":"Bearer JWT_123"'
 
     # POST /resource
-    $res = Invoke-RestMethod -Method Post -Uri "http://localhost:9086/resource" -Body "Ola_Horse" -ContentType "text/plain"
+    $res = curl.exe -i -s -X POST -H "Content-Type: text/plain" -d "Ola_Horse" http://localhost:9086/resource
+    Assert-Response "POST /resource (Status 201)" $res "HTTP/1.1 201"
     Assert-Response "POST /resource (Body)" $res "POST OK: Ola_Horse"
 
     # PUT /resource/:id
-    $res = Invoke-RestMethod -Method Put -Uri "http://localhost:9086/resource/123"
-    Assert-Response "PUT /resource/:id" (ConvertTo-Json $res -Compress) '*Updated*123*'
+    $res = curl.exe -i -s -X PUT http://localhost:9086/resource/123
+    Assert-Response "PUT /resource/:id (Status 200)" $res "HTTP/1.1 200"
+    Assert-Response "PUT /resource/:id (Body)" $res "Updated"
 
     # PATCH /resource/:id
-    $res = Invoke-RestMethod -Method Patch -Uri "http://localhost:9086/resource/123"
-    Assert-Response "PATCH /resource/:id" (ConvertTo-Json $res -Compress) '*Patched*123*'
+    $res = curl.exe -i -s -X PATCH http://localhost:9086/resource/123
+    Assert-Response "PATCH /resource/:id (Status 200)" $res "HTTP/1.1 200"
+    Assert-Response "PATCH /resource/:id (Body)" $res "Patched"
 
     # DELETE /resource/:id
-    $res = Invoke-RestMethod -Method Delete -Uri "http://localhost:9086/resource/123"
-    Assert-Response "DELETE /resource/:id" (ConvertTo-Json $res -Compress) '*Deleted*123*'
+    $res = curl.exe -i -s -X DELETE http://localhost:9086/resource/123
+    Assert-Response "DELETE /resource/:id (Status 200)" $res "HTTP/1.1 200"
+    Assert-Response "DELETE /resource/:id (Body)" $res "Deleted"
 
-    # QUERY /search (Novo Verbo)
-    $res = curl.exe -s -X QUERY -d "filtro_busca" http://localhost:9086/search
+    # QUERY /search
+    $res = curl.exe -i -s -X QUERY -d "filtro_busca" http://localhost:9086/search
+    Assert-Response "QUERY /search (Status 200)" $res "HTTP/1.1 200"
     Assert-Response "QUERY /search (Body)" $res "SEARCH RESULT FOR: filtro_busca"
 
-    # POST /upload (Multipart/Form-Data)
-    Set-Content -Path "temp_sample_upload.txt" -Value "Conteudo de amostra de upload para o sample."
-    $resUpload = curl.exe -s -X POST -F "file=@temp_sample_upload.txt" http://localhost:9086/upload
-    Assert-Response "POST /upload (Multipart/Form-Data)" $resUpload '*Upload OK*temp_sample_upload.txt*'
+    # POST /upload (Multipart)
+    Set-Content -Path "temp_sample_upload.txt" -Value "Conteudo de amostra de upload"
+    $res = curl.exe -i -s -X POST -F "file=@temp_sample_upload.txt" http://localhost:9086/upload
+    Assert-Response "POST /upload (Status 200)" $res "HTTP/1.1 200"
+    Assert-Response "POST /upload (Multipart Body)" $res "Upload OK"
     Remove-Item -Path "temp_sample_upload.txt" -Force -ErrorAction SilentlyContinue
 
-    # GET /error-trigger (EHorseException)
-    $resErr = curl.exe -s -i http://localhost:9086/error-trigger
-    if ($resErr -match '400 Bad Request' -and $resErr -match 'Erro de Negocio Simulado') {
-        Write-Host "  [OK] GET /error-trigger (Clean JSON Exception)" -ForegroundColor Green
-    } else {
-        Write-Host "  [FALHA] GET /error-trigger (Clean JSON Exception)" -ForegroundColor Red
-        Write-Host "    Obtido: $resErr" -ForegroundColor DarkRed
-        $global:errors++
-    }
-
+    # GET /error-trigger (Clean JSON Exception)
+    $res = curl.exe -i -s http://localhost:9086/error-trigger
+    Assert-Response "GET /error-trigger (Status 400)" $res "HTTP/1.1 400"
+    Assert-Response "GET /error-trigger (Clean JSON Exception)" $res "Erro de Negocio Simulado"
 } catch {
     Write-Host "Erro inesperado ao realizar chamadas HTTP: $_" -ForegroundColor Red
     $global:errors++

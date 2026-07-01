@@ -22,6 +22,21 @@ begin
   Next();
 end;
 
+procedure CorsMiddleware(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+begin
+  Res.AddHeader('Access-Control-Allow-Origin', '*');
+  Res.AddHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, QUERY');
+  Res.AddHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  if Req.Method = 'OPTIONS' then
+  begin
+    Res.Status(THTTPStatus.NoContent).Send('');
+    Exit;
+  end;
+  
+  Next();
+end;
+
 procedure GetPing(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
   Res.Send('pong');
@@ -97,6 +112,7 @@ begin
 
   // Middleware global de log das requisicoes recebidas
   THorse.Use(LogMiddleware);
+  THorse.Use(CorsMiddleware);
 
   // 1. GET /ping -> ping-pong tradicional
   THorse.Get('/ping', GetPing);
