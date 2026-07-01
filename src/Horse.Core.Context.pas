@@ -111,41 +111,13 @@ end;
 
 function THorseContextPool.Acquire: THorseContext;
 begin
-  FLock.Enter;
-  try
-    if FList.Count > 0 then
-    begin
-      Result := FList.Dequeue;
-    end
-    else
-    begin
-      Result := THorseContext.Create;
-      Inc(FAllocatedCount);
-    end;
-  finally
-    FLock.Leave;
-  end;
+  Result := THorseContext.Create;
 end;
 
 procedure THorseContextPool.Release(const AContext: THorseContext);
 begin
-  if AContext = nil then Exit;
-  AContext.Reset;
-  
-  FLock.Enter;
-  try
-    if FList.Count < FMaxCount then
-    begin
-      FList.Enqueue(AContext);
-    end
-    else
-    begin
-      AContext.Free;
-      Dec(FAllocatedCount);
-    end;
-  finally
-    FLock.Leave;
-  end;
+  if AContext <> nil then
+    AContext.Free;
 end;
 
 procedure THorseContextPool.WarmUp(const ACount: Integer);
