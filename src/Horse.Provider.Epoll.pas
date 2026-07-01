@@ -18,7 +18,6 @@ uses
     Unix,
     Linux,
     sockets,
-    httpprotocol,
   {$ELSE}
     System.SysUtils,
     System.Classes,
@@ -26,7 +25,6 @@ uses
     System.Generics.Collections,
     System.Generics.Defaults,
     System.Threading,
-    System.NetEncoding,
     Posix.Base,
     Posix.SysTypes,
     Posix.SysSocket,
@@ -36,6 +34,7 @@ uses
     Posix.NetinetIn,
     Posix.Errno,
   {$ENDIF}
+  Horse.Utils,
   Horse.Provider.Abstract,
   Horse.Provider.Config,
   Horse.Request,
@@ -43,7 +42,9 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core,
+  Horse.Core.Context;
 
 type
   { Estrutura que representa os segmentos de cabeçalhos indexados durante o
@@ -71,10 +72,10 @@ type
     class function TryParseRequest(
       const ABuffer: TBytes; 
       ALength: Integer;
-      out AMethod: string;
-      out APath: string;
-      out AQuery: string;
-      out AVersion: string;
+      out AMethod: THorseBufferSlice;
+      out APath: THorseBufferSlice;
+      out AQuery: THorseBufferSlice;
+      out AVersion: THorseBufferSlice;
       out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
       out AContentLength: Int64
@@ -91,10 +92,10 @@ type
   TEpollRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
     FBuffer: TBytes;
-    FMethod: string;
-    FPath: string;
-    FQuery: string;
-    FVersion: string;
+    FMethodSlice: THorseBufferSlice;
+    FPathSlice: THorseBufferSlice;
+    FQuerySlice: THorseBufferSlice;
+    FVersionSlice: THorseBufferSlice;
     FBodyOffset: Integer;
     FContentLength: Int64;
     FHeaders: THeaderSegments;
@@ -108,7 +109,7 @@ type
   public
     constructor Create(
       var ABuffer: TBytes;
-      const AMethod, APath, AQuery, AVersion: string;
+      const AMethod, APath, AQuery, AVersion: THorseBufferSlice;
       AHeaders: THeaderSegments;
       ABodyOffset: Integer;
       AContentLength: Int64;
@@ -180,10 +181,10 @@ type
     EpollFd: Integer;
     Buffer: TBytes;
     BytesReceived: Integer;
-    Method: string;
-    Path: string;
-    Query: string;
-    Version: string;
+    MethodSlice: THorseBufferSlice;
+    PathSlice: THorseBufferSlice;
+    QuerySlice: THorseBufferSlice;
+    VersionSlice: THorseBufferSlice;
     Headers: THeaderSegments;
     BodyOffset: Integer;
     ContentLength: Int64;
@@ -225,12 +226,11 @@ type
     {$ENDIF}
     FRunning: Boolean;
     FConnections: TList<TEpollConnectionContext>;
-    FConnectionsSync: TCriticalSection;
     FListenContext: TEpollConnectionContext;
     FPipeContext: TEpollConnectionContext;
     procedure ProcessClientRead(AContext: TEpollConnectionContext);
     procedure ProcessClientWrite(AContext: TEpollConnectionContext);
-    procedure CloseConnection(AContext: TEpollConnectionContext);
+    procedure CloseConnectionInternal(AContext: TEpollConnectionContext);
     procedure CheckTimeouts;
   protected
     procedure Execute; override;
@@ -238,6 +238,7 @@ type
     constructor Create(AListenSocket: Integer);
     destructor Destroy; override;
     procedure TerminateWorker;
+    procedure CloseConnection(AContext: TEpollConnectionContext);
   end;
 
   { Classe de Provider concreta do Horse para Linux baseada no Epoll }
@@ -422,7 +423,7 @@ type
     FTasks: TQueue<TEpollFPCTask>;
     FWorkers: TList<TEpollFPCWorkerThread>;
     FLock: TCriticalSection;
-    FEvent: TEvent;
+    FSemaphore: TSemaphore;
     FActive: Boolean;
     function DequeueTask: TEpollFPCTask;
   public
@@ -662,9 +663,10 @@ var
   LTask: TEpollFPCTask;
   LHorseReq: THorseRequest;
   LHorseRes: THorseResponse;
+  LHorseContextObj: THorseContext;
   LLocalEvent: epoll_event;
   HasPendingWrite: Boolean;
-  LMethod, LPath, LQuery, LVersion: string;
+  LMethod, LPath, LQuery, LVersion: THorseBufferSlice;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -685,7 +687,7 @@ begin
       begin
         if Terminated or not LPool.FActive then
           Break;
-        LPool.FEvent.WaitFor(1000);
+        LPool.FSemaphore.Acquire;
         Continue;
       end;
 
@@ -703,10 +705,10 @@ begin
             LContentLength
           ) then
           begin
-            LTask.Context.Method := LMethod;
-            LTask.Context.Path := LPath;
-            LTask.Context.Query := LQuery;
-            LTask.Context.Version := LVersion;
+            LTask.Context.MethodSlice := LMethod;
+            LTask.Context.PathSlice := LPath;
+            LTask.Context.QuerySlice := LQuery;
+            LTask.Context.VersionSlice := LVersion;
             LTask.Context.Headers := LHeaders;
             LTask.Context.BodyOffset := LBodyOffset;
             LTask.Context.ContentLength := LContentLength;
@@ -714,10 +716,10 @@ begin
 
           LRawReq := TEpollRawRequest.Create(
             LTask.Context.Buffer,
-            LTask.Context.Method,
-            LTask.Context.Path,
-            LTask.Context.Query,
-            LTask.Context.Version,
+            LTask.Context.MethodSlice,
+            LTask.Context.PathSlice,
+            LTask.Context.QuerySlice,
+            LTask.Context.VersionSlice,
             LTask.Context.Headers,
             LTask.Context.BodyOffset,
             LTask.Context.ContentLength,
@@ -742,15 +744,16 @@ begin
           LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
           try
-            LHorseReq := THorseRequest.Create(LWebRequest);
-            LHorseRes := THorseResponse.Create(nil);
+            LHorseContextObj := THorseContextPool.Instance.Acquire;
+            LHorseReq := THorseRequest(LHorseContextObj.Request);
+            LHorseReq.SetCSRawWebRequest(LWebRequest);
+            LHorseRes := THorseResponse(LHorseContextObj.Response);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
               LRawResObj.SendResponse(LHorseRes);
-              LHorseReq.Free;
-              LHorseRes.Free;
+              THorseContextPool.Instance.Release(LHorseContextObj);
             end;
           finally
             LWebRequest.Free;
@@ -808,7 +811,7 @@ begin
   FTasks := TQueue<TEpollFPCTask>.Create;
   FWorkers := TList<TEpollFPCWorkerThread>.Create;
   FLock := TCriticalSection.Create;
-  FEvent := TEvent.Create(nil, False, False, '');
+  FSemaphore := TSemaphore.Create(nil, 0, 65535, '');
   
   for I := 1 to AThreadCount do
     FWorkers.Add(TEpollFPCWorkerThread.Create(Self));
@@ -820,12 +823,8 @@ var
   LTask: TEpollFPCTask;
 begin
   FActive := False;
-  FEvent.SetEvent;
   
-  for I := 0 to FWorkers.Count - 1 do
-    FWorkers[I].Terminate;
-  
-  FEvent.SetEvent;
+  FSemaphore.Release(FWorkers.Count);
   
   for I := 0 to FWorkers.Count - 1 do
   begin
@@ -847,7 +846,7 @@ begin
   end;
   
   FLock.Free;
-  FEvent.Free;
+  FSemaphore.Free;
   inherited;
 end;
 
@@ -858,7 +857,7 @@ begin
     if FActive then
     begin
       FTasks.Enqueue(ATask);
-      FEvent.SetEvent;
+      FSemaphore.Release;
     end;
   finally
     FLock.Leave;
@@ -923,10 +922,10 @@ end;
 
 procedure TEpollConnectionContext.ClearRequest;
 begin
-  Method := '';
-  Path := '';
-  Query := '';
-  Version := '';
+  MethodSlice := THorseBufferSlice.Empty;
+  PathSlice := THorseBufferSlice.Empty;
+  QuerySlice := THorseBufferSlice.Empty;
+  VersionSlice := THorseBufferSlice.Empty;
   Headers := nil;
   BodyOffset := -1;
   ContentLength := 0;
@@ -1145,10 +1144,10 @@ end;
 class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
-  out AMethod: string;
-  out APath: string;
-  out AQuery: string;
-  out AVersion: string;
+  out AMethod: THorseBufferSlice;
+  out APath: THorseBufferSlice;
+  out AQuery: THorseBufferSlice;
+  out AVersion: THorseBufferSlice;
   out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
   out AContentLength: Int64
@@ -1165,10 +1164,10 @@ var
   Segment: THeaderSegment;
   SegCount: Integer;
 begin
-  AMethod := '';
-  APath := '';
-  AQuery := '';
-  AVersion := '';
+  AMethod := THorseBufferSlice.Empty;
+  APath := THorseBufferSlice.Empty;
+  AQuery := THorseBufferSlice.Empty;
+  AVersion := THorseBufferSlice.Empty;
   ABodyOffset := -1;
   AContentLength := 0;
   SetLength(AHeaders, 0);
@@ -1200,28 +1199,22 @@ begin
   Space2 := FindByte(ABuffer, Space1 + 1, LineEnd, 32);
   if Space2 = -1 then Exit(False);
 
-  // Method (cached/optimized)
-  AMethod := GetMethodString(ABuffer, 0, Space1);
+  // Method (zero-alloc)
+  AMethod := THorseBufferSlice.Create(ABuffer, 0, Space1);
   
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
   if QueryStart <> -1 then
   begin
-    if (QueryStart - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
-      APath := '/'
-    else
-      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, QueryStart - (Space1 + 1));
-    AQuery := TEncoding.UTF8.GetString(ABuffer, QueryStart + 1, Space2 - (QueryStart + 1));
+    APath := THorseBufferSlice.Create(ABuffer, Space1 + 1, QueryStart - (Space1 + 1));
+    AQuery := THorseBufferSlice.Create(ABuffer, QueryStart + 1, Space2 - (QueryStart + 1));
   end
   else
   begin
-    if (Space2 - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
-      APath := '/'
-    else
-      APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
-    AQuery := '';
+    APath := THorseBufferSlice.Create(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
+    AQuery := THorseBufferSlice.Empty;
   end;
 
-  AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
+  AVersion := THorseBufferSlice.Create(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
 
   // 3. Processa os cabeçalhos linha a linha indexando os offsets
   SegCount := 0;
@@ -1289,7 +1282,7 @@ end;
 
 constructor TEpollRawRequest.Create(
   var ABuffer: TBytes;
-  const AMethod, APath, AQuery, AVersion: string;
+  const AMethod, APath, AQuery, AVersion: THorseBufferSlice;
   AHeaders: THeaderSegments;
   ABodyOffset: Integer;
   AContentLength: Int64;
@@ -1312,10 +1305,10 @@ begin
 
   ABuffer := nil;
 
-  FMethod := AMethod;
-  FPath := APath;
-  FQuery := AQuery;
-  FVersion := AVersion;
+  FMethodSlice := AMethod;
+  FPathSlice := APath;
+  FQuerySlice := AQuery;
+  FVersionSlice := AVersion;
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
@@ -1379,17 +1372,43 @@ begin
   FResolvedHeaders.Add(LLowerName, '');
 end;
 
-function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
-function TEpollRawRequest.GetProtocolVersion: string; begin Result := FVersion; end;
+function TEpollRawRequest.GetMethod: string;
+begin
+  if FMethodSlice.Compare('GET', True) then Result := 'GET'
+  else if FMethodSlice.Compare('POST', True) then Result := 'POST'
+  else if FMethodSlice.Compare('PUT', True) then Result := 'PUT'
+  else if FMethodSlice.Compare('DELETE', True) then Result := 'DELETE'
+  else if FMethodSlice.Compare('PATCH', True) then Result := 'PATCH'
+  else if FMethodSlice.Compare('HEAD', True) then Result := 'HEAD'
+  else if FMethodSlice.Compare('OPTIONS', True) then Result := 'OPTIONS'
+  else Result := FMethodSlice.ToString;
+end;
+
+function TEpollRawRequest.GetProtocolVersion: string;
+begin
+  if FVersionSlice.Compare('HTTP/1.1', True) then Result := 'HTTP/1.1'
+  else if FVersionSlice.Compare('HTTP/1.0', True) then Result := 'HTTP/1.0'
+  else if FVersionSlice.Compare('HTTP/2.0', True) then Result := 'HTTP/2.0'
+  else Result := FVersionSlice.ToString;
+end;
+
 function TEpollRawRequest.GetURL: string;
 begin
-  if FQuery <> '' then
-    Result := FPath + '?' + FQuery
+  if not FQuerySlice.IsEmpty then
+    Result := FPathSlice.ToString + '?' + FQuerySlice.ToString
   else
-    Result := FPath;
+    Result := FPathSlice.ToString;
 end;
-function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
-function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
+
+function TEpollRawRequest.GetPathInfo: string;
+begin
+  Result := FPathSlice.ToString;
+end;
+
+function TEpollRawRequest.GetQueryString: string;
+begin
+  Result := FQuerySlice.ToString;
+end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
 function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
 // Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
@@ -1462,18 +1481,15 @@ begin
       LName := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LQuery, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
@@ -1511,18 +1527,15 @@ begin
       LName := Copy(LBody, LStart, LEqPos - LStart);
       LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LBody, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
@@ -1670,7 +1683,6 @@ begin
   
   if LRes >= 0 then
   begin
-    Writeln('WriteNonBlockingV: writev sucesso, bytes enviados: ', LRes, ' / total: ', LTotalBytes);
     if NativeUInt(LRes) = LTotalBytes then
       Exit(True);
     
@@ -1706,7 +1718,6 @@ begin
 
   {$IFDEF FPC}
   LErr := fpGetErrno;
-  Writeln('WriteNonBlockingV: writev falhou, erro errno: ', LErr);
   {$ELSE}
   LErr := errno;
   {$ENDIF}
@@ -1949,7 +1960,6 @@ begin
   FPipeFds[0] := -1;
   FPipeFds[1] := -1;
   FConnections := TList<TEpollConnectionContext>.Create;
-  FConnectionsSync := TCriticalSection.Create;
   FListenContext := TEpollConnectionContext.Create(AListenSocket);
   FPipeContext := TEpollConnectionContext.Create(0);
   FreeOnTerminate := False;
@@ -1959,9 +1969,8 @@ destructor THorseEpollWorker.Destroy;
 begin
   TerminateWorker;
   while FConnections.Count > 0 do
-    CloseConnection(FConnections[0]);
+    CloseConnectionInternal(FConnections[0]);
   FConnections.Free;
-  FConnectionsSync.Free;
   FListenContext.Free;
   FPipeContext.Free;
   inherited;
@@ -1969,18 +1978,18 @@ end;
 
 procedure THorseEpollWorker.TerminateWorker;
 var
-  LByte: Byte;
+  LContext: Pointer;
 begin
   if not FRunning then Exit;
   FRunning := False;
 
   if FPipeFds[1] >= 0 then
   begin
-    LByte := 1;
+    LContext := nil;
     {$IF DEFINED(FPC)}
-    fpWrite(FPipeFds[1], LByte, 1);
+    fpWrite(FPipeFds[1], LContext, SizeOf(Pointer));
     {$ELSE}
-    __write(FPipeFds[1], @LByte, 1);
+    __write(FPipeFds[1], @LContext, SizeOf(Pointer));
     {$ENDIF}
   end;
 
@@ -2005,6 +2014,29 @@ begin
 end;
 
 procedure THorseEpollWorker.CloseConnection(AContext: TEpollConnectionContext);
+var
+  LContextPtr: Pointer;
+begin
+  if AContext = nil then Exit;
+  if TThread.CurrentThread.ThreadID = Self.ThreadID then
+  begin
+    CloseConnectionInternal(AContext);
+  end
+  else
+  begin
+    LContextPtr := AContext;
+    if FPipeFds[1] >= 0 then
+    begin
+      {$IF DEFINED(FPC)}
+      fpWrite(FPipeFds[1], LContextPtr, SizeOf(Pointer));
+      {$ELSE}
+      __write(FPipeFds[1], @LContextPtr, SizeOf(Pointer));
+      {$ENDIF}
+    end;
+  end;
+end;
+
+procedure THorseEpollWorker.CloseConnectionInternal(AContext: TEpollConnectionContext);
 begin
   if AContext = nil then Exit;
   {$IFDEF FPC}
@@ -2014,12 +2046,7 @@ begin
   {$ENDIF}
     Exit;
 
-  FConnectionsSync.Enter;
-  try
-    FConnections.Remove(AContext);
-  finally
-    FConnectionsSync.Leave;
-  end;
+  FConnections.Remove(AContext);
   epoll_ctl(FEpollFd, EPOLL_CTL_DEL, AContext.Socket, nil);
   {$IF DEFINED(FPC)}
   fpClose(AContext.Socket);
@@ -2040,6 +2067,7 @@ var
   {$IFDEF FPC}
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LHorseContextObj: THorseContext;
   {$ENDIF}
   LEvent: epoll_event;
   LKeepAlive: Boolean;
@@ -2052,10 +2080,10 @@ var
   LBodyReadBuf: TBytes;
   I: Integer;
   HasPendingWrite: Boolean;
-  LMethod: string;
-  LPath: string;
-  LQuery: string;
-  LVersion: string;
+  LMethod: THorseBufferSlice;
+  LPath: THorseBufferSlice;
+  LQuery: THorseBufferSlice;
+  LVersion: THorseBufferSlice;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -2279,6 +2307,7 @@ begin
       var
         LHorseReq: THorseRequest;
         LHorseRes: THorseResponse;
+        LHorseContextObj: THorseContext;
         LLocalEvent: epoll_event;
         LLocalEpollFd: Integer;
         LLocalContext: TEpollConnectionContext;
@@ -2289,7 +2318,7 @@ begin
         LWebResponse: TInterfacedWebResponse;
         LKeepAlive: Boolean;
         LConnHeader: string;
-        LMethod, LPath, LQuery, LVersion: string;
+        LMethod, LPath, LQuery, LVersion: THorseBufferSlice;
         LHeaders: THeaderSegments;
         LBodyOffset: Integer;
         LContentLength: Int64;
@@ -2310,10 +2339,10 @@ begin
             LContentLength
           ) then
           begin
-            LLocalContext.Method := LMethod;
-            LLocalContext.Path := LPath;
-            LLocalContext.Query := LQuery;
-            LLocalContext.Version := LVersion;
+            LLocalContext.MethodSlice := LMethod;
+            LLocalContext.PathSlice := LPath;
+            LLocalContext.QuerySlice := LQuery;
+            LLocalContext.VersionSlice := LVersion;
             LLocalContext.Headers := LHeaders;
             LLocalContext.BodyOffset := LBodyOffset;
             LLocalContext.ContentLength := LContentLength;
@@ -2321,10 +2350,10 @@ begin
 
           LRawReq := TEpollRawRequest.Create(
             LLocalContext.Buffer,
-            LLocalContext.Method,
-            LLocalContext.Path,
-            LLocalContext.Query,
-            LLocalContext.Version,
+            LLocalContext.MethodSlice,
+            LLocalContext.PathSlice,
+            LLocalContext.QuerySlice,
+            LLocalContext.VersionSlice,
             LLocalContext.Headers,
             LLocalContext.BodyOffset,
             LLocalContext.ContentLength,
@@ -2349,15 +2378,16 @@ begin
           LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
           try
-            LHorseReq := THorseRequest.Create(LWebRequest);
-            LHorseRes := THorseResponse.Create(nil);
+            LHorseContextObj := THorseContextPool.Instance.Acquire;
+            LHorseReq := THorseRequest(LHorseContextObj.Request);
+            LHorseReq.SetCSRawWebRequest(LWebRequest);
+            LHorseRes := THorseResponse(LHorseContextObj.Response);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
               LRawResObj.SendResponse(LHorseRes);
-              LHorseReq.Free;
-              LHorseRes.Free;
+              THorseContextPool.Instance.Release(LHorseContextObj);
             end;
           finally
             LWebRequest.Free;
@@ -2416,10 +2446,10 @@ begin
           LContentLength
         ) then
         begin
-          AContext.Method := LMethod;
-          AContext.Path := LPath;
-          AContext.Query := LQuery;
-          AContext.Version := LVersion;
+          AContext.MethodSlice := LMethod;
+          AContext.PathSlice := LPath;
+          AContext.QuerySlice := LQuery;
+          AContext.VersionSlice := LVersion;
           AContext.Headers := LHeaders;
           AContext.BodyOffset := LBodyOffset;
           AContext.ContentLength := LContentLength;
@@ -2427,10 +2457,10 @@ begin
 
         LRawReq := TEpollRawRequest.Create(
           AContext.Buffer,
-          AContext.Method,
-          AContext.Path,
-          AContext.Query,
-          AContext.Version,
+          AContext.MethodSlice,
+          AContext.PathSlice,
+          AContext.QuerySlice,
+          AContext.VersionSlice,
           AContext.Headers,
           AContext.BodyOffset,
           AContext.ContentLength,
@@ -2455,15 +2485,16 @@ begin
         LWebResponse := TInterfacedWebResponse.Create(LRawRes);
 
         try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(nil);
-          LRes.SetCSRawWebResponse(LWebResponse);
+          LHorseContextObj := THorseContextPool.Instance.Acquire;
+           LReq := THorseRequest(LHorseContextObj.Request);
+           LReq.SetCSRawWebRequest(LWebRequest);
+           LRes := THorseResponse(LHorseContextObj.Response);
+           LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderEpoll.Execute(LReq, LRes);
           finally
             LRawResObj.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            THorseContextPool.Instance.Release(LHorseContextObj);
           end;
         finally
           LWebRequest.Free;
@@ -2590,31 +2621,26 @@ begin
   LNow := GetTickCount64;
   LExpired := TList<TEpollConnectionContext>.Create;
   try
-    FConnectionsSync.Enter;
-    try
-      for I := FConnections.Count - 1 downto 0 do
-      begin
-        LContext := FConnections[I];
-        if LContext.FProcessing then
-          Continue;
+    for I := FConnections.Count - 1 downto 0 do
+    begin
+      LContext := FConnections[I];
+      if LContext.FProcessing then
+        Continue;
 
-        if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
-        begin
-          if LNow - LContext.LastActive > 60000 then
-            LExpired.Add(LContext);
-        end
-        else
-        begin
-          if LNow - LContext.LastActive > 60000 then
-            LExpired.Add(LContext);
-        end;
+      if LContext.FIsKeepAlive and (LContext.BytesReceived = 0) then
+      begin
+        if LNow - LContext.LastActive > 60000 then
+          LExpired.Add(LContext);
+      end
+      else
+      begin
+        if LNow - LContext.LastActive > 60000 then
+          LExpired.Add(LContext);
       end;
-    finally
-      FConnectionsSync.Leave;
     end;
 
     for LContext in LExpired do
-      CloseConnection(LContext);
+      CloseConnectionInternal(LContext);
   finally
     LExpired.Free;
   end;
@@ -2638,6 +2664,8 @@ var
   LContext: TEpollConnectionContext;
   LLastTimeoutCheck: Int64;
   LCurrentTime: Int64;
+  LTargetContext: TEpollConnectionContext;
+  LBytesRead: Integer;
 begin
   {$IFDEF FPC}
   FEpollFd := epoll_create(1024);
@@ -2704,11 +2732,34 @@ begin
         LContext := TEpollConnectionContext(LEvent.data.ptr);
         if LContext = FPipeContext then
         begin
-          {$IFDEF FPC}
-          Writeln('Worker: Sinal de parada recebido via pipe.');
-          Flush(Output);
-          {$ENDIF}
-          Exit;
+          while True do
+          begin
+            {$IF DEFINED(FPC)}
+            LBytesRead := fpRead(FPipeFds[0], @LTargetContext, SizeOf(Pointer));
+            {$ELSE}
+            LBytesRead := __read(FPipeFds[0], @LTargetContext, SizeOf(Pointer));
+            {$ENDIF}
+            if LBytesRead <= 0 then
+              Break;
+
+            if LBytesRead = SizeOf(Pointer) then
+            begin
+              if LTargetContext = nil then
+              begin
+                {$IFDEF FPC}
+                Writeln('Worker: Sinal de parada recebido via pipe.');
+                Flush(Output);
+                {$ENDIF}
+                FRunning := False;
+                Exit;
+              end
+              else
+              begin
+                CloseConnectionInternal(LTargetContext);
+              end;
+            end;
+          end;
+          Continue;
         end
         else if LContext = FListenContext then
         begin
@@ -2732,8 +2783,6 @@ begin
             end;
 
             {$IFDEF FPC}
-            Writeln('Worker: Conexao aceita no socket = ', LClientFd);
-            Flush(Output);
             fpFcntl(LClientFd, F_SETFL, O_NONBLOCK);
             {$ELSE}
             fcntl(LClientFd, F_SETFL, O_NONBLOCK);
@@ -2755,12 +2804,7 @@ begin
             LContext.ClientIP := string(AnsiString(inet_ntoa(LAddr.sin_addr)));
             LContext.ClientPort := ntohs(LAddr.sin_port);
             {$ENDIF}
-            FConnectionsSync.Enter;
-            try
-              FConnections.Add(LContext);
-            finally
-              FConnectionsSync.Leave;
-            end;
+            FConnections.Add(LContext);
 
             LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
             LEvent.data.ptr := LContext;
