@@ -25,6 +25,11 @@ begin
   Res.Send('Ping');
 end;
 
+procedure DoQuery(Req: THorseRequest; Res: THorseResponse);
+begin
+  Res.Send('Query: ' + Req.Body);
+end;
+
 procedure DoListen;
 begin
   Writeln(Format('Server is running on port %d...', [THorse.Port]));
@@ -39,6 +44,7 @@ begin
   THorse.ListenQueue := 4096;
 
   THorse.Get('/ping', DoPing);
+  THorse.Query('/ping', DoQuery);
 
   THorse.Listen(9000, DoListen);
 
