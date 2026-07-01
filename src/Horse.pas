@@ -458,6 +458,18 @@ type
 
   THorse = class(THorseProvider);
 
+  THorseHelper = class helper for THorse
+  public
+    class procedure UseRadixRouter;
+  end;
+
 implementation
+
+{ THorseHelper }
+
+class procedure THorseHelper.UseRadixRouter;
+begin
+  THorse.Routes := THorseRadixRouter.Create;
+end;
 
 end.

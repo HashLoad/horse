@@ -7,8 +7,6 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Horse,
-  // Para utilizar o roteador Radix alternativo:
-  // Horse.Core.Router.Radix;
   SysUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse);
@@ -23,7 +21,7 @@ end;
 
 begin
   // Para utilizar o roteador Radix alternativo de alta performance (plugavel):
-  // THorse.Routes := THorseRadixRouter.Create;
+  // THorse.UseRadixRouter;
 
   THorse.Get('/ping', GetPing);
   THorse.Query('/ping', QueryPing);
