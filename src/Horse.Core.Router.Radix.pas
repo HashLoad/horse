@@ -22,12 +22,13 @@ type
   TRadixFlow = class
   private
     FIndex: Integer;
-    FCallbacks: TArray<THorseCallback>;
+    FCallbacks: TList<THorseCallback>;
     FRequest: THorseRequest;
     FResponse: THorseResponse;
     FActive: Boolean;
   public
-    constructor Create(const ACallbacks: TArray<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
+    constructor Create(ACallbacks: TList<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
+    destructor Destroy; override;
     procedure Next;
   end;
 
@@ -90,27 +91,34 @@ end;
 
 { TRadixFlow }
 
-constructor TRadixFlow.Create(const ACallbacks: TArray<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
+constructor TRadixFlow.Create(ACallbacks: TList<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
 begin
   FIndex := 0;
-  FCallbacks := ACallbacks;
+  FCallbacks := TList<THorseCallback>.Create;
+  FCallbacks.AddRange(ACallbacks);
   FRequest := AReq;
   FResponse := ARes;
   FActive := True;
+end;
+
+destructor TRadixFlow.Destroy;
+begin
+  FCallbacks.Free;
+  inherited;
 end;
 
 procedure TRadixFlow.Next;
 var
   LIndex: Integer;
 begin
-  if (FIndex < Length(FCallbacks)) and FActive then
+  if (FIndex < FCallbacks.Count) and FActive then
   begin
     LIndex := FIndex;
     Inc(FIndex);
     try
       {$IF DEFINED(FPC)}
       Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
-      Writeln('DEBUG: Callback address = ', HexStr(Pointer((@FCallbacks[LIndex])^)));
+      Writeln('DEBUG: Callback address = ', HexStr(Pointer((@FCallbacks.List[LIndex])^)));
       Flush(Output);
       {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);
@@ -386,7 +394,7 @@ begin
           Writeln('DEBUG: LCallbacksList populated successfully! Count = ', LCallbacksList.Count); Flush(Output);
           {$ENDIF}
 
-          LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+          LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
           try
             LFlow.Next;
           finally
@@ -404,7 +412,7 @@ begin
           LCallbacksList.AddRange(FGlobalMiddlewares);
           LCallbacksList.Add(RadixNotFoundFinalizer);
 
-          LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+          LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
           try
             LFlow.Next;
           finally
