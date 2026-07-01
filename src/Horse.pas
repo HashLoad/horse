@@ -75,6 +75,10 @@ unit Horse;
                           fphttpserver(FPC default    — implicit)
                           CrossSocket (HORSE_PROVIDER_CROSSSOCKET)
                           mORMot      (HORSE_PROVIDER_MORMOT)
+                          OverbyteICS (HORSE_PROVIDER_ICS)
+                                      v1: Delphi + Windows only.
+                                      Selecting it on FPC or non-Windows
+                                      triggers a FATAL below.
 
     B · Application type  HORSE_APPTYPE_*   — binary lifecycle shape
                           Console     (default — implicit)
@@ -158,6 +162,26 @@ unit Horse;
   {$ENDIF}
   {$DEFINE FPC_HAS_EXPLICIT_INTERLOCKED_POINTER}
 {$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_ICS)}
+  {$IF DEFINED(HORSE_HOST_ISAPI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_APACHE)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_CGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_FCGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(FPC)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS is Delphi-only. ICS POSIX support (Ics.Posix.*) rides the Delphi POSIX RTL; FPC/Lazarus support is deferred until drapid/ICS_Lazarus is validated against ICS 9.7.'}
+  {$ENDIF}
+  {$IF NOT (DEFINED(MSWINDOWS) OR DEFINED(POSIX))}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS supports Windows and Delphi POSIX (Linux64 / macOS) targets only.'}
+  {$IFEND}
+{$IFEND}
 
 { Rule 2 — cross-platform Application-type mismatch }
 {$IF DEFINED(HORSE_APPTYPE_VCL) and DEFINED(FPC)}
@@ -172,7 +196,7 @@ unit Horse;
 
 { Rule 3 — HORSE_NOPROVIDER × anything else }
 {$IF DEFINED(HORSE_NOPROVIDER)}
-  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_ICS) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
     {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with all HORSE_PROVIDER_*, HORSE_APPTYPE_*, and HORSE_HOST_* defines — remove one.'}
   {$IFEND}
 {$IFEND}
@@ -180,6 +204,12 @@ unit Horse;
 { Rule 4 — mutually-exclusive Providers (Axis A admits at most one) }
 {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_MORMOT)}
   {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_MORMOT are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_ICS)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_MORMOT) and DEFINED(HORSE_PROVIDER_ICS)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT))}
   {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
@@ -293,6 +323,15 @@ uses
   Horse.Provider.Mormot.Daemon,
   {$ELSE}
   Horse.Provider.Mormot,         { Console-shape — Delphi default for mORMot }
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_ICS)}
+  System.SysUtils,
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+  Horse.Provider.ICS.VCL,
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+  Horse.Provider.ICS.Daemon,
+  {$ELSE}
+  Horse.Provider.ICS,            { Console-shape — Delphi default for ICS }
   {$ENDIF}
 {$ELSE}
   System.SysUtils,
@@ -415,6 +454,16 @@ type
     THorseProvider = Horse.Provider.Mormot.FPC.HTTPApplication.THorseProviderMormotFPCHTTPApplication;
   {$ELSE}
     THorseProvider = Horse.Provider.Mormot.THorseProviderMormot;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_ICS)}
+  { v1: Delphi + Windows only. The FATAL guards above keep FPC/non-Windows
+    builds from reaching this branch — see PATCH-HORSE-1 expansion. }
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+    THorseProvider = Horse.Provider.ICS.VCL.THorseProviderICSVCL;
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+    THorseProvider = Horse.Provider.ICS.Daemon.THorseProviderICSDaemon;
+  {$ELSE}
+    THorseProvider = Horse.Provider.ICS.THorseProviderICS;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   THorseProvider =
