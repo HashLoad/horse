@@ -389,9 +389,9 @@ begin
           else
           begin
             if LNode.Callbacks.Count > 0 then
-              LCallbacksList.Add(RadixMethodNotAllowedFinalizer)
+              LCallbacksList.Add(@RadixMethodNotAllowedFinalizer)
             else
-              LCallbacksList.Add(RadixNotFoundFinalizer);
+              LCallbacksList.Add(@RadixNotFoundFinalizer);
           end;
 
           LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
@@ -410,7 +410,7 @@ begin
         LCallbacksList := TList<THorseCallback>.Create;
         try
           LCallbacksList.AddRange(FGlobalMiddlewares);
-          LCallbacksList.Add(RadixNotFoundFinalizer);
+          LCallbacksList.Add(@RadixNotFoundFinalizer);
 
           LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
           try
