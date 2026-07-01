@@ -318,81 +318,91 @@ var
   LPair: TPair<string, string>;
   LStartSegmentIndex: Integer;
 begin
-  Result := False;
-  LRawWebRequest := ARequest.RawWebRequest;
-  if not Assigned(LRawWebRequest) then
-    LMethodType := ARequest.MethodType
-  else
-    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
-
-  LSegments := ARequest.GetPathSegments;
-  
-  LStartSegmentIndex := 0;
-  if (Length(LSegments) > 0) and LSegments[0].Compare('', True) then
-    LStartSegmentIndex := 1;
-
-  LMiddlewares := TList<THorseCallback>.Create;
-  LParams := TDictionary<string, string>.Create;
   try
-    LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
-    
-    if LNode <> nil then
-    begin
-      for LPair in LParams do
-        ARequest.Params.Dictionary.AddOrSetValue(LPair.Key, DecodeParam(LPair.Value));
-
-      LCallbacksList := TList<THorseCallback>.Create;
-      try
-        LCallbacksList.AddRange(FGlobalMiddlewares);
-        LCallbacksList.AddRange(LMiddlewares);
-        
-        if LNode.Callbacks.TryGetValue(LMethodType, LRouteCallbacks) or LNode.Callbacks.TryGetValue(mtAny, LRouteCallbacks) then
-        begin
-          LCallbacksList.AddRange(LRouteCallbacks);
-        end
-        else
-        begin
-          if LNode.Callbacks.Count > 0 then
-            LCallbacksList.Add(RadixMethodNotAllowedFinalizer)
-          else
-            LCallbacksList.Add(RadixNotFoundFinalizer);
-        end;
-
-        LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
-        try
-          LFlow.Next;
-        finally
-          LFlow.Free;
-        end;
-      finally
-        LCallbacksList.Free;
-      end;
-      Result := True;
-    end
+    Result := False;
+    LRawWebRequest := ARequest.RawWebRequest;
+    if not Assigned(LRawWebRequest) then
+      LMethodType := ARequest.MethodType
     else
-    begin
-      LCallbacksList := TList<THorseCallback>.Create;
-      try
-        LCallbacksList.AddRange(FGlobalMiddlewares);
-        LCallbacksList.Add(RadixNotFoundFinalizer);
+      LMethodType := TMethodType.FromString(LRawWebRequest.Method);
 
-        LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+    LSegments := ARequest.GetPathSegments;
+    
+    LStartSegmentIndex := 0;
+    if (Length(LSegments) > 0) and LSegments[0].Compare('', True) then
+      LStartSegmentIndex := 1;
+
+    LMiddlewares := TList<THorseCallback>.Create;
+    LParams := TDictionary<string, string>.Create;
+    try
+      LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
+      
+      if LNode <> nil then
+      begin
+        for LPair in LParams do
+          ARequest.Params.Dictionary.AddOrSetValue(LPair.Key, DecodeParam(LPair.Value));
+
+        LCallbacksList := TList<THorseCallback>.Create;
         try
-          LFlow.Next;
+          LCallbacksList.AddRange(FGlobalMiddlewares);
+          LCallbacksList.AddRange(LMiddlewares);
+          
+          if LNode.Callbacks.TryGetValue(LMethodType, LRouteCallbacks) or LNode.Callbacks.TryGetValue(mtAny, LRouteCallbacks) then
+          begin
+            LCallbacksList.AddRange(LRouteCallbacks);
+          end
+          else
+          begin
+            if LNode.Callbacks.Count > 0 then
+              LCallbacksList.Add(RadixMethodNotAllowedFinalizer)
+            else
+              LCallbacksList.Add(RadixNotFoundFinalizer);
+          end;
+
+          LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+          try
+            LFlow.Next;
+          finally
+            LFlow.Free;
+          end;
         finally
-          LFlow.Free;
+          LCallbacksList.Free;
         end;
-      finally
-        LCallbacksList.Free;
+        Result := True;
+      end
+      else
+      begin
+        LCallbacksList := TList<THorseCallback>.Create;
+        try
+          LCallbacksList.AddRange(FGlobalMiddlewares);
+          LCallbacksList.Add(RadixNotFoundFinalizer);
+
+          LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+          try
+            LFlow.Next;
+          finally
+            LFlow.Free;
+          end;
+        finally
+          LCallbacksList.Free;
+        end;
+        Result := True;
       end;
-      Result := True;
+    finally
+      LMiddlewares.Free;
+      LParams.Free;
     end;
-  finally
-    LMiddlewares.Free;
-    LParams.Free;
+    
+    AResponse.FlushCookiesToWebResponse;
+  except
+    on E: Exception do
+    begin
+      {$IF DEFINED(FPC)}
+      Writeln('CRITICAL RADIX ERROR: ', E.ClassName, ': ', E.Message); Flush(Output);
+      {$ENDIF}
+      raise;
+    end;
   end;
-  
-  AResponse.FlushCookiesToWebResponse;
 end;
 
 end.
