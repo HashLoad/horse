@@ -1,14 +1,16 @@
 unit Horse.Provider.IOUring;
 
-{$IF DEFINED(FPC)}
+{$IFDEF FPC}
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
 
 uses
-  {$IF DEFINED(LINUX) and DEFINED(FPC)}
-    BaseUnix, Unix, errors,
+  {$IFDEF FPC}
+    {$IFDEF UNIX}
+    BaseUnix, Unix, errors, sockets,
+    {$ENDIF}
   {$ENDIF}
   SysUtils, Classes, Generics.Collections,
   Horse.Commons, Horse.Callback, Horse.Request, Horse.Response,
@@ -16,13 +18,19 @@ uses
   Horse.Provider.RawAdapters;
 
 type
+  {$IFDEF FPC}
+  TProc = procedure;
+  {$ENDIF}
+
   THorseProviderIOUring = class(THorseProviderAbstract)
   private
     class var FPort: Integer;
     class var FHost: string;
     class var FRunning: Boolean;
-    {$IF DEFINED(LINUX) and DEFINED(FPC)}
-    class var FServerSocket: Integer;
+    {$IFDEF FPC}
+      {$IFDEF UNIX}
+      class var FServerSocket: Integer;
+      {$ENDIF}
     {$ENDIF}
     class var FListenCallback: TProc;
     class var FStopListenCallback: TProc;
@@ -36,7 +44,8 @@ type
     class function IsRunning: Boolean; reintroduce;
   end;
 
-  {$IF DEFINED(LINUX) and DEFINED(FPC)}
+  {$IFDEF FPC}
+    {$IFDEF UNIX}
   { Tipos e constantes internas do io_uring para uso direto via FpSyscall }
   type
     TIOUringSQE = record
@@ -72,11 +81,19 @@ type
       sq_off: array[0..11] of UInt32;
       cq_off: array[0..9] of UInt32;
     end;
+    {$ENDIF}
   {$ENDIF}
 
 implementation
 
-{$IF DEFINED(LINUX) and DEFINED(FPC)}
+{$IFDEF FPC}
+  {$IFDEF UNIX}
+  function syscall(sysnr: PtrInt; p1: PtrInt; p2: PtrInt; p3: PtrInt): PtrInt; cdecl; external 'libc' name 'syscall';
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF FPC}
+  {$IFDEF UNIX}
 const
   SYS_io_uring_setup    = 425;
   SYS_io_uring_enter    = 426;
@@ -132,7 +149,7 @@ const
     LRes: Integer;
   begin
     FillChar(LParams, SizeOf(LParams), 0);
-    LRes := FpSyscall(SYS_io_uring_setup, 1024, TSysParam(@LParams));
+    LRes := syscall(SYS_io_uring_setup, 1024, PtrInt(@LParams), 0);
     if LRes < 0 then
       raise Exception.Create('Falha ao inicializar o subsistema io_uring do Kernel Linux');
     FRingFd := LRes;
@@ -171,6 +188,7 @@ const
       // Trata exceções da thread
     end;
   end;
+  {$ENDIF}
 {$ENDIF}
 
 { THorseProviderIOUring }
@@ -187,7 +205,8 @@ begin
   FListenCallback := ACallbackListen;
   FStopListenCallback := ACallbackStopListen;
 
-  {$IF DEFINED(LINUX) and DEFINED(FPC)}
+  {$IFDEF FPC}
+    {$IFDEF UNIX}
     FServerSocket := fpSocket(AF_INET, SOCK_STREAM, 0);
     if FServerSocket < 0 then
       raise Exception.Create('Falha ao criar Server Socket no Linux');
@@ -198,6 +217,12 @@ begin
       FListenCallback();
 
     GIOUringWorker := TIOUringWorkerThread.Create;
+    {$ELSE}
+    // Stub em outras plataformas
+    FRunning := True;
+    if Assigned(FListenCallback) then
+      FListenCallback();
+    {$ENDIF}
   {$ELSE}
     // Stub em outras plataformas
     FRunning := True;
@@ -225,7 +250,8 @@ class procedure THorseProviderIOUring.StopListen;
 begin
   if not FRunning then Exit;
 
-  {$IF DEFINED(LINUX) and DEFINED(FPC)}
+  {$IFDEF FPC}
+    {$IFDEF UNIX}
     if GIOUringWorker <> nil then
     begin
       GIOUringWorker.Terminate;
@@ -234,6 +260,7 @@ begin
     end;
     if FServerSocket > 0 then
       FpClose(FServerSocket);
+    {$ENDIF}
   {$ENDIF}
 
   FRunning := False;
