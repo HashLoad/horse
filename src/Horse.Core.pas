@@ -218,7 +218,8 @@ uses
   Horse.Core.Group,
   Horse.Constants,
   Horse.Request,
-  Horse.Response
+  Horse.Response,
+  Horse.Proc
   {$IFNDEF FPC}
   , Horse.Core.Factory
   {$ENDIF}
