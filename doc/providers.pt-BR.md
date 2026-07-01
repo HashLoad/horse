@@ -34,21 +34,13 @@ O **Provider padrão depende do compilador**:
 
 | Provider | Define de compilação | Status | Delphi | Lazarus |
 |---|---|---|:---:|:---:|
-<<<<<<< HEAD
 | **Indy** _(padrão Delphi para self-hosted)_ | _(nenhum)_ | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
 | **`fphttpserver`** _(padrão FPC para self-hosted)_ | _(nenhum)_ | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)** | `HORSE_CROSSSOCKET` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)** | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | **[HTTP.sys](./httpsys.pt-BR.md)** | `HORSE_PROVIDER_HTTPSYS` | Opcional, embutido (modo kernel Windows) | ✔ | ✔ |
 | **[epoll](./epoll.pt-BR.md)** | `HORSE_PROVIDER_EPOLL` | Opcional, embutido (event loop assíncrono Linux) | ✔ | ✔ |
-=======
-| **Indy** | _(nenhum no Delphi)_ | Padrão para self-hosted no Delphi | ✔ | n/a |
-| **`fphttpserver`** | _(nenhum no FPC)_ | Padrão para self-hosted no FPC | n/a | ✔ |
-| **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Opcional, pacote externo | ✔ | ✔ |
-| **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Opcional, pacote externo | ✔ | ✔ |
-| **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Opcional, pacote externo (Delphi: Windows + Linux64/macOS) | ✔ | ❌ |
-| **HttpSys** _(`Horse.Provider.HttpSys`)_ | `HORSE_PROVIDER_HTTPSYS` | Nativo do Horse (somente Windows) | ✔ | ✔ |
->>>>>>> b8e74fc (feat: ICS provider (HORSE_PROVIDER_ICS) define guards + docs update)
+| **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Opcional, pacote externo (Delphi: Windows + Linux64/macOS) | ? | ? |
 
 > **Qual biblioteca faz o trabalho de HTTP, por Tipo de aplicação?** Esta é a pergunta-chave — e a resposta *nem sempre* é Indy. A abstração unificadora em todas as linhas é `Web.HTTPApp.TWebRequest` no Delphi ou `fpHTTP.TRequest` no FPC; abaixo disso, a biblioteca concreta difere.
 >
@@ -58,13 +50,9 @@ O **Provider padrão depende do compilador**:
 > | Daemon / HTTPApplication / LCL | FPC | **`fphttpserver`** | ✘ |
 > | Qualquer self-hosted + `HORSE_CROSSSOCKET` | Qualquer um | **`Delphi-Cross-Socket`** | ✘ |
 > | Qualquer self-hosted + `HORSE_PROVIDER_MORMOT` | Qualquer um | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
-<<<<<<< HEAD
 > | Qualquer self-hosted + `HORSE_PROVIDER_HTTPSYS` | Qualquer um | **`HTTP.sys`** (Driver de Kernel do Windows) | ✘ |
 > | Qualquer self-hosted + `HORSE_PROVIDER_EPOLL` | Qualquer um | **`epoll`** (API epoll nativa do Linux) | ✘ |
-=======
-> | Self-hosted + `HORSE_PROVIDER_ICS` | Delphi (Windows / Linux64 / macOS) | **`OverbyteICS`** (`THttpServer` / `TSslHttpServer`) | ✘ |
-> | Self-hosted + `HORSE_PROVIDER_HTTPSYS` | Windows (Delphi / FPC) | **http.sys do Windows** (`httpapi.dll`, modo kernel) | ✘ |
->>>>>>> b8e74fc (feat: ICS provider (HORSE_PROVIDER_ICS) define guards + docs update)
+> | Qualquer Self-hosted + `HORSE_PROVIDER_ICS` | Delphi (Windows / Linux64 / macOS) | **`OverbyteICS`** (`THttpServer` / `TSslHttpServer`) | ✘ |
 > | Módulo Apache | Qualquer um | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **CGI runner do webserver** (via `Web.HTTPApp.TCGIRequest`) | ✘ |
@@ -385,11 +373,11 @@ O Eixo C vence outright quando definido (nenhum Provider envolvido). Os Eixos A 
 | **mORMot2 + daemon Linux** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_DAEMON` (no Linux) |
 | **ICS Console** (Windows) | `HORSE_PROVIDER_ICS` |
 | **ICS + VCL** (Windows) | `HORSE_PROVIDER_ICS` + `HORSE_APPTYPE_VCL` |
-| **ICS + serviço Windows** | `HORSE_PROVIDER_ICS` + `HORSE_APPTYPE_DAEMON` |
+| **ICS + servi�o Windows** | `HORSE_PROVIDER_ICS` + `HORSE_APPTYPE_DAEMON` |
 | **HttpSys Console** (Windows) | `HORSE_PROVIDER_HTTPSYS` |
-| **HttpSys + serviço Windows** | `HORSE_PROVIDER_HTTPSYS` + `HORSE_APPTYPE_DAEMON` |
-| Módulo Apache | `HORSE_HOST_APACHE` |
-| Extensão ISAPI no IIS | `HORSE_HOST_ISAPI` |
+| **HttpSys + servi�o Windows** | `HORSE_PROVIDER_HTTPSYS` + `HORSE_APPTYPE_DAEMON` |
+| M�dulo Apache | `HORSE_HOST_APACHE` |
+| Extens�o ISAPI no IIS | `HORSE_HOST_ISAPI` |
 | CGI simples | `HORSE_HOST_CGI` |
 | FastCGI | `HORSE_HOST_FCGI` |
 
