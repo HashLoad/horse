@@ -590,7 +590,7 @@ begin
   begin
     GCallbacks2[GCallbacks2Count] := ACallbackRequest;
     case GCallbacks2Count of
-      0: Result := W2_0;
+      0: Result := @W2_0;
       else Result := GWrapperList2[GCallbacks2Count];
     end;
     Writeln('DEBUG: Registered callback address = ', HexStr(Pointer((@Result)^))); Flush(Output);
