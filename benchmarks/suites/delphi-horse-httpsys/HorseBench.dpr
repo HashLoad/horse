@@ -5,10 +5,14 @@ program HorseBench;
 uses
   System.SysUtils,
   Horse,
-  Horse.Provider.HttpSys;
+  Horse.Provider.HttpSys,
+  Horse.Core.Router.Radix;
 
 begin
   try
+    if (ParamCount > 0) and SameText(ParamStr(1), '--radix') then
+      THorse.Routes := THorseRadixRouter.Create;
+
     THorse.Get('/ping',
       procedure(Req: THorseRequest; Res: THorseResponse)
       begin

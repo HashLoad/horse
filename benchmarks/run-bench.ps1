@@ -30,19 +30,36 @@ if (-not (Test-Path $bombardier)) {
     }
 }
 
-# 2. Compilar Servidor Delphi (HTTP.sys Windows)
-Write-Host "`n==> Compilando o servidor Delphi (HTTP.sys)..." -ForegroundColor Cyan
+# 2. Compilar Servidores Delphi (Delphi 13)
+Write-Host "`n==> Compilando o servidor Delphi (HTTP.sys - Windows)..." -ForegroundColor Cyan
 Push-Location suites\delphi-horse-httpsys
 if (Test-Path "HorseBench.exe") { Remove-Item "HorseBench.exe" -Force }
-# Compila utilizando dcc64 (PATH)
-& dcc64 -Q -W -H -GD -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
+# Compila utilizando o dcc64.exe do Delphi 13 (Florence)
+& "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcc64.exe" -Q -W -H -GD -N"$PSScriptRoot\suites\delphi-horse-httpsys" -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
 if (-not (Test-Path "HorseBench.exe")) {
-    Write-Error "❌ Falha ao compilar o HorseBench.exe (Delphi)"
+    Write-Error "❌ Falha ao compilar o HorseBench.exe (Delphi 13 HTTP.sys)"
     Pop-Location
     exit 1
 }
-Write-Host "✅ HorseBench.exe compilado com sucesso!" -ForegroundColor Green
+Write-Host "✅ HorseBench.exe (HTTP.sys) compilado com sucesso!" -ForegroundColor Green
 Pop-Location
+
+Write-Host "`n==> Compilando o servidor Delphi (Indy - Linux)..." -ForegroundColor Cyan
+Push-Location suites\delphi-horse-default
+if (Test-Path "HorseBench") { Remove-Item "HorseBench" -Force }
+# Compila utilizando o dcclinux64.exe do Delphi 13 (Florence) com SDK local
+$sdkPath = "C:\Users\regys\OneDrive\Documentos\Embarcadero\Studio\SDKs\ubuntu22.04.sdk"
+$libPath = "$sdkPath\usr\lib\x86_64-linux-gnu;$sdkPath\lib\x86_64-linux-gnu;$sdkPath\lib64;$sdkPath\usr\lib\gcc\x86_64-linux-gnu\11;C:\Program Files (x86)\Embarcadero\Studio\37.0\lib\linux64\release"
+$unitPath = "..\..\..\src;C:\Program Files (x86)\Embarcadero\Studio\37.0\lib\linux64\release"
+& "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcclinux64.exe" --syslibroot:"$sdkPath" --libpath:"$libPath" -NU"$PSScriptRoot\suites\delphi-horse-default" -I"..\..\..\src" -U"$unitPath" "-NSSystem;Web;System.Hash" -Q HorseBench.dpr
+if (-not (Test-Path "HorseBench")) {
+    Write-Error "❌ Falha ao compilar o HorseBench Linux (Delphi 13 Indy)"
+    Pop-Location
+    exit 1
+}
+Write-Host "✅ HorseBench Linux (Indy) compilado com sucesso!" -ForegroundColor Green
+Pop-Location
+
 
 # 3. Compilar Imagens Docker (Linux)
 Write-Host "`n==> Compilando imagens no Docker (FPC, .NET, Node, Java, Go)..." -ForegroundColor Cyan
@@ -56,11 +73,38 @@ Write-Host "✅ Imagens Docker prontas!" -ForegroundColor Green
 # 4. Configuração dos Candidatos de Benchmark
 $candidatos = @(
     @{
-        Nome = "Delphi 11 (Alexandria)"
+        Nome = "Delphi 13 (Florence) (HTTP.sys)"
         Framework = "Horse (HTTP.sys)"
         Plataforma = "Windows (Host)"
         Tipo = "host"
         Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
+        Porta = 9090
+    },
+    @{
+        Nome = "Delphi 13 (Florence) (HTTP.sys + Radix)"
+        Framework = "Horse (HTTP.sys + Radix)"
+        Plataforma = "Windows (Host)"
+        Tipo = "host"
+        Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
+        Argumentos = "--radix"
+        Porta = 9090
+    },
+    @{
+        Nome = "Delphi 13 (Florence) (Indy)"
+        Framework = "Horse (Indy)"
+        Plataforma = "Linux (Docker)"
+        Tipo = "docker"
+        Service = "delphi-horse-default"
+        Container = "delphi-horse-default"
+        Porta = 9090
+    },
+    @{
+        Nome = "Delphi 13 (Florence) (Indy + Radix)"
+        Framework = "Horse (Indy + Radix)"
+        Plataforma = "Linux (Docker)"
+        Tipo = "docker"
+        Service = "delphi-horse-default-radix"
+        Container = "delphi-horse-default-radix"
         Porta = 9090
     },
     @{
@@ -73,7 +117,7 @@ $candidatos = @(
         Porta = 9090
     },
     @{
-        Nome = "Free Pascal (FPC)"
+        Nome = "Free Pascal (FPC) (epoll)"
         Framework = "Horse (epoll)"
         Plataforma = "Linux (Docker)"
         Tipo = "docker"
@@ -116,6 +160,15 @@ $candidatos = @(
         Service = "go-fiber"
         Container = "go-fiber"
         Porta = 9090
+    },
+    @{
+        Nome = "Rust 1.75"
+        Framework = "Actix-web"
+        Plataforma = "Linux (Docker)"
+        Tipo = "docker"
+        Service = "rust-actix-web"
+        Container = "rust-actix-web"
+        Porta = 9090
     }
 )
 
@@ -136,8 +189,12 @@ foreach ($cand in $candidatos) {
     # Inicializar Servidor
     $processJob = $null
     if ($cand.Tipo -eq "host") {
-        Write-Host "Iniciando processo local: $($cand.Executavel)" -ForegroundColor DarkGray
-        $processJob = Start-Process -FilePath $cand.Executavel -PassThru -NoNewWindow
+        Write-Host "Iniciando processo local: $($cand.Executavel) $($cand.Argumentos)" -ForegroundColor DarkGray
+        if ($cand.Argumentos) {
+            $processJob = Start-Process -FilePath $cand.Executavel -ArgumentList $cand.Argumentos -PassThru -NoNewWindow
+        } else {
+            $processJob = Start-Process -FilePath $cand.Executavel -PassThru -NoNewWindow
+        }
         Start-Sleep -Seconds 3
     } else {
         Write-Host "Iniciando container Docker: $($cand.Service)" -ForegroundColor DarkGray
@@ -315,6 +372,7 @@ Write-Host "`n==> Gerando tabela consolidada de resultados..." -ForegroundColor 
 $mdReport = "# Resultados do Benchmark (RPS e Latência)`n`n"
 $mdReport += "Teste executado em: $(Get-Date -Format 'dd/MM/yyyy HH:mm:ss')`n"
 $mdReport += "Duração dos Testes: $testDuration por cenário`n"
+$mdReport += "Ambiente de Testes: Windows Host para HTTP.sys / Linux Docker para demais`n"
 $mdReport += "Limites Docker: 2 CPUs, 512MB RAM`n`n"
 
 foreach ($conn in $concurrencias) {

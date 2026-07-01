@@ -84,3 +84,47 @@ services:
         limits:
           cpus: '2.0'
           memory: 512M
+
+  # 7. Rust Actix-web
+  rust-actix-web:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/rust-actix-web/Dockerfile
+    container_name: rust-actix-web
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 8. Delphi Horse (Indy Linux Nativo)
+  delphi-horse-default:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/delphi-horse-default/Dockerfile
+    container_name: delphi-horse-default
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
+  # 9. Delphi Horse com Radix Router (Indy Linux Nativo)
+  delphi-horse-default-radix:
+    build:
+      context: ../
+      dockerfile: benchmarks/suites/delphi-horse-default/Dockerfile
+    container_name: delphi-horse-default-radix
+    command: ["--radix"]
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+
