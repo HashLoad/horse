@@ -11,9 +11,9 @@ WORKDIR /build
 COPY src/ ./src
 COPY benchmarks/suites/fpc-horse-epoll/HorseBench.pas ./
 
-# Compilar o servidor com compatibilidade Delphi (-Sd), otimização máxima (-O3),
+# Compilar o servidor com compatibilidade Delphi (-Sd), símbolos de depuração (-gl),
 # ativando o provider EPOLL (-dHORSE_PROVIDER_EPOLL)
-RUN fpc -Sd -O3 -dHORSE_PROVIDER_EPOLL -Fu./src/ HorseBench.pas
+RUN fpc -Sd -gl -dHORSE_PROVIDER_EPOLL -Fu./src/ HorseBench.pas
 
 # Estágio final de execução
 FROM debian:bookworm-slim

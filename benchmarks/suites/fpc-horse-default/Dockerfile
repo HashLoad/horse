@@ -11,8 +11,8 @@ WORKDIR /build
 COPY src/ ./src
 COPY benchmarks/suites/fpc-horse-default/HorseBench.pas ./
 
-# Compilar o servidor com compatibilidade Delphi (-Sd), otimização máxima (-O3) e as units do Horse
-RUN fpc -Sd -O3 -Fu./src/ HorseBench.pas
+# Compilar o servidor com compatibilidade Delphi (-Sd), símbolos de depuração (-gl) e as units do Horse
+RUN fpc -Sd -gl -Fu./src/ HorseBench.pas
 
 # Estágio final de execução
 FROM debian:bookworm-slim
