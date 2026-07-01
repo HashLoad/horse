@@ -40,6 +40,7 @@ O **Provider padrão depende do compilador**:
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)** | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | **[HTTP.sys](./httpsys.pt-BR.md)** | `HORSE_PROVIDER_HTTPSYS` | Opcional, embutido (modo kernel Windows) | ✔ | ✔ |
 | **[epoll](./epoll.pt-BR.md)** | `HORSE_PROVIDER_EPOLL` | Opcional, embutido (event loop assíncrono Linux) | ✔ | ✔ |
+| **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Opcional, pacote externo (Delphi: Windows + Linux64/macOS) | ? | ? |
 
 > **Qual biblioteca faz o trabalho de HTTP, por Tipo de aplicação?** Esta é a pergunta-chave — e a resposta *nem sempre* é Indy. A abstração unificadora em todas as linhas é `Web.HTTPApp.TWebRequest` no Delphi ou `fpHTTP.TRequest` no FPC; abaixo disso, a biblioteca concreta difere.
 >
@@ -302,8 +303,13 @@ O Eixo C vence outright quando definido (nenhum Provider envolvido). Os Eixos A 
 | **mORMot2 + VCL** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_VCL` |
 | **mORMot2 + serviço Windows** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_DAEMON` (no Windows) |
 | **mORMot2 + daemon Linux** | `HORSE_PROVIDER_MORMOT` + `HORSE_APPTYPE_DAEMON` (no Linux) |
-| Módulo Apache | `HORSE_HOST_APACHE` |
-| Extensão ISAPI no IIS | `HORSE_HOST_ISAPI` |
+| **ICS Console** (Windows) | `HORSE_PROVIDER_ICS` |
+| **ICS + VCL** (Windows) | `HORSE_PROVIDER_ICS` + `HORSE_APPTYPE_VCL` |
+| **ICS + servi�o Windows** | `HORSE_PROVIDER_ICS` + `HORSE_APPTYPE_DAEMON` |
+| **HttpSys Console** (Windows) | `HORSE_PROVIDER_HTTPSYS` |
+| **HttpSys + servi�o Windows** | `HORSE_PROVIDER_HTTPSYS` + `HORSE_APPTYPE_DAEMON` |
+| M�dulo Apache | `HORSE_HOST_APACHE` |
+| Extens�o ISAPI no IIS | `HORSE_HOST_ISAPI` |
 | CGI simples | `HORSE_HOST_CGI` |
 | FastCGI | `HORSE_HOST_FCGI` |
 
