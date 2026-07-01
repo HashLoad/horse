@@ -458,16 +458,20 @@ type
 
   THorse = class(THorseProvider)
   public
+    {$IFNDEF FPC}
     class procedure UseRadixRouter;
+    {$ENDIF}
   end;
 
 implementation
 
 { THorse }
 
+{$IFNDEF FPC}
 class procedure THorse.UseRadixRouter;
 begin
   THorse.Routes := THorseRadixRouter.Create;
 end;
+{$ENDIF}
 
 end.
