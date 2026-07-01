@@ -29,6 +29,14 @@ uses
   Horse.Core.Param;
 
 type
+{$IF DEFINED(FPC)}
+  THorseHeaderComparer = class(TInterfacedObject, IEqualityComparer<string>)
+  public
+    function Equals(const A, B: string): Boolean; reintroduce;
+    function GetHashCode(const Value: string): Integer; reintroduce;
+  end;
+{$ENDIF}
+
   THorseCoreParamHeader = class
   private
 {$IF DEFINED(FPC)}
@@ -56,13 +64,25 @@ uses
 {$ENDIF}
   Horse.Rtti;
 
+{$IF DEFINED(FPC)}
+function THorseHeaderComparer.Equals(const A, B: string): Boolean;
+begin
+  Result := SameText(A, B);
+end;
+
+function THorseHeaderComparer.GetHashCode(const Value: string): Integer;
+begin
+  Result := TDefaultEqualityComparer<string>.Default.GetHashCode(LowerCase(Value));
+end;
+{$ENDIF}
+
 class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var
   I: Integer;
   LName, LValue: string;
   LHeaders: TStrings;
 begin
-  Result := THorseList.Create({$IFDEF FPC}TStringComparer.OrdinalIgnoreCase{$ELSE}TIStringComparer.Ordinal{$ENDIF});
+  Result := THorseList.Create({$IFDEF FPC}THorseHeaderComparer.Create{$ELSE}TIStringComparer.Ordinal{$ENDIF});
   try
     LHeaders := GetHeadersList(AWebRequest);
     try
