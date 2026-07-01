@@ -114,6 +114,9 @@ var
   LTempArray: TArray<THorseCallback>;
   {$ENDIF}
 begin
+  {$IF DEFINED(FPC)}
+  Writeln('DEBUG: TRadixFlow.Next - Self = ', HexStr(Pointer(Self))); Flush(Output);
+  {$ENDIF}
   if (FIndex < FCallbacks.Count) and FActive then
   begin
     LIndex := FIndex;
@@ -399,6 +402,9 @@ begin
           {$ENDIF}
 
           LFlow := TRadixFlow.Create(LCallbacksList, ARequest, AResponse);
+          {$IF DEFINED(FPC)}
+          Writeln('DEBUG: LFlow created at address = ', HexStr(Pointer(LFlow))); Flush(Output);
+          {$ENDIF}
           try
             LFlow.Next;
           finally
