@@ -8,6 +8,7 @@ uses
   Horse.Exception,
   Horse.Core.Param,
   System.Generics.Collections,
+  System.Generics.Defaults,
   System.Classes,
   System.DateUtils,
   System.SysUtils;
@@ -829,7 +830,7 @@ end;
 
 procedure TTestHorseCoreParam.Setup;
 begin
-  FParams := TDictionary<String, String>.Create;
+  FParams := TDictionary<String, String>.Create(TIStringComparer.Ordinal);
   FHorseParam := THorseCoreParam.create(FParams);
   FFormatSettings := TFormatSettings.Create;
   FFormatSettings.DecimalSeparator := ',';

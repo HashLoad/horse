@@ -19,13 +19,15 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
-  Horse.Commons,
-  Horse.Core.Router.Contract;
+  {$IFNDEF FPC}
+  Horse.Core.Router.Contract,
+  {$ENDIF}
+  Horse.Commons;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
 
-  THorseRouterTree = class(TInterfacedObject, IHorseRouter)
+  THorseRouterTree = class{$IFNDEF FPC}(TInterfacedObject, IHorseRouter){$ENDIF}
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
@@ -38,9 +40,15 @@ type
     FIsParamsKey: Boolean;
     FRouterRegex: string;
     FIsRouterRegex: Boolean;
+    {$IF DEFINED(FPC)}
+    FMiddleware: TList<THorseCallback>;
+    FRegexedKeys: TList<string>;
+    FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    {$ELSE}
     FMiddleware: TArray<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TDictionary<TMethodType, TArray<THorseCallback>>;
+    {$ENDIF}
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
@@ -119,7 +127,13 @@ begin
   else if ACommand = 'PUT' then
     Result := TMethodType.mtPut
   else if ACommand = 'HEAD' then
-    Result := TMethodType.mtHead;
+    Result := TMethodType.mtHead
+  {$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
+  else if ACommand = 'DELETE' then
+    Result := TMethodType.mtDelete
+  else if ACommand = 'PATCH' then
+    Result := TMethodType.mtPatch
+  {$IFEND};
 end;
 
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
@@ -172,7 +186,7 @@ begin
   LAcceptable := nil;
   for LPair in FRoute do
   begin
-    if LCurrent.Compare(LPair.Key) then
+    if LCurrent.Compare(LPair.Key) or (LPair.Key = '*') then
     begin
       LAcceptable := LPair.Value;
       LFound := True;
@@ -212,10 +226,15 @@ end;
 
 constructor THorseRouterTree.Create;
 begin
+  {$IF DEFINED(FPC)}
+  FMiddleware := TList<THorseCallback>.Create;
+  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
+  {$ELSE}
   FMiddleware := nil;
+  FCallBack := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
+  {$ENDIF}
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
-  FCallBack := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
   FHandlerMethods := TList<TMethodType>.Create;
   FPrefix := '';
   FIsRouterRegex := False;
@@ -223,11 +242,17 @@ end;
 
 destructor THorseRouterTree.Destroy;
 begin
+  {$IF DEFINED(FPC)}
+  FMiddleware.Free;
+  FreeAndNil(FCallBack);
+  {$ELSE}
   FMiddleware := nil;
+  FreeAndNil(FCallBack);
+  {$ENDIF}
   FreeAndNil(FRoute);
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
-  FCallBack.Free;
+  FHandlerMethods.Clear;
   FHandlerMethods.Free;
   inherited;
 end;
@@ -285,6 +310,7 @@ begin
       FTag,
       FIsParamsKey,
       CallNextPath,
+      FPart,
       LFound
     );
     LNextCaller.Init;
@@ -436,7 +462,7 @@ begin
   LNextRoute := nil;
   for LPair in FRoute do
   begin
-    if LNext.Compare(LPair.Key) then
+    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
     begin
       LNextRoute := LPair.Value;
       LFound := True;
@@ -488,7 +514,7 @@ begin
   LNextRoute := nil;
   for LPair in FRoute do
   begin
-    if LNext.Compare(LPair.Key) then
+    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
     begin
       LNextRoute := LPair.Value;
       LFound := True;
@@ -514,7 +540,11 @@ procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var AP
 var
   LNextPart: string;
   LNormalizedNextPart: string;
+  {$IF DEFINED(FPC)}
+  LCallbacks: TList<THorseCallback>;
+  {$ELSE}
   LCallbacks: TArray<THorseCallback>;
+  {$ENDIF}
   LForceRouter: THorseRouterTree;
   LRawPart: string;
 begin
@@ -540,12 +570,21 @@ begin
       raise Exception.Create(Format('Duplicate route detected: [%s] %s',
         [AHTTPType.ToString.ToUpper, AFullPath]));
 
+    {$IF DEFINED(FPC)}
+    if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
+    begin
+      LCallbacks := TList<THorseCallback>.Create;
+      FCallBack.Add(AHTTPType, LCallbacks);
+    end;
+    LCallbacks.Add(ACallback);
+    {$ELSE}
     if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
     begin
       LCallbacks := [];
     end;
     LCallbacks := LCallbacks + [ACallback];
     FCallBack.AddOrSetValue(AHTTPType, LCallbacks);
+    {$ENDIF}
 
     if not AIsMiddleware then
       FHandlerMethods.Add(AHTTPType);
@@ -569,7 +608,11 @@ end;
 
 procedure THorseRouterTree.RegisterMiddleware(const AMiddleware: THorseCallback);
 begin
+  {$IF DEFINED(FPC)}
+  FMiddleware.Add(AMiddleware);
+  {$ELSE}
   FMiddleware := FMiddleware + [AMiddleware];
+  {$ENDIF}
 end;
 
 procedure THorseRouterTree.RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback);
@@ -588,7 +631,11 @@ procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>;
 begin
   APath.Dequeue;
   if APath.Count = 0 then
+    {$IF DEFINED(FPC)}
+    FMiddleware.Add(AMiddleware)
+    {$ELSE}
     FMiddleware := FMiddleware + [AMiddleware]
+    {$ENDIF}
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
 end;

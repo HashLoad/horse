@@ -44,7 +44,8 @@ uses
   Horse.Provider.RawAdapters,
   Horse.Proc,
   Horse.Commons,
-  Horse.Core;
+  Horse.Core,
+  Horse.Core.Context;
 
 type
   { Estrutura que representa os segmentos de cabeçalhos indexados durante o
@@ -745,9 +746,9 @@ begin
 
           try
             LHorseContextObj := THorseContextPool.Instance.Acquire;
-            LHorseReq := LHorseContextObj.Request;
+            LHorseReq := THorseRequest(LHorseContextObj.Request);
             LHorseReq.SetCSRawWebRequest(LWebRequest);
-            LHorseRes := LHorseContextObj.Response;
+            LHorseRes := THorseResponse(LHorseContextObj.Response);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
@@ -2391,9 +2392,9 @@ begin
 
           try
             LHorseContextObj := THorseContextPool.Instance.Acquire;
-            LHorseReq := LHorseContextObj.Request;
+            LHorseReq := THorseRequest(LHorseContextObj.Request);
             LHorseReq.SetCSRawWebRequest(LWebRequest);
-            LHorseRes := LHorseContextObj.Response;
+            LHorseRes := THorseResponse(LHorseContextObj.Response);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
@@ -2498,10 +2499,10 @@ begin
 
         try
           LHorseContextObj := THorseContextPool.Instance.Acquire;
-          LReq := LHorseContextObj.Request;
-          LReq.SetCSRawWebRequest(LWebRequest);
-          LRes := LHorseContextObj.Response;
-          LRes.SetCSRawWebResponse(LWebResponse);
+           LReq := THorseRequest(LHorseContextObj.Request);
+           LReq.SetCSRawWebRequest(LWebRequest);
+           LRes := THorseResponse(LHorseContextObj.Response);
+           LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderEpoll.Execute(LReq, LRes);
           finally

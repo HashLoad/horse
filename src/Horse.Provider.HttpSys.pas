@@ -34,7 +34,8 @@ uses
   Horse.Provider.RawAdapters,
   Horse.Proc,
   Horse.Commons,
-  Horse.Core;
+  Horse.Core,
+  Horse.Core.Context;
 
 const
   HTTPAPI_DLL = 'httpapi.dll';
@@ -527,9 +528,9 @@ begin
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
         LContextObj := THorseContextPool.Instance.Acquire;
-        LReq := LContextObj.Request;
+        LReq := THorseRequest(LContextObj.Request);
         LReq.SetCSRawWebRequest(LWebRequest);
-        LRes := LContextObj.Response;
+        LRes := THorseResponse(LContextObj.Response);
         LRes.SetCSRawWebResponse(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
@@ -737,9 +738,9 @@ begin
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
           LContextObj := THorseContextPool.Instance.Acquire;
-          LReq := LContextObj.Request;
+          LReq := THorseRequest(LContextObj.Request);
           LReq.SetCSRawWebRequest(LWebRequest);
-          LRes := LContextObj.Response;
+          LRes := THorseResponse(LContextObj.Response);
           LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);

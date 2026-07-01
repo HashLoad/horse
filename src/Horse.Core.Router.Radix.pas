@@ -66,7 +66,11 @@ type
 implementation
 
 uses
+  {$IF DEFINED(FPC)}
+  SysUtils, Classes,
+  {$ELSE}
   System.SysUtils, System.Classes,
+  {$ENDIF}
   {$IFNDEF FPC}
     System.NetEncoding;
   {$ELSE}

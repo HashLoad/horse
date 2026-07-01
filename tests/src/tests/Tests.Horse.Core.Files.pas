@@ -40,7 +40,10 @@ implementation
 procedure TTestHorseCoreFile.DelphiFile;
 begin
   FFileName := ExtractFilePath(GetModuleName(HInstance));
-  FFileName := FFileName.Replace('tests\', 'src\Horse.pas');
+  if FFileName.Contains('tests\src\') then
+    FFileName := FFileName.Replace('tests\src\', 'src\Horse.pas')
+  else
+    FFileName := FFileName.Replace('tests\', 'src\Horse.pas');
 
   FHorseFile := THorseCoreFile.Create(FFileName);
 

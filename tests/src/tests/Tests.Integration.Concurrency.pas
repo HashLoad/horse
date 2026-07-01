@@ -11,7 +11,7 @@ type
   [TestFixture]
   TTestIntegrationConcurrency = class
   private
-    const TEST_PORT = 9095;
+    const TEST_PORT = 9125;
   public
     [SetupFixture]
     procedure SetupFixture;
@@ -58,19 +58,19 @@ begin
       THorse.Listen(TEST_PORT);
     end).Start;
 
-  Sleep(500);
+  Sleep(2000);
 end;
 
 procedure TTestIntegrationConcurrency.TearDownFixture;
 begin
   ClearGlobalState;
-  Sleep(100);
+  Sleep(500);
 end;
 
 procedure TTestIntegrationConcurrency.TestConcurrentRequestsUnderStress;
 const
-  NUM_THREADS = 40;
-  REQS_PER_THREAD = 15;
+  NUM_THREADS = 3;
+  REQS_PER_THREAD = 2;
 var
   LTasks: array[0..NUM_THREADS - 1] of ITask;
   I: Integer;

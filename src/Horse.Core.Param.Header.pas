@@ -48,9 +48,11 @@ implementation
 uses    
 {$IF DEFINED(FPC)}
   SysUtils,
+  Generics.Defaults,
 {$ELSE}
   IdCustomHTTPServer,
   System.SysUtils,
+  System.Generics.Defaults,
 {$ENDIF}
   Horse.Rtti;
 
@@ -60,7 +62,7 @@ var
   LName, LValue: string;
   LHeaders: TStrings;
 begin
-  Result := THorseList.create;
+  Result := THorseList.Create(TIStringComparer.Ordinal);
   try
     LHeaders := GetHeadersList(AWebRequest);
     try

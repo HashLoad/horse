@@ -6,7 +6,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.JSON, RESTRequest4D, System.Classes,
-  Controllers.Api, Horse, Horse.Jhonson, SysUtils;
+  Controllers.Api, Horse, Horse.Jhonson, SysUtils, Tests.CleanupHelper;
 
 type
   [TestFixture]
@@ -20,6 +20,8 @@ type
 
     [TearDown]
     procedure TearDown;
+    [TearDownFixture]
+    procedure TearDownFixture;
 
     [Test]
     [TestCase('Test01', 'GET request test')]
@@ -169,6 +171,11 @@ procedure TApiTest.TearDown;
 begin
   FreeAndNil(FJSONObject);
   FreeAndNil(FJSONArray);
+end;
+
+procedure TApiTest.TearDownFixture;
+begin
+  ClearGlobalState;
 end;
 
 initialization

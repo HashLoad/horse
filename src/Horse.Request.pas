@@ -212,10 +212,29 @@ implementation
 uses      
 {$IF DEFINED(FPC)}
   Classes,
+  Generics.Defaults,
 {$ELSE}
   System.Classes,
+  System.Generics.Defaults,
 {$ENDIF}
   Horse.Core.Param.Header;
+
+function StringToMethodType(const AMethod: string): TMethodType;
+begin
+  Result := TMethodType.mtAny;
+  if AMethod = 'GET' then
+    Result := TMethodType.mtGet
+  else if AMethod = 'POST' then
+    Result := TMethodType.mtPost
+  else if AMethod = 'PUT' then
+    Result := TMethodType.mtPut
+  else if AMethod = 'DELETE' then
+    Result := TMethodType.mtDelete
+  else if AMethod = 'PATCH' then
+    Result := TMethodType.mtPatch
+  else if AMethod = 'HEAD' then
+    Result := TMethodType.mtHead;
+end;
 
 { ===========================================================================
   PATCH-REQ-5 / PATCH-REQ-9  Body: string
@@ -410,7 +429,7 @@ begin
   create an empty param rather than crashing on GetHeaders(nil). }
     if not Assigned(FWebRequest) then
     begin
-      FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False);
+      FHeaders := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(False);
       Exit(FHeaders);
     end;
 { end PATCH-REQ-3 }
@@ -472,7 +491,7 @@ var
   LName: String;
   LValue: String;
 begin
-  FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
+  FContentFields := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(False);
 { PATCH-REQ-4 � nil-guard: on CrossSocket path FWebRequest is nil.
   Multipart / form-url-encoded body parsing is the responsibility of
   application-level middleware on the CrossSocket path (e.g. a middleware
@@ -527,7 +546,7 @@ procedure THorseRequest.InitializeCookie;
 var
   LItem: string;
 begin
-  FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
+  FCookie := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(False);
 { PATCH-REQ-4 � nil-guard: on CrossSocket path FWebRequest is nil.
   Cookie parsing from the raw header string is handled by
   THorseRequest.PopulateCookiesFromHeader, called by the CrossSocket bridge
@@ -549,7 +568,7 @@ var
   CName, CValue: string;
 begin
   if not Assigned(FCookie) then
-    FCookie := THorseCoreParam.Create(THorseList.Create).Required(False);
+    FCookie := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(False);
   EqPos := Pos('=', APair);
   if EqPos < 2 then
     Exit;                                   // no/empty name � skip
@@ -566,7 +585,7 @@ end;
 
 procedure THorseRequest.InitializeParams;
 begin
-  FParams := THorseCoreParam.Create(THorseList.Create).Required(True);
+  FParams := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(True);
 end;
 
 { ===========================================================================
@@ -584,7 +603,7 @@ var
   LStart, LLen, I, LEqPos: Integer;
   LKey, LValue: string;
 begin
-  FQuery := THorseCoreParam.Create(THorseList.Create).Required(False);
+  FQuery := THorseCoreParam.Create(THorseList.Create(TIStringComparer.Ordinal)).Required(False);
   if not Assigned(FWebRequest) then
     Exit;  // CrossSocket path: bridge populates query dict directly
   
@@ -669,14 +688,13 @@ end;
 
 function THorseRequest.MethodType: TMethodType;
 begin
-{ PATCH-REQ-3 � nil-guard: return shadow field when FWebRequest is nil }
+{ PATCH-REQ-3 }
   if not Assigned(FWebRequest) then
     Exit(FCSMethodType);
-{ end PATCH-REQ-3 }
-  Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method); {$ELSE}FWebRequest.MethodType; {$ENDIF}
+  Result := StringToMethodType(FWebRequest.Method);
 end;
 
-{ PATCH-REQ-10 � Method: string }
+{ PATCH-REQ-10  Method: string }
 function THorseRequest.Method: string;
 begin
   if not Assigned(FWebRequest) then

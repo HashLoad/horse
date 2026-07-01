@@ -26,13 +26,20 @@ uses
   Horse.Provider.ISAPI in '..\..\src\Horse.Provider.ISAPI.pas',
   Horse.WebModule in '..\..\src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   Horse.Proc in '..\..\src\Horse.Proc.pas',
+  {$IFDEF FPC}
+  Classes,
+  SysUtils,
+  {$ELSE}
   System.Classes,
   System.SysUtils,
+  {$ENDIF}
   {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
   {$ENDIF }
+  {$IFNDEF FPC}
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
+  {$ENDIF}
   DUnitX.TestFramework,
   Tests.Api.Console in 'tests\Tests.Api.Console.pas',
   Controllers.Api in 'controllers\Controllers.Api.pas',
@@ -57,7 +64,9 @@ uses
   Tests.AssertHelper in 'tests\Tests.AssertHelper.pas',
   Tests.CleanupHelper in 'tests\Tests.CleanupHelper.pas',
   Tests.Horse.Core.RouterTree in 'tests\Tests.Horse.Core.RouterTree.pas',
+  {$IFNDEF FPC}
   Tests.Horse.Core.Router.Radix in 'tests\Tests.Horse.Core.Router.Radix.pas',
+  {$ENDIF}
   Tests.Horse.Request.Recycle in 'tests\Tests.Horse.Request.Recycle.pas',
   Tests.Horse.Core.Middleware in 'tests\Tests.Horse.Core.Middleware.pas',
   Tests.Integration.Concurrency in 'tests\Tests.Integration.Concurrency.pas',
@@ -87,6 +96,7 @@ begin
     Runner.UseRTTI := False;
     Runner.FailsOnNoAsserts := True;
 
+    {$IFNDEF FPC}
     if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
     begin
       Logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
@@ -95,6 +105,7 @@ begin
 
     NunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     Runner.AddLogger(NunitLogger);
+    {$ENDIF}
 
     Results := Runner.Execute;
     if (not Results.AllPassed) then

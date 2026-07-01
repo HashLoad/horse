@@ -1,21 +1,25 @@
-﻿unit Web.WebConst;
+unit Web.WebConst;
 
 interface
 
 resourcestring
   sDuplicateActionName = 'Duplicate action name';
 
+  {$IFNDEF FPC}
   {$IF (CompilerVersion > 36.0)}
   sCannotGenerateSessionId = 'Cannot generate session ID';
   sStreamingNotSupported = 'Reponse streaming is not supported';
+  {$IFEND}
   {$ENDIF}
 
   sOnlyOneDispatcher = 'Only one WebDispatcher per form/data module';
 
+  {$IFNDEF FPC}
   {$IF (CompilerVersion > 36.0)}
   sOnlyOneSessionManager = 'Only one SessionManager per form/data module';
   sOnlyOneAuthenticator = 'Only one Authenticator per form/data module';
   sOnlyOneAuthorizer = 'Only one Authorizer per form/data module';
+  {$IFEND}
   {$ENDIF}
 
   sHTTPItemName = 'Name';

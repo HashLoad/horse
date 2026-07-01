@@ -29,10 +29,22 @@ begin
   THorse.Host := '0.0.0.0';
   THorse.MaxConnections := 0;
 
-  // 4. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore via RTTI
+  // 4. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore e THorse via RTTI
   LContext := TRttiContext.Create;
   try
     LType := LContext.GetType(THorseCore) as TRttiInstanceType;
+    if Assigned(LType) then
+    begin
+      LField := LType.GetField('FCallbacks');
+      if Assigned(LField) then
+      begin
+        LList := TList<THorseCallback>(LField.GetValue(nil).AsObject);
+        if Assigned(LList) then
+          LList.Clear;
+      end;
+    end;
+
+    LType := LContext.FindType('Horse.THorse') as TRttiInstanceType;
     if Assigned(LType) then
     begin
       LField := LType.GetField('FCallbacks');
