@@ -8,7 +8,7 @@ services:
       dockerfile: benchmarks/suites/fpc-horse-default/Dockerfile
     container_name: fpc-horse-default
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -22,7 +22,7 @@ services:
       dockerfile: benchmarks/suites/fpc-horse-epoll/Dockerfile
     container_name: fpc-horse-epoll
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -36,7 +36,7 @@ services:
       dockerfile: benchmarks/suites/dotnet-minimal-api/Dockerfile
     container_name: dotnet-minimal-api
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -50,7 +50,7 @@ services:
       dockerfile: benchmarks/suites/nodejs-express/Dockerfile
     container_name: nodejs-express
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -64,7 +64,7 @@ services:
       dockerfile: benchmarks/suites/java-springboot/Dockerfile
     container_name: java-springboot
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -78,7 +78,7 @@ services:
       dockerfile: benchmarks/suites/go-fiber/Dockerfile
     container_name: go-fiber
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -92,7 +92,7 @@ services:
       dockerfile: benchmarks/suites/rust-actix-web/Dockerfile
     container_name: rust-actix-web
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -106,7 +106,7 @@ services:
       dockerfile: benchmarks/suites/delphi-horse-default/Dockerfile
     container_name: delphi-horse-default
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:
@@ -121,7 +121,7 @@ services:
     container_name: delphi-horse-default-radix
     command: ["--radix"]
     ports:
-      - "9090:9090"
+      - "9095:9090"
     deploy:
       resources:
         limits:

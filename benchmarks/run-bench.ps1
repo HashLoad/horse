@@ -96,7 +96,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "delphi-horse-default"
         Container = "delphi-horse-default"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Delphi 13 (Florence) (Indy + Radix)"
@@ -105,7 +105,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "delphi-horse-default-radix"
         Container = "delphi-horse-default-radix"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Free Pascal (FPC)"
@@ -114,7 +114,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "fpc-horse-default"
         Container = "fpc-horse-default"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Free Pascal (FPC) (epoll)"
@@ -123,7 +123,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "fpc-horse-epoll"
         Container = "fpc-horse-epoll"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "C# (.NET 8)"
@@ -132,7 +132,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "dotnet-minimal-api"
         Container = "dotnet-minimal-api"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "JavaScript (Node.js 20)"
@@ -141,7 +141,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "nodejs-express"
         Container = "nodejs-express"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Java 17"
@@ -150,7 +150,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "java-springboot"
         Container = "java-springboot"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Go 1.21"
@@ -159,7 +159,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "go-fiber"
         Container = "go-fiber"
-        Porta = 9090
+        Porta = 9095
     },
     @{
         Nome = "Rust 1.75"
@@ -168,7 +168,7 @@ $candidatos = @(
         Tipo = "docker"
         Service = "rust-actix-web"
         Container = "rust-actix-web"
-        Porta = 9090
+        Porta = 9095
     }
 )
 
