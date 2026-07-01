@@ -109,7 +109,11 @@ var
   LResponse: THorseResponse;
 begin
   {$IF DEFINED(FPC)}
-  Writeln('DEBUG: HandlerAction INICIADO!'); Flush(Output);
+  Writeln('DEBUG: HandlerAction INICIADO!');
+  Writeln('DEBUG: FHorse Assigned = ', Assigned(FHorse));
+  if Assigned(FHorse) then
+    Writeln('DEBUG: Routes Assigned = ', Assigned(FHorse.Routes));
+  Flush(Output);
   {$ENDIF}
   Handled := True;
   try
