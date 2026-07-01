@@ -74,6 +74,7 @@ uses
   Tests.Integration.HttpMethods in 'tests\Tests.Integration.HttpMethods.pas',
   Tests.Integration.KeepAlive in 'tests\Tests.Integration.KeepAlive.pas',
   Tests.Integration.LargePayload in 'tests\Tests.Integration.LargePayload.pas',
+  Tests.Integration.Query in 'tests\Tests.Integration.Query.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
   Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';

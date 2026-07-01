@@ -233,7 +233,9 @@ begin
   else if AMethod = 'PATCH' then
     Result := TMethodType.mtPatch
   else if AMethod = 'HEAD' then
-    Result := TMethodType.mtHead;
+    Result := TMethodType.mtHead
+  else if AMethod = 'QUERY' then
+    Result := TMethodType.mtQuery;
 end;
 
 { ===========================================================================

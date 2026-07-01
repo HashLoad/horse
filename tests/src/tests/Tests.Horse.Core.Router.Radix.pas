@@ -4,8 +4,8 @@ interface
 
 uses
   DUnitX.TestFramework, Horse.Core.Router.Radix, Horse.Request, Horse.Response,
-  Horse.Commons, System.SysUtils, System.Generics.Collections,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
+  System.SysUtils, System.Generics.Collections,
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
   [TestFixture]

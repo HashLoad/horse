@@ -128,6 +128,8 @@ begin
     Result := TMethodType.mtPut
   else if ACommand = 'HEAD' then
     Result := TMethodType.mtHead
+  else if ACommand = 'QUERY' then
+    Result := TMethodType.mtQuery
   {$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
   else if ACommand = 'DELETE' then
     Result := TMethodType.mtDelete

@@ -50,8 +50,8 @@ uses
   {$ELSE}
   System.SysUtils,
   {$ENDIF}
-  Horse.Commons,
-  Web.HTTPApp;
+  Web.HTTPApp,
+  Horse.Commons;
 
 procedure TTestHorseCommons.TestLHSBracketsTypeToString;
 begin
@@ -77,6 +77,7 @@ begin
   Assert.AreEqual('Head', TMethodType.mtHead.ToString);
   Assert.AreEqual('Delete', TMethodType.mtDelete.ToString);
   Assert.AreEqual('Patch', TMethodType.mtPatch.ToString);
+  Assert.AreEqual('Query', TMethodType.mtQuery.ToString);
 end;
 
 procedure TTestHorseCommons.TestMimeTypesToString;

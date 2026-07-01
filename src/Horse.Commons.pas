@@ -17,9 +17,7 @@ uses
 {$ENDIF}
 
 type
-{$IF DEFINED(FPC)}
-  TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
-{$ENDIF}
+  TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch, mtQuery);
 
 {$SCOPEDENUMS ON}
   THTTPStatus = (
@@ -373,6 +371,8 @@ begin
       Result := 'Delete';
     mtPatch:
       Result := 'Patch';
+    mtQuery:
+      Result := 'Query';
   end;
 end;
 

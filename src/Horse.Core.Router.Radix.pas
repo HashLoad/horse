@@ -91,7 +91,9 @@ begin
   else if ACommand = 'DELETE' then
     Result := mtDelete
   else if ACommand = 'HEAD' then
-    Result := mtHead;
+    Result := mtHead
+  else if ACommand = 'QUERY' then
+    Result := mtQuery;
 end;
 
 function DecodeParam(const AValue: string): string;

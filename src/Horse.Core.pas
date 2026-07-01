@@ -156,6 +156,12 @@ type
     class function Delete(const APath: string; const ACallback: THorseCallbackResponse): THorseCore; overload;
 {$IFEND}
 {$IFEND}
+    class function Query(const APath: string; const ACallback: THorseCallback): THorseCore; overload;
+    class function Query(const APath: string; const ACallback: THorseCallbackRequestResponse): THorseCore; overload;
+    class function Query(const APath: string; const ACallback: THorseCallbackRequest): THorseCore; overload;
+{$IFNDEF FPC}
+    class function Query(const APath: string; const ACallback: THorseCallbackResponse): THorseCore; overload;
+{$IFEND}
     {$IF DEFINED(FPC)}
     class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
     {$ELSE}
@@ -476,6 +482,29 @@ begin
   RegisterRoute(mtDelete, APath, ACallback);
 end;
 {$IFEND}
+
+class function THorseCore.Query(const APath: string; const ACallback: THorseCallbackRequestResponse): THorseCore;
+begin
+  Result := Query(APath, GetCallback(ACallback));
+end;
+
+class function THorseCore.Query(const APath: string; const ACallback: THorseCallbackRequest): THorseCore;
+begin
+  Result := Query(APath, GetCallback(ACallback));
+end;
+
+{$IFNDEF FPC}
+class function THorseCore.Query(const APath: string; const ACallback: THorseCallbackResponse): THorseCore;
+begin
+  Result := Query(APath, GetCallback(ACallback));
+end;
+{$IFEND}
+
+class function THorseCore.Query(const APath: string; const ACallback: THorseCallback): THorseCore;
+begin
+  Result := RegisterCallbacksRoute(mtQuery, APath);
+  RegisterRoute(mtQuery, APath, ACallback);
+end;
 
 class function THorseCore.Head(const APath: string; const ACallback: THorseCallback): THorseCore;
 begin
