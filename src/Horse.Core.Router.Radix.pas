@@ -71,7 +71,7 @@ uses
   {$ELSE}
   System.SysUtils, System.Classes,
   {$ENDIF}
-  Horse.Utils;
+  Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils;
 
 { TRadixFlow }
 
@@ -95,8 +95,20 @@ begin
     try
       FCallbacks[LIndex](FRequest, FResponse, Next);
     except
-      FActive := False;
-      raise;
+      on E: Exception do
+      begin
+        FActive := False;
+        if E is EHorseCallbackInterrupted then
+          raise;
+        if E is EHorseException then
+        begin
+          FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+          Exit;
+        end;
+        if FResponse.Status < Integer(THTTPStatus.BadRequest) then
+          FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+        Exit;
+      end;
     end;
   end;
 end;
@@ -250,7 +262,7 @@ begin
     begin
       LTempNode := LChild;
       LBestMatch := FindNode(ASegments, AIndex + 1, LTempNode, AHTTPType, AMiddlewares, AParams);
-      if (LBestMatch <> nil) and (LBestMatch.Callbacks.ContainsKey(AHTTPType) or LBestMatch.Callbacks.ContainsKey(mtAny)) then
+      if LBestMatch <> nil then
         Exit(LBestMatch);
     end;
   end;
@@ -263,7 +275,7 @@ begin
       AParams.AddOrSetValue(LChild.ParamName, LCurrentSlice.ToString);
       LTempNode := LChild;
       LBestMatch := FindNode(ASegments, AIndex + 1, LTempNode, AHTTPType, AMiddlewares, AParams);
-      if (LBestMatch <> nil) and (LBestMatch.Callbacks.ContainsKey(AHTTPType) or LBestMatch.Callbacks.ContainsKey(mtAny)) then
+      if LBestMatch <> nil then
         Exit(LBestMatch);
     end;
   end;
@@ -307,7 +319,7 @@ begin
   try
     LNode := FindNode(LSegments, 0, FRoot, LMethodType, LMiddlewares, LParams);
     
-    if (LNode <> nil) and (LNode.Callbacks.TryGetValue(LMethodType, LRouteCallbacks) or LNode.Callbacks.TryGetValue(mtAny, LRouteCallbacks)) then
+    if LNode <> nil then
     begin
       for LPair in LParams do
         ARequest.Params.Dictionary.AddOrSetValue(LPair.Key, DecodeParam(LPair.Value));
@@ -316,7 +328,44 @@ begin
       try
         LCallbacksList.AddRange(FGlobalMiddlewares);
         LCallbacksList.AddRange(LMiddlewares);
-        LCallbacksList.AddRange(LRouteCallbacks);
+        
+        if LNode.Callbacks.TryGetValue(LMethodType, LRouteCallbacks) or LNode.Callbacks.TryGetValue(mtAny, LRouteCallbacks) then
+        begin
+          LCallbacksList.AddRange(LRouteCallbacks);
+        end
+        else
+        begin
+          LCallbacksList.Add(
+            procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+            begin
+              if LNode.Callbacks.Count > 0 then
+                Res.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
+              else
+                Res.Send('Not Found').Status(THTTPStatus.NotFound);
+            end);
+        end;
+
+        LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
+        try
+          LFlow.Next;
+        finally
+          LFlow.Free;
+        end;
+      finally
+        LCallbacksList.Free;
+      end;
+      Result := True;
+    end
+    else
+    begin
+      LCallbacksList := TList<THorseCallback>.Create;
+      try
+        LCallbacksList.AddRange(FGlobalMiddlewares);
+        LCallbacksList.Add(
+          procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+          begin
+            Res.Send('Not Found').Status(THTTPStatus.NotFound);
+          end);
 
         LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
         try
