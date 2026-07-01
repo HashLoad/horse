@@ -111,7 +111,8 @@ procedure TRadixFlow.Next;
 var
   LIndex: Integer;
   {$IF DEFINED(FPC)}
-  LTempArray: TArray<Pointer>;
+  LTemp: THorseCallback;
+  LTempAsPointer: Pointer absolute LTemp;
   {$ENDIF}
 begin
   if (FIndex < FCallbacks.Count) and FActive then
@@ -120,9 +121,9 @@ begin
     Inc(FIndex);
     try
       {$IF DEFINED(FPC)}
-      LTempArray := TArray<Pointer>(Pointer(FCallbacks.ToArray));
+      LTemp := FCallbacks[LIndex];
       Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
-      Writeln('DEBUG: Callback address = ', HexStr(LTempArray[LIndex]));
+      Writeln('DEBUG: Callback address = ', HexStr(LTempAsPointer));
       Flush(Output);
       {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);

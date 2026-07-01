@@ -583,6 +583,10 @@ begin
 end;
 
 class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
+var
+  {$IF DEFINED(FPC)}
+  LResultAsPointer: Pointer absolute Result;
+  {$ENDIF}
 begin
 {$IFDEF FPC}
   {$IF DEFINED(FPC)}
@@ -590,7 +594,7 @@ begin
   begin
     GCallbacks2[GCallbacks2Count] := ACallbackRequest;
     Result := GWrapperList2[GCallbacks2Count];
-    Writeln('DEBUG: Registered callback address = ', HexStr(Pointer((@Result)^))); Flush(Output);
+    Writeln('DEBUG: Registered callback address = ', HexStr(LResultAsPointer)); Flush(Output);
     Inc(GCallbacks2Count);
   end
   else
