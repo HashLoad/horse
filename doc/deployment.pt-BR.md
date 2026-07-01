@@ -244,7 +244,7 @@ O mesmo `.dpr` compila nos dois — só a casca de deploy (unit systemd vs. regi
 
 ## HTTPS / TLS em runtime — o que entregar por OS
 
-Tanto `HORSE_PROVIDER_CROSSSOCKET` quanto `HORSE_PROVIDER_MORMOT` usam **OpenSSL** para HTTPS — eles fazem `dlopen` / `LoadLibrary` da biblioteca compartilhada do sistema no startup. A pilha de transporte fica no seu binário; o OpenSSL **não** é linkado estaticamente por padrão. Planeje o deploy considerando isso.
+Os três providers TLS self-hosted — `HORSE_PROVIDER_CROSSSOCKET`, `HORSE_PROVIDER_MORMOT` e `HORSE_PROVIDER_ICS` — usam **OpenSSL** para HTTPS. CrossSocket e mORMot fazem `dlopen` / `LoadLibrary` da biblioteca compartilhada do sistema no startup; o ICS acompanha suas próprias bibliotecas OpenSSL 3.x/4.x na distribuição. A pilha de transporte fica no seu binário; o OpenSSL **não** é linkado estaticamente por padrão (exceto via `mormot2static` do mORMot). Os três habilitam TLS da mesma forma — `Config.SSLEnabled := True` mais um cert/key no record de config, passados via `ListenWithConfig` — e os três suportam TLS mútuo via `SSLVerifyPeer` + um arquivo de CA. Planeje o deploy considerando isso.
 
 ### Linux
 
@@ -264,11 +264,14 @@ dnf install openssl-libs
 apk add openssl libcrypto3 libssl3
 ```
 
-Os dois providers aceitam tanto 1.1.x quanto 3.x — eles testam no startup. Se o loader não encontrar nenhum dos dois, o binário ainda roda, mas `SSLEnabled := True` falha no `Listen` com um erro claro de "no SSL backend available".
+CrossSocket e mORMot aceitam tanto 1.1.x quanto 3.x — eles testam no startup. Se o loader não encontrar nenhum dos dois, o binário ainda roda, mas `SSLEnabled := True` falha no `Listen` com um erro claro de "no SSL backend available". O ICS usa OpenSSL 3.x/4.x e já embute as bibliotecas necessárias.
 
 Para deploys em containers mínimos ou ambientes air-gapped onde não dá pra contar com os pacotes da distro:
 - **CrossSocket:** entregue o `libssl.so` + `libcrypto.so` compatíveis junto do binário e declare na seção `[Service]` da unit systemd: `Environment="LD_LIBRARY_PATH=/opt/seuapp"`.
 - **mORMot2:** o pacote `mormot2static` inclui uma variante com link estático pra algumas plataformas (`mormot2static/static/x86_64-linux` no FPC) — veja o [samples/tests/README do horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot/blob/master/samples/tests/README.md) para o setup completo de Search-path.
+- **ICS:** somente Delphi (Windows + Linux64). Entregue o OpenSSL `.so` (Linux) / `.dll` (Windows) que acompanha a distribuição do ICS junto do binário.
+
+> **TLS mútuo (mTLS).** Os três providers verificam certificados de cliente quando `Config.SSLVerifyPeer := True` e um arquivo de CA é definido (`SSLCACertFile` no CrossSocket/mORMot, `SSLCAFile` no ICS). O `tests/TLS-TESTS.md` de cada provider tem um teste de integração executável (unidirecional + mTLS). O mTLS no servidor CrossSocket também exige os patches `Net.CrossSslSocket.*` ou o release do fork (veja o README dele).
 
 ### Windows
 

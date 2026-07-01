@@ -4,7 +4,7 @@
 
 Horse targets a broad range of Delphi and Free Pascal versions. This page lists what's supported, what's tested, and the per-Provider / per-Application-type considerations.
 
-For the two-axis model (Provider — Indy / fphttpserver / CrossSocket / mORMot2 — × Application type — Console / VCL / Daemon / Apache / ISAPI / CGI / FCGI / LCL / HTTPApplication), see [Providers & Application types](./providers.md).
+For the two-axis model (Provider — Indy / fphttpserver / CrossSocket / mORMot2 / ICS / HttpSys — × Application type — Console / VCL / Daemon / Apache / ISAPI / CGI / FCGI / LCL / HTTPApplication), see [Providers & Application types](./providers.md).
 
 ---
 
@@ -39,15 +39,15 @@ The platform set depends on which Provider is selected and which Application typ
 
 ### Self-hosted Providers × Platform
 
-The Provider that owns the socket. Indy is Delphi-only; `fphttpserver` is FPC-only; CrossSocket and mORMot2 span both.
+The Provider that owns the socket. Indy is Delphi-only; `fphttpserver` is FPC-only; CrossSocket and mORMot2 span both; ICS is Delphi-only (Windows + POSIX/Linux64); HttpSys is Windows only (Delphi + FPC), built into Horse.
 
-| Platform | Indy _(Delphi default)_ | `fphttpserver` _(FPC default)_ | CrossSocket _(`HORSE_PROVIDER_CROSSSOCKET`)_ | mORMot2 _(`HORSE_PROVIDER_MORMOT`)_ |
-|---|:---:|:---:|:---:|:---:|
-| Windows x86 / x64 | ✔ | ✔ | ✔ _(IOCP)_ | ✔ _(IOCP; also http.sys via `THttpApiServer`)_ |
-| Linux x64 | ✔ | ✔ | ✔ _(epoll, primary target)_ | ✔ _(epoll)_ |
-| macOS Intel / ARM64 | ✔ | ✔ | ✔ _(kqueue)_ | ✔ |
-| FreeBSD | — | ✔ | ✔ _(kqueue)_ | ✔ _(kqueue)_ |
-| Android / iOS | — | — | — | — |
+| Platform | Indy _(Delphi default)_ | `fphttpserver` _(FPC default)_ | CrossSocket _(`HORSE_PROVIDER_CROSSSOCKET`)_ | mORMot2 _(`HORSE_PROVIDER_MORMOT`)_ | ICS _(`HORSE_PROVIDER_ICS`)_ | HttpSys _(`HORSE_PROVIDER_HTTPSYS`)_ |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Windows x86 / x64 | ✔ | ✔ | ✔ _(IOCP)_ | ✔ _(IOCP; also http.sys via `THttpApiServer`)_ | ✔ _(OpenSSL 3.x/4.x; TLS 1.3, mTLS)_ | ✔ _(http.sys, kernel-mode; built-in)_ |
+| Linux x64 | ✔ | ✔ | ✔ _(epoll, primary target)_ | ✔ _(epoll)_ | ✔ _(Delphi POSIX; `Ics.Posix.*` pump)_ | — |
+| macOS Intel / ARM64 | ✔ | ✔ | ✔ _(kqueue)_ | ✔ | ✔ _(Delphi POSIX)_ | — |
+| FreeBSD | — | ✔ | ✔ _(kqueue)_ | ✔ _(kqueue)_ | — | — |
+| Android / iOS | — | — | — | — | — | — |
 
 ### Host-managed Application types × Platform
 
@@ -98,9 +98,24 @@ These don't use a self-hosted Provider — the host process owns the socket. Cov
 - On Delphi the build also requires the **precompiled `.obj` blobs** from `mormot2static.7z` ([latest mORMot2 release](https://github.com/synopse/mORMot2/releases/latest)) extracted into `mORMot2\static\delphi\`. Without these the linker fails with `E1026 File not found: '..\..\static\delphi\zlibdeflate.obj'`. The FPC variants use `.o` files under `mORMot2\static\<target>` configured via the project's `-Fl` paths.
 - See [`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot#readme) for the current per-version test matrix and configuration record (`THorseMormotConfig`).
 
+### ICS — optional, Delphi (Windows + POSIX/Linux)
+
+- Requires **Delphi 2009 or later** (OverbyteICS's minimum) — recommended **10.4 Sydney+** to match the rest of the stack. **Delphi only**: Windows plus **POSIX (Linux64 / macOS)** via ICS's own `Ics.Posix.*` message pump. A **Lazarus/FPC** port is **not viable** — ICS's POSIX layer rides the *Delphi* POSIX RTL, and ICS compiles out OpenSSL under FPC.
+- Replaces Indy with [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download)'s `THttpServer` / `TSslHttpServer`. Distinctive value: **modern OpenSSL 3.x / 4.x** (TLS 1.3, SNI, mTLS); the OpenSSL libraries ship with ICS (DLLs on Windows, `.so` on Linux). On Linux, use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run` for a signal-handled daemon shape.
+- **Installation is manual** (not Boss): install OverbyteICS following the **official ICS instructions** — download/clone ICS (v9.x) and add its `Source/` folder to your search path; then add `horse-provider-ics/src`.
+- v1 limitations: uploads must send `Content-Length` (chunked request bodies are rejected by ICS); keep-alive is disabled. See the provider README's *Known limitations*.
+- See [`horse-provider-ics`](https://github.com/freitasjca/horse-provider-ics#readme) for setup, the A–K test suite, and the ICS-specific notes.
+
+### HttpSys — optional, Windows-only, built-in
+
+- **Built into Horse** — the `Horse.Provider.HttpSys` unit ships with the framework; **no external library, no Boss dependency**. Just add `HORSE_PROVIDER_HTTPSYS` to your project's Conditional Defines.
+- **Windows only**, on **both Delphi and FPC/Lazarus** — it binds `httpapi.dll`, the Windows **http.sys** kernel-mode HTTP stack (the same stack IIS rides). Selecting it on a non-Windows target is a compile error.
+- No DLLs to ship — http.sys is part of the OS. Two **machine-level** prerequisites apply because http.sys is global: a **URL reservation** (`netsh http add urlacl …`) for non-`localhost` hosts or privileged ports, and an **`netsh http add sslcert …`** binding for HTTPS (certificate lives in the Windows store, not a `.pem`).
+- Same underlying stack as mORMot2's `THttpApiServer` (`mskHttpApi`) — HttpSys is the standalone, dependency-free way to use it. **Mutually exclusive** with CrossSocket / mORMot2 / ICS.
+
 ## Host-managed Application types
 
-Apache / ISAPI / CGI / FastCGI **do not use a self-hosted Provider** — neither Indy, `fphttpserver`, CrossSocket, nor mORMot2 is involved. The host process (Apache httpd, IIS, the web server) owns the socket and hands the request to Horse via `Web.HTTPApp` (Delphi) or `fpFCGI` / `fpHTTP` (FPC) subclasses.
+Apache / ISAPI / CGI / FastCGI **do not use a self-hosted Provider** — none of Indy, `fphttpserver`, CrossSocket, mORMot2, ICS, or HttpSys is involved. The host process (Apache httpd, IIS, the web server) owns the socket and hands the request to Horse via `Web.HTTPApp` (Delphi) or `fpFCGI` / `fpHTTP` (FPC) subclasses.
 
 - **Apache module** — Delphi (`Web.HTTPD24Impl`, `Web.ApacheApp`). Build the `.so` / `.dll` matching the Apache architecture.
 - **ISAPI extension** — Delphi only (`Web.Win.ISAPIApp`). Windows + IIS. Match the architecture of the IIS application pool (32-bit pool → Win32 build).
