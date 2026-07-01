@@ -171,6 +171,7 @@ type
   end;
 
   TMethodTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMethodType
+    class function FromString(const AMethod: string): TMethodType; static;
     function ToString: string;
   end;
 
@@ -182,9 +183,7 @@ type
     function ToString: string;
   end;
 
-{$IF DEFINED(FPC)}
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-{$ENDIF}
+
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
@@ -197,26 +196,7 @@ uses
   System.RegularExpressions;    
 {$ENDIF}
 
-{$IF DEFINED(FPC)}
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-begin
-  Result := TMethodType.mtAny;
-  case AnsiIndexText(ACommand, ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT']) of
-    0:
-      Result := TMethodType.mtDelete;
-    1:
-      Result := TMethodType.mtGet;
-    2:
-      Result := TMethodType.mtHead;
-    3:
-      Result := TMethodType.mtPatch;
-    4:
-      Result := TMethodType.mtPost;
-    5:
-      Result := TMethodType.mtPut;
-  end;
-end;
-{$ENDIF}
+
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
@@ -353,6 +333,28 @@ begin
 end;
 
 { TMethodTypeHelper }
+
+class function TMethodTypeHelper.FromString(const AMethod: string): TMethodType;
+var
+  LMethod: string;
+begin
+  Result := mtAny;
+  LMethod := UpperCase(AMethod);
+  if LMethod = 'GET' then
+    Result := mtGet
+  else if LMethod = 'POST' then
+    Result := mtPost
+  else if LMethod = 'PUT' then
+    Result := mtPut
+  else if LMethod = 'PATCH' then
+    Result := mtPatch
+  else if LMethod = 'DELETE' then
+    Result := mtDelete
+  else if LMethod = 'HEAD' then
+    Result := mtHead
+  else if LMethod = 'QUERY' then
+    Result := mtQuery;
+end;
 
 function TMethodTypeHelper.ToString: string;
 begin

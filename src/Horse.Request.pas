@@ -217,26 +217,10 @@ uses
   System.Classes,
   System.Generics.Defaults,
 {$ENDIF}
+  Horse.Utils,
   Horse.Core.Param.Header;
 
-function StringToMethodType(const AMethod: string): TMethodType;
-begin
-  Result := TMethodType.mtAny;
-  if AMethod = 'GET' then
-    Result := TMethodType.mtGet
-  else if AMethod = 'POST' then
-    Result := TMethodType.mtPost
-  else if AMethod = 'PUT' then
-    Result := TMethodType.mtPut
-  else if AMethod = 'DELETE' then
-    Result := TMethodType.mtDelete
-  else if AMethod = 'PATCH' then
-    Result := TMethodType.mtPatch
-  else if AMethod = 'HEAD' then
-    Result := TMethodType.mtHead
-  else if AMethod = 'QUERY' then
-    Result := TMethodType.mtQuery;
-end;
+
 
 { ===========================================================================
   PATCH-REQ-5 / PATCH-REQ-9  Body: string
@@ -631,10 +615,8 @@ begin
       LKey := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LKey) > 0 then
-        LKey := HTTPDecode(LKey);
-      if Pos('%', LValue) > 0 then
-        LValue := HTTPDecode(LValue);
+      LKey := DecodeParam(LKey);
+      LValue := DecodeParam(LValue);
         
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, LValue)
@@ -644,8 +626,7 @@ begin
     else
     begin
       LKey := Copy(LQuery, LStart, I - LStart);
-      if Pos('%', LKey) > 0 then
-        LKey := HTTPDecode(LKey);
+      LKey := DecodeParam(LKey);
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, '');
     end;
@@ -693,7 +674,7 @@ begin
 { PATCH-REQ-3 }
   if not Assigned(FWebRequest) then
     Exit(FCSMethodType);
-  Result := StringToMethodType(FWebRequest.Method);
+  Result := TMethodType.FromString(FWebRequest.Method);
 end;
 
 { PATCH-REQ-10  Method: string }

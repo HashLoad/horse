@@ -71,41 +71,7 @@ uses
   {$ELSE}
   System.SysUtils, System.Classes,
   {$ENDIF}
-  {$IFNDEF FPC}
-    System.NetEncoding;
-  {$ELSE}
-    httpprotocol;
-  {$ENDIF}
-
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-begin
-  Result := mtAny;
-  if ACommand = 'GET' then
-    Result := mtGet
-  else if ACommand = 'POST' then
-    Result := mtPost
-  else if ACommand = 'PUT' then
-    Result := mtPut
-  else if ACommand = 'PATCH' then
-    Result := mtPatch
-  else if ACommand = 'DELETE' then
-    Result := mtDelete
-  else if ACommand = 'HEAD' then
-    Result := mtHead
-  else if ACommand = 'QUERY' then
-    Result := mtQuery;
-end;
-
-function DecodeParam(const AValue: string): string;
-begin
-  if Pos('%', AValue) = 0 then
-    Exit(AValue);
-  {$IF DEFINED(FPC)}
-  Result := HTTPDecode(AValue);
-  {$ELSE}
-  Result := TNetEncoding.URL.Decode(AValue);
-  {$ENDIF}
-end;
+  Horse.Utils;
 
 { TRadixFlow }
 
@@ -332,7 +298,7 @@ begin
   if not Assigned(LRawWebRequest) then
     LMethodType := ARequest.MethodType
   else
-    LMethodType := StringCommandToMethodType(LRawWebRequest.Method);
+    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
 
   LSegments := ARequest.GetPathSegments;
   

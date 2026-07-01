@@ -117,26 +117,7 @@ begin
   Result := TlsNextCaller;
 end;
 
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-begin
-  Result := TMethodType.mtAny;
-  if ACommand = 'GET' then
-    Result := TMethodType.mtGet
-  else if ACommand = 'POST' then
-    Result := TMethodType.mtPost
-  else if ACommand = 'PUT' then
-    Result := TMethodType.mtPut
-  else if ACommand = 'HEAD' then
-    Result := TMethodType.mtHead
-  else if ACommand = 'QUERY' then
-    Result := TMethodType.mtQuery
-  {$IF (DEFINED(FPC) or (CompilerVersion > 27.0))}
-  else if ACommand = 'DELETE' then
-    Result := TMethodType.mtDelete
-  else if ACommand = 'PATCH' then
-    Result := TMethodType.mtPatch
-  {$IFEND};
-end;
+
 
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
 begin
@@ -273,7 +254,7 @@ begin
   end
   else
   begin
-    LMethodType := StringCommandToMethodType(LRawWebRequest.Method);
+    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
   end;
   LSegments := ARequest.GetPathSegments;
   Result := ExecuteInternal(LSegments, 0, LMethodType, ARequest, AResponse);

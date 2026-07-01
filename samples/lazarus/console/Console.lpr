@@ -6,7 +6,10 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Horse;
+  Horse,
+  // Para utilizar o roteador Radix alternativo:
+  // Horse.Core.Router.Radix;
+  SysUtils;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse);
 begin
@@ -19,6 +22,9 @@ begin
 end;
 
 begin
+  // Para utilizar o roteador Radix alternativo de alta performance (plugavel):
+  // THorse.Routes := THorseRadixRouter.Create;
+
   THorse.Get('/ping', GetPing);
   THorse.Query('/ping', QueryPing);
   THorse.Listen(9000);

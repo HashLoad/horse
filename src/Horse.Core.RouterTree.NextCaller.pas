@@ -78,8 +78,8 @@ uses
   SysUtils,
 {$ELSE}
   System.SysUtils,
-  System.NetEncoding,
 {$ENDIF}
+  Horse.Utils,
   Horse.Exception,
   Horse.Exception.Interrupted;
 
@@ -138,10 +138,7 @@ begin
   FIndexCallback := -1;
   if FIsParamsKey and (LCurrentStr <> '') then
   begin
-    if Pos('%', LCurrentStr) > 0 then
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrentStr){$ELSE}TNetEncoding.URL.Decode(LCurrentStr){$ENDIF})
-    else
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, LCurrentStr);
+      FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
   end;
 end;
 

@@ -70,6 +70,10 @@ begin
   Result := SameText(A, B);
 end;
 
+{ O algoritmo de hashing DJB2 foi implementado caractere-por-caractere de forma
+  zero-allocation para evitar a alocacao temporaria gerada por LowerCase no FPC.
+  Isso otimiza o hot path de busca de headers e resolve problemas de link de
+  comparadores nativos sob FPC. }
 function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
 var
   I: Integer;

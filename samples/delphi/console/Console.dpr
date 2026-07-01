@@ -14,6 +14,8 @@ uses
     cthreads,
   {$ENDIF}
   Horse,
+  // Para utilizar o roteador Radix alternativo:
+  // Horse.Core.Router.Radix,
   {$IFDEF FPC}
     SysUtils;
   {$ELSE}
@@ -40,6 +42,9 @@ begin
     IsConsole := True;
     ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
+
+  // Para utilizar o roteador Radix alternativo de alta performance (plugavel):
+  // THorse.Routes := THorseRadixRouter.Create;
 
   THorse.ListenQueue := 4096;
 

@@ -18,7 +18,6 @@ uses
     Unix,
     Linux,
     sockets,
-    httpprotocol,
   {$ELSE}
     System.SysUtils,
     System.Classes,
@@ -26,7 +25,6 @@ uses
     System.Generics.Collections,
     System.Generics.Defaults,
     System.Threading,
-    System.NetEncoding,
     Posix.Base,
     Posix.SysTypes,
     Posix.SysSocket,
@@ -36,6 +34,7 @@ uses
     Posix.NetinetIn,
     Posix.Errno,
   {$ENDIF}
+  Horse.Utils,
   Horse.Provider.Abstract,
   Horse.Provider.Config,
   Horse.Request,
@@ -1486,18 +1485,15 @@ begin
       LName := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LQuery, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
@@ -1535,18 +1531,15 @@ begin
       LName := Copy(LBody, LStart, LEqPos - LStart);
       LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LBody, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
