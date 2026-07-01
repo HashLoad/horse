@@ -68,19 +68,37 @@ end;
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
-{$IF DEFINED(FPC)}
-  inherited CreateNew(AOwner, 0);
-{$ELSE}
-  inherited;
-{$ENDIF}
-  FHorse := THorseCore.GetInstance;
-  FInstance := Self;
+  try
+    {$IF DEFINED(FPC)}
+    inherited CreateNew(AOwner, 0);
+    {$ELSE}
+    inherited;
+    {$ENDIF}
+    FHorse := THorseCore.GetInstance;
+    FInstance := Self;
+  except
+    on E: Exception do
+    begin
+      {$IF DEFINED(FPC)}
+      Writeln('DEBUG: Excecao no construtor do WebModule: ', E.ClassName, ': ', E.Message); Flush(Output);
+      {$ENDIF}
+      raise;
+    end;
+  end;
 end;
 
 {$IF DEFINED(FPC)}
 procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
 begin
-  HandlerAction(Self, ARequest, AResponse, AHandled);
+  try
+    HandlerAction(Self, ARequest, AResponse, AHandled);
+  except
+    on E: Exception do
+    begin
+      Writeln('DEBUG: Excecao no DoOnRequest: ', E.ClassName, ': ', E.Message); Flush(Output);
+      raise;
+    end;
+  end;
 end;
 {$ENDIF}
 
