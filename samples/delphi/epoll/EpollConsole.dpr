@@ -1,14 +1,26 @@
-program HttpSysConsole;
+program EpollConsole;
 
-{$MODE DELPHI}{$H+}
+{$IFDEF FPC}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
+{$APPTYPE CONSOLE}
+
+// Habilita o novo provider Epoll nativo de Linux
+{$DEFINE HORSE_PROVIDER_EPOLL}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
-  cthreads,
-  {$ENDIF}{$ENDIF}
-  SysUtils,
-  fpjson,
-  Horse;
+  {$IFDEF UNIX}
+    cthreads,
+  {$ENDIF}
+  Horse,
+  {$IFDEF FPC}
+    SysUtils,
+    fpjson;
+  {$ELSE}
+    System.SysUtils,
+    System.JSON;
+  {$ENDIF}
 
 const
   HTML_ROOT = 
@@ -28,7 +40,7 @@ const
     'a:hover { text-decoration: underline; }' +
     '.desc { margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8; }' +
     '</style></head><body>' +
-    '<h1>Horse Server API &mdash; Lazarus HTTP.sys (Windows)</h1>' +
+    '<h1>Horse Server API &mdash; Delphi Epoll (Linux)</h1>' +
     '<p>Bem-vindo ao servidor Horse! Use os links abaixo para testar as rotas:</p>' +
     '<ul>' +
     '<li><span class="method get">GET</span><a href="/ping">/ping</a><div class="desc">Retorna a resposta simples de ping (pong)</div></li>' +
@@ -39,18 +51,18 @@ const
     '<li><span class="method delete">DELETE</span><a href="#" onclick="fetch(''/users/123'', {method: ''DELETE''}).then(r => r.json()).then(j => alert(JSON.stringify(j)))">/users/123</a><div class="desc">Executa requisição DELETE e exibe o JSON resultante</div></li>' +
     '</ul></body></html>';
 
-procedure GetRoot(Req: THorseRequest; Res: THorseResponse);
+procedure DoIndex(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.ContentType('text/html; charset=utf-8');
   Res.Send(HTML_ROOT);
 end;
 
-procedure GetPing(Req: THorseRequest; Res: THorseResponse);
+procedure DoPing(Req: THorseRequest; Res: THorseResponse);
 begin
-  Res.Send('Pong from HTTP.sys (Lazarus)!');
+  Res.Send('pong');
 end;
 
-procedure GetUsers(Req: THorseRequest; Res: THorseResponse);
+procedure DoGetUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
   LUserId: string;
@@ -58,93 +70,151 @@ var
 begin
   LUserId := Req.Params.Items['id'];
   LUserName := Req.Query.Items['nome'];
+  {$IFDEF FPC}
   if LUserName = '' then
+  {$ELSE}
+  if LUserName.IsEmpty then
+  {$ENDIF}
     LUserName := 'Visitante';
 
   LJSON := TJSONObject.Create;
   try
+    {$IFDEF FPC}
     LJSON.Add('id', LUserId);
     LJSON.Add('nome', LUserName);
-    LJSON.Add('provedor', 'HTTP.sys');
+    LJSON.Add('provedor', 'Epoll (Linux)');
     LJSON.Add('mensagem', 'Exemplo de integracao funcionando perfeitamente!');
-    
     Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('id', LUserId);
+    LJSON.AddPair('nome', LUserName);
+    LJSON.AddPair('provedor', 'Epoll (Linux)');
+    LJSON.AddPair('mensagem', 'Exemplo de integracao funcionando perfeitamente!');
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
   finally
     LJSON.Free;
   end;
 end;
 
-procedure PostUsers(Req: THorseRequest; Res: THorseResponse);
+procedure DoPostUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
 begin
   LJSON := TJSONObject.Create;
   try
+    {$IFDEF FPC}
     LJSON.Add('status', 'created');
     LJSON.Add('action', 'POST');
-    Res.Send(LJSON.AsJSON).Status(201);
+    Res.Send(LJSON.AsJSON).Status(THTTPStatus.Created);
+    {$ELSE}
+    LJSON.AddPair('status', 'created');
+    LJSON.AddPair('action', 'POST');
+    Res.Send(LJSON.ToJSON).Status(THTTPStatus.Created);
+    {$ENDIF}
   finally
     LJSON.Free;
   end;
 end;
 
-procedure PostUpload(Req: THorseRequest; Res: THorseResponse);
+procedure DoUpload(Req: THorseRequest; Res: THorseResponse);
 var
-  LContent: string;
+  LBody: string;
 begin
-  LContent := Req.Body;
-  Res.Send('Tamanho: ' + IntToStr(Length(LContent)) + ' / Inicio: ' + Copy(LContent, 1, 50));
+  LBody := Req.Body;
+  Res.Send('Tamanho: ' + IntToStr(Length(LBody)) + ' / Inicio: ' + Copy(LBody, 1, 50));
 end;
 
-procedure PutUsers(Req: THorseRequest; Res: THorseResponse);
+procedure DoPutUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
 begin
   LJSON := TJSONObject.Create;
   try
+    {$IFDEF FPC}
     LJSON.Add('id', Req.Params.Items['id']);
     LJSON.Add('status', 'updated');
     LJSON.Add('action', 'PUT');
     Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('id', Req.Params.Items['id']);
+    LJSON.AddPair('status', 'updated');
+    LJSON.AddPair('action', 'PUT');
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
   finally
     LJSON.Free;
   end;
 end;
 
-procedure PatchUsers(Req: THorseRequest; Res: THorseResponse);
+procedure DoPatchUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
 begin
   LJSON := TJSONObject.Create;
   try
+    {$IFDEF FPC}
     LJSON.Add('id', Req.Params.Items['id']);
     LJSON.Add('status', 'patched');
     LJSON.Add('action', 'PATCH');
     Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('id', Req.Params.Items['id']);
+    LJSON.AddPair('status', 'patched');
+    LJSON.AddPair('action', 'PATCH');
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
   finally
     LJSON.Free;
   end;
 end;
 
-procedure DeleteUsers(Req: THorseRequest; Res: THorseResponse);
+procedure DoDeleteUsers(Req: THorseRequest; Res: THorseResponse);
 var
   LJSON: TJSONObject;
 begin
   LJSON := TJSONObject.Create;
   try
+    {$IFDEF FPC}
     LJSON.Add('id', Req.Params.Items['id']);
     LJSON.Add('status', 'deleted');
     LJSON.Add('action', 'DELETE');
     Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('id', Req.Params.Items['id']);
+    LJSON.AddPair('status', 'deleted');
+    LJSON.AddPair('action', 'DELETE');
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
   finally
     LJSON.Free;
   end;
 end;
 
-procedure OnListen;
+procedure DoGetIP(Req: THorseRequest; Res: THorseResponse);
+var
+  LJSON: TJSONObject;
+begin
+  LJSON := TJSONObject.Create;
+  try
+    {$IFDEF FPC}
+    LJSON.Add('remote_addr', Req.RawWebRequest.RemoteAddr);
+    LJSON.Add('server_port', Req.RawWebRequest.ServerPort);
+    Res.Send(LJSON.AsJSON);
+    {$ELSE}
+    LJSON.AddPair('remote_addr', Req.RawWebRequest.RemoteAddr);
+    LJSON.AddPair('server_port', TJSONNumber.Create(Req.RawWebRequest.ServerPort));
+    Res.Send(LJSON.ToJSON);
+    {$ENDIF}
+  finally
+    LJSON.Free;
+  end;
+end;
+
+procedure DoListen;
 begin
   Writeln('--------------------------------------------------');
-  Writeln(' Servidor Horse HTTP.sys Iniciado (Lazarus/FPC)');
+  Writeln(' Servidor Horse Epoll Iniciado (Linux)');
   Writeln(Format(' Escutando em: http://%s:%d/', [THorse.Host, THorse.Port]));
   Writeln('--------------------------------------------------');
   Writeln(' Rotas disponiveis para teste:');
@@ -155,18 +225,27 @@ begin
   Writeln('  - PUT    http://localhost:9095/users/123');
   Writeln('  - PATCH  http://localhost:9095/users/123');
   Writeln('  - DELETE http://localhost:9095/users/123');
-  Writeln(' Pressione [Enter] para encerrar.');
-  while True do Sleep(1000);
+  Writeln('--------------------------------------------------');
+  Writeln(' Pressione Ctrl+C para encerrar.');
 end;
 
 begin
-  THorse.Get('/', GetRoot);
-  THorse.Get('/ping', GetPing);
-  THorse.Get('/users/:id', GetUsers);
-  THorse.Post('/users', PostUsers);
-  THorse.Post('/upload', PostUpload);
-  THorse.Put('/users/:id', PutUsers);
-  THorse.Patch('/users/:id', PatchUsers);
-  THorse.Delete('/users/:id', DeleteUsers);
-  THorse.Listen(9095, 'localhost', OnListen);
+  {$IFNDEF FPC}
+  ReportMemoryLeaksOnShutdown := True;
+  {$ENDIF}
+
+  THorse.Get('/', DoIndex);
+  THorse.Get('/ping', DoPing);
+  THorse.Get('/ip', DoGetIP);
+  THorse.Get('/users/:id', DoGetUsers);
+  THorse.Post('/users', DoPostUsers);
+  THorse.Post('/upload', DoUpload);
+  THorse.Put('/users/:id', DoPutUsers);
+  THorse.Patch('/users/:id', DoPatchUsers);
+  THorse.Delete('/users/:id', DoDeleteUsers);
+
+  THorse.Listen(9095, '0.0.0.0', DoListen);
+
+  while THorse.IsRunning do
+    Sleep(1000);
 end.

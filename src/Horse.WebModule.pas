@@ -32,7 +32,7 @@ type
   public
     property Horse: THorseCore read FHorse write FHorse;
     constructor Create(AOwner: TComponent); override;
-  	class function GetInstance: THorseWebModule;
+    class function GetInstance: THorseWebModule;
   end;
 
 var
@@ -95,7 +95,7 @@ begin
   LResponse := THorseResponse.Create(Response);
   try
     try
-      FHorse.Routes.Execute(LRequest, LResponse)
+      FHorse.Routes.Execute(LRequest, LResponse);
     except
       on E: Exception do
         if not E.InheritsFrom(EHorseCallbackInterrupted) then

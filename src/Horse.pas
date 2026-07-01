@@ -214,6 +214,9 @@ unit Horse;
 {$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT))}
   {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
 {$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_EPOLL) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_HTTPSYS))}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_EPOLL is mutually exclusive with other transport Providers — pick exactly one per build.'}
+{$IFEND}
 { =========================================================================== }
 
 interface
@@ -251,6 +254,18 @@ uses
     {$ELSE}
     {$MESSAGE ERROR 'HORSE_PROVIDER_HTTPSYS is only supported on Windows.'}
     {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_EPOLL)}
+    {$IFDEF LINUX}
+    Horse.Provider.Epoll,
+    {$ELSE}
+    {$MESSAGE ERROR 'HORSE_PROVIDER_EPOLL is only supported on Linux.'}
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+    {$IFDEF MSWINDOWS}
+    Horse.Provider.IOCP,
+    {$ELSE}
+    {$MESSAGE ERROR 'HORSE_PROVIDER_IOCP is only supported on Windows.'}
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
   {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
@@ -274,6 +289,20 @@ uses
   System.SysUtils,
   {$IFDEF MSWINDOWS}
   Horse.Provider.HttpSys,
+  {$ELSE}
+  Horse.Provider.Console,
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_EPOLL)}
+  System.SysUtils,
+  {$IFDEF LINUX}
+  Horse.Provider.Epoll,
+  {$ELSE}
+  Horse.Provider.Console,
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+  System.SysUtils,
+  {$IFDEF MSWINDOWS}
+  Horse.Provider.IOCP,
   {$ELSE}
   Horse.Provider.Console,
   {$ENDIF}
@@ -377,6 +406,20 @@ type
   THorseProvider =
   {$IFDEF MSWINDOWS}
     Horse.Provider.HttpSys.THorseProviderHttpSys;
+  {$ELSE}
+    Horse.Provider.Console.THorseProvider;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_EPOLL)}
+  THorseProvider =
+  {$IFDEF LINUX}
+    Horse.Provider.Epoll.THorseProviderEpoll;
+  {$ELSE}
+    Horse.Provider.Console.THorseProvider;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
+  THorseProvider =
+  {$IFDEF MSWINDOWS}
+    Horse.Provider.IOCP.THorseProviderIOCP;
   {$ELSE}
     Horse.Provider.Console.THorseProvider;
   {$ENDIF}

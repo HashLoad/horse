@@ -1,11 +1,11 @@
-program HttpSysConsole;
+program EpollConsole;
 
 {$MODE DELPHI}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
+  {$IFDEF UNIX}
   cthreads,
-  {$ENDIF}{$ENDIF}
+  {$ENDIF}
   SysUtils,
   fpjson,
   Horse;
@@ -28,7 +28,7 @@ const
     'a:hover { text-decoration: underline; }' +
     '.desc { margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8; }' +
     '</style></head><body>' +
-    '<h1>Horse Server API &mdash; Lazarus HTTP.sys (Windows)</h1>' +
+    '<h1>Horse Server API &mdash; Lazarus Epoll (Linux)</h1>' +
     '<p>Bem-vindo ao servidor Horse! Use os links abaixo para testar as rotas:</p>' +
     '<ul>' +
     '<li><span class="method get">GET</span><a href="/ping">/ping</a><div class="desc">Retorna a resposta simples de ping (pong)</div></li>' +
@@ -47,7 +47,7 @@ end;
 
 procedure GetPing(Req: THorseRequest; Res: THorseResponse);
 begin
-  Res.Send('Pong from HTTP.sys (Lazarus)!');
+  Res.Send('Pong from Epoll (Lazarus)!');
 end;
 
 procedure GetUsers(Req: THorseRequest; Res: THorseResponse);
@@ -65,7 +65,7 @@ begin
   try
     LJSON.Add('id', LUserId);
     LJSON.Add('nome', LUserName);
-    LJSON.Add('provedor', 'HTTP.sys');
+    LJSON.Add('provedor', 'Epoll (Linux)');
     LJSON.Add('mensagem', 'Exemplo de integracao funcionando perfeitamente!');
     
     Res.Send(LJSON.AsJSON);
@@ -144,7 +144,7 @@ end;
 procedure OnListen;
 begin
   Writeln('--------------------------------------------------');
-  Writeln(' Servidor Horse HTTP.sys Iniciado (Lazarus/FPC)');
+  Writeln(' Servidor Horse Epoll Iniciado (Lazarus/FPC)');
   Writeln(Format(' Escutando em: http://%s:%d/', [THorse.Host, THorse.Port]));
   Writeln('--------------------------------------------------');
   Writeln(' Rotas disponiveis para teste:');
@@ -155,8 +155,8 @@ begin
   Writeln('  - PUT    http://localhost:9095/users/123');
   Writeln('  - PATCH  http://localhost:9095/users/123');
   Writeln('  - DELETE http://localhost:9095/users/123');
-  Writeln(' Pressione [Enter] para encerrar.');
-  while True do Sleep(1000);
+  Writeln('--------------------------------------------------');
+  Writeln(' Pressione Ctrl+C para encerrar.');
 end;
 
 begin
@@ -168,5 +168,7 @@ begin
   THorse.Put('/users/:id', PutUsers);
   THorse.Patch('/users/:id', PatchUsers);
   THorse.Delete('/users/:id', DeleteUsers);
-  THorse.Listen(9095, 'localhost', OnListen);
+  THorse.Listen(9095, '0.0.0.0', OnListen);
+  while THorse.IsRunning do
+    Sleep(1000);
 end.

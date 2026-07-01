@@ -47,6 +47,9 @@ packages/bpl/
 *.a
 *.stat
 *.skincfg
+*.dsv
+*.dproj
+*.dsk
 
 # Mac
 *.DS_Store
@@ -80,3 +83,12 @@ __recovery/
 *.identcache
 *.tvsconfig
 *.dsk
+
+# Test files and local paserver
+tests/LinuxPAServer23.0.tar.gz
+
+# FPC / Linux compiled outputs
+samples/delphi/epoll/EpollConsole
+samples/delphi/console/Console
+*.or
+benchmarks/linux_comparison/

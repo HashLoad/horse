@@ -1,0 +1,22 @@
+FROM ubuntu:22.04
+
+# Evita prompts interativos
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instala bibliotecas básicas de rede/sistema
+RUN apt-get update && apt-get install -y \
+    libc6 \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Copia o executável compilado do Windows
+COPY samples/delphi/console/Console /usr/src/app/Console
+
+# Permissões de execução no executável
+RUN chmod +x /usr/src/app/Console
+
+EXPOSE 9000
+
+CMD ["./Console"]

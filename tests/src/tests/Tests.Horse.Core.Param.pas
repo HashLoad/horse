@@ -4,6 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework,
+  Tests.AssertHelper,
   Horse.Exception,
   Horse.Core.Param,
   System.Generics.Collections,
@@ -851,7 +852,7 @@ begin
 
   LPairs := FHorseParam.ToArray;
 
-  Assert.AreEqual(2, Length(LPairs));
+  Assert.AreEqual<Int64>(2, Length(LPairs));
   Assert.AreEqual('Key1', LPairs[0].Key);
   Assert.AreEqual('Value1', LPairs[0].Value);
   Assert.AreEqual('Key2', LPairs[1].Key);

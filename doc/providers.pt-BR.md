@@ -34,12 +34,13 @@ O **Provider padrão depende do compilador**:
 
 | Provider | Define de compilação | Status | Delphi | Lazarus |
 |---|---|---|:---:|:---:|
-| **Indy** | _(nenhum no Delphi)_ | Padrão para self-hosted no Delphi | ✔ | n/a |
-| **`fphttpserver`** | _(nenhum no FPC)_ | Padrão para self-hosted no FPC | n/a | ✔ |
-| **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Opcional, pacote externo | ✔ | ✔ |
-| **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Opcional, pacote externo | ✔ | ✔ |
+| **Indy** _(padrão Delphi para self-hosted)_ | _(nenhum)_ | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;n/a |
+| **`fphttpserver`** _(padrão FPC para self-hosted)_ | _(nenhum)_ | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)** | `HORSE_CROSSSOCKET` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)** | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Opcional, pacote externo (Delphi: Windows + Linux64/macOS) | ✔ | ❌ |
-| **HttpSys** _(`Horse.Provider.HttpSys`)_ | `HORSE_PROVIDER_HTTPSYS` | Nativo do Horse (somente Windows) | ✔ | ✔ |
+| **[HTTP.sys](./httpsys.pt-BR.md)** | `HORSE_PROVIDER_HTTPSYS` | Opcional, embutido (modo kernel Windows) | ✔ | ✔ |
+| **[epoll](./epoll.pt-BR.md)** | `HORSE_PROVIDER_EPOLL` | Opcional, embutido (event loop assíncrono Linux) | ✔ | ✔ |
 
 > **Qual biblioteca faz o trabalho de HTTP, por Tipo de aplicação?** Esta é a pergunta-chave — e a resposta *nem sempre* é Indy. A abstração unificadora em todas as linhas é `Web.HTTPApp.TWebRequest` no Delphi ou `fpHTTP.TRequest` no FPC; abaixo disso, a biblioteca concreta difere.
 >
@@ -50,7 +51,8 @@ O **Provider padrão depende do compilador**:
 > | Qualquer self-hosted + `HORSE_CROSSSOCKET` | Qualquer um | **`Delphi-Cross-Socket`** | ✘ |
 > | Qualquer self-hosted + `HORSE_PROVIDER_MORMOT` | Qualquer um | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
 > | Self-hosted + `HORSE_PROVIDER_ICS` | Delphi (Windows / Linux64 / macOS) | **`OverbyteICS`** (`THttpServer` / `TSslHttpServer`) | ✘ |
-> | Self-hosted + `HORSE_PROVIDER_HTTPSYS` | Windows (Delphi / FPC) | **http.sys do Windows** (`httpapi.dll`, modo kernel) | ✘ |
+> | Qualquer self-hosted + `HORSE_PROVIDER_HTTPSYS` | Qualquer um | **`HTTP.sys`** (Driver de Kernel do Windows) | ✘ |
+> | Qualquer self-hosted + `HORSE_PROVIDER_EPOLL` | Qualquer um | **`epoll`** (API epoll nativa do Linux) | ✘ |
 > | Módulo Apache | Qualquer um | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **CGI runner do webserver** (via `Web.HTTPApp.TCGIRequest`) | ✘ |

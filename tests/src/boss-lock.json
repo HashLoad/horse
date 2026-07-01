@@ -13,7 +13,7 @@
 		"github.com/hashload/jhonson": {
 			"name": "jhonson",
 			"version": "1.2.1",
-			"hash": "dda7dc5ade9e50207be4485c5045e47b",
+			"hash": "c99b0eaf72fc3076121ad4c5ca6b5b88",
 			"artifacts": {},
 			"failed": false,
 			"changed": false
@@ -21,7 +21,7 @@
 		"github.com/viniciussanchez/restrequest4delphi": {
 			"name": "restrequest4delphi",
 			"version": "v4.0.26",
-			"hash": "f00bad33810b54a8abc73ba1e8b85277",
+			"hash": "d6aafbfc06418086bf1a593b20ca627f",
 			"artifacts": {},
 			"failed": false,
 			"changed": false

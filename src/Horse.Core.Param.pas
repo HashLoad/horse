@@ -26,7 +26,7 @@ type
   private
     FParams: THorseList;
     FFiles: TDictionary<string, TStream>;
-    { PATCH-PARAM-1 (resolves FOLLOW-UP-MEM-1) — streams whose ownership was
+    { PATCH-PARAM-1 (resolves FOLLOW-UP-MEM-1) â€” streams whose ownership was
       transferred to this param via AddStream(..., AOwnsStream=True).  FFiles is
       a non-owning lookup dictionary; FOwnedStreams owns the actual objects and
       frees them on Clear (pool recycle) and Destroy. }
@@ -55,12 +55,12 @@ type
     property Items[const AKey: string]: string read GetItem; default;
     property Dictionary: THorseList read GetDictionary;
 
-    { AddStream — store a stream-backed field (e.g. a multipart file upload),
+    { AddStream â€” store a stream-backed field (e.g. a multipart file upload),
       retrievable via Field(AKey).AsStream.
         AOwnsStream = False (default / 2-arg overload): the stream is owned
-          elsewhere (e.g. CrossSocket's THttpMultiPartFormData) — never freed
+          elsewhere (e.g. CrossSocket's THttpMultiPartFormData) â€” never freed
           here.  Preserves the historical behaviour for every existing caller.
-        AOwnsStream = True: ownership is transferred to this param — Clear and
+        AOwnsStream = True: ownership is transferred to this param â€” Clear and
           Destroy free the stream.  Used by the mORMot bridge, which synthesises
           a TMemoryStream per file part with no other owner (PATCH-PARAM-1). }
     function AddStream(const AKey: string; const AContent: TStream): THorseCoreParam; overload;
@@ -77,8 +77,21 @@ uses
   SysUtils,
 {$ELSE}
   System.SysUtils,
+  System.NetEncoding,
 {$ENDIF}
   Horse.Core.Param.Config;
+
+function DecodeParam(const AValue: string): string;
+begin
+  if Pos('%', AValue) = 0 then
+    Exit(AValue);
+    
+  {$IF DEFINED(FPC)}
+  Result := HTTPDecode(AValue);
+  {$ELSE}
+  Result := TNetEncoding.URL.Decode(AValue);
+  {$ENDIF}
+end;
 
 constructor THorseCoreParam.Create(const AParams: THorseList);
 begin
@@ -92,7 +105,8 @@ begin
   FParams.Free;
   FContent.Free;
   ClearFields;
-  { PATCH-PARAM-1 — free owned streams (no-op when none were transferred).
+  FreeAndNil(FFields);
+  { PATCH-PARAM-1 â€” free owned streams (no-op when none were transferred).
     FFiles is non-owning, so order vs. FreeAndNil(FFiles) is irrelevant. }
   FreeAndNil(FOwnedStreams);
   FreeAndNil(FFiles);
@@ -117,7 +131,7 @@ begin
 
   ClearFields;
 
-  { PATCH-PARAM-1 — free owned streams BEFORE clearing the (non-owning) FFiles
+  { PATCH-PARAM-1 â€” free owned streams BEFORE clearing the (non-owning) FFiles
     lookup dictionary, so a pooled context does not accumulate one leaked
     TMemoryStream per multipart upload. }
   if Assigned(FOwnedStreams) then
@@ -138,13 +152,30 @@ begin
 end;
 
 function THorseCoreParam.TryGetValue(const AKey: string; var AValue: string): Boolean;
+var
+  LVal: string;
 begin
-  Result := FParams.TryGetValue(AKey, AValue);
+  Result := FParams.TryGetValue(AKey, LVal);
+  if Result then
+  begin
+    AValue := DecodeParam(LVal);
+    if AValue <> LVal then
+      FParams.AddOrSetValue(AKey, AValue);
+  end;
 end;
 
 function THorseCoreParam.GetItem(const AKey: string): string;
+var
+  LVal: string;
 begin
-  FParams.TryGetValue(AKey, Result);
+  if FParams.TryGetValue(AKey, LVal) then
+  begin
+    Result := DecodeParam(LVal);
+    if Result <> LVal then
+      FParams.AddOrSetValue(AKey, Result);
+  end
+  else
+    Result := '';
 end;
 
 function THorseCoreParam.GetDictionary: THorseList;
@@ -159,7 +190,7 @@ end;
 
 function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;
 begin
-  { Backward-compatible overload — non-owning (historical behaviour). }
+  { Backward-compatible overload â€” non-owning (historical behaviour). }
   Result := AddStream(AKey, AContent, False);
 end;
 
@@ -170,7 +201,7 @@ begin
     FFiles := TDictionary<string, TStream>.Create;
   FFiles.AddOrSetValue(AKey, AContent);
 
-  { PATCH-PARAM-1 — when ownership is transferred, track the stream so Clear and
+  { PATCH-PARAM-1 â€” when ownership is transferred, track the stream so Clear and
     Destroy free it.  Guard against double-registration of the same instance. }
   if AOwnsStream and Assigned(AContent) then
   begin
@@ -232,7 +263,7 @@ begin
   begin
     for LField in FFields.Values do
       LField.Free;
-    FreeAndNil(FFields);
+    FFields.Clear;
   end;
 end;
 
@@ -244,14 +275,21 @@ begin
   begin
     FContent := TStringList.Create;
     for LPair in FParams do
-      FContent.Add(LPair.Key + '=' + LPair.Value);
+      FContent.Add(LPair.Key + '=' + DecodeParam(LPair.Value));
   end;
   Result := FContent;
 end;
 
 function THorseCoreParam.ToArray: TArray<TPair<string, string>>;
+var
+  I: Integer;
 begin
   Result := FParams.ToArray;
+  for I := 0 to Length(Result) - 1 do
+  begin
+    Result[I].Value := DecodeParam(Result[I].Value);
+    FParams.AddOrSetValue(Result[I].Key, Result[I].Value);
+  end;
 end;
 
 end.
