@@ -165,7 +165,7 @@ begin
   begin
     FFound^ := True;
     {$IF DEFINED(FPC)}
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
+    THorseCallbackProc(Self.FMiddleware.Items[FIndex])(FRequest, FResponse, Next);
     LMiddlewareCount := FMiddleware.Count;
     {$ELSE}
     Self.FMiddleware[FIndex](FRequest, FResponse, Next);
@@ -186,7 +186,7 @@ begin
         try
           FFound^ := True;
           {$IF DEFINED(FPC)}
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
+          THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
           {$ELSE}
           LCallback[FIndexCallback](FRequest, FResponse, Next);
           {$ENDIF}
