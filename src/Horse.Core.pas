@@ -584,23 +584,23 @@ end;
 
 class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
 begin
-  Result :=
 {$IFDEF FPC}
-    {$IF DEFINED(FPC)}
-    if GCallbacks2Count < 64 then
-    begin
-      GCallbacks2[GCallbacks2Count] := ACallbackRequest;
-      Result := GWrapperList2[GCallbacks2Count];
-      Inc(GCallbacks2Count);
-    end
-    else
-      Result := THorseCallback(ACallbackRequest);
-    {$IFEND}
-{$ELSE}
-  procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  {$IF DEFINED(FPC)}
+  if GCallbacks2Count < 64 then
   begin
-    ACallbackRequest(Req, Res);
-  end;
+    GCallbacks2[GCallbacks2Count] := ACallbackRequest;
+    Result := GWrapperList2[GCallbacks2Count];
+    Inc(GCallbacks2Count);
+  end
+  else
+    Result := THorseCallback(ACallbackRequest);
+  {$IFEND}
+{$ELSE}
+  Result :=
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      ACallbackRequest(Req, Res);
+    end;
 {$IFEND}
 end;
 
@@ -617,24 +617,24 @@ end;
 
 class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequest): THorseCallback;
 begin
-  Result :=
 {$IFDEF FPC}
-    {$IF DEFINED(FPC)}
-    if GCallbacks1Count < 64 then
-    begin
-      GCallbacks1[GCallbacks1Count] := ACallbackRequest;
-      Result := GWrapperList1[GCallbacks1Count];
-      Inc(GCallbacks1Count);
-    end
-    else
-      Result := THorseCallback(ACallbackRequest);
-    {$IFEND}
-{$ELSE}
-  procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  {$IF DEFINED(FPC)}
+  if GCallbacks1Count < 64 then
   begin
-    Res.Status(THTTPStatus.NoContent);
-    ACallbackRequest(Req);
-  end;
+    GCallbacks1[GCallbacks1Count] := ACallbackRequest;
+    Result := GWrapperList1[GCallbacks1Count];
+    Inc(GCallbacks1Count);
+  end
+  else
+    Result := THorseCallback(ACallbackRequest);
+  {$IFEND}
+{$ELSE}
+  Result :=
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      Res.Status(THTTPStatus.NoContent);
+      ACallbackRequest(Req);
+    end;
 {$IFEND}
 end;
 
