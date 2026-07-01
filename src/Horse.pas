@@ -456,18 +456,16 @@ type
   {$ENDIF}
 {$ENDIF}
 
-  THorse = class(THorseProvider);
-
-  THorseHelper = class helper for THorse
+  THorse = class(THorseProvider)
   public
     class procedure UseRadixRouter;
   end;
 
 implementation
 
-{ THorseHelper }
+{ THorse }
 
-class procedure THorseHelper.UseRadixRouter;
+class procedure THorse.UseRadixRouter;
 begin
   THorse.Routes := THorseRadixRouter.Create;
 end;
