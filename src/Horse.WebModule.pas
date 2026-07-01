@@ -108,6 +108,9 @@ var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
 begin
+  {$IF DEFINED(FPC)}
+  Writeln('DEBUG: HandlerAction INICIADO!'); Flush(Output);
+  {$ENDIF}
   Handled := True;
   try
     LRequest := THorseRequest.Create(Request);
