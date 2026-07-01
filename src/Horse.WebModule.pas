@@ -98,8 +98,13 @@ begin
       FHorse.Routes.Execute(LRequest, LResponse)
     except
       on E: Exception do
+      begin
+        {$IF DEFINED(FPC)}
+        Writeln('DEBUG: Excecao no HandlerAction: ', E.ClassName, ': ', E.Message); Flush(Output);
+        {$ENDIF}
         if not E.InheritsFrom(EHorseCallbackInterrupted) then
           raise;
+      end;
     end;
   finally
     if LRequest.Body<TObject> = LResponse.Content then
