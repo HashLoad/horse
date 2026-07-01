@@ -810,14 +810,22 @@ begin
     FOwnsArena := True;
   end;
 
+{$IF DEFINED(FPC)}
+  LByteCount := Length(LPath);
+  LSlice := FArena.Allocate(LByteCount);
+  LBytes := LSlice.Buffer;
+  LStartOffset := LSlice.Start;
+  if LByteCount > 0 then
+    Move(LPath[1], LBytes[LStartOffset], LByteCount);
+{$ELSE}
   LTempBytes := TEncoding.UTF8.GetBytes(LPath);
   LByteCount := Length(LTempBytes);
   LSlice := FArena.Allocate(LByteCount);
   LBytes := LSlice.Buffer;
   LStartOffset := LSlice.Start;
-  
   if LByteCount > 0 then
     Move(LTempBytes[0], LBytes[LStartOffset], LByteCount);
+{$ENDIF}
 
   SetLength(Result, 0);
   LStart := LStartOffset;
