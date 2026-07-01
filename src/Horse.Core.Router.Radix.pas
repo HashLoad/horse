@@ -328,8 +328,9 @@ var
   LCallbacksList: TList<THorseCallback>;
   LRouteCallbacks: TArray<THorseCallback>;
   LFlow: TRadixFlow;
-  LPair: TPair<string, string>;
   LStartSegmentIndex: Integer;
+  LKeys: TArray<string>;
+  I: Integer;
 begin
   try
     Result := False;
@@ -352,8 +353,9 @@ begin
       
       if LNode <> nil then
       begin
-        for LPair in LParams do
-          ARequest.Params.Dictionary.AddOrSetValue(LPair.Key, DecodeParam(LPair.Value));
+        LKeys := LParams.Keys.ToArray;
+        for I := 0 to Length(LKeys) - 1 do
+          ARequest.Params.Dictionary.AddOrSetValue(LKeys[I], DecodeParam(LParams.Items[LKeys[I]]));
 
         LCallbacksList := TList<THorseCallback>.Create;
         try
