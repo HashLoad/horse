@@ -332,6 +332,11 @@ var
   LKeys: TArray<string>;
   I: Integer;
 begin
+  {$IF DEFINED(FPC)}
+  Writeln('DEBUG: Execute do Radix Router INICIADO!'); Flush(Output);
+  Result := True;
+  Exit;
+  {$ENDIF}
   try
     Result := False;
     LRawWebRequest := ARequest.RawWebRequest;
