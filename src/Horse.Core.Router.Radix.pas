@@ -53,6 +53,9 @@ type
     function FindNode(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; ANode: TRadixNode;
       const AHTTPType: TMethodType; var AMiddlewares: TList<THorseCallback>; var AParams: TDictionary<string, string>): TRadixNode;
     procedure InsertRoute(const APath: string; const AHTTPType: TMethodType; const ACallback: THorseCallback; const AIsMiddleware: Boolean);
+  protected
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
   public
     constructor Create;
     destructor Destroy; override;
@@ -174,6 +177,16 @@ begin
 end;
 
 { THorseRadixRouter }
+
+function THorseRadixRouter._AddRef: Integer;
+begin
+  Result := -1;
+end;
+
+function THorseRadixRouter._Release: Integer;
+begin
+  Result := -1;
+end;
 
 constructor THorseRadixRouter.Create;
 begin

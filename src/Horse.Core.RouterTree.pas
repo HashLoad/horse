@@ -65,6 +65,10 @@ type
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+  protected
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
+  public
     constructor Create;
     destructor Destroy; override;
 
@@ -202,6 +206,16 @@ begin
   else if LFound then
     LFound := LAcceptable.ExecuteInternal(ASegments, AIndex, AHTTPType, ARequest, AResponse, LIsGroup);
   Result := LFound;
+end;
+
+function THorseRouterTree._AddRef: Integer;
+begin
+  Result := -1;
+end;
+
+function THorseRouterTree._Release: Integer;
+begin
+  Result := -1;
 end;
 
 constructor THorseRouterTree.Create;
