@@ -83,6 +83,17 @@ uses
   Horse.Exception,
   Horse.Exception.Interrupted;
 
+{$IF DEFINED(FPC)}
+threadvar
+  GActiveRouterTreeFlow: TObject;
+
+procedure RouterTreeNext;
+begin
+  if Assigned(GActiveRouterTreeFlow) then
+    TNextCaller(GActiveRouterTreeFlow).Next;
+end;
+{$ENDIF}
+
 procedure TNextCaller.Configure(
   {$IF DEFINED(FPC)}
   const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
@@ -163,7 +174,8 @@ begin
   begin
     FFound^ := True;
     {$IF DEFINED(FPC)}
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
+    GActiveRouterTreeFlow := Self;
+    Self.FMiddleware.Items[FIndex](FRequest, FResponse, RouterTreeNext);
     LMiddlewareCount := FMiddleware.Count;
     {$ELSE}
     Self.FMiddleware[FIndex](FRequest, FResponse, Next);
@@ -184,7 +196,8 @@ begin
         try
           FFound^ := True;
           {$IF DEFINED(FPC)}
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
+          GActiveRouterTreeFlow := Self;
+          LCallback.Items[FIndexCallback](FRequest, FResponse, RouterTreeNext);
           {$ELSE}
           LCallback[FIndexCallback](FRequest, FResponse, Next);
           {$ENDIF}

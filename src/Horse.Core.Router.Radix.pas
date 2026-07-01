@@ -83,6 +83,17 @@ begin
   Res.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
 
+{$IF DEFINED(FPC)}
+threadvar
+  GActiveRadixFlow: TObject;
+
+procedure RadixFlowNext;
+begin
+  if Assigned(GActiveRadixFlow) then
+    TRadixFlow(GActiveRadixFlow).Next;
+end;
+{$ENDIF}
+
 { TRadixFlow }
 
 constructor TRadixFlow.Create(const ACallbacks: TArray<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
@@ -103,11 +114,15 @@ begin
     LIndex := FIndex;
     Inc(FIndex);
     try
+      {$IF DEFINED(FPC)}
+      GActiveRadixFlow := Self;
+      FCallbacks[LIndex](FRequest, FResponse, RadixFlowNext);
+      {$ELSE}
       FCallbacks[LIndex](FRequest, FResponse, Next);
+      {$ENDIF}
     except
       on E: Exception do
       begin
-        Writeln('DEBUG: Excecao gerada no callback: ', E.ClassName, ': ', E.Message); Flush(Output);
         FActive := False;
         if E is EHorseCallbackInterrupted then
           raise;
@@ -317,7 +332,6 @@ var
   LPair: TPair<string, string>;
   LStartSegmentIndex: Integer;
 begin
-  Writeln('DEBUG: Execute iniciado'); Flush(Output);
   Result := False;
   LRawWebRequest := ARequest.RawWebRequest;
   if not Assigned(LRawWebRequest) then
@@ -326,7 +340,6 @@ begin
     LMethodType := TMethodType.FromString(LRawWebRequest.Method);
 
   LSegments := ARequest.GetPathSegments;
-  Writeln('DEBUG: GetPathSegments executado. Count: ', Length(LSegments)); Flush(Output);
   
   LStartSegmentIndex := 0;
   if (Length(LSegments) > 0) and LSegments[0].Compare('', True) then
@@ -335,9 +348,7 @@ begin
   LMiddlewares := TList<THorseCallback>.Create;
   LParams := TDictionary<string, string>.Create;
   try
-    Writeln('DEBUG: Chamando FindNode'); Flush(Output);
     LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
-    Writeln('DEBUG: FindNode concluido. Node <> nil: ', LNode <> nil); Flush(Output);
     
     if LNode <> nil then
     begin
@@ -361,12 +372,9 @@ begin
             LCallbacksList.Add(RadixNotFoundFinalizer);
         end;
 
-        Writeln('DEBUG: Instanciando LFlow. Callbacks: ', LCallbacksList.Count); Flush(Output);
         LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
         try
-          Writeln('DEBUG: Disparando LFlow.Next'); Flush(Output);
           LFlow.Next;
-          Writeln('DEBUG: LFlow.Next concluido com sucesso'); Flush(Output);
         finally
           LFlow.Free;
         end;
@@ -382,12 +390,9 @@ begin
         LCallbacksList.AddRange(FGlobalMiddlewares);
         LCallbacksList.Add(RadixNotFoundFinalizer);
 
-        Writeln('DEBUG: Instanciando LFlow (else). Callbacks: ', LCallbacksList.Count); Flush(Output);
         LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
         try
-          Writeln('DEBUG: Disparando LFlow.Next (else)'); Flush(Output);
           LFlow.Next;
-          Writeln('DEBUG: LFlow.Next (else) concluido com sucesso'); Flush(Output);
         finally
           LFlow.Free;
         end;
