@@ -598,7 +598,7 @@ begin
     Inc(GCallbacks2Count);
   end
   else
-    Result := THorseCallback(ACallbackRequest);
+    Result := Pointer(@ACallbackRequest);
   {$IFEND}
 {$ELSE}
   Result :=
@@ -631,7 +631,7 @@ begin
     Inc(GCallbacks1Count);
   end
   else
-    Result := THorseCallback(ACallbackRequest);
+    Result := Pointer(@ACallbackRequest);
   {$IFEND}
 {$ELSE}
   Result :=
