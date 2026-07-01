@@ -40,6 +40,17 @@ const
   // Compression
   DEFAULT_MIN_COMPRESS_SIZE = 512;             // bytes — matches CrossSocket MIN_COMPRESS_SIZE
 
+  // Indy/WebBroker self-hosted provider defaults (Console / Daemon / VCL).
+  // Applied only when THorse.MaxConnections / THorse.ListenQueue are left unset.
+  // [FIX-MAXCONN] WebBroker caps concurrent web-module activations at 32 by default
+  //   (Web.WebReq.pas) — under keep-alive + concurrency >= ~40 that returns ~60% HTTP 500.
+  //   Raising the module-pool ceiling to a sane default makes the out-of-the-box build safe.
+  DEFAULT_MAX_CONNECTIONS  = 1024;
+  // [FIX-LISTENQUEUE] Indy's IdListenQueueDefault is 15 — too low for concurrent
+  //   connection bursts (dropped/refused connections). 511 mirrors nginx's backlog
+  //   (the OS clamps it to net.core.somaxconn / SOMAXCONN if lower).
+  DEFAULT_LISTEN_QUEUE     = 511;
+
 
 type
   THorseCrossSocketConfig = record
@@ -117,9 +128,10 @@ type
     // Absolute or relative path to the PEM private key file.
 
     SSLKeyPassword: string;
-    // Passphrase for an encrypted private key.  Leave empty if unencrypted.
-    // NOTE: CrossSocket does not currently expose a key-password API.
-    // This field is reserved for future use.
+    // Passphrase for an encrypted PEM private key.  Leave empty if unencrypted.
+    // Applied via FServer.SetPrivateKeyPassword before the key is loaded
+    // (TLSOPT-1 — requires the Net.CrossSslSocket.* patches / fork release;
+    // OpenSSL parses the key with a PEM password callback).
 
     SSLCACertFile: string;
     // Path to the CA certificate used to verify client certificates.
@@ -135,7 +147,9 @@ type
     // OpenSSL cipher-list string (TLS 1.2 format).  Empty = use CrossSocket's
     // built-in secure list (Node.js-derived, ECDHE/DHE + AES-GCM/ChaCha20).
     // Override only when you have a specific compliance requirement.
-    // Applied via SSL_CTX_set_cipher_list on the OpenSSL context.
+    // Applied via FServer.SetCipherList → SSL_CTX_set_cipher_list (TLSOPT-2 —
+    // requires the Net.CrossSslSocket.* patches / fork release). TLS 1.3 cipher
+    // suites are not affected by this field.
 
     // ── Server identity ───────────────────────────────────────────────────
     ServerBanner: string;

@@ -72,14 +72,14 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
 | Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
 | **Criar e publicar seu próprio middleware** — esqueleto, thread safety, neutralidade a Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
-| **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
+| **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
 | **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |
 | Catálogo completo de middlewares com descrições estendidas | [Ecossistema de Middlewares](./doc/middleware-ecosystem.pt-BR.md) |
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
 
 ## 🔌 Providers (camada de transporte)
 
-Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). Os Providers opcionais **CrossSocket** e **mORMot2** substituem ambos por E/S assíncrona **IOCP / epoll / kqueue**.
+Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). Os Providers opcionais **CrossSocket** e **mORMot2** substituem ambos por E/S assíncrona **IOCP / epoll / kqueue**; o Provider opcional **ICS** (Delphi; Windows + Linux64/macOS) traz a pilha moderna **OpenSSL 3.x / 4.x** do OverbyteICS — TLS 1.3, SNI, mTLS. O Provider **HttpSys** (Windows) é **nativo do Horse** — usa a pilha HTTP em modo kernel **http.sys** do sistema (a mesma do IIS), sem biblioteca externa.
 
 | Provider | Define de compilação | Delphi | Lazarus |
 | ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
@@ -87,10 +87,16 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 | **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| 🆕 **HttpSys** _(nativo; somente Windows)_                                                         | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
 > **Instalação do Delphi-Cross-Socket** — clone [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) **junto com** [`cnpack/cnvcl/.../Crypto`](https://github.com/cnpack/cnvcl/tree/master/Source/Crypto) para as units CnPack/Crypto exigidas, e adicione os _search paths_ ao seu projeto. Três correções que antes eram exclusivas do fork já foram incorporadas ao upstream desde o 2º trimestre de 2026, então o mainline do upstream é adequado para uso geral. Para **mTLS** do lado servidor (`SSLVerifyPeer = True` + `SSLCACertFile = ...`) use o release pré-empacotado [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) — um único clone, CnPack já incluso, APIs de mTLS (`SetCACertificateFile` + `SetVerifyPeer`) prontas para uso. Veja [Instalação do horse-provider-crosssocket](./doc/providers.pt-BR.md#crosssocket-opcional) para o detalhamento completo dos dois caminhos.
+
+> **Instalação do OverbyteICS** — o Provider ICS requer o [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Instale o ICS seguindo as instruções oficiais do ICS** — baixe/clone o ICS e adicione a pasta `Source/` ao _search path_ do seu projeto (o ICS não é instalável via Boss). Para TLS, as bibliotecas OpenSSL acompanham o ICS (DLLs no Windows, `.so` no Linux). O Provider ICS é **somente Delphi — Windows e POSIX (Linux64 / macOS)** via o pump de mensagens próprio do ICS (`Ics.Posix.*`) (no Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); um port para **Lazarus/FPC não é viável** — a camada POSIX do ICS usa a RTL POSIX do Delphi e o ICS desativa o OpenSSL no FPC. Seu diferencial é a pilha OpenSSL 3.x / 4.x do ICS (TLS 1.3, SNI, mTLS). Veja [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) para configuração, a suíte de testes A–K e limitações conhecidas.
+
+> **HttpSys** — **sem instalação**: a unit `Horse.Provider.HttpSys` acompanha o Horse e usa diretamente a `httpapi.dll` do Windows (http.sys), portanto não há biblioteca externa. Defina `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi ou Lazarus). Como o http.sys é uma pilha HTTP em modo kernel e de escopo da máquina, vincular um host diferente de `localhost` ou uma porta privilegiada exige uma reserva de URL única (`netsh http add urlacl url=http://+:9000/ user=Everyone`) ou direitos de Administrador; o HTTPS usa o repositório de certificados do Windows via `netsh http add sslcert`. É mutuamente exclusivo com os Providers CrossSocket / mORMot / ICS (um transporte por build).
 
 ## 🎯 Tipos de aplicação
 
