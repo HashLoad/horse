@@ -199,7 +199,7 @@ foreach ($cand in $candidatos) {
     } else {
         Write-Host "Iniciando container Docker: $($cand.Service)" -ForegroundColor DarkGray
         & docker compose up -d $($cand.Service)
-        Start-Sleep -Seconds 5 # Tempo maior de boot para Java/Spring
+        Start-Sleep -Seconds 7 # Tempo maior de boot para Java/Spring e liberação de socket
     }
 
     # Verificar se servidor está respondendo
@@ -363,7 +363,7 @@ foreach ($cand in $candidatos) {
         Write-Host "Parando container Docker..." -ForegroundColor DarkGray
         & docker compose down $($cand.Service)
     }
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 7
 }
 
 # 6. Gerar Tabela Resumo em Markdown
