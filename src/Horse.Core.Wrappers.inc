@@ -5,7 +5,7 @@ var
   GCallbacks1: array[0..63] of THorseCallbackRequest;
   GCallbacks1Count: Integer = 0;
 
-procedure W2_0(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin Writeln('DEBUG: W2_0 INICIADO!'); Flush(Output); GCallbacks2[0](Req, Res); end;
+procedure W2_0(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin GCallbacks2[0](Req, Res); end;
 procedure W2_1(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin GCallbacks2[1](Req, Res); end;
 procedure W2_2(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin GCallbacks2[2](Req, Res); end;
 procedure W2_3(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin GCallbacks2[3](Req, Res); end;
