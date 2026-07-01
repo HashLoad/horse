@@ -98,6 +98,7 @@ end;
 
 destructor THorseMimeTypesExt.Destroy;
 begin
+  inherited;
   FFileType.Clear;
   FreeAndNil(FFileType);
 end;

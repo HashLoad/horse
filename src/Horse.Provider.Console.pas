@@ -115,7 +115,7 @@ end;
 
 class procedure THorseProvider.OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
 begin
-  VUseSSL := (FHorseProviderIOHandleSSL <> nil) and (FHorseProviderIOHandleSSL.Active);
+  VUseSSL := (FHorseProviderIOHandleSSL <> nil) and FHorseProviderIOHandleSSL.Active;
 end;
 
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
@@ -207,7 +207,6 @@ var
   LAttach: string;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
 begin
-  inherited;
   if FPort <= 0 then
     FPort := GetDefaultPort;
 
@@ -249,7 +248,7 @@ begin
     begin
       while FRunning do
         GetDefaultEvent.WaitFor();
-    end
+    end;
   except
     on E: Exception do
     begin

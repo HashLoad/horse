@@ -180,7 +180,7 @@ function MatchRoute(const AText: string; const AValues: array of string): Boolea
         Result := StringReplace(Result, LPart, '([^/]*)', []);
     end;
     Result := Trim(Result);
-    if not(Result.EndsWith('/')) then
+    if not Result.EndsWith('/') then
       Result := Result + '/';
   end;
 
@@ -197,7 +197,7 @@ begin
   try
 {$ENDIF}
     LText := Trim(AText);
-    if not(LText.EndsWith('/')) then
+    if not LText.EndsWith('/') then
       LText := LText + '/';
     for I := Low(AValues) to High(AValues) do
     begin

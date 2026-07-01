@@ -75,8 +75,6 @@ function setlogmask(mask: LongInt): LongInt; cdecl;
 procedure _syslog(priority: LongInt; _format: MarshaledAString; args: array of const); cdecl;
   external libc name _PU + 'syslog';
 
-// procedure openlog2(ident: MarshaledAString; option: LongInt; facility: LongInt); cdecl;
-
 procedure Syslog(APriority: LongInt; const AFormat: string); overload;
 
 procedure Syslog(APriority: LongInt; const AFormat: string; AArgs: array of const); overload;

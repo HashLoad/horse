@@ -439,7 +439,7 @@ begin
   Result := False;
   if (Length(APaths) <= AIndex) then
     Exit(False);
-  if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or (FIsParamsKey)) then
+  if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or FIsParamsKey) then
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
 
 {$IFNDEF FPC}

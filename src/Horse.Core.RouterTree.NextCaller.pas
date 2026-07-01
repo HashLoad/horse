@@ -162,7 +162,7 @@ begin
         FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
       end
       else
-        FResponse.Send('Not Found').Status(THTTPStatus.NotFound)
+        FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
     end;
   end
   else
