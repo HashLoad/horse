@@ -314,6 +314,7 @@ var
   LRouteCallbacks: TArray<THorseCallback>;
   LFlow: TRadixFlow;
   LPair: TPair<string, string>;
+  LStartSegmentIndex: Integer;
 begin
   Result := False;
   LRawWebRequest := ARequest.RawWebRequest;
@@ -324,10 +325,14 @@ begin
 
   LSegments := ARequest.GetPathSegments;
   
+  LStartSegmentIndex := 0;
+  if (Length(LSegments) > 0) and LSegments[0].Compare('', True) then
+    LStartSegmentIndex := 1;
+
   LMiddlewares := TList<THorseCallback>.Create;
   LParams := TDictionary<string, string>.Create;
   try
-    LNode := FindNode(LSegments, 0, FRoot, LMethodType, LMiddlewares, LParams);
+    LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
     
     if LNode <> nil then
     begin
