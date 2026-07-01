@@ -19,15 +19,13 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
-  {$IFNDEF FPC}
   Horse.Core.Router.Contract,
-  {$ENDIF}
   Horse.Commons;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
 
-  THorseRouterTree = class{$IFNDEF FPC}(TInterfacedObject, IHorseRouter){$ENDIF}
+  THorseRouterTree = class(TInterfacedObject, IHorseRouter)
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
