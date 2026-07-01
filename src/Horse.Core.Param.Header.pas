@@ -13,9 +13,11 @@ uses
   fphttpserver,
   httpprotocol,
   HTTPDefs,
+  Generics.Defaults,
 {$ELSE}
   System.Classes,
   System.Generics.Collections,
+  System.Generics.Defaults,
   Web.HTTPApp,
   Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
@@ -56,11 +58,9 @@ implementation
 uses    
 {$IF DEFINED(FPC)}
   SysUtils,
-  Generics.Defaults,
 {$ELSE}
   IdCustomHTTPServer,
   System.SysUtils,
-  System.Generics.Defaults,
 {$ENDIF}
   Horse.Rtti;
 
