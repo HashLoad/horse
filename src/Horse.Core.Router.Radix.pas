@@ -332,11 +332,6 @@ var
   LKeys: TArray<string>;
   I: Integer;
 begin
-  {$IF DEFINED(FPC)}
-  Writeln('DEBUG: Execute do Radix Router INICIADO!'); Flush(Output);
-  Result := True;
-  Exit;
-  {$ENDIF}
   try
     Result := False;
     LRawWebRequest := ARequest.RawWebRequest;
@@ -355,6 +350,11 @@ begin
     LParams := TDictionary<string, string>.Create;
     try
       LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
+      {$IF DEFINED(FPC)}
+      Writeln('DEBUG: FindNode executado com sucesso! LNode Assigned = ', Assigned(LNode)); Flush(Output);
+      Result := True;
+      Exit;
+      {$ENDIF}
       
       if LNode <> nil then
       begin
