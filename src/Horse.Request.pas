@@ -816,7 +816,7 @@ begin
   LBytes := LSlice.Buffer;
   LStartOffset := LSlice.Start;
   if LByteCount > 0 then
-    Move(LPath[1], LBytes[LStartOffset], LByteCount);
+    Move(Pointer(LPath)^, LBytes[LStartOffset], LByteCount);
 {$ELSE}
   LTempBytes := TEncoding.UTF8.GetBytes(LPath);
   LByteCount := Length(LTempBytes);
