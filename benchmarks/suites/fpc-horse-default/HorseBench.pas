@@ -5,7 +5,6 @@ program HorseBench;
 uses
   {$IFDEF UNIX}
   cthreads,
-  cwstring,
   {$ENDIF}
   SysUtils,
   Horse;
