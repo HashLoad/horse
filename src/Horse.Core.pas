@@ -208,8 +208,6 @@ type
 
 implementation
 
-{$I Horse.Core.Wrappers.inc}
-
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
@@ -225,6 +223,8 @@ uses
   , Horse.Core.Factory
   {$ENDIF}
   ;
+
+{$I Horse.Core.Wrappers.inc}
 
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
 begin

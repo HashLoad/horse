@@ -1,4 +1,4 @@
-﻿{$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}
 var
   GCallbacks2: array[0..63] of THorseCallbackRequestResponse;
   GCallbacks2Count: Integer = 0;

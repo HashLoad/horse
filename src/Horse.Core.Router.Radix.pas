@@ -83,16 +83,7 @@ begin
   Res.Send('Not Found').Status(THTTPStatus.NotFound);
 end;
 
-{$IF DEFINED(FPC)}
-threadvar
-  GActiveRadixFlow: TObject;
 
-procedure RadixFlowNext;
-begin
-  if Assigned(GActiveRadixFlow) then
-    TRadixFlow(GActiveRadixFlow).Next;
-end;
-{$ENDIF}
 
 { TRadixFlow }
 
@@ -114,12 +105,7 @@ begin
     LIndex := FIndex;
     Inc(FIndex);
     try
-      {$IF DEFINED(FPC)}
-      GActiveRadixFlow := Self;
-      FCallbacks[LIndex](FRequest, FResponse, RadixFlowNext);
-      {$ELSE}
       FCallbacks[LIndex](FRequest, FResponse, Next);
-      {$ENDIF}
     except
       on E: Exception do
       begin
