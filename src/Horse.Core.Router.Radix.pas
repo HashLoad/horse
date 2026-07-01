@@ -95,7 +95,13 @@ constructor TRadixFlow.Create(ACallbacks: TList<THorseCallback>; AReq: THorseReq
 begin
   FIndex := 0;
   FCallbacks := TList<THorseCallback>.Create;
+  {$IF DEFINED(FPC)}
+  Writeln('DEBUG: TRadixFlow.Create - FCallbacks = ', HexStr(Pointer(FCallbacks)));
+  {$ENDIF}
   FCallbacks.AddRange(ACallbacks);
+  {$IF DEFINED(FPC)}
+  Writeln('DEBUG: TRadixFlow.Create - FCallbacks Count = ', FCallbacks.Count); Flush(Output);
+  {$ENDIF}
   FRequest := AReq;
   FResponse := ARes;
   FActive := True;
@@ -115,7 +121,8 @@ var
   {$ENDIF}
 begin
   {$IF DEFINED(FPC)}
-  Writeln('DEBUG: TRadixFlow.Next - Self = ', HexStr(Pointer(Self))); Flush(Output);
+  Writeln('DEBUG: TRadixFlow.Next - Self = ', HexStr(Pointer(Self)));
+  Writeln('DEBUG: TRadixFlow.Next - FCallbacks = ', HexStr(Pointer(FCallbacks))); Flush(Output);
   {$ENDIF}
   if (FIndex < FCallbacks.Count) and FActive then
   begin
