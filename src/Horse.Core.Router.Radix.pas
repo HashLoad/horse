@@ -108,7 +108,13 @@ begin
     LIndex := FIndex;
     Inc(FIndex);
     try
+      {$IF DEFINED(FPC)}
+      Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex); Flush(Output);
+      {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);
+      {$IF DEFINED(FPC)}
+      Writeln('DEBUG: TRadixFlow.Next retorno do callback!'); Flush(Output);
+      {$ENDIF}
     except
       on E: Exception do
       begin
@@ -376,8 +382,6 @@ begin
 
           {$IF DEFINED(FPC)}
           Writeln('DEBUG: LCallbacksList populated successfully! Count = ', LCallbacksList.Count); Flush(Output);
-          Result := True;
-          Exit;
           {$ENDIF}
 
           LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
