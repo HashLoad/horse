@@ -32,34 +32,18 @@ type
   private
     FSelfInstance: PHorseCore;
     FDefaultHorseCoreInstance: PHorseCore;
-    {$IF DEFINED(FPC)}
-    FHorseRouterTree: PHorseRouterTree;
-    {$ELSE}
     FHorseRouter: PHorseRouter;
-    {$ENDIF}
     function GetSelfInstance: PHorseCore;
     function GetDefaultHorseCoreInstance: PHorseCore;
-    {$IF DEFINED(FPC)}
-    function GetHorseRouterTree: PHorseRouterTree;
-    {$ELSE}
     function GetHorseRouter: PHorseRouter;
-    {$ENDIF}
   public
     function ToHorse: THorseCore;
-    {$IF DEFINED(FPC)}
-    constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
-    {$ELSE}
     constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouter: PHorseRouter);
-    {$ENDIF}
   end;
 
   THorseCore = class(THorseCoreBase)
   private
-    {$IF DEFINED(FPC)}
-    class var FRoutes: THorseRouterTree;
-    {$ELSE}
     class var FRoutes: IHorseRouter;
-    {$ENDIF}
     class var FCallbacks: TList<THorseCallback>;
     class function TrimPath(const APath: string): string;
     class function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
@@ -67,17 +51,10 @@ type
 
     function InternalRoute(const APath: string): IHorseCoreRoute<THorseCore>;
     function InternalGroup: IHorseCoreGroup<THorseCore>;
-    {$IF DEFINED(FPC)}
-    function InternalGetRoutes: THorseRouterTree;
-    procedure InternalSetRoutes(const AValue: THorseRouterTree);
-    class function GetRoutes: THorseRouterTree; static;
-    class procedure SetRoutes(const AValue: THorseRouterTree); static;
-    {$ELSE}
     function InternalGetRoutes: IHorseRouter;
     procedure InternalSetRoutes(const AValue: IHorseRouter);
     class function GetRoutes: IHorseRouter; static;
     class procedure SetRoutes(const AValue: IHorseRouter); static;
-    {$ENDIF}
     class function MakeHorseModule: THorseModule;
 
     class function GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback; overload;
@@ -162,11 +139,7 @@ type
 {$IFNDEF FPC}
     class function Query(const APath: string; const ACallback: THorseCallbackResponse): THorseCore; overload;
 {$IFEND}
-    {$IF DEFINED(FPC)}
-    class property Routes: THorseRouterTree read GetRoutes write SetRoutes;
-    {$ELSE}
     class property Routes: IHorseRouter read GetRoutes write SetRoutes;
-    {$ENDIF}
     class function GetInstance: THorseCore;
     class function Version: string;
 
@@ -344,17 +317,10 @@ begin
   {$ENDIF}
 end;
 
-{$IF DEFINED(FPC)}
-class function THorseCore.GetRoutes: THorseRouterTree;
-begin
-  Result := GetInstance.InternalGetRoutes;
-end;
-{$ELSE}
 class function THorseCore.GetRoutes: IHorseRouter;
 begin
   Result := GetInstance.InternalGetRoutes;
 end;
-{$ENDIF}
 
 class function THorseCore.Group: IHorseCoreGroup<THorseCore>;
 begin
@@ -375,17 +341,10 @@ begin
   Result := GetInstance.InternalRoute(APath);
 end;
 
-{$IF DEFINED(FPC)}
-class procedure THorseCore.SetRoutes(const AValue: THorseRouterTree);
-begin
-  GetInstance.InternalSetRoutes(AValue);
-end;
-{$ELSE}
 class procedure THorseCore.SetRoutes(const AValue: IHorseRouter);
 begin
   GetInstance.InternalSetRoutes(AValue);
 end;
-{$ENDIF}
 
 class function THorseCore.ToModule: THorseModule;
 begin
@@ -397,17 +356,10 @@ begin
   Result := '/' + APath.Trim(['/']);
 end;
 
-{$IF DEFINED(FPC)}
-function THorseCore.InternalGetRoutes: THorseRouterTree;
-begin
-  Result := FRoutes;
-end;
-{$ELSE}
 function THorseCore.InternalGetRoutes: IHorseRouter;
 begin
   Result := FRoutes;
 end;
-{$ENDIF}
 
 function THorseCore.InternalGroup: IHorseCoreGroup<THorseCore>;
 begin
@@ -427,17 +379,10 @@ begin
   {$ENDIF}
 end;
 
-{$IF DEFINED(FPC)}
-procedure THorseCore.InternalSetRoutes(const AValue: THorseRouterTree);
-begin
-  FRoutes := AValue;
-end;
-{$ELSE}
 procedure THorseCore.InternalSetRoutes(const AValue: IHorseRouter);
 begin
   FRoutes := AValue;
 end;
-{$ENDIF}
 
 class function THorseCore.MakeHorseModule: THorseModule;
 begin
@@ -448,12 +393,7 @@ class destructor THorseCore.UnInitialize;
 begin
   if FDefaultHorse <> nil then
     FreeAndNil(FDefaultHorse);
-  {$IF DEFINED(FPC)}
-  if FRoutes <> nil then
-    FreeAndNil(FRoutes);
-  {$ELSE}
   FRoutes := nil;
-  {$ENDIF}
   if FCallbacks <> nil then
     FreeAndNil(FCallbacks);
 end;
@@ -723,36 +663,6 @@ begin
 end;
 {$IFEND}
 
-{$IF DEFINED(FPC)}
-constructor THorseModule.Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
-begin
-  FSelfInstance := ASelfInstance;
-  FDefaultHorseCoreInstance := ADefaultHorseCoreInstance;
-  FHorseRouterTree := AHorseRouterTree;
-end;
-
-function THorseModule.ToHorse: THorseCore;
-begin
-  Result := GetSelfInstance^;
-  Result.FDefaultHorse := GetDefaultHorseCoreInstance^;
-  Result.FRoutes := GetHorseRouterTree^;
-end;
-
-function THorseModule.GetDefaultHorseCoreInstance: PHorseCore;
-begin
-  Result := FDefaultHorseCoreInstance;
-end;
-
-function THorseModule.GetHorseRouterTree: PHorseRouterTree;
-begin
-  Result := FHorseRouterTree;
-end;
-
-function THorseModule.GetSelfInstance: PHorseCore;
-begin
-  Result := FSelfInstance;
-end;
-{$ELSE}
 constructor THorseModule.Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouter: PHorseRouter);
 begin
   FSelfInstance := ASelfInstance;
@@ -781,7 +691,6 @@ function THorseModule.GetSelfInstance: PHorseCore;
 begin
   Result := FSelfInstance;
 end;
-{$ENDIF}
 function THorseCore.BaseAddCallback(const ACallback: THorseCallback): THorseCoreBase;
 begin
   THorseCore.AddCallback(ACallback);
