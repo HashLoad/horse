@@ -108,7 +108,7 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 
 ### 🚀 Pluggable Radix Router (High Performance)
 
-Horse includes a built-in, alternative **Radix Router** (`THorseRadixRouter`) based on a Radix Tree structure. It provides higher routing performance and lower memory overhead, especially for APIs with a large number of routes.
+Horse includes a built-in, alternative **Radix Router** (`THorseRadixRouter`) based on a Radix Tree structure. It provides higher routing performance and lower memory overhead, especially for APIs with a large number of routes (supported on Delphi).
 
 To enable the Radix Router, simply call the alias in your initialization:
 
@@ -199,7 +199,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 
 ## 🧪 Integration Tests (Real-life validation)
 
-We maintain a comprehensive suite of real-life integration tests inside the [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/) directory. These tests run a real Horse instance, execute physical HTTP requests against it, and assert the output, HTTP status codes, CORS headers, URL decoding (including accents and spaces), and exception handling.
+We maintain a comprehensive suite of cross-platform, real-life integration tests inside the [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/) directory. These tests validate the server behavior compiled on Windows (using Delphi/DCC32) and Linux (using FPC/Lazarus), executing physical HTTP requests against it and asserting the output, HTTP status codes, CORS headers, URL decoding (including accents and spaces), and exception handling.
 
 * **On Windows (PowerShell):**
   ```powershell

@@ -108,7 +108,7 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 
 ### 🚀 Roteador Radix Plugável (Alta Performance)
 
-O Horse inclui um **Roteador Radix** alternativo embutido (`THorseRadixRouter`) baseado na estrutura Radix Tree. Ele oferece maior performance de roteamento e menor consumo de memória, sendo especialmente recomendado para APIs com grande volume de rotas.
+O Horse inclui um **Roteador Radix** alternativo embutido (`THorseRadixRouter`) baseado na estrutura Radix Tree. Ele oferece maior performance de roteamento e menor consumo de memória, sendo especialmente recomendado para APIs com grande volume de rotas (suportado no Delphi).
 
 Para ativar o Roteador Radix, basta chamar o método de conveniência em sua inicialização:
 
@@ -199,7 +199,7 @@ Esta é uma lista de middlewares criados pela comunidade Horse — abra um PR se
 
 ## 🧪 Testes de Integridade (Validação de Vida Real)
 
-Mantemos uma suíte abrangente de testes de integridade de vida real dentro da pasta [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/). Estes testes sobem uma instância física do servidor Horse, realizam requisições HTTP reais e validam o corpo da resposta, códigos de status HTTP, headers de CORS, URL decoding (incluindo acentuação e espaços) e o tratamento de exceções.
+Mantemos uma suíte abrangente de testes de integridade de vida real multiplataforma dentro da pasta [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/). Estes testes validam o comportamento do servidor compilado no Windows (com Delphi/DCC32) e no Linux (com FPC/Lazarus), realizando requisições HTTP reais e validando o corpo da resposta, códigos de status HTTP, headers de CORS, URL decoding (incluindo acentuação e espaços) e o tratamento de exceções.
 
 * **No Windows (PowerShell):**
   ```powershell
