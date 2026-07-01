@@ -431,7 +431,7 @@ begin
   create an empty param rather than crashing on GetHeaders(nil). }
     if not Assigned(FWebRequest) then
     begin
-      FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False);
+      FHeaders := THorseCoreParam.Create(THorseList.Create(TStringComparer.OrdinalIgnoreCase)).Required(False);
       Exit(FHeaders);
     end;
 { end PATCH-REQ-3 }
@@ -782,7 +782,7 @@ begin
   // never reaches THorseCoreParamHeader.GetHeaders(nil).
   // The bridge then populates it via FHeaders.Dictionary.AddOrSetValue.
   if not Assigned(FHeaders) then
-    FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False)
+    FHeaders := THorseCoreParam.Create(THorseList.Create(TStringComparer.OrdinalIgnoreCase)).Required(False)
   else
     FHeaders.Clear;
 end;

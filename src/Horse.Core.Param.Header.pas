@@ -62,7 +62,7 @@ var
   LName, LValue: string;
   LHeaders: TStrings;
 begin
-  Result := THorseList.Create;
+  Result := THorseList.Create(TStringComparer.OrdinalIgnoreCase);
   try
     LHeaders := GetHeadersList(AWebRequest);
     try
