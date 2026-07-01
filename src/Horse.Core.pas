@@ -593,7 +593,7 @@ begin
       0: Result := W2_0;
       else Result := GWrapperList2[GCallbacks2Count];
     end;
-    Writeln('DEBUG: Registered callback address = ', HexStr(Pointer(@Result))); Flush(Output);
+    Writeln('DEBUG: Registered callback address = ', HexStr(Pointer((@Result)^))); Flush(Output);
     Inc(GCallbacks2Count);
   end
   else
