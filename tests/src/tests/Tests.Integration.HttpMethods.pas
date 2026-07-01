@@ -3,9 +3,9 @@ unit Tests.Integration.HttpMethods;
 interface
 
 uses
-  DUnitX.TestFramework, Horse, Horse.Commons, System.SysUtils, System.Classes,
+  DUnitX.TestFramework, Horse, System.SysUtils, System.Classes,
   System.Threading, System.Net.HttpClient, Tests.CleanupHelper,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
   [TestFixture]
@@ -34,7 +34,7 @@ begin
   THorse.Use(
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
-      if Req.MethodType = Web.HTTPApp.mtAny then
+      if Req.MethodType = mtAny then
       begin
         if Req.RawWebRequest.Method = 'OPTIONS' then
         begin
@@ -63,13 +63,13 @@ begin
       THorse.Listen(TEST_PORT);
     end).Start;
 
-  Sleep(500);
+  Sleep(1500);
 end;
 
 procedure TTestIntegrationHttpMethods.TearDownFixture;
 begin
   ClearGlobalState;
-  Sleep(100);
+  Sleep(500);
 end;
 
 procedure TTestIntegrationHttpMethods.TestOptionsMethodInterceptedByMiddleware;

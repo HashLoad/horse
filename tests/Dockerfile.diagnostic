@@ -1,0 +1,6 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq && apt-get install -y -qq fpc > /dev/null
+WORKDIR /app
+COPY tests/src/test_syscall.pas .
+RUN fpc test_syscall.pas

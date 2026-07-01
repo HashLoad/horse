@@ -40,13 +40,13 @@ begin
       THorse.Listen(TEST_PORT);
     end).Start;
 
-  Sleep(500);
+  Sleep(1500);
 end;
 
 procedure TTestIntegrationLargePayload.TearDownFixture;
 begin
   ClearGlobalState;
-  Sleep(100);
+  Sleep(500);
 end;
 
 procedure TTestIntegrationLargePayload.TestLargePayloadHeapRelease;

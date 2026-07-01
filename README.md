@@ -61,6 +61,18 @@ begin
 end.
 ```
 
+## ⚡️ HTTP QUERY Method
+
+Horse natively supports the HTTP **QUERY** method (defined in the official [RFC/Draft Specification](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-safe-method-w-body-03)). Unlike `GET`, which carries parameters in the URI, `QUERY` allows safe, read-only requests that carry complex payloads (like JSON or custom DSLs) in the request body.
+
+```delphi
+THorse.Query('/search',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Searching for: ' + Req.Body);
+  end);
+```
+
 ## 📖 Documentation
 
 The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complements the quick reference below:
@@ -93,6 +105,21 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 > **Note** — Apache / ISAPI / CGI / FastCGI Application types (below) do **not** use any of these Providers. The host process (Apache, IIS, the web server) owns the socket; Horse runs in-process. See [Providers & Application types](./doc/providers.md) for the full model.
 
 > **Delphi-Cross-Socket installation** — clone [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) **plus** [`cnpack/cnvcl/.../Crypto`](https://github.com/cnpack/cnvcl/tree/master/Source/Crypto) for the required CnPack/Crypto units, and add search paths to your project. Three previously-fork-only bug fixes have been merged into upstream as of 2026-Q2, so the upstream mainline is correct for general use. For server-side **mutual TLS** (`SSLVerifyPeer = True` + `SSLCACertFile = ...`) use the pre-built release [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) — single clone, CnPack bundled, mTLS APIs (`SetCACertificateFile` + `SetVerifyPeer`) ready to use. See [horse-provider-crosssocket Installation](./doc/providers.md#crosssocket-optional) for the full two-path breakdown.
+
+### 🚀 Pluggable Radix Router (High Performance)
+
+Horse includes a built-in, alternative **Radix Router** (`THorseRadixRouter`) based on a Radix Tree structure. It provides higher routing performance and lower memory overhead, especially for APIs with a large number of routes (supported on Delphi).
+
+To enable the Radix Router, simply call the alias in your initialization:
+
+```delphi
+begin
+  THorse.UseRadixRouter; // Activates the high-performance Radix Router
+  
+  THorse.Get('/ping', DoPing);
+  THorse.Listen(9000);
+end.
+```
 
 ## 🎯 Application types
 
@@ -169,6 +196,21 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+
+## 🧪 Integration Tests (Real-life validation)
+
+We maintain a comprehensive suite of cross-platform, real-life integration tests inside the [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/) directory. These tests validate the server behavior compiled on Windows (using Delphi/DCC32) and Linux (using FPC/Lazarus), executing physical HTTP requests against it and asserting the output, HTTP status codes, CORS headers, URL decoding (including accents and spaces), and exception handling.
+
+* **On Windows (PowerShell):**
+  ```powershell
+  cd samples/lazarus/console_complete
+  PowerShell -File .\test_integrity.ps1
+  ```
+* **On Linux (Docker + FPC):**
+  ```bash
+  docker run --rm -v "$(pwd):/app" -w /app/samples/lazarus/console_complete ubuntu:latest bash -c "apt-get update && apt-get install -y fpc curl && tr -d '\r' < test_integrity.sh > /tmp/run.sh && chmod +x /tmp/run.sh && /tmp/run.sh"
+  ```
+Make sure all assertions are green after editing or submitting PRs.
 
 ## Delphi Versions
 

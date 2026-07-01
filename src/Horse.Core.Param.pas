@@ -77,21 +77,9 @@ uses
   SysUtils,
 {$ELSE}
   System.SysUtils,
-  System.NetEncoding,
 {$ENDIF}
+  Horse.Utils,
   Horse.Core.Param.Config;
-
-function DecodeParam(const AValue: string): string;
-begin
-  if Pos('%', AValue) = 0 then
-    Exit(AValue);
-    
-  {$IF DEFINED(FPC)}
-  Result := HTTPDecode(AValue);
-  {$ELSE}
-  Result := TNetEncoding.URL.Decode(AValue);
-  {$ENDIF}
-end;
 
 constructor THorseCoreParam.Create(const AParams: THorseList);
 begin
@@ -185,7 +173,7 @@ end;
 
 function THorseCoreParam.GetCount: Integer;
 begin
-  Result := FParams.Count;
+  Result := Integer(FParams.Count);
 end;
 
 function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream): THorseCoreParam;

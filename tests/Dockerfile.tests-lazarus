@@ -1,0 +1,23 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    fpc fp-units-fcl fp-units-misc git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clona o DUnitX para resolver a dependência de teste de forma autônoma
+RUN git clone --depth 1 https://github.com/VSoftTechnologies/DUnitX.git /usr/src/dunitx
+
+WORKDIR /usr/src/app
+
+COPY . .
+
+# Compila o test runner Console usando FPC no Ubuntu
+RUN cd tests/src && \
+    fpc -Mdelphi -Sh -FE.. -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:controllers:tests:/usr/src/dunitx/Source" "-dRR4D_INDY" "-dHORSE_CONSOLE" Console.dpr
+
+WORKDIR /usr/src/app/tests
+
+# Executa os testes no modo não-interativo CI
+CMD ["./Console", "-exit:Continue"]

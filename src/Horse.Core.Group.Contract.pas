@@ -7,6 +7,9 @@ unit Horse.Core.Group.Contract;
 interface
 
 uses
+  {$IF DEFINED(FPC)}
+  Generics.Collections,
+  {$ENDIF}
   Horse.Core.Route.Contract,
   Horse.Callback;
 
@@ -17,7 +20,11 @@ type
     function Prefix(const APrefix: string): IHorseCoreGroup<T>;
     function Route(const APath: string): IHorseCoreRoute<T>;
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
+    {$IF DEFINED(FPC)}
+    function AddCallbacks(const ACallbacks: TList<THorseCallback>): IHorseCoreGroup<T>;
+    {$ELSE}
     function AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreGroup<T>;
+    {$ENDIF}
     function Use(const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;

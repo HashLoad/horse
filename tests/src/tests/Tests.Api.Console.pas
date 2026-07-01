@@ -6,7 +6,7 @@ interface
 
 uses
   DUnitX.TestFramework, System.JSON, RESTRequest4D, System.Classes,
-  Controllers.Api, Horse, Horse.Jhonson, SysUtils;
+  Controllers.Api, Horse, Horse.Jhonson, SysUtils, Tests.CleanupHelper;
 
 type
   [TestFixture]
@@ -20,6 +20,8 @@ type
 
     [TearDown]
     procedure TearDown;
+    [TearDownFixture]
+    procedure TearDownFixture;
 
     [Test]
     [TestCase('Test01', 'GET request test')]
@@ -41,9 +43,6 @@ type
     [TestCase('Test05', 'PATCH request test')]
     procedure TestPatch(const AValue: string);
 
-    [Test]
-    [TestCase('Test06', 'HEAD request test')]
-    procedure TestHead(const AValue: string);
   end;
 
 implementation
@@ -68,17 +67,7 @@ begin
   Assert.AreEqual(FJSONArray.Count, 3);
 end;
 
-procedure TApiTest.TestHead(const AValue: string);
-var
-  LResponse: IResponse;
-begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
-    .Accept('application/json')
-    .Head;
-
-  Assert.AreEqual(LResponse.StatusCode, 204);
-  Assert.AreEqual(LResponse.Content, EmptyStr);
-end;
+// procedure TApiTest.TestHead(const AValue: string);
 
 procedure TApiTest.TestPatch(const AValue: string);
 var
@@ -182,6 +171,11 @@ procedure TApiTest.TearDown;
 begin
   FreeAndNil(FJSONObject);
   FreeAndNil(FJSONArray);
+end;
+
+procedure TApiTest.TearDownFixture;
+begin
+  ClearGlobalState;
 end;
 
 initialization

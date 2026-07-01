@@ -61,6 +61,18 @@ begin
 end.
 ```
 
+## ⚡️ Método HTTP QUERY
+
+O Horse suporta nativamente o método HTTP **QUERY** (definido na [Especificação Oficial/Draft da RFC](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-safe-method-w-body-03)). Diferente do `GET`, que transporta parâmetros na URI, o `QUERY` permite realizar requisições seguras e somente-leitura transportando payloads complexos (como JSON ou DSLs customizadas) diretamente no corpo (body) da requisição.
+
+```delphi
+THorse.Query('/search',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Buscando por: ' + Req.Body);
+  end);
+```
+
 ## 📖 Documentação
 
 O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que complementa a referência rápida abaixo:
@@ -93,6 +105,21 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
 > **Instalação do Delphi-Cross-Socket** — clone [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) **junto com** [`cnpack/cnvcl/.../Crypto`](https://github.com/cnpack/cnvcl/tree/master/Source/Crypto) para as units CnPack/Crypto exigidas, e adicione os _search paths_ ao seu projeto. Três correções que antes eram exclusivas do fork já foram incorporadas ao upstream desde o 2º trimestre de 2026, então o mainline do upstream é adequado para uso geral. Para **mTLS** do lado servidor (`SSLVerifyPeer = True` + `SSLCACertFile = ...`) use o release pré-empacotado [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) — um único clone, CnPack já incluso, APIs de mTLS (`SetCACertificateFile` + `SetVerifyPeer`) prontas para uso. Veja [Instalação do horse-provider-crosssocket](./doc/providers.pt-BR.md#crosssocket-opcional) para o detalhamento completo dos dois caminhos.
+
+### 🚀 Roteador Radix Plugável (Alta Performance)
+
+O Horse inclui um **Roteador Radix** alternativo embutido (`THorseRadixRouter`) baseado na estrutura Radix Tree. Ele oferece maior performance de roteamento e menor consumo de memória, sendo especialmente recomendado para APIs com grande volume de rotas (suportado no Delphi).
+
+Para ativar o Roteador Radix, basta chamar o método de conveniência em sua inicialização:
+
+```delphi
+begin
+  THorse.UseRadixRouter; // Ativa o Roteador Radix de alta performance
+  
+  THorse.Get('/ping', DoPing);
+  THorse.Listen(9000);
+end.
+```
 
 ## 🎯 Tipos de aplicação
 
@@ -169,6 +196,21 @@ Esta é uma lista de middlewares criados pela comunidade Horse — abra um PR se
 |  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+
+## 🧪 Testes de Integridade (Validação de Vida Real)
+
+Mantemos uma suíte abrangente de testes de integridade de vida real multiplataforma dentro da pasta [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/). Estes testes validam o comportamento do servidor compilado no Windows (com Delphi/DCC32) e no Linux (com FPC/Lazarus), realizando requisições HTTP reais e validando o corpo da resposta, códigos de status HTTP, headers de CORS, URL decoding (incluindo acentuação e espaços) e o tratamento de exceções.
+
+* **No Windows (PowerShell):**
+  ```powershell
+  cd samples/lazarus/console_complete
+  PowerShell -File .\test_integrity.ps1
+  ```
+* **No Linux (Docker + FPC):**
+  ```bash
+  docker run --rm -v "$(pwd):/app" -w /app/samples/lazarus/console_complete ubuntu:latest bash -c "apt-get update && apt-get install -y fpc curl && tr -d '\r' < test_integrity.sh > /tmp/run.sh && chmod +x /tmp/run.sh && /tmp/run.sh"
+  ```
+Certifique-se de que todas as asserções fiquem verdes após alterações de código ou antes de enviar um Pull Request.
 
 ## Versões do Delphi
 

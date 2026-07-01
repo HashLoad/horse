@@ -5,7 +5,7 @@ interface
 uses
   DUnitX.TestFramework, Horse.Request, Horse.Core.Param, System.SysUtils,
   System.Generics.Collections,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
   [TestFixture]
