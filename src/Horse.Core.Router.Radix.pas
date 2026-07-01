@@ -195,7 +195,7 @@ var
   LFound: Boolean;
   I: Integer;
 begin
-  LSegments := APath.Split(['/']);
+  LSegments := APath.Trim(['/']).Split(['/']);
   LCurrent := FRoot;
 
   for I := 0 to Length(LSegments) - 1 do

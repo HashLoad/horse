@@ -799,7 +799,7 @@ var
   I, LLen: Integer;
   LStart, LCount: Integer;
 begin
-  LPath := RawPathInfo;
+  LPath := RawPathInfo.Trim(['/']);
   LPathLen := Length(LPath);
   if LPathLen = 0 then
     Exit(nil);
