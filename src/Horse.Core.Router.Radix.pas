@@ -125,8 +125,10 @@ begin
       Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
       Writeln('DEBUG: Callback address = ', HexStr(LTempAsPointer));
       Flush(Output);
-      {$ENDIF}
+      THorseCallbackProc(FCallbacks[LIndex])(FRequest, FResponse, Next);
+      {$ELSE}
       FCallbacks[LIndex](FRequest, FResponse, Next);
+      {$ENDIF}
     except
       on E: Exception do
       begin

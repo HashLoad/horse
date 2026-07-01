@@ -23,11 +23,13 @@ uses
   Horse.Commons;
 
 type
+  THorseCallbackProc = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
+
 {$IF DEFINED(FPC)}
-  THorseCallbackRequest = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest);
-  THorseCallbackResponse = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(ARes: THorseResponse);
-  THorseCallbackRequestResponse = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest; ARes: THorseResponse);
-  THorseCallback = {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}reference to {$ENDIF}procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
+  THorseCallbackRequest = procedure(AReq: THorseRequest);
+  THorseCallbackResponse = procedure(ARes: THorseResponse);
+  THorseCallbackRequestResponse = procedure(AReq: THorseRequest; ARes: THorseResponse);
+  THorseCallback = Pointer;
   TCallNextPath = function(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean of object;
 {$ELSE}
   THorseCallbackRequest = reference to procedure(AReq: THorseRequest);
