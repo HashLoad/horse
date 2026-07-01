@@ -354,15 +354,15 @@ begin
     FreeAndNil(FArena);
   FOwnsArena := False;
   if Assigned(FHeaders) then
-    FHeaders.Clear;
+    FreeAndNil(FHeaders);
   if Assigned(FQuery) then
-    FQuery.Clear;
+    FreeAndNil(FQuery);
   if Assigned(FParams) then
-    FParams.Clear;
+    FreeAndNil(FParams);
   if Assigned(FContentFields) then
-    FContentFields.Clear;
+    FreeAndNil(FContentFields);
   if Assigned(FCookie) then
-    FCookie.Clear;
+    FreeAndNil(FCookie);
 { PATCH-SES-1 � reuse the existing THorseSessions object across pool recycles.
   THorseSessions.Clear calls TObjectDictionary.Clear which frees owned TSession
   values before emptying the map � no allocation on the hot path. }

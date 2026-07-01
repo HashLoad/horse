@@ -400,6 +400,18 @@ end;
 
 {$IFDEF FPC}
 type
+  TEpollSemaphore = class
+  private
+    FLock: TCriticalSection;
+    FEvent: TEvent;
+    FCount: Integer;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Release(ACount: Integer = 1);
+    procedure Acquire;
+  end;
+
   TEpollFPCTask = class
   public
     Context: TEpollConnectionContext;
@@ -423,7 +435,7 @@ type
     FTasks: TQueue<TEpollFPCTask>;
     FWorkers: TList<TEpollFPCWorkerThread>;
     FLock: TCriticalSection;
-    FSemaphore: TSemaphore;
+    FSemaphore: TEpollSemaphore;
     FActive: Boolean;
     function DequeueTask: TEpollFPCTask;
   public
@@ -800,6 +812,55 @@ begin
   end;
 end;
 
+{ TEpollSemaphore }
+
+constructor TEpollSemaphore.Create;
+begin
+  inherited Create;
+  FLock := TCriticalSection.Create;
+  FEvent := TEvent.Create(nil, True, False, '');
+  FCount := 0;
+end;
+
+destructor TEpollSemaphore.Destroy;
+begin
+  FLock.Free;
+  FEvent.Free;
+  inherited;
+end;
+
+procedure TEpollSemaphore.Release(ACount: Integer);
+begin
+  FLock.Enter;
+  try
+    Inc(FCount, ACount);
+    if FCount > 0 then
+      FEvent.SetEvent;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+procedure TEpollSemaphore.Acquire;
+begin
+  while True do
+  begin
+    FLock.Enter;
+    try
+      if FCount > 0 then
+      begin
+        Dec(FCount);
+        if FCount = 0 then
+          FEvent.ResetEvent;
+        Exit;
+      end;
+    finally
+      FLock.Leave;
+    end;
+    FEvent.WaitFor(1000);
+  end;
+end;
+
 { TEpollFPCTaskPool }
 
 constructor TEpollFPCTaskPool.Create(AThreadCount: Integer);
@@ -811,7 +872,7 @@ begin
   FTasks := TQueue<TEpollFPCTask>.Create;
   FWorkers := TList<TEpollFPCWorkerThread>.Create;
   FLock := TCriticalSection.Create;
-  FSemaphore := TSemaphore.Create(nil, 0, 65535, '');
+  FSemaphore := TEpollSemaphore.Create;
   
   for I := 1 to AThreadCount do
     FWorkers.Add(TEpollFPCWorkerThread.Create(Self));
@@ -2998,8 +3059,7 @@ begin
     LThreadCount := 2;
 
   {$IFDEF FPC}
-  if GTaskPool = nil then
-    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 4);
+  // GTaskPool := nil;
   {$ENDIF}
 
   try
