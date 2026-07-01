@@ -361,7 +361,8 @@ foreach ($cand in $candidatos) {
         Stop-Process -Id $processJob.Id -Force -ErrorAction SilentlyContinue
     } else {
         Write-Host "Parando container Docker..." -ForegroundColor DarkGray
-        & docker compose down $($cand.Service)
+        & docker compose stop $($cand.Service)
+        & docker compose rm -f $($cand.Service)
     }
     Start-Sleep -Seconds 7
 }
