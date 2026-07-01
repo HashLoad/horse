@@ -34,8 +34,8 @@ type
 {$IF DEFINED(FPC)}
   THorseHeaderComparer = class(TInterfacedObject, IEqualityComparer<string>)
   public
-    function Equals(const A, B: string): Boolean; reintroduce;
-    function GetHashCode(const Value: string): Integer; reintroduce;
+    function Equals(constref A, B: string): Boolean;
+    function GetHashCode(constref Value: string): DWord;
   end;
 {$ENDIF}
 
@@ -65,12 +65,12 @@ uses
   Horse.Rtti;
 
 {$IF DEFINED(FPC)}
-function THorseHeaderComparer.Equals(const A, B: string): Boolean;
+function THorseHeaderComparer.Equals(constref A, B: string): Boolean;
 begin
   Result := SameText(A, B);
 end;
 
-function THorseHeaderComparer.GetHashCode(const Value: string): Integer;
+function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
 begin
   Result := TDefaultEqualityComparer<string>.Default.GetHashCode(LowerCase(Value));
 end;
