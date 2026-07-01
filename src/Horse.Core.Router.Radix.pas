@@ -73,6 +73,16 @@ uses
   {$ENDIF}
   Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils;
 
+procedure RadixMethodNotAllowedFinalizer(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+begin
+  Res.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+end;
+
+procedure RadixNotFoundFinalizer(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+begin
+  Res.Send('Not Found').Status(THTTPStatus.NotFound);
+end;
+
 { TRadixFlow }
 
 constructor TRadixFlow.Create(const ACallbacks: TArray<THorseCallback>; AReq: THorseRequest; ARes: THorseResponse);
@@ -335,14 +345,10 @@ begin
         end
         else
         begin
-          LCallbacksList.Add(
-            procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
-            begin
-              if LNode.Callbacks.Count > 0 then
-                Res.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed)
-              else
-                Res.Send('Not Found').Status(THTTPStatus.NotFound);
-            end);
+          if LNode.Callbacks.Count > 0 then
+            LCallbacksList.Add(RadixMethodNotAllowedFinalizer)
+          else
+            LCallbacksList.Add(RadixNotFoundFinalizer);
         end;
 
         LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
@@ -361,11 +367,7 @@ begin
       LCallbacksList := TList<THorseCallback>.Create;
       try
         LCallbacksList.AddRange(FGlobalMiddlewares);
-        LCallbacksList.Add(
-          procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
-          begin
-            Res.Send('Not Found').Status(THTTPStatus.NotFound);
-          end);
+        LCallbacksList.Add(RadixNotFoundFinalizer);
 
         LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
         try
