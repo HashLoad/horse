@@ -110,7 +110,7 @@ begin
     try
       {$IF DEFINED(FPC)}
       Writeln('DEBUG: TRadixFlow.Next chamando callback... LIndex = ', LIndex);
-      Writeln('DEBUG: Callback address = ', HexStr(Pointer(FCallbacks[LIndex])));
+      Writeln('DEBUG: Callback address = ', HexStr(Pointer(@FCallbacks[LIndex])));
       Flush(Output);
       {$ENDIF}
       FCallbacks[LIndex](FRequest, FResponse, Next);
