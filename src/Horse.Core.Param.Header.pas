@@ -71,8 +71,14 @@ begin
 end;
 
 function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
+var
+  I: Integer;
+  LStr: string;
 begin
-  Result := TDefaultEqualityComparer<string>.Default.GetHashCode(LowerCase(Value));
+  Result := 5381;
+  LStr := LowerCase(Value);
+  for I := 1 to Length(LStr) do
+    Result := ((Result shl 5) + Result) + Ord(LStr[I]);
 end;
 {$ENDIF}
 
