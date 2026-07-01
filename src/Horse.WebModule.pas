@@ -91,26 +91,36 @@ var
   LResponse: THorseResponse;
 begin
   Handled := True;
-  LRequest := THorseRequest.Create(Request);
-  LResponse := THorseResponse.Create(Response);
   try
+    LRequest := THorseRequest.Create(Request);
+    LResponse := THorseResponse.Create(Response);
     try
-      FHorse.Routes.Execute(LRequest, LResponse)
-    except
-      on E: Exception do
-      begin
-        {$IF DEFINED(FPC)}
-        Writeln('DEBUG: Excecao no HandlerAction: ', E.ClassName, ': ', E.Message); Flush(Output);
-        {$ENDIF}
-        if not E.InheritsFrom(EHorseCallbackInterrupted) then
-          raise;
+      try
+        FHorse.Routes.Execute(LRequest, LResponse)
+      except
+        on E: Exception do
+        begin
+          {$IF DEFINED(FPC)}
+          Writeln('DEBUG: Excecao no Execute: ', E.ClassName, ': ', E.Message); Flush(Output);
+          {$ENDIF}
+          if not E.InheritsFrom(EHorseCallbackInterrupted) then
+            raise;
+        end;
       end;
+    finally
+      if LRequest.Body<TObject> = LResponse.Content then
+        LResponse.Content(nil);
+      LRequest.Free;
+      LResponse.Free;
     end;
-  finally
-    if LRequest.Body<TObject> = LResponse.Content then
-      LResponse.Content(nil);
-    LRequest.Free;
-    LResponse.Free;
+  except
+    on E: Exception do
+    begin
+      {$IF DEFINED(FPC)}
+      Writeln('DEBUG: Excecao na criacao do Request/Response: ', E.ClassName, ': ', E.Message); Flush(Output);
+      {$ENDIF}
+      raise;
+    end;
   end;
 end;
 
