@@ -208,6 +208,8 @@ type
 
 implementation
 
+{$I Horse.Core.Wrappers.inc}
+
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
@@ -583,7 +585,16 @@ class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequ
 begin
   Result :=
 {$IFDEF FPC}
-    THorseCallback(ACallbackRequest);
+    {$IF DEFINED(FPC)}
+    if GCallbacks2Count < 64 then
+    begin
+      GCallbacks2[GCallbacks2Count] := ACallbackRequest;
+      Result := GWrapperList2[GCallbacks2Count];
+      Inc(GCallbacks2Count);
+    end
+    else
+      Result := THorseCallback(ACallbackRequest);
+    {$IFEND}
 {$ELSE}
   procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
   begin
@@ -607,12 +618,21 @@ class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequ
 begin
   Result :=
 {$IFDEF FPC}
-    THorseCallback(ACallbackRequest);
+    {$IF DEFINED(FPC)}
+    if GCallbacks1Count < 64 then
+    begin
+      GCallbacks1[GCallbacks1Count] := ACallbackRequest;
+      Result := GWrapperList1[GCallbacks1Count];
+      Inc(GCallbacks1Count);
+    end
+    else
+      Result := THorseCallback(ACallbackRequest);
+    {$IFEND}
 {$ELSE}
   procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
   begin
     Res.Status(THTTPStatus.NoContent);
-  ACallbackRequest(Req);
+    ACallbackRequest(Req);
   end;
 {$IFEND}
 end;
