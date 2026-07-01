@@ -16,6 +16,7 @@ end;
 
 begin
   try
+    THorse.UseRadixRouter;
     THorse.Get('/ping', GetPing);
     Writeln('Servidor FPC/Horse (Default) rodando na porta 9090...');
     THorse.Listen(9090);

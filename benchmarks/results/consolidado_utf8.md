@@ -1,54 +1,56 @@
-# Resultados do Benchmark (RPS e Latência)
+﻿# Resultados do Benchmark (RPS e LatÃªncia)
 
-Teste executado em: 01/07/2026 15:34:02
-Duração dos Testes: 30s por cenário
+Teste executado em: 01/07/2026 17:07:09
+DuraÃ§Ã£o dos Testes: 30s por cenÃ¡rio
 Ambiente de Testes: Windows Host para HTTP.sys / Linux Docker para demais
 Limites Docker: 2 CPUs, 512MB RAM
 
-## ⚡ Concorrência: 128 Conexões Simultâneas
+## âš¡ ConcorrÃªncia: 128 ConexÃµes SimultÃ¢neas
 
-| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | Latência Média | Latência p99 | CPU Média | Memória Final |
+| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | LatÃªncia MÃ©dia | LatÃªncia p99 | CPU MÃ©dia | MemÃ³ria Final |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Rust 1.75 | Actix-web | Linux (Docker) | 37028.65 | 3.46ms | 8.04ms | 55.77% | 4.156MiB |
-| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 35156.97 | 3.64ms | 8.22ms | 73.43% | 28.89MiB |
-| Go 1.21 | Fiber | Linux (Docker) | 27562.24 | 4.70ms | 45.68ms | 124.64% | 10.57MiB |
-| Java 17 | Spring Boot | Linux (Docker) | 16993.54 | 7.90ms | 74.01ms | 122.88% | 172.4MiB |
-| JavaScript (Node.js 20) | Express | Linux (Docker) | 9584.20 | 13.36ms | 26.85ms | 67.6% | 13.82MiB |
-| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 4735.54 | 27.06ms | 306.70ms | 0% | 12.81MiB |
-| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 4601.44 | 27.85ms | 291.71ms | 0% | 12.86MiB |
-| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 1865.87 | 71.17ms | 1.09s | 123.83% | 3.824MiB |
-| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 1194.17 | 107.34ms | 386.31ms | 122.48% | 21.27MiB |
-| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 1188.53 | 115.45ms | 397.54ms | 124.8% | 21.44MiB |
-| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 62.18 | 2.00s | 8.06s | 1.75% | 44.5MiB |
+| Rust 1.75 | Actix-web | Linux (Docker) | 41676.13 | 3.07ms | 7.42ms | 53.59% | 3.387MiB |
+| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 35003.13 | 3.65ms | 8.51ms | 71.41% | 29.05MiB |
+| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 34724.38 | 3.76ms | 20.53ms | 0% | 0B |
+| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 32388.77 | 3.95ms | 21.45ms | 0% | 0B |
+| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 30762.01 | 4.28ms | 23.01ms | 124.37% | 7.457MiB |
+| Go 1.21 | Fiber | Linux (Docker) | 29345.15 | 4.57ms | 45.34ms | 125.24% | 10.27MiB |
+| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 26570.76 | 4.91ms | 24.70ms | 0% | 0B |
+| Java 17 | Spring Boot | Linux (Docker) | 18165.88 | 7.29ms | 63.14ms | 120.56% | 154.3MiB |
+| JavaScript (Node.js 20) | Express | Linux (Docker) | 10431.54 | 12.29ms | 25.00ms | 67.13% | 14.72MiB |
+| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 5064.56 | 25.34ms | 306.25ms | 0% | 12.85MiB |
+| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 2816.58 | 45.50ms | 444.47ms | 0% | 12.77MiB |
 
-## ⚡ Concorrência: 512 Conexões Simultâneas
+## âš¡ ConcorrÃªncia: 512 ConexÃµes SimultÃ¢neas
 
-| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | Latência Média | Latência p99 | CPU Média | Memória Final |
+| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | LatÃªncia MÃ©dia | LatÃªncia p99 | CPU MÃ©dia | MemÃ³ria Final |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Rust 1.75 | Actix-web | Linux (Docker) | 40517.38 | 12.67ms | 26.14ms | 65.93% | 4.223MiB |
-| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 39898.08 | 12.87ms | 25.75ms | 86.93% | 34.89MiB |
-| Go 1.21 | Fiber | Linux (Docker) | 34579.74 | 16.42ms | 65.66ms | 122.72% | 17.8MiB |
-| Java 17 | Spring Boot | Linux (Docker) | 21723.53 | 23.27ms | 75.19ms | 122.26% | 199.1MiB |
-| JavaScript (Node.js 20) | Express | Linux (Docker) | 8651.14 | 59.30ms | 59.74ms | 69.91% | 19.47MiB |
-| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 5550.81 | 92.43ms | 597.61ms | 0% | 15.97MiB |
-| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 4676.23 | 109.89ms | 623.57ms | 0% | 16.26MiB |
-| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 1596.54 | 322.92ms | 3.07s | 124.42% | 3.789MiB |
-| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 1406.97 | 401.08ms | 1.38s | 126.19% | 40.2MiB |
-| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 1291.05 | 449.02ms | 1.40s | 129.79% | 40.65MiB |
-| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 257.65 | 2.05s | 6.04s | 5.02% | 160.7MiB |
+| Rust 1.75 | Actix-web | Linux (Docker) | 45847.95 | 11.18ms | 22.80ms | 63.09% | 2.773MiB |
+| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 43970.86 | 11.66ms | 23.20ms | 86.35% | 35.45MiB |
+| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 35087.46 | 15.23ms | 51.11ms | 0% | 0B |
+| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 34812.30 | 14.78ms | 50.49ms | 0% | 0B |
+| Go 1.21 | Fiber | Linux (Docker) | 34499.15 | 16.25ms | 65.46ms | 124.69% | 18MiB |
+| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 34261.68 | 15.62ms | 52.67ms | 123.42% | 11.91MiB |
+| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 29457.40 | 17.45ms | 57.18ms | 0% | 0B |
+| Java 17 | Spring Boot | Linux (Docker) | 26129.39 | 20.96ms | 70.71ms | 120.43% | 183MiB |
+| JavaScript (Node.js 20) | Express | Linux (Docker) | 9469.01 | 54.33ms | 55.66ms | 69.58% | 16.27MiB |
+| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 4982.79 | 103.02ms | 642.08ms | 0% | 16.25MiB |
+| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 4784.68 | 107.12ms | 619.77ms | 0% | 16.17MiB |
 
-## ⚡ Concorrência: 1024 Conexões Simultâneas
+## âš¡ ConcorrÃªncia: 1024 ConexÃµes SimultÃ¢neas
 
-| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | Latência Média | Latência p99 | CPU Média | Memória Final |
+| Linguagem / Compilador | Framework / Driver | S.O. / Ambiente | RPS (Throughput) | LatÃªncia MÃ©dia | LatÃªncia p99 | CPU MÃ©dia | MemÃ³ria Final |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Rust 1.75 | Actix-web | Linux (Docker) | 41996.28 | 24.39ms | 28.59ms | 63.86% | 4.273MiB |
-| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 38850.16 | 26.99ms | 28.97ms | 84.67% | 58.21MiB |
-| Go 1.21 | Fiber | Linux (Docker) | 31117.45 | 35.34ms | 93.38ms | 121.02% | 26.6MiB |
-| Java 17 | Spring Boot | Linux (Docker) | 24306.73 | 44.23ms | 100.55ms | 122.39% | 218.2MiB |
-| JavaScript (Node.js 20) | Express | Linux (Docker) | 7319.48 | 140.91ms | 9.15s | 73.57% | 29.11MiB |
-| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 6614.23 | 155.03ms | 786.82ms | 0% | 21.12MiB |
-| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 5292.51 | 193.89ms | 1.28s | 0% | 19.16MiB |
-| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 1603.95 | 588.31ms | 1.80s | 132.22% | 48.66MiB |
-| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 1601.81 | 587.51ms | 1.81s | 128.94% | 48.28MiB |
-| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 1440.66 | 698.73ms | 6.04s | 129.98% | 4.762MiB |
-| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 934.75 | 1.05s | 4.12s | 2.44% | 218.6MiB |
+| Rust 1.75 | Actix-web | Linux (Docker) | 44244.56 | 23.20ms | 27.27ms | 61.76% | 3.371MiB |
+| C# (.NET 8) | ASP.NET Core (Minimal API) | Linux (Docker) | 42619.61 | 24.08ms | 34.99ms | 90.39% | 56.53MiB |
+| Delphi 13 (Florence) (Indy + Radix) | Horse (Indy + Radix) | Linux (Docker) | 33254.75 | 31.23ms | 75.70ms | 0% | 0B |
+| Free Pascal (FPC) (epoll) | Horse (epoll) | Linux (Docker) | 32037.61 | 31.79ms | 76.38ms | 123.04% | 15.89MiB |
+| Free Pascal (FPC) | Horse (fphttpserver) | Linux (Docker) | 31149.34 | 34.10ms | 78.39ms | 0% | 0B |
+| Go 1.21 | Fiber | Linux (Docker) | 28835.71 | 35.54ms | 94.80ms | 123.3% | 26.11MiB |
+| Delphi 13 (Florence) (Indy) | Horse (Indy) | Linux (Docker) | 25280.85 | 40.87ms | 88.06ms | 0% | 0B |
+| Java 17 | Spring Boot | Linux (Docker) | 22552.11 | 48.08ms | 105.33ms | 121.67% | 200MiB |
+| JavaScript (Node.js 20) | Express | Linux (Docker) | 8650.31 | 118.97ms | 100.24ms | 73.35% | 30.26MiB |
+| Delphi 13 (Florence) (HTTP.sys + Radix) | Horse (HTTP.sys + Radix) | Windows (Host) | 6560.95 | 156.20ms | 759.68ms | 0% | 18.48MiB |
+| Delphi 13 (Florence) (HTTP.sys) | Horse (HTTP.sys) | Windows (Host) | 5737.47 | 178.38ms | 754.78ms | 0% | 19.71MiB |
+
+
