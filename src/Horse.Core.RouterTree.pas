@@ -53,7 +53,6 @@ type
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
-    function GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
     function ExecuteInternal(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
     function CallNextPath(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     function HasNext(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Boolean;
@@ -373,51 +372,7 @@ begin
   end;
 end;
 
-function THorseRouterTree.GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
-var
-  LStart, LLen, LPathLen: Integer;
-  LPart: string;
-  LList: TList<string>;
-begin
-  if AUsePrefix then
-  begin
-    if not APath.StartsWith('/') then
-      APath := (FPrefix + '/' + APath)
-    else
-      APath := (FPrefix + APath);
-  end;
 
-  LList := TList<string>.Create;
-  try
-    if APath.StartsWith('/') then
-      LList.Add(EmptyStr);
-
-    LPathLen := Length(APath);
-    LStart := 1;
-    while LStart <= LPathLen do
-    begin
-      while (LStart <= LPathLen) and (APath[LStart] = '/') do
-        Inc(LStart);
-      
-      if LStart > LPathLen then
-        Break;
-        
-      LLen := 0;
-      while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
-        Inc(LLen);
-        
-      if LLen > 0 then
-      begin
-        LPart := Copy(APath, LStart, LLen);
-        LList.Add(LPart);
-        LStart := LStart + LLen;
-      end;
-    end;
-    Result := LList.ToArray;
-  finally
-    LList.Free;
-  end;
-end;
 
 function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Integer;
 var
