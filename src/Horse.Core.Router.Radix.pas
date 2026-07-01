@@ -350,11 +350,6 @@ begin
     LParams := TDictionary<string, string>.Create;
     try
       LNode := FindNode(LSegments, LStartSegmentIndex, FRoot, LMethodType, LMiddlewares, LParams);
-      {$IF DEFINED(FPC)}
-      Writeln('DEBUG: FindNode executado com sucesso! LNode Assigned = ', Assigned(LNode)); Flush(Output);
-      Result := True;
-      Exit;
-      {$ENDIF}
       
       if LNode <> nil then
       begin
@@ -378,6 +373,12 @@ begin
             else
               LCallbacksList.Add(RadixNotFoundFinalizer);
           end;
+
+          {$IF DEFINED(FPC)}
+          Writeln('DEBUG: LCallbacksList populated successfully! Count = ', LCallbacksList.Count); Flush(Output);
+          Result := True;
+          Exit;
+          {$ENDIF}
 
           LFlow := TRadixFlow.Create(LCallbacksList.ToArray, ARequest, AResponse);
           try
