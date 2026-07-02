@@ -31,18 +31,19 @@ if (-not (Test-Path $bombardier)) {
 }
 
 # 2. Compilar Servidores Delphi (Delphi 13)
-Write-Host "`n==> Compilando o servidor Delphi (HTTP.sys - Windows)..." -ForegroundColor Cyan
-Push-Location suites\delphi-horse-httpsys
-if (Test-Path "HorseBench.exe") { Remove-Item "HorseBench.exe" -Force }
-# Compila utilizando o dcc64.exe do Delphi 13 (Florence)
-& "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcc64.exe" -Q -W -H -GD -N"$PSScriptRoot\suites\delphi-horse-httpsys" -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
-if (-not (Test-Path "HorseBench.exe")) {
-    Write-Error "❌ Falha ao compilar o HorseBench.exe (Delphi 13 HTTP.sys)"
-    Pop-Location
-    exit 1
-}
-Write-Host "✅ HorseBench.exe (HTTP.sys) compilado com sucesso!" -ForegroundColor Green
-Pop-Location
+# (Pulado HTTP.sys para teste fidedigno em duas máquinas)
+# Write-Host "`n==> Compilando o servidor Delphi (HTTP.sys - Windows)..." -ForegroundColor Cyan
+# Push-Location suites\delphi-horse-httpsys
+# if (Test-Path "HorseBench.exe") { Remove-Item "HorseBench.exe" -Force }
+# # Compila utilizando o dcc64.exe do Delphi 13 (Florence)
+# & "C:\Program Files (x86)\Embarcadero\Studio\37.0\bin\dcc64.exe" -Q -W -H -GD -N"$PSScriptRoot\suites\delphi-horse-httpsys" -I"..\..\..\src" -U"..\..\..\src" "-NSSystem;System.Win;Winapi;Web;System.Hash" HorseBench.dpr
+# if (-not (Test-Path "HorseBench.exe")) {
+#     Write-Error "❌ Falha ao compilar o HorseBench.exe (Delphi 13 HTTP.sys)"
+#     Pop-Location
+#     exit 1
+# }
+# Write-Host "✅ HorseBench.exe (HTTP.sys) compilado com sucesso!" -ForegroundColor Green
+# Pop-Location
 
 Write-Host "`n==> Compilando o servidor Delphi (Indy - Linux)..." -ForegroundColor Cyan
 Push-Location suites\delphi-horse-default
@@ -72,23 +73,23 @@ Write-Host "✅ Imagens Docker prontas!" -ForegroundColor Green
 
 # 4. Configuração dos Candidatos de Benchmark
 $candidatos = @(
-    @{
-        Nome = "Delphi 13 (Florence) (HTTP.sys)"
-        Framework = "Horse (HTTP.sys)"
-        Plataforma = "Windows (Host)"
-        Tipo = "host"
-        Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
-        Porta = 9090
-    },
-    @{
-        Nome = "Delphi 13 (Florence) (HTTP.sys + Radix)"
-        Framework = "Horse (HTTP.sys + Radix)"
-        Plataforma = "Windows (Host)"
-        Tipo = "host"
-        Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
-        Argumentos = "--radix"
-        Porta = 9090
-    },
+    # @{
+    #     Nome = "Delphi 13 (Florence) (HTTP.sys)"
+    #     Framework = "Horse (HTTP.sys)"
+    #     Plataforma = "Windows (Host)"
+    #     Tipo = "host"
+    #     Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
+    #     Porta = 9090
+    # },
+    # @{
+    #     Nome = "Delphi 13 (Florence) (HTTP.sys + Radix)"
+    #     Framework = "Horse (HTTP.sys + Radix)"
+    #     Plataforma = "Windows (Host)"
+    #     Tipo = "host"
+    #     Executavel = "suites\delphi-horse-httpsys\HorseBench.exe"
+    #     Argumentos = "--radix"
+    #     Porta = 9090
+    # },
     @{
         Nome = "Delphi 13 (Florence) (Indy)"
         Framework = "Horse (Indy)"
