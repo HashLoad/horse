@@ -269,13 +269,7 @@ uses
   {$ELSE}
   Horse.Provider.Console,
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_PROVIDER_IOURING)}
-  System.SysUtils,
-  {$IFDEF LINUX}
-  Horse.Provider.IOUring,
-  {$ELSE}
-  Horse.Provider.Console,
-  {$ENDIF}
+
 {$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
   System.SysUtils,
   {$IFDEF MSWINDOWS}
