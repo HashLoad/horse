@@ -87,6 +87,9 @@ var
 
 begin
   ReportMemoryLeaksOnShutdown := True;
+  {$IFDEF HORSE_RADIX_ROUTER}
+  THorse.UseRadixRouter;
+  {$ENDIF}
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
 {$ELSE}

@@ -3,7 +3,7 @@ unit Tests.CleanupHelper;
 interface
 
 uses
-  Horse, Horse.Core, Horse.Core.RouterTree, System.SysUtils, System.Rtti,
+  Horse, Horse.Core, Horse.Core.RouterTree, Horse.Core.Router.Radix, System.SysUtils, System.Rtti,
   System.Generics.Collections;
 
 procedure ClearGlobalState;
@@ -22,7 +22,11 @@ begin
 
   // 2. Reseta a arvore de rotas global
   THorse.Routes := nil;
+  {$IFDEF HORSE_RADIX_ROUTER}
+  THorse.Routes := THorseRadixRouter.Create;
+  {$ELSE}
   THorse.Routes := THorseRouterTree.Create;
+  {$ENDIF}
 
   // 3. Reseta propriedades estaticas de rede para o baseline padrao
   THorse.Port := 9000;
