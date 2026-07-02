@@ -46,8 +46,8 @@ uses
   Horse.Commons;
 
 type
-  { Estrutura que representa os segmentos de cabeçalhos indexados durante o
-    parsing preguiçoso para evitar alocações desnecessárias na heap. }
+  { Estrutura que representa os segmentos de cabeÃ§alhos indexados durante o
+    parsing preguiÃ§oso para evitar alocaÃ§Ãµes desnecessÃ¡rias na heap. }
   TEpollConnectionContext = class;
 
   THeaderSegment = record
@@ -59,8 +59,8 @@ type
 
   THeaderSegments = TArray<THeaderSegment>;
 
-  { Parser HTTP incremental e extremamente rápido que opera diretamente sobre
-    buffers de bytes, realizando Lazy Parsing nos cabeçalhos. }
+  { Parser HTTP incremental e extremamente rÃ¡pido que opera diretamente sobre
+    buffers de bytes, realizando Lazy Parsing nos cabeÃ§alhos. }
   THorseHttpParser = class
   private
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
@@ -86,8 +86,8 @@ type
     constructor Create(const ABytes: TBytes; AOffset, ALen: Integer);
   end;
 
-  { Adaptador de requisição que implementa IHorseRawRequest e resolve os
-    cabeçalhos sob demanda (Lazy Loading). }
+  { Adaptador de requisiÃ§Ã£o que implementa IHorseRawRequest e resolve os
+    cabeÃ§alhos sob demanda (Lazy Loading). }
   TEpollRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
     FBuffer: TBytes;
@@ -149,8 +149,8 @@ type
     function ReadBody(var Buffer; Count: Integer): Integer;
   end;
 
-  { Adaptador de resposta que envia status, cabeçalhos e corpo diretamente
-    através do socket do cliente Linux. }
+  { Adaptador de resposta que envia status, cabeÃ§alhos e corpo diretamente
+    atravÃ©s do socket do cliente Linux. }
   TEpollRawResponse = class(TInterfacedObject, IHorseRawResponse)
   private
     FContext: TEpollConnectionContext;
@@ -173,7 +173,7 @@ type
     procedure SendResponse(const ARes: THorseResponse);
   end;
 
-  { Unit de conexão cliente básica associada ao epoll }
+  { Unit de conexÃ£o cliente bÃ¡sica associada ao epoll }
   TEpollConnectionContext = class
   public
     Socket: Integer;
@@ -213,7 +213,7 @@ type
 
 
 
-  { Thread worker que escuta seu próprio descritor de epoll (SO_REUSEPORT) }
+  { Thread worker que escuta seu prÃ³prio descritor de epoll (SO_REUSEPORT) }
   THorseEpollWorker = class(TThread)
   private
     FListenSocket: Integer;
@@ -1176,7 +1176,7 @@ begin
   if ALength < 4 then
     Exit(False);
 
-  // 1. Localiza o fim dos cabeçalhos (\r\n\r\n)
+  // 1. Localiza o fim dos cabeÃ§alhos (\r\n\r\n)
   HeaderEnd := -1;
   for I := 0 to ALength - 4 do
   begin
@@ -1194,7 +1194,7 @@ begin
   LineEnd := FindCRLF(ABuffer, 0, HeaderEnd);
   if LineEnd = -1 then Exit(False);
 
-  Space1 := FindByte(ABuffer, 0, LineEnd, 32); // Espaço
+  Space1 := FindByte(ABuffer, 0, LineEnd, 32); // EspaÃ§o
   if Space1 = -1 then Exit(False);
 
   Space2 := FindByte(ABuffer, Space1 + 1, LineEnd, 32);
@@ -1223,7 +1223,7 @@ begin
 
   AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
 
-  // 3. Processa os cabeçalhos linha a linha indexando os offsets
+  // 3. Processa os cabeÃ§alhos linha a linha indexando os offsets
   SegCount := 0;
   SetLength(AHeaders, 16);
 
@@ -1241,7 +1241,7 @@ begin
         Segment.KeyStart := LineStart;
         Segment.KeyLen := Colon - LineStart;
         
-        // Remove espaços do valor (Trim rápido dos bytes)
+        // Remove espaÃ§os do valor (Trim rÃ¡pido dos bytes)
         I := Colon + 1;
         while (I < LineEnd) and (ABuffer[I] = 32) do Inc(I);
         Segment.ValueStart := I;
@@ -1253,7 +1253,7 @@ begin
         AHeaders[SegCount] := Segment;
         Inc(SegCount);
 
-        // Parsing rápido de Content-Length diretamente dos bytes
+        // Parsing rÃ¡pido de Content-Length diretamente dos bytes
         if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-length') then
         begin
           AContentLength := 0;
@@ -1392,7 +1392,7 @@ function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
 function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
 function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
-// Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
+// Retorna a porta na qual o servidor estÃ¡ ouvindo localmente de forma dinÃ¢mica
 function TEpollRawRequest.GetServerPort: Integer; begin Result := THorseProviderEpoll.Port; end;
 function TEpollRawRequest.GetContentType: string; begin Result := ResolveHeader('content-type'); end;
 
@@ -2387,11 +2387,12 @@ begin
             end;
           end;
         except
-          // Captura exceções para segurança na thread
+          // Captura exceÃ§Ãµes para seguranÃ§a na thread
         end;
       end);
     {$ELSE}
-    // Lazarus FPC: Despacha as rotas via GTaskPool de forma assíncrona
+    // Lazarus FPC: Despacha as rotas via GTaskPool de forma assÃ­ncrona
+    {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
     if GTaskPool <> nil then
     begin
       GTaskPool.QueueTask(TEpollFPCTask.Create(
@@ -2402,6 +2403,7 @@ begin
       ));
     end
     else
+    {$ENDIF}
     begin
       try
         if THorseHttpParser.TryParseRequest(
@@ -2491,7 +2493,7 @@ begin
             CloseConnection(AContext);
         end;
       except
-        // Segurança no fallback síncrono
+        // SeguranÃ§a no fallback sÃ­ncrono
       end;
     end;
     {$ENDIF}
@@ -2816,7 +2818,7 @@ begin
   FWorkers := TObjectList<THorseEpollWorker>.Create(True);
   FRunning := False;
 
-  // Eleva o limite máximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
+  // Eleva o limite mÃ¡ximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
   LRLimit.rlim_cur := 65535;
   LRLimit.rlim_max := 65535;
   {$IFDEF FPC}
@@ -2954,8 +2956,10 @@ begin
     LThreadCount := 2;
 
   {$IFDEF FPC}
+  {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
   if GTaskPool = nil then
     GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 4);
+  {$ENDIF}
   {$ENDIF}
 
   try
