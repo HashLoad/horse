@@ -1670,7 +1670,6 @@ begin
   
   if LRes >= 0 then
   begin
-    Writeln('WriteNonBlockingV: writev sucesso, bytes enviados: ', LRes, ' / total: ', LTotalBytes);
     if NativeUInt(LRes) = LTotalBytes then
       Exit(True);
     
@@ -1706,7 +1705,6 @@ begin
 
   {$IFDEF FPC}
   LErr := fpGetErrno;
-  Writeln('WriteNonBlockingV: writev falhou, erro errno: ', LErr);
   {$ELSE}
   LErr := errno;
   {$ENDIF}
@@ -2734,8 +2732,6 @@ begin
             end;
 
             {$IFDEF FPC}
-            Writeln('Worker: Conexao aceita no socket = ', LClientFd);
-            Flush(Output);
             fpFcntl(LClientFd, F_SETFL, O_NONBLOCK);
             {$ELSE}
             fcntl(LClientFd, F_SETFL, O_NONBLOCK);
@@ -2958,7 +2954,7 @@ begin
   {$IFDEF FPC}
   {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
   if GTaskPool = nil then
-    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 4);
+    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 8);
   {$ENDIF}
   {$ENDIF}
 

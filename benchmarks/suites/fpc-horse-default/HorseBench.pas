@@ -4,6 +4,7 @@ program HorseBench;
 
 uses
   {$IFDEF UNIX}
+  cmem,
   cthreads,
   {$ENDIF}
   SysUtils,
