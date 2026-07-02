@@ -92,3 +92,6 @@ samples/delphi/epoll/EpollConsole
 samples/delphi/console/Console
 *.or
 benchmarks/linux_comparison/
+
+# Benchmarks local results
+benchmarks/results/
