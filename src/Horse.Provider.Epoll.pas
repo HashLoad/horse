@@ -102,6 +102,7 @@ type
     cabeÃ§alhos sob demanda (Lazy Loading). }
   TEpollRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
+    FContext: TEpollConnectionContext;
     FBuffer: TBytes;
     FMethod: string;
     {$IFDEF FPC}
@@ -121,7 +122,6 @@ type
     FHeaders: THeaderSegments;
     FBodyStream: TStream;
     FTempFileName: string;
-    FResolvedHeaders: TDictionary<string, string>;
     FClientIP: string;
     FClientPort: Integer;
     procedure EnsureBodyStream;
@@ -184,17 +184,14 @@ type
     FHeadersSent: Boolean;
     FStatusCode: Integer;
     FReason: string;
-    FHeaders: TDictionary<string, string>;
     FIsKeepAlive: Boolean;
-    function PrepareHeaders: TBytes;
-    procedure SendHeaders;
+    procedure SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string = '');
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     function WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
     function WriteNonBlockingV(AIovCnt: Integer; AIov: Pointer): Boolean;
   public
     constructor Create(AContext: TEpollConnectionContext; AIsKeepAlive: Boolean = True);
     destructor Destroy; override;
-
     procedure SetCustomHeader(const AName, AValue: string);
     procedure SendResponse(const ARes: THorseResponse);
   end;
@@ -236,6 +233,7 @@ type
     FWriteBuffer: TBytes;
     FWriteOffset: Integer;
     FWriteLen: Integer;
+
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
     procedure ClearRequest;
@@ -962,11 +960,13 @@ begin
   FWriteOffset := 0;
   FWriteLen := 0;
   LastActive := GetTickCount64;
+
   ClearRequest;
 end;
 
 destructor TEpollConnectionContext.Destroy;
 begin
+
   Headers := nil;
   Buffer := nil;
   FWriteBuffer := nil;
@@ -1392,6 +1392,7 @@ constructor TEpollRawRequest.Create(
 );
 begin
   inherited Create;
+  FContext := nil;
   if ABodyOffset > 0 then
   begin
     if (ABodyStream = nil) and (ATempFileName = '') and (AContentLength > 0) then
@@ -1429,12 +1430,10 @@ begin
   FTempFileName := ATempFileName;
   FClientIP := AClientIP;
   FClientPort := AClientPort;
-  FResolvedHeaders := TDictionary<string, string>.Create;
 end;
 
 destructor TEpollRawRequest.Destroy;
 begin
-  FResolvedHeaders.Free;
   if Assigned(FBodyStream) then
     FBodyStream.Free;
   if FTempFileName <> '' then
@@ -1456,9 +1455,6 @@ var
   I: Integer;
 begin
   LLowerName := LowerCase(AName);
-  if FResolvedHeaders.TryGetValue(LLowerName, Result) then
-    Exit;
-
   for I := 0 to Length(FHeaders) - 1 do
   begin
     LSegment := FHeaders[I];
@@ -1471,13 +1467,10 @@ begin
       end
       else
         Result := '';
-      FResolvedHeaders.Add(LLowerName, Result);
       Exit;
     end;
   end;
-
   Result := '';
-  FResolvedHeaders.Add(LLowerName, '');
 end;
 
 function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
@@ -1722,13 +1715,11 @@ begin
   FHeadersSent := False;
   FStatusCode := 200;
   FReason := 'OK';
-  FHeaders := TDictionary<string, string>.Create;
   FIsKeepAlive := AIsKeepAlive;
 end;
 
 destructor TEpollRawResponse.Destroy;
 begin
-  FHeaders.Free;
   inherited;
 end;
 
@@ -1736,43 +1727,63 @@ procedure TEpollRawResponse.SetCustomHeader(const AName, AValue: string);
 begin
 end;
 
-function TEpollRawResponse.PrepareHeaders: TBytes;
+procedure TEpollRawResponse.SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string);
 var
   LHeaderStr: AnsiString;
+  I: Integer;
+  LHasContentType, LHasConnection, LHasContentLength: Boolean;
+  {$IFNDEF FPC}
   LPair: TPair<string, string>;
+  {$ENDIF}
 begin
+  if FHeadersSent then Exit;
+  FHeadersSent := True;
+
   LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
   
-  if not FHeaders.ContainsKey('Content-Type') then
-    FHeaders.Add('Content-Type', 'text/html; charset=utf-8');
+  LHasContentType := False;
+  LHasConnection := False;
+  LHasContentLength := False;
 
-  if not FHeaders.ContainsKey('Connection') then
+  if AHeadersList <> nil then
   begin
-    if FIsKeepAlive then
-      FHeaders.Add('Connection', 'keep-alive')
-    else
-      FHeaders.Add('Connection', 'close');
+    {$IFDEF FPC}
+    for I := 0 to AHeadersList.Count - 1 do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(AHeadersList.Names[I]) + ': ' + AnsiString(AHeadersList.ValueFromIndex[I]) + #13#10;
+      if SameText(AHeadersList.Names[I], 'Content-Type') then LHasContentType := True;
+      if SameText(AHeadersList.Names[I], 'Connection') then LHasConnection := True;
+      if SameText(AHeadersList.Names[I], 'Content-Length') then LHasContentLength := True;
+    end;
+    {$ELSE}
+    for LPair in AHeadersList do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+      if SameText(LPair.Key, 'Content-Type') then LHasContentType := True;
+      if SameText(LPair.Key, 'Connection') then LHasConnection := True;
+      if SameText(LPair.Key, 'Content-Length') then LHasContentLength := True;
+    end;
+    {$ENDIF}
   end;
 
-  for LPair in FHeaders do
-    LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+  if not LHasContentType then
+    LHeaderStr := LHeaderStr + 'Content-Type: text/html; charset=utf-8' + #13#10;
+
+  if not LHasContentLength and (AContentLength <> '') then
+    LHeaderStr := LHeaderStr + 'Content-Length: ' + AnsiString(AContentLength) + #13#10;
+
+  if not LHasConnection then
+  begin
+    if FIsKeepAlive then
+      LHeaderStr := LHeaderStr + 'Connection: keep-alive' + #13#10
+    else
+      LHeaderStr := LHeaderStr + 'Connection: close' + #13#10;
+  end;
 
   LHeaderStr := LHeaderStr + #13#10;
   
-  SetLength(Result, Length(LHeaderStr));
   if Length(LHeaderStr) > 0 then
-    Move(LHeaderStr[1], Result[0], Length(LHeaderStr));
-end;
-
-procedure TEpollRawResponse.SendHeaders;
-var
-  LHeaderBytes: TBytes;
-begin
-  if FHeadersSent then Exit;
-  LHeaderBytes := PrepareHeaders;
-  if Length(LHeaderBytes) > 0 then
-    WriteNonBlocking(@LHeaderBytes[0], Length(LHeaderBytes));
-  FHeadersSent := True;
+    WriteNonBlocking(@LHeaderStr[1], Length(LHeaderStr));
 end;
 
 function TEpollRawResponse.WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
@@ -1893,7 +1904,6 @@ var
   {$ENDIF}
   LFileHandle: THandle;
   LStreamSize: Int64;
-  LBodyBytes: TBytes;
 begin
   LHasChunkedHeader := False;
   if AHeadersList <> nil then
@@ -1909,14 +1919,12 @@ begin
 
   LStreamSize := AStream.Size - AStream.Position;
 
-  
   if (not LHasChunkedHeader) and (AStream is TFileStream) then
   begin
     LFileHandle := TFileStream(AStream).Handle;
     if LStreamSize > 0 then
     begin
-      FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
-      SendHeaders;
+      SendHeaders(AHeadersList, IntToStr(LStreamSize));
       if sendfile(FSocket, LFileHandle, nil, LStreamSize) >= 0 then
         Exit;
     end;
@@ -1924,17 +1932,16 @@ begin
 
   if (LStreamSize > 0) and (LStreamSize <= 10485760) then
   begin
-    FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
-    SendHeaders;
+    SendHeaders(AHeadersList, IntToStr(LStreamSize));
     if AStream is TCustomMemoryStream then
     begin
       WriteNonBlocking(TCustomMemoryStream(AStream).Memory, LStreamSize);
     end
     else
     begin
-      SetLength(LBodyBytes, LStreamSize);
-      AStream.ReadBuffer(LBodyBytes[0], LStreamSize);
-      WriteNonBlocking(@LBodyBytes[0], LStreamSize);
+      SetLength(LChunkBuf, LStreamSize);
+      AStream.ReadBuffer(LChunkBuf[0], LStreamSize);
+      WriteNonBlocking(@LChunkBuf[0], LStreamSize);
     end;
     Exit;
   end;
@@ -1943,11 +1950,18 @@ begin
 
   if LUseChunked then
   begin
-    FHeaders.AddOrSetValue('Transfer-Encoding', 'chunked');
-    FHeaders.Remove('Content-Length');
+    {$IFDEF FPC}
+    if AHeadersList = nil then
+      AHeadersList := TStringList.Create;
+    AHeadersList.Add('Transfer-Encoding=chunked');
+    {$ELSE}
+    if AHeadersList = nil then
+      AHeadersList := TDictionary<string, string>.Create;
+    AHeadersList.AddOrSetValue('Transfer-Encoding', 'chunked');
+    {$ENDIF}
   end;
 
-  SendHeaders;
+  SendHeaders(AHeadersList);
 
   SetLength(LChunkBuf, 8192);
   while True do
@@ -1978,19 +1992,25 @@ begin
     LTermStr := '0'#13#10#13#10;
     LTermBytes := TEncoding.ASCII.GetBytes(LTermStr);
     WriteNonBlocking(@LTermBytes[0], Length(LTermBytes));
+    {$IFDEF FPC}
+    if (AHeadersList <> nil) and (AHeadersList.Count = 1) and (AHeadersList.Names[0] = 'Transfer-Encoding') then
+      AHeadersList.Free;
+    {$ENDIF}
   end;
 end;
 
 procedure TEpollRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LBodyBytes: TBytes;
-  LPair: TPair<string, string>;
   LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
   LContentType: string;
   LHeaderBytes: TBytes;
   LIov: array[0..1] of iovec;
-  {$IFDEF FPC}
+  LHeaderStr: AnsiString;
   I: Integer;
+  LHasContentType, LHasConnection: Boolean;
+  {$IFNDEF FPC}
+  LPair: TPair<string, string>;
   {$ENDIF}
 begin
   FStatusCode := ARes.Status;
@@ -2010,53 +2030,77 @@ begin
     FReason := 'OK';
   end;
 
-  {$IFDEF FPC}
-  LContentType := ARes.CSContentType;
-  {$ELSE}
-  if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.ContentType <> '') then
-    LContentType := ARes.RawWebResponse.ContentType
-  else
-    LContentType := ARes.CSContentType;
-  {$ENDIF}
-
-  if LContentType = '' then
-    LContentType := 'text/html; charset=utf-8';
-
-  FHeaders.AddOrSetValue('Content-Type', LContentType);
-
-  LHeadersList := ARes.CustomHeaders;
-  if LHeadersList <> nil then
-  begin
-    {$IFDEF FPC}
-    for I := 0 to LHeadersList.Count - 1 do
-      FHeaders.AddOrSetValue(LHeadersList.Names[I], LHeadersList.ValueFromIndex[I]);
-    {$ELSE}
-    for LPair in LHeadersList do
-      FHeaders.AddOrSetValue(LPair.Key, LPair.Value);
-    {$ENDIF}
-  end;
-
   if ARes.ContentStream <> nil then
   begin
     SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
     Exit;
   end;
 
-  if Length(LBodyBytes) = 0 then
+  if ARes.BodyText <> '' then
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
+  {$IFNDEF FPC}
+  else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
+  {$ENDIF};
+
+  LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
+  
+  LHasContentType := False;
+  LHasConnection := False;
+
+  LHeadersList := ARes.CustomHeaders;
+  if LHeadersList <> nil then
   begin
-    if ARes.BodyText <> '' then
-      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
-    {$IFNDEF FPC}
-    else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
-      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
-    {$ENDIF};
+    {$IFDEF FPC}
+    for I := 0 to LHeadersList.Count - 1 do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LHeadersList.Names[I]) + ': ' + AnsiString(LHeadersList.ValueFromIndex[I]) + #13#10;
+      if SameText(LHeadersList.Names[I], 'Content-Type') then LHasContentType := True;
+      if SameText(LHeadersList.Names[I], 'Connection') then LHasConnection := True;
+    end;
+    {$ELSE}
+    for LPair in LHeadersList do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+      if SameText(LPair.Key, 'Content-Type') then LHasContentType := True;
+      if SameText(LPair.Key, 'Connection') then LHasConnection := True;
+    end;
+    {$ENDIF}
   end;
 
-  FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)));
+  if not LHasContentType then
+  begin
+    {$IFDEF FPC}
+    LContentType := ARes.CSContentType;
+    {$ELSE}
+    if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.ContentType <> '') then
+      LContentType := ARes.RawWebResponse.ContentType
+    else
+      LContentType := ARes.CSContentType;
+    {$ENDIF}
+    if LContentType = '' then
+      LContentType := 'text/html; charset=utf-8';
+    LHeaderStr := LHeaderStr + 'Content-Type: ' + AnsiString(LContentType) + #13#10;
+  end;
+
+  LHeaderStr := LHeaderStr + 'Content-Length: ' + AnsiString(IntToStr(Length(LBodyBytes))) + #13#10;
+
+  if not LHasConnection then
+  begin
+    if FIsKeepAlive then
+      LHeaderStr := LHeaderStr + 'Connection: keep-alive' + #13#10
+    else
+      LHeaderStr := LHeaderStr + 'Connection: close' + #13#10;
+  end;
+
+  LHeaderStr := LHeaderStr + #13#10;
+  
+  SetLength(LHeaderBytes, Length(LHeaderStr));
+  if Length(LHeaderStr) > 0 then
+    Move(LHeaderStr[1], LHeaderBytes[0], Length(LHeaderStr));
 
   if not FHeadersSent then
   begin
-    LHeaderBytes := PrepareHeaders;
     FHeadersSent := True;
     if Length(LBodyBytes) > 0 then
     begin
@@ -2753,11 +2797,11 @@ begin
       if AContext.FIsKeepAlive then
       begin
         AContext.ClearRequest;
-        SetLength(AContext.Buffer, 8192);
         AContext.BytesReceived := 0;
         AContext.FProcessing := False;
 
         LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+        SetLength(AContext.Buffer, 8192);
         LEvent.data.ptr := AContext;
         epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
       end
