@@ -29,19 +29,7 @@ services:
           cpus: '2.0'
           memory: 512M
 
-  # 2b. Horse Lazarus/FPC com io_uring
-  fpc-horse-iouring:
-    build:
-      context: ../
-      dockerfile: benchmarks/suites/fpc-horse-iouring/Dockerfile
-    container_name: fpc-horse-iouring
-    ports:
-      - "9095:9090"
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 512M
+
 
   # 3. .NET Minimal API
   dotnet-minimal-api:

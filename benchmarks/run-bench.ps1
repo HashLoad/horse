@@ -126,15 +126,7 @@ $candidatos = @(
         Container = "fpc-horse-epoll"
         Porta = 9095
     },
-    @{
-        Nome = "Free Pascal (FPC) (io_uring)"
-        Framework = "Horse (io_uring)"
-        Plataforma = "Linux (Docker)"
-        Tipo = "docker"
-        Service = "fpc-horse-iouring"
-        Container = "fpc-horse-iouring"
-        Porta = 9095
-    },
+
     @{
         Nome = "C# (.NET 8)"
         Framework = "ASP.NET Core (Minimal API)"

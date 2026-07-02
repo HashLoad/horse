@@ -323,8 +323,7 @@ uses
   Horse.Core.Param.Config,
   Horse.Callback,
   Horse.Provider.Config,
-  Horse.Core.Router.Radix,
-  Horse.Provider.IOUring;
+  Horse.Core.Router.Radix;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -347,7 +346,6 @@ type
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
   THorseRadixRouter = Horse.Core.Router.Radix.THorseRadixRouter;
-  THorseProviderIOUring = Horse.Provider.IOUring.THorseProviderIOUring;
 
 { PATCH-HORSE-2 — THorseProvider resolution follows the same three-axis model
   as the uses clause above:
@@ -388,13 +386,7 @@ type
   {$ELSE}
     Horse.Provider.Console.THorseProvider;
   {$ENDIF}
-{$ELSEIF DEFINED(HORSE_PROVIDER_IOURING)}
-  THorseProvider =
-  {$IFDEF LINUX}
-    Horse.Provider.IOUring.THorseProviderIOUring;
-  {$ELSE}
-    Horse.Provider.Console.THorseProvider;
-  {$ENDIF}
+
 {$ELSEIF DEFINED(HORSE_PROVIDER_IOCP)}
   THorseProvider =
   {$IFDEF MSWINDOWS}
