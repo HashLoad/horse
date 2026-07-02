@@ -128,7 +128,7 @@ type
     function ResolveHeader(const AName: string): string;
   public
     constructor Create(
-      var ABuffer: TBytes;
+      const ABuffer: TBytes;
       const AMethod: string;
       {$IFDEF FPC}
       APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
@@ -1375,7 +1375,7 @@ end;
 { TEpollRawRequest }
 
 constructor TEpollRawRequest.Create(
-  var ABuffer: TBytes;
+  const ABuffer: TBytes;
   const AMethod: string;
   {$IFDEF FPC}
   APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
@@ -1402,8 +1402,6 @@ begin
   end
   else
     FBuffer := nil;
-
-  ABuffer := nil;
 
   FMethod := AMethod;
   {$IFDEF FPC}
@@ -2273,7 +2271,7 @@ begin
       {$ELSE}
       LBytesRead := recv(
         AContext.Socket, 
-        @AContext.Buffer[AContext.BytesReceived], 
+        AContext.Buffer[AContext.BytesReceived], 
         Length(AContext.Buffer) - AContext.BytesReceived, 
         0
       );
@@ -2373,7 +2371,7 @@ begin
         {$ELSE}
         LBytesRead := recv(
           AContext.Socket, 
-          @AContext.Buffer[AContext.BytesReceived], 
+          AContext.Buffer[AContext.BytesReceived], 
           AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
           0
         );
@@ -2646,7 +2644,6 @@ begin
               AContext.ClientIP,
               AContext.ClientPort
             );
-            AContext.Buffer := nil;
             AContext.FBodyStream := nil;
             AContext.FTempFileName := '';
 
@@ -2699,7 +2696,6 @@ begin
             AContext.ClientIP,
             AContext.ClientPort
           );
-          AContext.Buffer := nil;
           AContext.FBodyStream := nil;
           AContext.FTempFileName := '';
 
@@ -2892,7 +2888,7 @@ var
   {$ENDIF}
   LEventCount: Integer;
   I: Integer;
-  LEvents: array[0..63] of epoll_event;
+  LEvents: array[0..1023] of epoll_event;
   LEvent: epoll_event;
   LClientFd: Integer;
   LOptVal: Integer;
