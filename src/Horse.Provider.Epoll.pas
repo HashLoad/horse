@@ -128,7 +128,7 @@ type
     function ResolveHeader(const AName: string): string;
   public
     constructor Create(
-      const ABuffer: TBytes;
+      var ABuffer: TBytes;
       const AMethod: string;
       {$IFDEF FPC}
       APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
@@ -1375,7 +1375,7 @@ end;
 { TEpollRawRequest }
 
 constructor TEpollRawRequest.Create(
-  const ABuffer: TBytes;
+  var ABuffer: TBytes;
   const AMethod: string;
   {$IFDEF FPC}
   APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
@@ -1402,6 +1402,8 @@ begin
   end
   else
     FBuffer := nil;
+
+  ABuffer := nil;
 
   FMethod := AMethod;
   {$IFDEF FPC}
@@ -1449,19 +1451,17 @@ function TEpollRawRequest.ResolveHeader(const AName: string): string;
 var
   LSegment: THeaderSegment;
   LRawVal: AnsiString;
-  LLowerName: string;
   I: Integer;
 begin
-  LLowerName := LowerCase(AName);
   for I := 0 to Length(FHeaders) - 1 do
   begin
     LSegment := FHeaders[I];
-    if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, LLowerName) then
+    if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, AName) then
     begin
       if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
       begin
         SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
-        Result := Trim(string(LRawVal));
+        Result := string(LRawVal);
       end
       else
         Result := '';
@@ -2644,6 +2644,7 @@ begin
               AContext.ClientIP,
               AContext.ClientPort
             );
+            AContext.Buffer := nil;
             AContext.FBodyStream := nil;
             AContext.FTempFileName := '';
 
@@ -2696,6 +2697,7 @@ begin
             AContext.ClientIP,
             AContext.ClientPort
           );
+          AContext.Buffer := nil;
           AContext.FBodyStream := nil;
           AContext.FTempFileName := '';
 
@@ -2888,7 +2890,7 @@ var
   {$ENDIF}
   LEventCount: Integer;
   I: Integer;
-  LEvents: array[0..1023] of epoll_event;
+  LEvents: array[0..255] of epoll_event;
   LEvent: epoll_event;
   LClientFd: Integer;
   LOptVal: Integer;
