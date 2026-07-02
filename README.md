@@ -61,18 +61,6 @@ begin
 end.
 ```
 
-## ⚡️ HTTP QUERY Method
-
-Horse natively supports the HTTP **QUERY** method (defined in the official [RFC/Draft Specification](https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-safe-method-w-body-03)). Unlike `GET`, which carries parameters in the URI, `QUERY` allows safe, read-only requests that carry complex payloads (like JSON or custom DSLs) in the request body.
-
-```delphi
-THorse.Query('/search',
-  procedure(Req: THorseRequest; Res: THorseResponse)
-  begin
-    Res.Send('Searching for: ' + Req.Body);
-  end);
-```
-
 ## 📖 Documentation
 
 The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complements the quick reference below:
@@ -84,14 +72,14 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request & Response](./doc/request-response.md) |
 | Using middleware, registration order, the `Next` proc | [Middleware](./doc/middleware.md) |
 | **Writing & publishing your own middleware** — skeleton, thread safety, Provider neutrality, Boss packaging | [**Writing a Middleware**](./doc/writing-middleware.md) |
-| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
+| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
 | **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |
 | Full middleware catalogue with extended descriptions | [Middleware Ecosystem](./doc/middleware-ecosystem.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
 
 ## 🔌 Providers (transport layer)
 
-A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** and **mORMot2** Providers replace both with async **IOCP / epoll / kqueue** I/O.
+A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** and **mORMot2** Providers replace both with async **IOCP / epoll / kqueue** I/O; the optional **ICS** Provider (Delphi; Windows + Linux64/macOS) swaps in OverbyteICS's modern **OpenSSL 3.x / 4.x** stack — TLS 1.3, SNI, mTLS. The **HttpSys** Provider (Windows) is **built into Horse** — it drives the OS's **http.sys** kernel-mode HTTP stack (the same one IIS uses) with no external library.
 
 | Provider | Compiler define | Delphi | Lazarus |
 | ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
@@ -101,25 +89,15 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[HTTP.sys](./doc/httpsys.md)** _(Windows kernel-mode driver for ultra-low latency)_        | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[epoll](./doc/epoll.md)** _(Linux-native asynchronous event loop)_                         | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_     | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 > **Note** — Apache / ISAPI / CGI / FastCGI Application types (below) do **not** use any of these Providers. The host process (Apache, IIS, the web server) owns the socket; Horse runs in-process. See [Providers & Application types](./doc/providers.md) for the full model.
 
 > **Delphi-Cross-Socket installation** — clone [`winddriver/Delphi-Cross-Socket`](https://github.com/winddriver/Delphi-Cross-Socket) (upstream) **plus** [`cnpack/cnvcl/.../Crypto`](https://github.com/cnpack/cnvcl/tree/master/Source/Crypto) for the required CnPack/Crypto units, and add search paths to your project. Three previously-fork-only bug fixes have been merged into upstream as of 2026-Q2, so the upstream mainline is correct for general use. For server-side **mutual TLS** (`SSLVerifyPeer = True` + `SSLCACertFile = ...`) use the pre-built release [`freitasjca/Delphi-Cross-Socket v1.0.3`](https://github.com/freitasjca/Delphi-Cross-Socket/releases/tag/v1.0.3) — single clone, CnPack bundled, mTLS APIs (`SetCACertificateFile` + `SetVerifyPeer`) ready to use. See [horse-provider-crosssocket Installation](./doc/providers.md#crosssocket-optional) for the full two-path breakdown.
 
-### 🚀 Pluggable Radix Router (High Performance)
+> **OverbyteICS installation** — the ICS Provider requires [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Install ICS following the official ICS instructions** — download/clone ICS and add its `Source/` folder to your project search path (ICS is not Boss-installable). For TLS, the OpenSSL libraries ship with ICS (DLLs on Windows, `.so` on Linux). The ICS Provider is **Delphi only — Windows and POSIX (Linux64 / macOS)** via ICS's own `Ics.Posix.*` message pump (on Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); a **Lazarus/FPC** port is not viable — ICS's POSIX layer rides the Delphi POSIX RTL and ICS compiles out OpenSSL under FPC. Its distinctive value is ICS's OpenSSL 3.x / 4.x stack (TLS 1.3, SNI, mTLS). See [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) for setup, the A–K test suite, and known limitations.
 
-Horse includes a built-in, alternative **Radix Router** (`THorseRadixRouter`) based on a Radix Tree structure. It provides higher routing performance and lower memory overhead, especially for APIs with a large number of routes (supported on Delphi).
-
-To enable the Radix Router, simply call the alias in your initialization:
-
-```delphi
-begin
-  THorse.UseRadixRouter; // Activates the high-performance Radix Router
-  
-  THorse.Get('/ping', DoPing);
-  THorse.Listen(9000);
-end.
-```
+> **HttpSys** — **no install**: the `Horse.Provider.HttpSys` unit ships with Horse and binds directly to Windows' `httpapi.dll` (http.sys), so there's no external library. Set `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi or Lazarus). Because http.sys is a kernel-mode, machine-wide HTTP stack, binding a non-`localhost` host or a privileged port needs a one-time URL reservation (`netsh http add urlacl url=http://+:9000/ user=Everyone`) or Administrator rights; HTTPS uses the Windows certificate store via `netsh http add sslcert`. It is mutually exclusive with the CrossSocket / mORMot / ICS Providers (one transport per build).
 
 ## 🎯 Application types
 
@@ -196,21 +174,6 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-
-## 🧪 Integration Tests (Real-life validation)
-
-We maintain a comprehensive suite of cross-platform, real-life integration tests inside the [`samples/lazarus/console_complete/`](./samples/lazarus/console_complete/) directory. These tests validate the server behavior compiled on Windows (using Delphi/DCC32) and Linux (using FPC/Lazarus), executing physical HTTP requests against it and asserting the output, HTTP status codes, CORS headers, URL decoding (including accents and spaces), and exception handling.
-
-* **On Windows (PowerShell):**
-  ```powershell
-  cd samples/lazarus/console_complete
-  PowerShell -File .\test_integrity.ps1
-  ```
-* **On Linux (Docker + FPC):**
-  ```bash
-  docker run --rm -v "$(pwd):/app" -w /app/samples/lazarus/console_complete ubuntu:latest bash -c "apt-get update && apt-get install -y fpc curl && tr -d '\r' < test_integrity.sh > /tmp/run.sh && chmod +x /tmp/run.sh && /tmp/run.sh"
-  ```
-Make sure all assertions are green after editing or submitting PRs.
 
 ## Delphi Versions
 

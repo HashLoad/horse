@@ -246,7 +246,7 @@ The same `.dpr` compiles on both — only the deployment shell (systemd unit vs.
 
 ## HTTPS / TLS runtime — what to ship per OS
 
-Both `HORSE_PROVIDER_CROSSSOCKET` and `HORSE_PROVIDER_MORMOT` use **OpenSSL** for HTTPS — they `dlopen` / `LoadLibrary` the system shared library at startup. The transport stack itself is in your binary; OpenSSL is **not** statically linked by default. Plan your deployment accordingly.
+All three self-hosted TLS providers — `HORSE_PROVIDER_CROSSSOCKET`, `HORSE_PROVIDER_MORMOT`, and `HORSE_PROVIDER_ICS` — use **OpenSSL** for HTTPS. CrossSocket and mORMot `dlopen` / `LoadLibrary` the system shared library at startup; ICS ships its own OpenSSL 3.x/4.x libraries with the distribution. The transport stack itself is in your binary; OpenSSL is **not** statically linked by default (except via mORMot's `mormot2static`). All three enable TLS the same way — `Config.SSLEnabled := True` plus a cert/key on the config record, passed via `ListenWithConfig` — and all three support mutual TLS via `SSLVerifyPeer` + a CA file. Plan your deployment accordingly.
 
 ### Linux
 
@@ -266,11 +266,14 @@ dnf install openssl-libs
 apk add openssl libcrypto3 libssl3
 ```
 
-Both providers accept either 1.1.x or 3.x — they probe at startup. If the loader can't find either, the binary still runs but `SSLEnabled := True` fails at `Listen`-time with a clear "no SSL backend available" error.
+CrossSocket and mORMot accept either 1.1.x or 3.x — they probe at startup. If the loader can't find either, the binary still runs but `SSLEnabled := True` fails at `Listen`-time with a clear "no SSL backend available" error. ICS targets OpenSSL 3.x/4.x and bundles the libraries it needs.
 
 For air-gapped or minimal container deployments where you cannot rely on the distro packages:
 - **CrossSocket:** ship the matching `libssl.so` + `libcrypto.so` alongside your binary and declare them in the systemd unit's `[Service]` section: `Environment="LD_LIBRARY_PATH=/opt/yourapp"`.
 - **mORMot2:** the `mormot2static` package includes a static-link variant for some platforms (`mormot2static/static/x86_64-linux` for FPC) — see [horse-provider-mormot's samples/tests/README](https://github.com/freitasjca/horse-provider-mormot/blob/master/samples/tests/README.md) for the full Search-path setup.
+- **ICS:** Delphi only (Windows + Linux64). Ship the OpenSSL `.so` (Linux) / `.dll` (Windows) that ship with the ICS distribution next to your binary.
+
+> **mutual TLS (mTLS).** All three providers verify client certificates when `Config.SSLVerifyPeer := True` and a CA file is set (`SSLCACertFile` on CrossSocket/mORMot, `SSLCAFile` on ICS). Each provider's `tests/TLS-TESTS.md` has a runnable one-way + mTLS integration test. CrossSocket server-side mTLS additionally needs the `Net.CrossSslSocket.*` patches or the fork release (see its README).
 
 ### Windows
 

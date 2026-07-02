@@ -14,7 +14,7 @@ If you're new, start with [Getting Started](./getting-started.md). If you have a
 2. **[Routing](./routing.md)** — declare endpoints, path parameters, route groups, query strings.
 3. **[Request & Response](./request-response.md)** — read the request, write the response, headers, cookies, sessions, file uploads/downloads.
 4. **[Middleware](./middleware.md)** — chain handlers, registration order, write your own. For publishing reusable middleware, see **[Writing a Middleware](./writing-middleware.md)**.
-5. **[Providers & Application types](./providers.md)** — pick the transport Provider (Indy default, CrossSocket and mORMot2 optional) and the Application type (Console default, VCL, Daemon, LCL, HTTPApplication) — or a host-managed application type (Apache, ISAPI, CGI, FastCGI).
+5. **[Providers & Application types](./providers.md)** — pick the transport Provider (Indy default; CrossSocket, mORMot2, and ICS optional; HttpSys built-in, Windows) and the Application type (Console default, VCL, Daemon, LCL, HTTPApplication) — or a host-managed application type (Apache, ISAPI, CGI, FastCGI).
 
 ## Reference
 
@@ -25,7 +25,7 @@ If you're new, start with [Getting Started](./getting-started.md). If you have a
 | [Request & Response](./request-response.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
 | [Middleware](./middleware.md) | The `Next` proc model; built-in vs custom; registration order; per-route vs global. |
 | [Writing a Middleware](./writing-middleware.md) | Authoring a production-quality middleware: skeleton, configuration patterns, thread safety, Provider-neutral coding, cross-compiler pitfalls, testing matrix, Boss packaging, publishing. |
-| [Providers & Application types](./providers.md) | The two-axis model: **Provider** (transport — Indy default, CrossSocket and mORMot2 optional) × **Application type** (Console / VCL / Daemon / LCL / HTTPApplication, plus host-managed Apache / ISAPI / CGI / FCGI). Compatibility matrix and selection guidance. |
+| [Providers & Application types](./providers.md) | The two-axis model: **Provider** (transport — Indy default; CrossSocket, mORMot2, ICS optional; HttpSys built-in, Windows) × **Application type** (Console / VCL / Daemon / LCL / HTTPApplication, plus host-managed Apache / ISAPI / CGI / FCGI). Compatibility matrix and selection guidance. |
 | [Middleware Ecosystem](./middleware-ecosystem.md) | Official `HashLoad/*` packages and the community-maintained list. |
 | [Compiler Support](./compiler-support.md) | Tested Delphi releases, FPC versions, target platforms, compiler-version guards. |
 | [Deployment Cheatsheet](./deployment.md) | One-page reference for shipping a CrossSocket or mORMot2 binary as any of the seven Application shapes (Console / VCL / Daemon / Windows Service / FPC daemon / LCL / FPC HTTPApplication). |

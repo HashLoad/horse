@@ -208,11 +208,11 @@ begin
     end;
 {$ELSE}
     LObject := THorseRtti.GetInstance.GetType(AWebRequest.ClassType).FieldValueAsObject(AWebRequest, 'FRequestInfo');
-    if (Assigned(LObject)) and (LObject is TIdHTTPRequestInfo) then
+    if Assigned(LObject) and (LObject is TIdHTTPRequestInfo) then
     begin
       LRequest := TIdHTTPRequestInfo(LObject);
       Result.Text := LRequest.RawHeaders.Text;
-    end
+    end;
 {$ENDIF}
   except
     Result.Free;
