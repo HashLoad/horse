@@ -19,6 +19,7 @@ uses
     Linux,
     sockets,
     httpprotocol,
+    Horse.Core.ByteSpan,
   {$ELSE}
     System.SysUtils,
     System.Classes,
@@ -72,9 +73,15 @@ type
       const ABuffer: TBytes; 
       ALength: Integer;
       out AMethod: string;
+      {$IFDEF FPC}
+      out APathSpan: TByteSpan;
+      out AQuerySpan: TByteSpan;
+      out AVersionSpan: TByteSpan;
+      {$ELSE}
       out APath: string;
       out AQuery: string;
       out AVersion: string;
+      {$ENDIF}
       out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
       out AContentLength: Int64
@@ -92,9 +99,18 @@ type
   private
     FBuffer: TBytes;
     FMethod: string;
+    {$IFDEF FPC}
+    FPathSpan: TByteSpan;
+    FQuerySpan: TByteSpan;
+    FVersionSpan: TByteSpan;
+    FPathCache: string;
+    FQueryCache: string;
+    FVersionCache: string;
+    {$ELSE}
     FPath: string;
     FQuery: string;
     FVersion: string;
+    {$ENDIF}
     FBodyOffset: Integer;
     FContentLength: Int64;
     FHeaders: THeaderSegments;
@@ -108,7 +124,12 @@ type
   public
     constructor Create(
       var ABuffer: TBytes;
-      const AMethod, APath, AQuery, AVersion: string;
+      const AMethod: string;
+      {$IFDEF FPC}
+      APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
+      {$ELSE}
+      const APath, AQuery, AVersion: string;
+      {$ENDIF}
       AHeaders: THeaderSegments;
       ABodyOffset: Integer;
       AContentLength: Int64;
@@ -181,9 +202,15 @@ type
     Buffer: TBytes;
     BytesReceived: Integer;
     Method: string;
+    {$IFDEF FPC}
+    PathSpan: TByteSpan;
+    QuerySpan: TByteSpan;
+    VersionSpan: TByteSpan;
+    {$ELSE}
     Path: string;
     Query: string;
     Version: string;
+    {$ENDIF}
     Headers: THeaderSegments;
     BodyOffset: Integer;
     ContentLength: Int64;
@@ -419,9 +446,10 @@ type
 
   TEpollFPCTaskPool = class
   private
-    FTasks: TQueue<TEpollFPCTask>;
+    FTasks: array[0..2047] of TEpollFPCTask;
+    FHead: Integer;
+    FTail: Integer;
     FWorkers: TList<TEpollFPCWorkerThread>;
-    FLock: TCriticalSection;
     FEvent: TEvent;
     FActive: Boolean;
     function DequeueTask: TEpollFPCTask;
@@ -664,7 +692,8 @@ var
   LHorseRes: THorseResponse;
   LLocalEvent: epoll_event;
   HasPendingWrite: Boolean;
-  LMethod, LPath, LQuery, LVersion: string;
+  LMethod: string;
+  LPathSpan, LQuerySpan, LVersionSpan: TByteSpan;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -695,18 +724,18 @@ begin
             LTask.Context.Buffer,
             LTask.Context.BytesReceived,
             LMethod,
-            LPath,
-            LQuery,
-            LVersion,
+            LPathSpan,
+            LQuerySpan,
+            LVersionSpan,
             LHeaders,
             LBodyOffset,
             LContentLength
           ) then
           begin
             LTask.Context.Method := LMethod;
-            LTask.Context.Path := LPath;
-            LTask.Context.Query := LQuery;
-            LTask.Context.Version := LVersion;
+            LTask.Context.PathSpan := LPathSpan;
+            LTask.Context.QuerySpan := LQuerySpan;
+            LTask.Context.VersionSpan := LVersionSpan;
             LTask.Context.Headers := LHeaders;
             LTask.Context.BodyOffset := LBodyOffset;
             LTask.Context.ContentLength := LContentLength;
@@ -715,9 +744,9 @@ begin
           LRawReq := TEpollRawRequest.Create(
             LTask.Context.Buffer,
             LTask.Context.Method,
-            LTask.Context.Path,
-            LTask.Context.Query,
-            LTask.Context.Version,
+            LTask.Context.PathSpan,
+            LTask.Context.QuerySpan,
+            LTask.Context.VersionSpan,
             LTask.Context.Headers,
             LTask.Context.BodyOffset,
             LTask.Context.ContentLength,
@@ -805,9 +834,10 @@ var
 begin
   inherited Create;
   FActive := True;
-  FTasks := TQueue<TEpollFPCTask>.Create;
+  FHead := 0;
+  FTail := 0;
+  FillChar(FTasks, SizeOf(FTasks), 0);
   FWorkers := TList<TEpollFPCWorkerThread>.Create;
-  FLock := TCriticalSection.Create;
   FEvent := TEvent.Create(nil, False, False, '');
   
   for I := 1 to AThreadCount do
@@ -834,46 +864,67 @@ begin
   end;
   FWorkers.Free;
 
-  FLock.Enter;
-  try
-    while FTasks.Count > 0 do
-    begin
-      LTask := FTasks.Dequeue;
+  for I := 0 to 2047 do
+  begin
+    LTask := FTasks[I];
+    if LTask <> nil then
       LTask.Free;
-    end;
-    FTasks.Free;
-  finally
-    FLock.Leave;
   end;
   
-  FLock.Free;
   FEvent.Free;
   inherited;
 end;
 
 procedure TEpollFPCTaskPool.QueueTask(ATask: TEpollFPCTask);
+var
+  LTail, LNextTail, LHead: Integer;
 begin
-  FLock.Enter;
-  try
-    if FActive then
-    begin
-      FTasks.Enqueue(ATask);
-      FEvent.SetEvent;
-    end;
-  finally
-    FLock.Leave;
+  if not FActive then
+  begin
+    ATask.Free;
+    Exit;
   end;
+  
+  LTail := FTail;
+  LNextTail := (LTail + 1) and 2047;
+  LHead := FHead;
+  
+  if LNextTail = LHead then
+  begin
+    ATask.Free;
+    Exit;
+  end;
+  
+  FTasks[LTail] := ATask;
+  FTail := LNextTail;
+  FEvent.SetEvent;
 end;
 
 function TEpollFPCTaskPool.DequeueTask: TEpollFPCTask;
+var
+  LHead, LTail, LNextHead: Integer;
+  LTask: TEpollFPCTask;
 begin
   Result := nil;
-  FLock.Enter;
-  try
-    if FTasks.Count > 0 then
-      Result := FTasks.Dequeue;
-  finally
-    FLock.Leave;
+  while FActive do
+  begin
+    LHead := FHead;
+    LTail := FTail;
+    
+    if LHead = LTail then
+      Exit;
+      
+    LTask := FTasks[LHead];
+    if LTask = nil then
+      Continue;
+      
+    LNextHead := (LHead + 1) and 2047;
+    if InterlockedCompareExchange(FHead, LNextHead, LHead) = LHead then
+    begin
+      FTasks[LHead] := nil;
+      Result := LTask;
+      Exit;
+    end;
   end;
 end;
 {$ENDIF}
@@ -924,9 +975,15 @@ end;
 procedure TEpollConnectionContext.ClearRequest;
 begin
   Method := '';
+  {$IFDEF FPC}
+  PathSpan := TByteSpan.Create(0, 0);
+  QuerySpan := TByteSpan.Create(0, 0);
+  VersionSpan := TByteSpan.Create(0, 0);
+  {$ELSE}
   Path := '';
   Query := '';
   Version := '';
+  {$ENDIF}
   Headers := nil;
   BodyOffset := -1;
   ContentLength := 0;
@@ -1146,9 +1203,15 @@ class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
   out AMethod: string;
+  {$IFDEF FPC}
+  out APathSpan: TByteSpan;
+  out AQuerySpan: TByteSpan;
+  out AVersionSpan: TByteSpan;
+  {$ELSE}
   out APath: string;
   out AQuery: string;
   out AVersion: string;
+  {$ENDIF}
   out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
   out AContentLength: Int64
@@ -1166,9 +1229,15 @@ var
   SegCount: Integer;
 begin
   AMethod := '';
+  {$IFDEF FPC}
+  APathSpan := TByteSpan.Create(0, 0);
+  AQuerySpan := TByteSpan.Create(0, 0);
+  AVersionSpan := TByteSpan.Create(0, 0);
+  {$ELSE}
   APath := '';
   AQuery := '';
   AVersion := '';
+  {$ENDIF}
   ABodyOffset := -1;
   AContentLength := 0;
   SetLength(AHeaders, 0);
@@ -1204,6 +1273,19 @@ begin
   AMethod := GetMethodString(ABuffer, 0, Space1);
   
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
+  {$IFDEF FPC}
+  if QueryStart <> -1 then
+  begin
+    APathSpan := TByteSpan.Create(Space1 + 1, QueryStart - (Space1 + 1));
+    AQuerySpan := TByteSpan.Create(QueryStart + 1, Space2 - (QueryStart + 1));
+  end
+  else
+  begin
+    APathSpan := TByteSpan.Create(Space1 + 1, Space2 - (Space1 + 1));
+    AQuerySpan := TByteSpan.Create(0, 0);
+  end;
+  AVersionSpan := TByteSpan.Create(Space2 + 1, LineEnd - (Space2 + 1));
+  {$ELSE}
   if QueryStart <> -1 then
   begin
     if (QueryStart - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
@@ -1220,8 +1302,8 @@ begin
       APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
     AQuery := '';
   end;
-
   AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
+  {$ENDIF}
 
   // 3. Processa os cabeÃ§alhos linha a linha indexando os offsets
   SegCount := 0;
@@ -1289,7 +1371,12 @@ end;
 
 constructor TEpollRawRequest.Create(
   var ABuffer: TBytes;
-  const AMethod, APath, AQuery, AVersion: string;
+  const AMethod: string;
+  {$IFDEF FPC}
+  APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
+  {$ELSE}
+  const APath, AQuery, AVersion: string;
+  {$ENDIF}
   AHeaders: THeaderSegments;
   ABodyOffset: Integer;
   AContentLength: Int64;
@@ -1313,9 +1400,18 @@ begin
   ABuffer := nil;
 
   FMethod := AMethod;
+  {$IFDEF FPC}
+  FPathSpan := APathSpan;
+  FQuerySpan := AQuerySpan;
+  FVersionSpan := AVersionSpan;
+  FPathCache := '';
+  FQueryCache := '';
+  FVersionCache := '';
+  {$ELSE}
   FPath := APath;
   FQuery := AQuery;
   FVersion := AVersion;
+  {$ENDIF}
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
@@ -1380,16 +1476,57 @@ begin
 end;
 
 function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
-function TEpollRawRequest.GetProtocolVersion: string; begin Result := FVersion; end;
+function TEpollRawRequest.GetProtocolVersion: string;
+begin
+  {$IFDEF FPC}
+  if FVersionCache = '' then
+    FVersionCache := FVersionSpan.ToString(FBuffer);
+  Result := FVersionCache;
+  {$ELSE}
+  Result := FVersion;
+  {$ENDIF}
+end;
+
 function TEpollRawRequest.GetURL: string;
 begin
+  {$IFDEF FPC}
+  if FPathCache = '' then
+    FPathCache := FPathSpan.ToString(FBuffer);
+  if FQueryCache = '' then
+    FQueryCache := FQuerySpan.ToString(FBuffer);
+  if FQueryCache <> '' then
+    Result := FPathCache + '?' + FQueryCache
+  else
+    Result := FPathCache;
+  {$ELSE}
   if FQuery <> '' then
     Result := FPath + '?' + FQuery
   else
     Result := FPath;
+  {$ENDIF}
 end;
-function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
-function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
+
+function TEpollRawRequest.GetPathInfo: string;
+begin
+  {$IFDEF FPC}
+  if FPathCache = '' then
+    FPathCache := FPathSpan.ToString(FBuffer);
+  Result := FPathCache;
+  {$ELSE}
+  Result := FPath;
+  {$ENDIF}
+end;
+
+function TEpollRawRequest.GetQueryString: string;
+begin
+  {$IFDEF FPC}
+  if FQueryCache = '' then
+    FQueryCache := FQuerySpan.ToString(FBuffer);
+  Result := FQueryCache;
+  {$ELSE}
+  Result := FQuery;
+  {$ENDIF}
+end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
 function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
 // Retorna a porta na qual o servidor estÃ¡ ouvindo localmente de forma dinÃ¢mica
@@ -2051,9 +2188,15 @@ var
   I: Integer;
   HasPendingWrite: Boolean;
   LMethod: string;
+  {$IFDEF FPC}
+  LPathSpan: TByteSpan;
+  LQuerySpan: TByteSpan;
+  LVersionSpan: TByteSpan;
+  {$ELSE}
   LPath: string;
   LQuery: string;
   LVersion: string;
+  {$ENDIF}
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -2408,18 +2551,18 @@ begin
           AContext.Buffer,
           AContext.BytesReceived,
           LMethod,
-          LPath,
-          LQuery,
-          LVersion,
+          LPathSpan,
+          LQuerySpan,
+          LVersionSpan,
           LHeaders,
           LBodyOffset,
           LContentLength
         ) then
         begin
           AContext.Method := LMethod;
-          AContext.Path := LPath;
-          AContext.Query := LQuery;
-          AContext.Version := LVersion;
+          AContext.PathSpan := LPathSpan;
+          AContext.QuerySpan := LQuerySpan;
+          AContext.VersionSpan := LVersionSpan;
           AContext.Headers := LHeaders;
           AContext.BodyOffset := LBodyOffset;
           AContext.ContentLength := LContentLength;
@@ -2428,9 +2571,9 @@ begin
         LRawReq := TEpollRawRequest.Create(
           AContext.Buffer,
           AContext.Method,
-          AContext.Path,
-          AContext.Query,
-          AContext.Version,
+          AContext.PathSpan,
+          AContext.QuerySpan,
+          AContext.VersionSpan,
           AContext.Headers,
           AContext.BodyOffset,
           AContext.ContentLength,
