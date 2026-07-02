@@ -2,6 +2,7 @@ unit Horse.Provider.Epoll;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
+  {$DEFINE HORSE_EPOLL_SYNCHRONOUS}
 {$ENDIF}
 {$POINTERMATH ON}
 
@@ -44,7 +45,11 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core,
+  Horse.Core.Router.Radix,
+  Horse.Callback,
+  Horse.Core.Router.Contract;
 
 type
   { Estrutura que representa os segmentos de cabeÃ§alhos indexados durante o
@@ -2192,6 +2197,11 @@ var
   LPathSpan: TByteSpan;
   LQuerySpan: TByteSpan;
   LVersionSpan: TByteSpan;
+  LStaticMatch: Boolean;
+  LRadixRouter: THorseRadixRouter;
+  LMethodType: TMethodType;
+  LStaticCallbacks: TList<THorseCallback>;
+  LFlow: TRadixFlow;
   {$ELSE}
   LPath: string;
   LQuery: string;
@@ -2568,48 +2578,112 @@ begin
           AContext.ContentLength := LContentLength;
         end;
 
-        LRawReq := TEpollRawRequest.Create(
-          AContext.Buffer,
-          AContext.Method,
-          AContext.PathSpan,
-          AContext.QuerySpan,
-          AContext.VersionSpan,
-          AContext.Headers,
-          AContext.BodyOffset,
-          AContext.ContentLength,
-          AContext.FBodyStream,
-          AContext.FTempFileName,
-          AContext.ClientIP,
-          AContext.ClientPort
-        );
-        AContext.Buffer := nil;
-        AContext.FBodyStream := nil;
-        AContext.FTempFileName := '';
+        // Fast Path de Roteamento Estático Zero-Allocation
+        LStaticMatch := False;
+        LRadixRouter := GActiveRadixRouter;
 
-        LConnHeader := LRawReq.GetFieldByName('connection');
-        if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
-          LKeepAlive := not SameText(LConnHeader, 'close')
-        else
-          LKeepAlive := SameText(LConnHeader, 'keep-alive');
+        if LRadixRouter <> nil then
+        begin
+          LMethodType := TMethodType.FromString(AContext.Method);
+          if LRadixRouter.MatchStaticRoute(AContext.Buffer, AContext.PathSpan, LMethodType, LStaticCallbacks) then
+          begin
+            LStaticMatch := True;
+            LRawReq := TEpollRawRequest.Create(
+              AContext.Buffer,
+              AContext.Method,
+              AContext.PathSpan,
+              AContext.QuerySpan,
+              AContext.VersionSpan,
+              AContext.Headers,
+              AContext.BodyOffset,
+              AContext.ContentLength,
+              AContext.FBodyStream,
+              AContext.FTempFileName,
+              AContext.ClientIP,
+              AContext.ClientPort
+            );
+            AContext.Buffer := nil;
+            AContext.FBodyStream := nil;
+            AContext.FTempFileName := '';
 
-        LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
-        LRawRes := LRawResObj;
-        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-        LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+            LConnHeader := LRawReq.GetFieldByName('connection');
+            if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+              LKeepAlive := not SameText(LConnHeader, 'close')
+            else
+              LKeepAlive := SameText(LConnHeader, 'keep-alive');
 
-        try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(nil);
-          LRes.SetCSRawWebResponse(LWebResponse);
-          try
-            THorseProviderEpoll.Execute(LReq, LRes);
-          finally
-            LRawResObj.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
+            LRawRes := LRawResObj;
+            LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+            LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
+            try
+              LReq := THorseRequest.Create(LWebRequest);
+              LRes := THorseResponse.Create(nil);
+              LRes.SetCSRawWebResponse(LWebResponse);
+              try
+                LFlow := TRadixFlow.Create(LStaticCallbacks, LReq, LRes);
+                try
+                  LFlow.Next;
+                finally
+                  LFlow.Free;
+                end;
+              finally
+                LRawResObj.SendResponse(LRes);
+                LReq.Free;
+                LRes.Free;
+              end;
+            finally
+              LWebRequest.Free;
+            end;
           end;
-        finally
-          LWebRequest.Free;
+        end;
+
+        if not LStaticMatch then
+        begin
+          LRawReq := TEpollRawRequest.Create(
+            AContext.Buffer,
+            AContext.Method,
+            AContext.PathSpan,
+            AContext.QuerySpan,
+            AContext.VersionSpan,
+            AContext.Headers,
+            AContext.BodyOffset,
+            AContext.ContentLength,
+            AContext.FBodyStream,
+            AContext.FTempFileName,
+            AContext.ClientIP,
+            AContext.ClientPort
+          );
+          AContext.Buffer := nil;
+          AContext.FBodyStream := nil;
+          AContext.FTempFileName := '';
+
+          LConnHeader := LRawReq.GetFieldByName('connection');
+          if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+            LKeepAlive := not SameText(LConnHeader, 'close')
+          else
+            LKeepAlive := SameText(LConnHeader, 'keep-alive');
+
+          LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
+          LRawRes := LRawResObj;
+          LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+          LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
+          try
+            LReq := THorseRequest.Create(LWebRequest);
+            LRes := THorseResponse.Create(nil);
+            LRes.SetCSRawWebResponse(LWebResponse);
+            try
+              THorseProviderEpoll.Execute(LReq, LRes);
+            finally
+              LRawResObj.SendResponse(LRes);
+              LReq.Free;
+              LRes.Free;
+            end;
+          finally
+            LWebRequest.Free;
+          end;
         end;
 
         HasPendingWrite := False;

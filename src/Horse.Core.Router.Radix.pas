@@ -8,8 +8,10 @@ interface
 
 uses
   {$IF DEFINED(FPC)}
+    SysUtils,
     Generics.Collections,
     httpdefs,
+    Horse.Core.ByteSpan,
   {$ELSE}
     Web.HTTPApp,
     System.Generics.Collections,
@@ -46,11 +48,26 @@ type
     procedure AddRouteCallback(const AHTTPType: TMethodType; const ACallback: THorseCallback; const AIsMiddleware: Boolean);
   end;
 
+  {$IFDEF FPC}
+  TStaticRouteItem = record
+    Method: TMethodType;
+    PathBytes: TBytes;
+    Callbacks: TList<THorseCallback>;
+  end;
+  {$ENDIF}
+
   { Roteador Radix de alta performance e vetorizado em software (SWAR 64-bit) }
   THorseRadixRouter = class(TInterfacedObject, IHorseRouter)
   private
     FRoot: TRadixNode;
     FGlobalMiddlewares: TList<THorseCallback>;
+    {$IFDEF FPC}
+    FStaticRoutes: array of TStaticRouteItem;
+    FStaticRoutesCount: Integer;
+    FStaticRoutesBuilt: Boolean;
+    procedure CollectStaticNodes(ANode: TRadixNode; const AParentPath: string);
+    procedure BuildStaticRoutesTable;
+    {$ENDIF}
     function FindNode(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; ANode: TRadixNode;
       const AHTTPType: TMethodType; var AMiddlewares: TList<THorseCallback>; var AParams: TDictionary<string, string>): TRadixNode;
     procedure InsertRoute(const APath: string; const AHTTPType: TMethodType; const ACallback: THorseCallback; const AIsMiddleware: Boolean);
@@ -60,6 +77,9 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    {$IFDEF FPC}
+    function MatchStaticRoute(const ABuffer: TBytes; const APathSpan: TByteSpan; const AMethod: TMethodType; out ACallbacks: TList<THorseCallback>): Boolean;
+    {$ENDIF}
     procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
     procedure RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
@@ -67,15 +87,29 @@ type
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
   end;
 
+var
+  GActiveRadixRouter: THorseRadixRouter = nil;
+
 implementation
 
 uses
   {$IF DEFINED(FPC)}
-  SysUtils, Classes,
+  Classes,
   {$ELSE}
   System.SysUtils, System.Classes,
   {$ENDIF}
   Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils;
+
+{$IFDEF FPC}
+function StringToBytes(const AStr: string): TBytes;
+var
+  I: Integer;
+begin
+  SetLength(Result, Length(AStr));
+  for I := 1 to Length(AStr) do
+    Result[I - 1] := Byte(AStr[I]);
+end;
+{$ENDIF}
 
 procedure RadixMethodNotAllowedFinalizer(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
@@ -204,14 +238,127 @@ constructor THorseRadixRouter.Create;
 begin
   FRoot := TRadixNode.Create('');
   FGlobalMiddlewares := TList<THorseCallback>.Create;
+  {$IFDEF FPC}
+  FStaticRoutesCount := 0;
+  FStaticRoutesBuilt := False;
+  SetLength(FStaticRoutes, 0);
+  GActiveRadixRouter := Self;
+  {$ENDIF}
 end;
 
 destructor THorseRadixRouter.Destroy;
+{$IFDEF FPC}
+var
+  I: Integer;
+{$ENDIF}
 begin
+  {$IFDEF FPC}
+  if GActiveRadixRouter = Self then
+    GActiveRadixRouter := nil;
+  {$ENDIF}
   FRoot.Free;
   FGlobalMiddlewares.Free;
+  {$IFDEF FPC}
+  for I := 0 to FStaticRoutesCount - 1 do
+    FStaticRoutes[I].Callbacks.Free;
+  SetLength(FStaticRoutes, 0);
+  {$ENDIF}
   inherited;
 end;
+
+{$IFDEF FPC}
+procedure THorseRadixRouter.CollectStaticNodes(ANode: TRadixNode; const AParentPath: string);
+var
+  LCurrentPath: string;
+  I: Integer;
+  LChild: TRadixNode;
+  LMethod: TMethodType;
+  LCallbacks: TList<THorseCallback>;
+  LNodeCallbacks: TArray<THorseCallback>;
+  LItem: TStaticRouteItem;
+begin
+  if ANode = nil then Exit;
+  
+  if (AParentPath = '') or (AParentPath = '/') then
+    LCurrentPath := '/' + ANode.Part
+  else
+    LCurrentPath := AParentPath + '/' + ANode.Part;
+
+  if (ANode.Callbacks.Count > 0) and (not ANode.IsParam) then
+  begin
+    for LMethod in ANode.Callbacks.Keys do
+    begin
+      LNodeCallbacks := ANode.Callbacks[LMethod];
+      if Length(LNodeCallbacks) > 0 then
+      begin
+        LCallbacks := TList<THorseCallback>.Create;
+        LCallbacks.AddRange(FGlobalMiddlewares);
+        LCallbacks.AddRange(ANode.Middlewares);
+        LCallbacks.AddRange(LNodeCallbacks);
+        
+        Inc(FStaticRoutesCount);
+        SetLength(FStaticRoutes, FStaticRoutesCount);
+        LItem.Method := LMethod;
+        LItem.PathBytes := StringToBytes(LCurrentPath);
+        LItem.Callbacks := LCallbacks;
+        FStaticRoutes[FStaticRoutesCount - 1] := LItem;
+      end;
+    end;
+  end;
+
+  for I := 0 to ANode.Children.Count - 1 do
+  begin
+    LChild := ANode.Children[I];
+    if not LChild.IsParam then
+      CollectStaticNodes(LChild, LCurrentPath);
+  end;
+end;
+
+procedure THorseRadixRouter.BuildStaticRoutesTable;
+begin
+  FStaticRoutesCount := 0;
+  SetLength(FStaticRoutes, 0);
+  CollectStaticNodes(FRoot, '');
+  FStaticRoutesBuilt := True;
+end;
+
+function THorseRadixRouter.MatchStaticRoute(const ABuffer: TBytes; const APathSpan: TByteSpan; const AMethod: TMethodType; out ACallbacks: TList<THorseCallback>): Boolean;
+var
+  I, J: Integer;
+  LItem: TStaticRouteItem;
+  LPathLen: Integer;
+  LMatch: Boolean;
+begin
+  ACallbacks := nil;
+  if not FStaticRoutesBuilt then
+    BuildStaticRoutesTable;
+
+  LPathLen := APathSpan.Length;
+  for I := 0 to FStaticRoutesCount - 1 do
+  begin
+    LItem := FStaticRoutes[I];
+    if (LItem.Method = AMethod) and (Length(LItem.PathBytes) = LPathLen) then
+    begin
+      LMatch := True;
+      for J := 0 to LPathLen - 1 do
+      begin
+        if ABuffer[APathSpan.Offset + J] <> LItem.PathBytes[J] then
+        begin
+          LMatch := False;
+          Break;
+        end;
+      end;
+      
+      if LMatch then
+      begin
+        ACallbacks := LItem.Callbacks;
+        Exit(True);
+      end;
+    end;
+  end;
+  Result := False;
+end;
+{$ENDIF}
 
 procedure THorseRadixRouter.InsertRoute(const APath: string; const AHTTPType: TMethodType; const ACallback: THorseCallback; const AIsMiddleware: Boolean);
 var
@@ -256,21 +403,33 @@ end;
 procedure THorseRadixRouter.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 begin
   InsertRoute(APath, AHTTPType, ACallback, False);
+  {$IFDEF FPC}
+  FStaticRoutesBuilt := False;
+  {$ENDIF}
 end;
 
 procedure THorseRadixRouter.RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
 begin
   InsertRoute(APath, AHTTPType, ACallback, True);
+  {$IFDEF FPC}
+  FStaticRoutesBuilt := False;
+  {$ENDIF}
 end;
 
 procedure THorseRadixRouter.RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback);
 begin
   InsertRoute(APath, mtAny, AMiddleware, True);
+  {$IFDEF FPC}
+  FStaticRoutesBuilt := False;
+  {$ENDIF}
 end;
 
 procedure THorseRadixRouter.RegisterMiddleware(const AMiddleware: THorseCallback);
 begin
   FGlobalMiddlewares.Add(AMiddleware);
+  {$IFDEF FPC}
+  FStaticRoutesBuilt := False;
+  {$ENDIF}
 end;
 
 function THorseRadixRouter.FindNode(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; ANode: TRadixNode;
