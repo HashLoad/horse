@@ -35,15 +35,7 @@ Este documento consolida todas as intervenções de engenharia, refatorações d
 
 ---
 
-## 🧹 3. Remoção do Stub `io_uring`
-* **Purga Física e Lógica**:
-  * Exclusão da unit física `src/Horse.Provider.IOUring.pas`.
-  * Remoção completa das importações, referências, condicionais de compilação (`$IFDEF HORSE_PROVIDER_IOURING`) e heranças no arquivo principal [src/Horse.pas](file:///d:/Delphi/horse/src/Horse.pas).
-  * Exclusão da suíte correspondente no ecossistema de testes e no arquivo `docker-compose.yml`, garantindo a transparência e integridade dos resultados do benchmark do FPC Epoll real.
-
----
-
-## 🧪 4. Cobertura de Testes & Integridade Condicional
+## 🧪 3. Cobertura de Testes & Integridade Condicional
 
 ### Testes do Radix Router (`tests/src/tests/Tests.Horse.Core.Router.Radix.pas` [NEW])
 * Escrita de **279 linhas de testes de unidade** específicos para o Radix Router, validando parâmetros compostos, case-insensitivity, ordem de precedência de rotas e injeção de middlewares.
@@ -54,7 +46,7 @@ Este documento consolida todas as intervenções de engenharia, refatorações d
 
 ---
 
-## 📊 5. Ambiente de Benchmark Consolidado
+## 📊 4. Ambiente de Benchmark Consolidado
 * **Infraestrutura Docker Multi-Linguagem**:
   * Estruturação e conteinerização de servidores equivalentes de alta performance em Go (Fiber), Rust (Actix-web), .NET (Minimal API), Java (Spring Boot) e Node.js (Express).
   * Criação dos scripts automatizados em PowerShell (`benchmarks/run-bench.ps1`) para orquestrar a execução local e coletar resultados consolidados.
