@@ -27,6 +27,8 @@ Este documento consolida todas as intervenções de engenharia, refatorações d
   * Desenvolvido e integrado um novo roteador baseado em **Árvore de Prefixos (Radix Tree)**.
   * Substituiu a busca linear recursiva padrão $O(N)$ do roteador original por saltos diretos baseados nos caracteres da rota, reduzindo a complexidade de busca para $O(K)$, onde $K$ é o comprimento do caminho da URL.
   * Resolvido o suporte a rotas estáticas, rotas com múltiplos parâmetros concorrentes, curingas (`*`) e isolamento de middlewares.
+* **Ativação Simples**:
+  * Para utilizar, basta chamar `THorse.UseRadixRouter;` no ponto de inicialização da aplicação (antes de registrar qualquer rota).
 
 ### Otimizações no RouterTree Padrão (`src/Horse.Core.RouterTree.pas`)
 * **Zero-Allocation String Matching (FPC)**:
