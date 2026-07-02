@@ -285,7 +285,7 @@ foreach ($cand in $candidatos) {
         # Aguardar fim do bombardier
         $bombardierOutput = Wait-Job $bombardierJob | Receive-Job
         Remove-Job $bombardierJob
-        $bombardierOutput | Out-File $logFile
+        $bombardierOutput | Out-File $logFile -Encoding UTF8
 
         # Calcular Médias das Métricas
         $avgCpu = 0
@@ -389,5 +389,5 @@ foreach ($conn in $concurrencias) {
 }
 
 $reportPath = Join-Path $resultsDir "consolidado.md"
-$mdReport | Out-File $reportPath
+$mdReport | Out-File $reportPath -Encoding UTF8
 Write-Host "✅ Benchmark concluído! Relatório gerado em: $reportPath" -ForegroundColor Green

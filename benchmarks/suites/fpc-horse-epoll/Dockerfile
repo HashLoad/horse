@@ -12,8 +12,8 @@ COPY src/ ./src
 COPY benchmarks/suites/fpc-horse-epoll/HorseBench.pas ./
 
 # Compilar o servidor com compatibilidade Delphi (-Sd), símbolos de depuração (-gl),
-# ativando o provider EPOLL (-dHORSE_PROVIDER_EPOLL) e o modo síncrono ultra-rápido (-dHORSE_EPOLL_SYNCHRONOUS)
-RUN fpc -Sd -gl -dHORSE_PROVIDER_EPOLL -dHORSE_EPOLL_SYNCHRONOUS -Fu./src/ HorseBench.pas
+# ativando o provider EPOLL (-dHORSE_PROVIDER_EPOLL)
+RUN fpc -Sd -gl -dHORSE_PROVIDER_EPOLL -Fu./src/ HorseBench.pas
 
 # Estágio final de execução
 FROM debian:bookworm-slim
