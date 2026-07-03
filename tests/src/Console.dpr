@@ -64,6 +64,7 @@ uses
   Tests.AssertHelper in 'tests\Tests.AssertHelper.pas',
   Tests.CleanupHelper in 'tests\Tests.CleanupHelper.pas',
   Tests.Horse.Core.RouterTree in 'tests\Tests.Horse.Core.RouterTree.pas',
+  Tests.Horse.Core.Group in 'tests\Tests.Horse.Core.Group.pas',
   {$IFNDEF FPC}
   Tests.Horse.Core.Router.Radix in 'tests\Tests.Horse.Core.Router.Radix.pas',
   {$ENDIF}

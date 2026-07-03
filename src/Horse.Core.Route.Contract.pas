@@ -13,7 +13,7 @@ uses
   Horse.Callback;
 
 type
-  IHorseCoreRoute<T: class> = interface
+  IHorseCoreRoute<T> = interface
     ['{8D593D98-44B3-4FD2-A21B-BA29F784B3AA}']
     function AddCallback(const ACallback: THorseCallback): IHorseCoreRoute<T>;
     {$IF DEFINED(FPC)}
