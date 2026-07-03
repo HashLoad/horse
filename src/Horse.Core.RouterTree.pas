@@ -535,9 +535,10 @@ begin
     {$ELSE}
     if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
     begin
-      LCallbacks := [];
+      LCallbacks := nil;
     end;
-    LCallbacks := LCallbacks + [ACallback];
+    SetLength(LCallbacks, Length(LCallbacks) + 1);
+    LCallbacks[Length(LCallbacks) - 1] := ACallback;
     FCallBack.AddOrSetValue(AHTTPType, LCallbacks);
     {$ENDIF}
 
@@ -566,7 +567,8 @@ begin
   {$IF DEFINED(FPC)}
   FMiddleware.Add(AMiddleware);
   {$ELSE}
-  FMiddleware := FMiddleware + [AMiddleware];
+  SetLength(FMiddleware, Length(FMiddleware) + 1);
+  FMiddleware[Length(FMiddleware) - 1] := AMiddleware;
   {$ENDIF}
 end;
 
@@ -589,7 +591,10 @@ begin
     {$IF DEFINED(FPC)}
     FMiddleware.Add(AMiddleware)
     {$ELSE}
-    FMiddleware := FMiddleware + [AMiddleware]
+    begin
+      SetLength(FMiddleware, Length(FMiddleware) + 1);
+      FMiddleware[Length(FMiddleware) - 1] := AMiddleware;
+    end
     {$ENDIF}
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
