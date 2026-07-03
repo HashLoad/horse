@@ -943,18 +943,19 @@ The classic downside of `TCP_NODELAY` — many tiny per-response socket writes b
 
 > The FPC `fphttpserver` family and host-managed types (Apache / ISAPI / CGI / FastCGI) are **not** changed: `fphttpserver` exposes no clean per-connection hook, and host-managed deployments don't own the HTTP accept socket — the front web server's own Nagle policy applies.
 
-### 10.2 Indy provider connection defaults — `MaxConnections` & `ListenQueue`
+### 10.2 Indy provider connection defaults — `MaxConnections`, `ListenQueue` & `ReadTimeout`
 
-The Indy self-hosted providers (Console / Daemon / VCL) now apply two **safe defaults** when you
+The Indy self-hosted providers (Console / Daemon / VCL) now apply safe defaults when you
 don't set them explicitly:
 
 | Property | Old effective default | New default | Why |
 |---|---|---|---|
 | `THorse.MaxConnections` | **32** (WebBroker's `Web.WebReq.TWebRequestHandler` module-pool cap) | **1024** | The 32 cap returns **~60 % HTTP 500** (`EWebBrokerException: "Maximum number of concurrent connections exceeded"`) under **keep-alive + response-header middleware + concurrency ≥ ~40**. Raising the module-pool ceiling makes the out-of-the-box build safe. |
 | `THorse.ListenQueue` | **15** (Indy's `IdListenQueueDefault`) | **511** | 15 is too small for concurrent connection bursts → dropped/refused connections. 511 mirrors nginx's backlog (the OS clamps it to `net.core.somaxconn` / `SOMAXCONN`). |
+| `THorse.ReadTimeout` | **0** (no timeout, blocks indefinitely) | **0** | The timeout in milliseconds for socket read operations on accepted connections. Setting this (e.g. to `10000` for 10 seconds) prevents slow or hung clients from holding server sockets and threads open indefinitely. (Indy only). |
 
 **Behaviour & compatibility.** These are applied **only when the value is left unset** — if you
-already call `THorse.MaxConnections := N` or `THorse.ListenQueue := N` before `Listen`, your value
+already call `THorse.MaxConnections := N`, `THorse.ListenQueue := N` or `THorse.ReadTimeout := N` before `Listen`, your value
 wins, unchanged. The `MaxConnections` default raises **only** the WebBroker module-pool ceiling
 (the thing that produced the 500s); it does **not** impose an Indy TCP connection cap unless you set
 one. Tune both up for very high concurrency (e.g. `1000`+ at c≈500).
@@ -962,6 +963,7 @@ one. Tune both up for very high concurrency (e.g. `1000`+ at c≈500).
 ```pascal
 THorse.MaxConnections := 4096;   // optional — overrides the 1024 default
 THorse.ListenQueue    := 1024;   // optional — overrides the 511 default
+THorse.ReadTimeout    := 10000;  // optional — sets connection read timeout to 10 seconds
 THorse.Listen(9000);
 ```
 

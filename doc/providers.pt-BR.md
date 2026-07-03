@@ -932,18 +932,19 @@ A desvantagem clássica do `TCP_NODELAY` — muitas gravações minúsculas por 
 
 > A família `fphttpserver` do FPC e os tipos host-managed (Apache / ISAPI / CGI / FastCGI) **não** são alterados: o `fphttpserver` não expõe um hook por conexão adequado, e implantações host-managed não são donas do socket de aceitação HTTP — vale a política de Nagle do próprio servidor web da frente.
 
-### 10.2 Defaults de conexão do provider Indy — `MaxConnections` e `ListenQueue`
+### 10.2 Defaults de conexão do provider Indy — `MaxConnections`, `ListenQueue` e `ReadTimeout`
 
-Os providers Indy self-hosted (Console / Daemon / VCL) agora aplicam dois **defaults seguros**
+Os providers Indy self-hosted (Console / Daemon / VCL) agora aplicam defaults seguros
 quando você não os define explicitamente:
 
 | Propriedade | Default efetivo antigo | Novo default | Por quê |
 |---|---|---|---|
 | `THorse.MaxConnections` | **32** (limite do pool de módulos do WebBroker em `Web.WebReq.TWebRequestHandler`) | **1024** | O limite de 32 retorna **~60 % de HTTP 500** (`EWebBrokerException: "Maximum number of concurrent connections exceeded"`) sob **keep-alive + middleware de cabeçalhos de resposta + concorrência ≥ ~40**. Elevar o teto do pool de módulos torna o build pronto-para-uso seguro. |
 | `THorse.ListenQueue` | **15** (o `IdListenQueueDefault` do Indy) | **511** | 15 é pequeno demais para rajadas de conexões concorrentes → conexões recusadas/descartadas. 511 espelha o backlog do nginx (o SO limita ao `net.core.somaxconn` / `SOMAXCONN`). |
+| `THorse.ReadTimeout` | **0** (sem timeout, aguarda indefinidamente) | **0** | O tempo limite em milissegundos para operações de leitura de socket nas conexões aceitas. Definir este valor (ex.: `10000` para 10 segundos) evita que clientes lentos ou travados mantenham sockets e threads do servidor abertos indefinidamente. (Apenas Indy). |
 
 **Comportamento e compatibilidade.** Aplicados **apenas quando o valor é deixado em branco** — se
-você já chama `THorse.MaxConnections := N` ou `THorse.ListenQueue := N` antes do `Listen`, o seu
+você já chama `THorse.MaxConnections := N`, `THorse.ListenQueue := N` ou `THorse.ReadTimeout := N` antes do `Listen`, o seu
 valor prevalece, sem mudança. O default de `MaxConnections` eleva **somente** o teto do pool de
 módulos do WebBroker (a causa dos 500); **não** impõe um limite de conexões TCP do Indy a menos que
 você defina um. Aumente os dois para concorrência muito alta (ex.: `1000`+ em c≈500).
@@ -951,6 +952,7 @@ você defina um. Aumente os dois para concorrência muito alta (ex.: `1000`+ em 
 ```pascal
 THorse.MaxConnections := 4096;   // opcional — sobrescreve o default de 1024
 THorse.ListenQueue    := 1024;   // opcional — sobrescreve o default de 511
+THorse.ReadTimeout    := 10000;  // opcional — define o timeout de leitura de conexões para 10 segundos
 THorse.Listen(9000);
 ```
 
