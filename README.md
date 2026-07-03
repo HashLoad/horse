@@ -75,6 +75,7 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
 | **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |
 | Full middleware catalogue with extended descriptions | [Middleware Ecosystem](./doc/middleware-ecosystem.md) |
+| Automated integration, resilience (Access Violation) and SO limit testing | [Integrity Testing](./doc/integrity-testing.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
 
 ## 🔌 Providers (transport layer)
