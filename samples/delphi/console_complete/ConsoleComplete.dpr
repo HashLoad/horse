@@ -107,6 +107,50 @@ begin
       raise EHorseException.Create.Status(THTTPStatus.BadRequest).Error('{"error":"Erro de Negocio Simulado"}');
     end);
 
+  // 10. GET /clientes -> Rota exata para testar prioridade de wildcard (*)
+  THorse.Get('/clientes',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      Res.Send('clientes');
+    end);
+
+  // 11. GET /pessoas -> Rota exata para testar prioridade de wildcard (*)
+  THorse.Get('/pessoas',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      Res.Send('pessoas');
+    end);
+
+  // 12. GET * -> Rota wildcard genérica (coringão)
+  THorse.Get('*',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      Res.Send('coringao');
+    end);
+
+  // 13. GET /av-trigger -> Simula Access Violation (AV) de propósito
+  THorse.Get('/av-trigger',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    var
+      LPointer: PInteger;
+    begin
+      LPointer := nil;
+      LPointer^ := 42;
+    end);
+
+  // 14. GET /stack-trigger -> Simula estouro de pilha (Stack Overflow)
+  THorse.Get('/stack-trigger',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    var
+      LRecurse: TProc;
+    begin
+      LRecurse := procedure
+        begin
+          LRecurse();
+        end;
+      LRecurse();
+    end);
+
   THorse.Listen(9085,
     procedure
     begin

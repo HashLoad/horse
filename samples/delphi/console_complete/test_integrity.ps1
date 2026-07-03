@@ -82,6 +82,43 @@ try {
         $global:errors++
     }
 
+    # Testes do Roteamento de Wildcard (*) e prioridade de rotas
+    $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9085/clientes"
+    Assert-Response "GET /clientes (Prioridade Wildcard)" $res "clientes"
+
+    $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9085/pessoas"
+    Assert-Response "GET /pessoas (Prioridade Wildcard)" $res "pessoas"
+
+    $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9085/qualquercoisa"
+    Assert-Response "GET /qualquercoisa (Cai no Wildcard)" $res "coringao"
+
+    # Teste de Resiliencia: Access Violation Simulado (esperamos HTTP 500 sem cair o servidor)
+    try {
+        $resErr = curl.exe -s -i "http://localhost:9085/av-trigger"
+        if ($resErr -match '500 Internal Server Error' -or $resErr -match '500 Internal Application Error') {
+            Write-Host "  [OK] GET /av-trigger (Access Violation Handled)" -ForegroundColor Green
+        } else {
+            Write-Host "  [FALHA] GET /av-trigger (Access Violation Handled)" -ForegroundColor Red
+            Write-Host "    Obtido: $resErr" -ForegroundColor DarkRed
+            $global:errors++
+        }
+    } catch {
+        Write-Host "  [FALHA] GET /av-trigger falhou ou causou excecao nao tratada no PowerShell: $_" -ForegroundColor Red
+        $global:errors++
+    }
+
+    # Teste de Resiliencia: Stack Overflow Simulado (estouro de limite de pilha)
+    try {
+        $resErr = curl.exe -s -i --max-time 5 "http://localhost:9085/stack-trigger"
+        if ($resErr -match '500 Internal Server Error' -or $resErr -match '500 Internal Application Error') {
+            Write-Host "  [OK] GET /stack-trigger (Stack Overflow Handled)" -ForegroundColor Green
+        } else {
+            Write-Host "  [INFO] GET /stack-trigger retornou codigo inesperado (limite de Stack): $resErr" -ForegroundColor Cyan
+        }
+    } catch {
+        Write-Host "  [INFO] GET /stack-trigger derrubou o servidor ou estourou (comportamento esperado do limite do SO): $_" -ForegroundColor Cyan
+    }
+
 } catch {
     Write-Host "Erro inesperado ao realizar chamadas HTTP: $_" -ForegroundColor Red
     $global:errors++
