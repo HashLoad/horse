@@ -20,7 +20,7 @@ Eles são extremamente úteis para:
 
 ## O que é Testado?
 
-O script de teste de integridade ([test_integrity.ps1](file:///d:/Delphi/horse/samples/delphi/console_complete/test_integrity.ps1)) compila o servidor exemplo ([ConsoleComplete.dpr](file:///d:/Delphi/horse/samples/delphi/console_complete/ConsoleComplete.dpr)) e realiza as seguintes chamadas HTTP reais via `Invoke-RestMethod` e `curl`:
+O script de teste de integridade ([test_integrity.ps1](file:///d:/Delphi/horse/samples/delphi/console_complete/test_integrity.ps1)) realiza duas rodadas consecutivas de testes: uma compilando o servidor exemplo ([ConsoleComplete.dpr](file:///d:/Delphi/horse/samples/delphi/console_complete/ConsoleComplete.dpr)) com o **Roteador Padrão** (`RouterTree`), e outra com o **Radix Router** (`RadixRouter`). Cada rodada executa as seguintes chamadas HTTP reais via `Invoke-RestMethod` e `curl`:
 
 1. **GET /ping**: Testa o fluxo básico e a resposta simples.
 2. **GET /resource/:id**: Valida o parse de parâmetros na URL, query strings e cabeçalhos de autorização case-insensitive.
@@ -75,4 +75,4 @@ cd samples/delphi/console_complete
 .\test_integrity.ps1
 ```
 
-O script cuidará de toda a compilação no compilador Delphi (`dcc32`), inicialização em background, chamadas, limpeza e relatório de falhas.
+O script cuidará de todo o processo de compilação dos dois roteadores com o compilador Delphi (`dcc32`), inicialização em background para cada um, chamadas HTTP de testes, limpeza e relatório final de falhas de ambos.

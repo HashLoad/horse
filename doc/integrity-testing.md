@@ -20,7 +20,7 @@ They are extremely useful for:
 
 ## What is Tested?
 
-The integrity test script ([test_integrity.ps1](file:///d:/Delphi/horse/samples/delphi/console_complete/test_integrity.ps1)) compiles the sample server ([ConsoleComplete.dpr](file:///d:/Delphi/horse/samples/delphi/console_complete/ConsoleComplete.dpr)) and performs the following real HTTP requests using `Invoke-RestMethod` and `curl`:
+The integrity test script ([test_integrity.ps1](file:///d:/Delphi/horse/samples/delphi/console_complete/test_integrity.ps1)) runs two consecutive validation passes: one compiling the sample server ([ConsoleComplete.dpr](file:///d:/Delphi/horse/samples/delphi/console_complete/ConsoleComplete.dpr)) with the **Default Router** (`RouterTree`), and another with the **Radix Router** (`RadixRouter`). Each pass performs the following real HTTP requests using `Invoke-RestMethod` and `curl`:
 
 1. **GET /ping**: Basic request flow and quick ping-pong verification.
 2. **GET /resource/:id**: Validates URL parameter extraction, query strings, and case-insensitive authorization headers.
@@ -75,4 +75,4 @@ cd samples/delphi/console_complete
 .\test_integrity.ps1
 ```
 
-The script manages compilation using the Delphi compiler (`dcc32`), runs the background process, runs the validation requests, terminates the server, and prints a final success/failure summary.
+The script manages the compilation of both routers using the Delphi compiler (`dcc32`), launches the background process for each scenario, executes the validation requests, terminates the servers, and prints a final combined success/failure summary.
