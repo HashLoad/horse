@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.Abstract;
+unit Horse.Provider.Abstract;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -48,6 +48,9 @@ type
     class var FMaxConnections: Integer;
     class function GetMaxConnections: Integer; static;
     class procedure SetMaxConnections(const AValue: Integer); static;
+    class var FReadTimeout: Integer;
+    class function GetReadTimeout: Integer; static;
+    class procedure SetReadTimeout(const AValue: Integer); static;
 { =========================================================================== }
   protected
     class function GetOnListen: TProc; static;
@@ -60,6 +63,7 @@ type
     class property OnStopListen: TProc read GetOnStopListen write SetOnStopListen;
 { PATCH-ABS-4 }
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
+    class property ReadTimeout: Integer read GetReadTimeout write SetReadTimeout;
 { end PATCH-ABS-4 }
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
@@ -139,6 +143,16 @@ end;
 class procedure THorseProviderAbstract.SetMaxConnections(const AValue: Integer);
 begin
   FMaxConnections := AValue;
+end;
+
+class function THorseProviderAbstract.GetReadTimeout: Integer;
+begin
+  Result := FReadTimeout;
+end;
+
+class procedure THorseProviderAbstract.SetReadTimeout(const AValue: Integer);
+begin
+  FReadTimeout := AValue;
 end;
 { =========================================================================== }
 

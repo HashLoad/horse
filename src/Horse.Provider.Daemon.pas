@@ -1,10 +1,10 @@
 unit Horse.Provider.Daemon;
 
-{ PATCH-DAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1.
+{ PATCH-DAEMON-1: ListenWithConfig override â€” same root cause as PATCH-CONSOLE-1.
   THorseProviderAbstract.ListenWithConfig calls the no-arg Listen, entering
   InternalListen with FPort = 0 - DEFAULT_PORT (9000).  Fix: override
   ListenWithConfig here so it calls SetPort(APort) before InternalListen.
-  AConfig is intentionally ignored — Daemon/Indy has no use for CrossSocket config. }
+  AConfig is intentionally ignored â€” Daemon/Indy has no use for CrossSocket config. }
 
 interface
 
@@ -99,7 +99,8 @@ uses
   Posix.Unistd,
   Posix.Signal,
   Posix.Fcntl,
-  ThirdParty.Posix.Syslog;
+  ThirdParty.Posix.Syslog,
+  System.Classes;
 
 procedure HandleSignals(SigNum: Integer); cdecl;
 begin
@@ -151,10 +152,12 @@ end;
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
   loopback the keep-alive request/response ping-pong collides with the ~40 ms
   delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
-  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+  Harmless (beneficial) on Windows. See bench-analysis-report.md Â§7.5. }
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
+  if THorseProviderAbstract.ReadTimeout > 0 then
+    AContext.Connection.Socket.ReadTimeout := THorseProviderAbstract.ReadTimeout;
 end;
 
 class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
@@ -301,10 +304,28 @@ begin
 end;
 
 class procedure THorseProvider.InternalStopListen;
+var
+  LContexts: TList;
+  I: Integer;
 begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
+    try
+      LContexts := GetDefaultHTTPWebBroker.Contexts.LockList;
+      try
+        for I := LContexts.Count - 1 downto 0 do
+        begin
+          try
+            TIdContext(LContexts[I]).Connection.Disconnect;
+          except
+          end;
+        end;
+      finally
+        GetDefaultHTTPWebBroker.Contexts.UnlockList;
+      end;
+    except
+    end;
     GetDefaultHTTPWebBroker.Active := False;
     DoOnStopListen;
     FRunning := False;
