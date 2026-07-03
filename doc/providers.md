@@ -967,11 +967,10 @@ THorse.ReadTimeout    := 10000;  // optional — sets connection read timeout to
 THorse.Listen(9000);
 ```
 
-> **Provider scope:** this applies to the **Indy** providers only — they're the ones backed by
-> WebBroker. CrossSocket and mORMot have no WebBroker module pool (they never produced these 500s);
-> CrossSocket connection limits live in `THorseCrossSocketConfig.MaxConnections`, and mORMot sizes
-> its own fixed thread pool (`THorseMormotConfig.ThreadPool`, default 32). The constants live in
-> `Horse.Provider.Config` (`DEFAULT_MAX_CONNECTIONS`, `DEFAULT_LISTEN_QUEUE`).
+> **Provider scope:** connection settings like `MaxConnections`, `ListenQueue`, and `ReadTimeout` apply to the self-hosted **Indy** providers only (Console / Daemon / VCL). 
+> - **Host-managed types** (Apache, ISAPI, CGI, FastCGI) delegate connection lifecycle and timeouts to the host web server configuration (IIS/Apache). 
+> - **HttpSys** configures connection timeouts at the Windows kernel level (via registry or `netsh`). 
+> - **CrossSocket and mORMot** manage their own thread pools and network I/O; CrossSocket connection limits live in `THorseCrossSocketConfig.MaxConnections`, and mORMot sizes its own fixed thread pool (`THorseMormotConfig.ThreadPool`, default 32). The constants live in `Horse.Provider.Config` (`DEFAULT_MAX_CONNECTIONS`, `DEFAULT_LISTEN_QUEUE`).
 
 #### How to size them — and why they're **not** derived from CPU count
 
