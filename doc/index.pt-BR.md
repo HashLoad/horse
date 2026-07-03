@@ -29,6 +29,7 @@ Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
 | [Suporte de Compilador](./compiler-support.pt-BR.md) | Versões testadas do Delphi, versões do FPC, plataformas-alvo, guards de versão de compilador. |
 | [Cheatsheet de Deploy](./deployment.pt-BR.md) | Referência de uma página pra entregar um binário CrossSocket ou mORMot2 como qualquer um dos sete formatos de Aplicação (Console / VCL / Daemon / Serviço Windows / daemon FPC / LCL / HTTPApplication FPC). |
+| [Testes de Integridade](./integrity-testing.pt-BR.md) | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack. |
 
 ## Como a documentação está organizada
 
@@ -42,6 +43,7 @@ doc/
 ├── middleware.*.md            ← encadeamento de handlers
 ├── providers.*.md             ← escolha de transporte
 ├── middleware-ecosystem.*.md  ← catálogo de pacotes
+├── integrity-testing.*.md     ← testes de integridade e resiliência
 └── compiler-support.*.md      ← versões / plataformas
 ```
 

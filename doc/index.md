@@ -29,6 +29,7 @@ If you're new, start with [Getting Started](./getting-started.md). If you have a
 | [Middleware Ecosystem](./middleware-ecosystem.md) | Official `HashLoad/*` packages and the community-maintained list. |
 | [Compiler Support](./compiler-support.md) | Tested Delphi releases, FPC versions, target platforms, compiler-version guards. |
 | [Deployment Cheatsheet](./deployment.md) | One-page reference for shipping a CrossSocket or mORMot2 binary as any of the seven Application shapes (Console / VCL / Daemon / Windows Service / FPC daemon / LCL / FPC HTTPApplication). |
+| [Integrity Testing](./integrity-testing.md) | Automated integration, resilience (Access Violation) and SO limit testing. |
 
 ## How the docs are organised
 
@@ -42,6 +43,7 @@ doc/
 ├── middleware.md              ← chaining handlers
 ├── providers.md               ← choosing a transport
 ├── middleware-ecosystem.md    ← package catalogue
+├── integrity-testing.md       ← integrity and resilience testing
 └── compiler-support.md        ← versions / platforms
 ```
 

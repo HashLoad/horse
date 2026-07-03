@@ -42,6 +42,8 @@ type
     procedure ExecuteRouteWithTwoConsecutiveParams;
     [Test]
     procedure ExecuteRouteWithMiddlewares;
+    [Test]
+    procedure ExecuteRouteWithCoringaoPriority;
   end;
 
 implementation
@@ -271,6 +273,65 @@ begin
   FRequest.Populate('GET', mtGet, '/test', '', '');
   Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
   Assert.AreEqual(4, LStep);
+end;
+
+procedure TTestHorseCoreRouterRadix.ExecuteRouteWithCoringaoPriority;
+var
+  LClientesCalled: Boolean;
+  LPessoasCalled: Boolean;
+  LCoringaoCalled: Boolean;
+begin
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+
+  FRouter.RegisterRoute(mtGet, '/clientes',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LClientesCalled := True;
+    end);
+
+  FRouter.RegisterRoute(mtGet, '/pessoas',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LPessoasCalled := True;
+    end);
+
+  FRouter.RegisterRoute(mtGet, '*',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCoringaoCalled := True;
+    end);
+
+  // Testando rota exata /clientes
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/clientes', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.IsTrue(LClientesCalled);
+  Assert.IsFalse(LPessoasCalled);
+  Assert.IsFalse(LCoringaoCalled);
+
+  // Testando rota exata /pessoas
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/pessoas', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.IsFalse(LClientesCalled);
+  Assert.IsTrue(LPessoasCalled);
+  Assert.IsFalse(LCoringaoCalled);
+
+  // Testando rota genérica (wildcard)
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/qualquercoisa', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.IsFalse(LClientesCalled);
+  Assert.IsFalse(LPessoasCalled);
+  Assert.IsTrue(LCoringaoCalled);
 end;
 
 initialization
