@@ -458,6 +458,7 @@ begin
     ServerPort      := IntToStr(FRawReq.GetServerPort);
     {$ENDIF}
 
+    QueryString     := FRawReq.GetQueryString;
     FRawReq.PopulateQueryFields(QueryFields);
     FRawReq.PopulateContentFields(ContentFields);
     FRawReq.PopulateCookieFields(CookieFields);

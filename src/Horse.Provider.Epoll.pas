@@ -2,6 +2,7 @@ unit Horse.Provider.Epoll;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
+  {$DEFINE HORSE_EPOLL_SYNCHRONOUS}
 {$ENDIF}
 {$POINTERMATH ON}
 
@@ -19,6 +20,7 @@ uses
     Linux,
     sockets,
     httpprotocol,
+    Horse.Core.ByteSpan,
   {$ELSE}
     System.SysUtils,
     System.Classes,
@@ -43,11 +45,15 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core,
+  Horse.Core.Router.Radix,
+  Horse.Callback,
+  Horse.Core.Router.Contract;
 
 type
-  { Estrutura que representa os segmentos de cabeçalhos indexados durante o
-    parsing preguiçoso para evitar alocações desnecessárias na heap. }
+  { Estrutura que representa os segmentos de cabeÃ§alhos indexados durante o
+    parsing preguiÃ§oso para evitar alocaÃ§Ãµes desnecessÃ¡rias na heap. }
   TEpollConnectionContext = class;
 
   THeaderSegment = record
@@ -59,8 +65,8 @@ type
 
   THeaderSegments = TArray<THeaderSegment>;
 
-  { Parser HTTP incremental e extremamente rápido que opera diretamente sobre
-    buffers de bytes, realizando Lazy Parsing nos cabeçalhos. }
+  { Parser HTTP incremental e extremamente rÃ¡pido que opera diretamente sobre
+    buffers de bytes, realizando Lazy Parsing nos cabeÃ§alhos. }
   THorseHttpParser = class
   private
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
@@ -72,9 +78,15 @@ type
       const ABuffer: TBytes; 
       ALength: Integer;
       out AMethod: string;
+      {$IFDEF FPC}
+      out APathSpan: TByteSpan;
+      out AQuerySpan: TByteSpan;
+      out AVersionSpan: TByteSpan;
+      {$ELSE}
       out APath: string;
       out AQuery: string;
       out AVersion: string;
+      {$ENDIF}
       out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
       out AContentLength: Int64
@@ -86,21 +98,30 @@ type
     constructor Create(const ABytes: TBytes; AOffset, ALen: Integer);
   end;
 
-  { Adaptador de requisição que implementa IHorseRawRequest e resolve os
-    cabeçalhos sob demanda (Lazy Loading). }
+  { Adaptador de requisiÃ§Ã£o que implementa IHorseRawRequest e resolve os
+    cabeÃ§alhos sob demanda (Lazy Loading). }
   TEpollRawRequest = class(TInterfacedObject, IHorseRawRequest)
   private
+    FContext: TEpollConnectionContext;
     FBuffer: TBytes;
     FMethod: string;
+    {$IFDEF FPC}
+    FPathSpan: TByteSpan;
+    FQuerySpan: TByteSpan;
+    FVersionSpan: TByteSpan;
+    FPathCache: string;
+    FQueryCache: string;
+    FVersionCache: string;
+    {$ELSE}
     FPath: string;
     FQuery: string;
     FVersion: string;
+    {$ENDIF}
     FBodyOffset: Integer;
     FContentLength: Int64;
     FHeaders: THeaderSegments;
     FBodyStream: TStream;
     FTempFileName: string;
-    FResolvedHeaders: TDictionary<string, string>;
     FClientIP: string;
     FClientPort: Integer;
     procedure EnsureBodyStream;
@@ -108,7 +129,12 @@ type
   public
     constructor Create(
       var ABuffer: TBytes;
-      const AMethod, APath, AQuery, AVersion: string;
+      const AMethod: string;
+      {$IFDEF FPC}
+      APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
+      {$ELSE}
+      const APath, AQuery, AVersion: string;
+      {$ENDIF}
       AHeaders: THeaderSegments;
       ABodyOffset: Integer;
       AContentLength: Int64;
@@ -149,8 +175,8 @@ type
     function ReadBody(var Buffer; Count: Integer): Integer;
   end;
 
-  { Adaptador de resposta que envia status, cabeçalhos e corpo diretamente
-    através do socket do cliente Linux. }
+  { Adaptador de resposta que envia status, cabeÃ§alhos e corpo diretamente
+    atravÃ©s do socket do cliente Linux. }
   TEpollRawResponse = class(TInterfacedObject, IHorseRawResponse)
   private
     FContext: TEpollConnectionContext;
@@ -158,22 +184,19 @@ type
     FHeadersSent: Boolean;
     FStatusCode: Integer;
     FReason: string;
-    FHeaders: TDictionary<string, string>;
     FIsKeepAlive: Boolean;
-    function PrepareHeaders: TBytes;
-    procedure SendHeaders;
+    procedure SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string = '');
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     function WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
     function WriteNonBlockingV(AIovCnt: Integer; AIov: Pointer): Boolean;
   public
     constructor Create(AContext: TEpollConnectionContext; AIsKeepAlive: Boolean = True);
     destructor Destroy; override;
-
     procedure SetCustomHeader(const AName, AValue: string);
     procedure SendResponse(const ARes: THorseResponse);
   end;
 
-  { Unit de conexão cliente básica associada ao epoll }
+  { Unit de conexÃ£o cliente bÃ¡sica associada ao epoll }
   TEpollConnectionContext = class
   public
     Socket: Integer;
@@ -181,9 +204,15 @@ type
     Buffer: TBytes;
     BytesReceived: Integer;
     Method: string;
+    {$IFDEF FPC}
+    PathSpan: TByteSpan;
+    QuerySpan: TByteSpan;
+    VersionSpan: TByteSpan;
+    {$ELSE}
     Path: string;
     Query: string;
     Version: string;
+    {$ENDIF}
     Headers: THeaderSegments;
     BodyOffset: Integer;
     ContentLength: Int64;
@@ -204,6 +233,7 @@ type
     FWriteBuffer: TBytes;
     FWriteOffset: Integer;
     FWriteLen: Integer;
+
     constructor Create(ASocket: Integer);
     destructor Destroy; override;
     procedure ClearRequest;
@@ -213,7 +243,7 @@ type
 
 
 
-  { Thread worker que escuta seu próprio descritor de epoll (SO_REUSEPORT) }
+  { Thread worker que escuta seu prÃ³prio descritor de epoll (SO_REUSEPORT) }
   THorseEpollWorker = class(TThread)
   private
     FListenSocket: Integer;
@@ -419,9 +449,10 @@ type
 
   TEpollFPCTaskPool = class
   private
-    FTasks: TQueue<TEpollFPCTask>;
+    FTasks: array[0..2047] of TEpollFPCTask;
+    FHead: Integer;
+    FTail: Integer;
     FWorkers: TList<TEpollFPCWorkerThread>;
-    FLock: TCriticalSection;
     FEvent: TEvent;
     FActive: Boolean;
     function DequeueTask: TEpollFPCTask;
@@ -664,7 +695,8 @@ var
   LHorseRes: THorseResponse;
   LLocalEvent: epoll_event;
   HasPendingWrite: Boolean;
-  LMethod, LPath, LQuery, LVersion: string;
+  LMethod: string;
+  LPathSpan, LQuerySpan, LVersionSpan: TByteSpan;
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -695,18 +727,18 @@ begin
             LTask.Context.Buffer,
             LTask.Context.BytesReceived,
             LMethod,
-            LPath,
-            LQuery,
-            LVersion,
+            LPathSpan,
+            LQuerySpan,
+            LVersionSpan,
             LHeaders,
             LBodyOffset,
             LContentLength
           ) then
           begin
             LTask.Context.Method := LMethod;
-            LTask.Context.Path := LPath;
-            LTask.Context.Query := LQuery;
-            LTask.Context.Version := LVersion;
+            LTask.Context.PathSpan := LPathSpan;
+            LTask.Context.QuerySpan := LQuerySpan;
+            LTask.Context.VersionSpan := LVersionSpan;
             LTask.Context.Headers := LHeaders;
             LTask.Context.BodyOffset := LBodyOffset;
             LTask.Context.ContentLength := LContentLength;
@@ -715,9 +747,9 @@ begin
           LRawReq := TEpollRawRequest.Create(
             LTask.Context.Buffer,
             LTask.Context.Method,
-            LTask.Context.Path,
-            LTask.Context.Query,
-            LTask.Context.Version,
+            LTask.Context.PathSpan,
+            LTask.Context.QuerySpan,
+            LTask.Context.VersionSpan,
             LTask.Context.Headers,
             LTask.Context.BodyOffset,
             LTask.Context.ContentLength,
@@ -805,9 +837,10 @@ var
 begin
   inherited Create;
   FActive := True;
-  FTasks := TQueue<TEpollFPCTask>.Create;
+  FHead := 0;
+  FTail := 0;
+  FillChar(FTasks, SizeOf(FTasks), 0);
   FWorkers := TList<TEpollFPCWorkerThread>.Create;
-  FLock := TCriticalSection.Create;
   FEvent := TEvent.Create(nil, False, False, '');
   
   for I := 1 to AThreadCount do
@@ -834,46 +867,67 @@ begin
   end;
   FWorkers.Free;
 
-  FLock.Enter;
-  try
-    while FTasks.Count > 0 do
-    begin
-      LTask := FTasks.Dequeue;
+  for I := 0 to 2047 do
+  begin
+    LTask := FTasks[I];
+    if LTask <> nil then
       LTask.Free;
-    end;
-    FTasks.Free;
-  finally
-    FLock.Leave;
   end;
   
-  FLock.Free;
   FEvent.Free;
   inherited;
 end;
 
 procedure TEpollFPCTaskPool.QueueTask(ATask: TEpollFPCTask);
+var
+  LTail, LNextTail, LHead: Integer;
 begin
-  FLock.Enter;
-  try
-    if FActive then
-    begin
-      FTasks.Enqueue(ATask);
-      FEvent.SetEvent;
-    end;
-  finally
-    FLock.Leave;
+  if not FActive then
+  begin
+    ATask.Free;
+    Exit;
   end;
+  
+  LTail := FTail;
+  LNextTail := (LTail + 1) and 2047;
+  LHead := FHead;
+  
+  if LNextTail = LHead then
+  begin
+    ATask.Free;
+    Exit;
+  end;
+  
+  FTasks[LTail] := ATask;
+  FTail := LNextTail;
+  FEvent.SetEvent;
 end;
 
 function TEpollFPCTaskPool.DequeueTask: TEpollFPCTask;
+var
+  LHead, LTail, LNextHead: Integer;
+  LTask: TEpollFPCTask;
 begin
   Result := nil;
-  FLock.Enter;
-  try
-    if FTasks.Count > 0 then
-      Result := FTasks.Dequeue;
-  finally
-    FLock.Leave;
+  while FActive do
+  begin
+    LHead := FHead;
+    LTail := FTail;
+    
+    if LHead = LTail then
+      Exit;
+      
+    LTask := FTasks[LHead];
+    if LTask = nil then
+      Continue;
+      
+    LNextHead := (LHead + 1) and 2047;
+    if InterlockedCompareExchange(FHead, LNextHead, LHead) = LHead then
+    begin
+      FTasks[LHead] := nil;
+      Result := LTask;
+      Exit;
+    end;
   end;
 end;
 {$ENDIF}
@@ -906,11 +960,13 @@ begin
   FWriteOffset := 0;
   FWriteLen := 0;
   LastActive := GetTickCount64;
+
   ClearRequest;
 end;
 
 destructor TEpollConnectionContext.Destroy;
 begin
+
   Headers := nil;
   Buffer := nil;
   FWriteBuffer := nil;
@@ -924,9 +980,15 @@ end;
 procedure TEpollConnectionContext.ClearRequest;
 begin
   Method := '';
+  {$IFDEF FPC}
+  PathSpan := TByteSpan.Create(0, 0);
+  QuerySpan := TByteSpan.Create(0, 0);
+  VersionSpan := TByteSpan.Create(0, 0);
+  {$ELSE}
   Path := '';
   Query := '';
   Version := '';
+  {$ENDIF}
   Headers := nil;
   BodyOffset := -1;
   ContentLength := 0;
@@ -1146,9 +1208,15 @@ class function THorseHttpParser.TryParseRequest(
   const ABuffer: TBytes; 
   ALength: Integer;
   out AMethod: string;
+  {$IFDEF FPC}
+  out APathSpan: TByteSpan;
+  out AQuerySpan: TByteSpan;
+  out AVersionSpan: TByteSpan;
+  {$ELSE}
   out APath: string;
   out AQuery: string;
   out AVersion: string;
+  {$ENDIF}
   out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
   out AContentLength: Int64
@@ -1166,9 +1234,15 @@ var
   SegCount: Integer;
 begin
   AMethod := '';
+  {$IFDEF FPC}
+  APathSpan := TByteSpan.Create(0, 0);
+  AQuerySpan := TByteSpan.Create(0, 0);
+  AVersionSpan := TByteSpan.Create(0, 0);
+  {$ELSE}
   APath := '';
   AQuery := '';
   AVersion := '';
+  {$ENDIF}
   ABodyOffset := -1;
   AContentLength := 0;
   SetLength(AHeaders, 0);
@@ -1176,7 +1250,7 @@ begin
   if ALength < 4 then
     Exit(False);
 
-  // 1. Localiza o fim dos cabeçalhos (\r\n\r\n)
+  // 1. Localiza o fim dos cabeÃ§alhos (\r\n\r\n)
   HeaderEnd := -1;
   for I := 0 to ALength - 4 do
   begin
@@ -1194,7 +1268,7 @@ begin
   LineEnd := FindCRLF(ABuffer, 0, HeaderEnd);
   if LineEnd = -1 then Exit(False);
 
-  Space1 := FindByte(ABuffer, 0, LineEnd, 32); // Espaço
+  Space1 := FindByte(ABuffer, 0, LineEnd, 32); // EspaÃ§o
   if Space1 = -1 then Exit(False);
 
   Space2 := FindByte(ABuffer, Space1 + 1, LineEnd, 32);
@@ -1204,6 +1278,19 @@ begin
   AMethod := GetMethodString(ABuffer, 0, Space1);
   
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
+  {$IFDEF FPC}
+  if QueryStart <> -1 then
+  begin
+    APathSpan := TByteSpan.Create(Space1 + 1, QueryStart - (Space1 + 1));
+    AQuerySpan := TByteSpan.Create(QueryStart + 1, Space2 - (QueryStart + 1));
+  end
+  else
+  begin
+    APathSpan := TByteSpan.Create(Space1 + 1, Space2 - (Space1 + 1));
+    AQuerySpan := TByteSpan.Create(0, 0);
+  end;
+  AVersionSpan := TByteSpan.Create(Space2 + 1, LineEnd - (Space2 + 1));
+  {$ELSE}
   if QueryStart <> -1 then
   begin
     if (QueryStart - (Space1 + 1) = 1) and (ABuffer[Space1 + 1] = 47) then
@@ -1220,10 +1307,10 @@ begin
       APath := TEncoding.UTF8.GetString(ABuffer, Space1 + 1, Space2 - (Space1 + 1));
     AQuery := '';
   end;
-
   AVersion := TEncoding.UTF8.GetString(ABuffer, Space2 + 1, LineEnd - (Space2 + 1));
+  {$ENDIF}
 
-  // 3. Processa os cabeçalhos linha a linha indexando os offsets
+  // 3. Processa os cabeÃ§alhos linha a linha indexando os offsets
   SegCount := 0;
   SetLength(AHeaders, 16);
 
@@ -1241,7 +1328,7 @@ begin
         Segment.KeyStart := LineStart;
         Segment.KeyLen := Colon - LineStart;
         
-        // Remove espaços do valor (Trim rápido dos bytes)
+        // Remove espaÃ§os do valor (Trim rÃ¡pido dos bytes)
         I := Colon + 1;
         while (I < LineEnd) and (ABuffer[I] = 32) do Inc(I);
         Segment.ValueStart := I;
@@ -1253,7 +1340,7 @@ begin
         AHeaders[SegCount] := Segment;
         Inc(SegCount);
 
-        // Parsing rápido de Content-Length diretamente dos bytes
+        // Parsing rÃ¡pido de Content-Length diretamente dos bytes
         if CompareBytesCI(ABuffer, Segment.KeyStart, Segment.KeyLen, 'content-length') then
         begin
           AContentLength := 0;
@@ -1289,7 +1376,12 @@ end;
 
 constructor TEpollRawRequest.Create(
   var ABuffer: TBytes;
-  const AMethod, APath, AQuery, AVersion: string;
+  const AMethod: string;
+  {$IFDEF FPC}
+  APathSpan, AQuerySpan, AVersionSpan: TByteSpan;
+  {$ELSE}
+  const APath, AQuery, AVersion: string;
+  {$ENDIF}
   AHeaders: THeaderSegments;
   ABodyOffset: Integer;
   AContentLength: Int64;
@@ -1300,6 +1392,7 @@ constructor TEpollRawRequest.Create(
 );
 begin
   inherited Create;
+  FContext := nil;
   if ABodyOffset > 0 then
   begin
     if (ABodyStream = nil) and (ATempFileName = '') and (AContentLength > 0) then
@@ -1313,9 +1406,18 @@ begin
   ABuffer := nil;
 
   FMethod := AMethod;
+  {$IFDEF FPC}
+  FPathSpan := APathSpan;
+  FQuerySpan := AQuerySpan;
+  FVersionSpan := AVersionSpan;
+  FPathCache := '';
+  FQueryCache := '';
+  FVersionCache := '';
+  {$ELSE}
   FPath := APath;
   FQuery := AQuery;
   FVersion := AVersion;
+  {$ENDIF}
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
@@ -1328,12 +1430,10 @@ begin
   FTempFileName := ATempFileName;
   FClientIP := AClientIP;
   FClientPort := AClientPort;
-  FResolvedHeaders := TDictionary<string, string>.Create;
 end;
 
 destructor TEpollRawRequest.Destroy;
 begin
-  FResolvedHeaders.Free;
   if Assigned(FBodyStream) then
     FBodyStream.Free;
   if FTempFileName <> '' then
@@ -1351,48 +1451,81 @@ function TEpollRawRequest.ResolveHeader(const AName: string): string;
 var
   LSegment: THeaderSegment;
   LRawVal: AnsiString;
-  LLowerName: string;
   I: Integer;
 begin
-  LLowerName := LowerCase(AName);
-  if FResolvedHeaders.TryGetValue(LLowerName, Result) then
-    Exit;
-
   for I := 0 to Length(FHeaders) - 1 do
   begin
     LSegment := FHeaders[I];
-    if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, LLowerName) then
+    if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, AName) then
     begin
       if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
       begin
         SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
-        Result := Trim(string(LRawVal));
+        Result := string(LRawVal);
       end
       else
         Result := '';
-      FResolvedHeaders.Add(LLowerName, Result);
       Exit;
     end;
   end;
-
   Result := '';
-  FResolvedHeaders.Add(LLowerName, '');
 end;
 
 function TEpollRawRequest.GetMethod: string; begin Result := FMethod; end;
-function TEpollRawRequest.GetProtocolVersion: string; begin Result := FVersion; end;
+function TEpollRawRequest.GetProtocolVersion: string;
+begin
+  {$IFDEF FPC}
+  if FVersionCache = '' then
+    FVersionCache := FVersionSpan.ToString(FBuffer);
+  Result := FVersionCache;
+  {$ELSE}
+  Result := FVersion;
+  {$ENDIF}
+end;
+
 function TEpollRawRequest.GetURL: string;
 begin
+  {$IFDEF FPC}
+  if FPathCache = '' then
+    FPathCache := FPathSpan.ToString(FBuffer);
+  if FQueryCache = '' then
+    FQueryCache := FQuerySpan.ToString(FBuffer);
+  if FQueryCache <> '' then
+    Result := FPathCache + '?' + FQueryCache
+  else
+    Result := FPathCache;
+  {$ELSE}
   if FQuery <> '' then
     Result := FPath + '?' + FQuery
   else
     Result := FPath;
+  {$ENDIF}
 end;
-function TEpollRawRequest.GetPathInfo: string; begin Result := FPath; end;
-function TEpollRawRequest.GetQueryString: string; begin Result := FQuery; end;
+
+function TEpollRawRequest.GetPathInfo: string;
+begin
+  {$IFDEF FPC}
+  if FPathCache = '' then
+    FPathCache := FPathSpan.ToString(FBuffer);
+  Result := FPathCache;
+  {$ELSE}
+  Result := FPath;
+  {$ENDIF}
+end;
+
+function TEpollRawRequest.GetQueryString: string;
+begin
+  {$IFDEF FPC}
+  if FQueryCache = '' then
+    FQueryCache := FQuerySpan.ToString(FBuffer);
+  Result := FQueryCache;
+  {$ELSE}
+  Result := FQuery;
+  {$ENDIF}
+end;
 function TEpollRawRequest.GetHost: string; begin Result := ResolveHeader('host'); end;
 function TEpollRawRequest.GetRemoteAddr: string; begin Result := FClientIP; end;
-// Retorna a porta na qual o servidor está ouvindo localmente de forma dinâmica
+// Retorna a porta na qual o servidor estÃ¡ ouvindo localmente de forma dinÃ¢mica
 function TEpollRawRequest.GetServerPort: Integer; begin Result := THorseProviderEpoll.Port; end;
 function TEpollRawRequest.GetContentType: string; begin Result := ResolveHeader('content-type'); end;
 
@@ -1580,13 +1713,11 @@ begin
   FHeadersSent := False;
   FStatusCode := 200;
   FReason := 'OK';
-  FHeaders := TDictionary<string, string>.Create;
   FIsKeepAlive := AIsKeepAlive;
 end;
 
 destructor TEpollRawResponse.Destroy;
 begin
-  FHeaders.Free;
   inherited;
 end;
 
@@ -1594,43 +1725,63 @@ procedure TEpollRawResponse.SetCustomHeader(const AName, AValue: string);
 begin
 end;
 
-function TEpollRawResponse.PrepareHeaders: TBytes;
+procedure TEpollRawResponse.SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string);
 var
   LHeaderStr: AnsiString;
+  I: Integer;
+  LHasContentType, LHasConnection, LHasContentLength: Boolean;
+  {$IFNDEF FPC}
   LPair: TPair<string, string>;
+  {$ENDIF}
 begin
+  if FHeadersSent then Exit;
+  FHeadersSent := True;
+
   LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
   
-  if not FHeaders.ContainsKey('Content-Type') then
-    FHeaders.Add('Content-Type', 'text/html; charset=utf-8');
+  LHasContentType := False;
+  LHasConnection := False;
+  LHasContentLength := False;
 
-  if not FHeaders.ContainsKey('Connection') then
+  if AHeadersList <> nil then
   begin
-    if FIsKeepAlive then
-      FHeaders.Add('Connection', 'keep-alive')
-    else
-      FHeaders.Add('Connection', 'close');
+    {$IFDEF FPC}
+    for I := 0 to AHeadersList.Count - 1 do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(AHeadersList.Names[I]) + ': ' + AnsiString(AHeadersList.ValueFromIndex[I]) + #13#10;
+      if SameText(AHeadersList.Names[I], 'Content-Type') then LHasContentType := True;
+      if SameText(AHeadersList.Names[I], 'Connection') then LHasConnection := True;
+      if SameText(AHeadersList.Names[I], 'Content-Length') then LHasContentLength := True;
+    end;
+    {$ELSE}
+    for LPair in AHeadersList do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+      if SameText(LPair.Key, 'Content-Type') then LHasContentType := True;
+      if SameText(LPair.Key, 'Connection') then LHasConnection := True;
+      if SameText(LPair.Key, 'Content-Length') then LHasContentLength := True;
+    end;
+    {$ENDIF}
   end;
 
-  for LPair in FHeaders do
-    LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+  if not LHasContentType then
+    LHeaderStr := LHeaderStr + 'Content-Type: text/html; charset=utf-8' + #13#10;
+
+  if not LHasContentLength and (AContentLength <> '') then
+    LHeaderStr := LHeaderStr + 'Content-Length: ' + AnsiString(AContentLength) + #13#10;
+
+  if not LHasConnection then
+  begin
+    if FIsKeepAlive then
+      LHeaderStr := LHeaderStr + 'Connection: keep-alive' + #13#10
+    else
+      LHeaderStr := LHeaderStr + 'Connection: close' + #13#10;
+  end;
 
   LHeaderStr := LHeaderStr + #13#10;
   
-  SetLength(Result, Length(LHeaderStr));
   if Length(LHeaderStr) > 0 then
-    Move(LHeaderStr[1], Result[0], Length(LHeaderStr));
-end;
-
-procedure TEpollRawResponse.SendHeaders;
-var
-  LHeaderBytes: TBytes;
-begin
-  if FHeadersSent then Exit;
-  LHeaderBytes := PrepareHeaders;
-  if Length(LHeaderBytes) > 0 then
-    WriteNonBlocking(@LHeaderBytes[0], Length(LHeaderBytes));
-  FHeadersSent := True;
+    WriteNonBlocking(@LHeaderStr[1], Length(LHeaderStr));
 end;
 
 function TEpollRawResponse.WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
@@ -1670,7 +1821,6 @@ begin
   
   if LRes >= 0 then
   begin
-    Writeln('WriteNonBlockingV: writev sucesso, bytes enviados: ', LRes, ' / total: ', LTotalBytes);
     if NativeUInt(LRes) = LTotalBytes then
       Exit(True);
     
@@ -1706,7 +1856,6 @@ begin
 
   {$IFDEF FPC}
   LErr := fpGetErrno;
-  Writeln('WriteNonBlockingV: writev falhou, erro errno: ', LErr);
   {$ELSE}
   LErr := errno;
   {$ENDIF}
@@ -1753,7 +1902,6 @@ var
   {$ENDIF}
   LFileHandle: THandle;
   LStreamSize: Int64;
-  LBodyBytes: TBytes;
 begin
   LHasChunkedHeader := False;
   if AHeadersList <> nil then
@@ -1769,14 +1917,12 @@ begin
 
   LStreamSize := AStream.Size - AStream.Position;
 
-  
   if (not LHasChunkedHeader) and (AStream is TFileStream) then
   begin
     LFileHandle := TFileStream(AStream).Handle;
     if LStreamSize > 0 then
     begin
-      FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
-      SendHeaders;
+      SendHeaders(AHeadersList, IntToStr(LStreamSize));
       if sendfile(FSocket, LFileHandle, nil, LStreamSize) >= 0 then
         Exit;
     end;
@@ -1784,17 +1930,16 @@ begin
 
   if (LStreamSize > 0) and (LStreamSize <= 10485760) then
   begin
-    FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
-    SendHeaders;
+    SendHeaders(AHeadersList, IntToStr(LStreamSize));
     if AStream is TCustomMemoryStream then
     begin
       WriteNonBlocking(TCustomMemoryStream(AStream).Memory, LStreamSize);
     end
     else
     begin
-      SetLength(LBodyBytes, LStreamSize);
-      AStream.ReadBuffer(LBodyBytes[0], LStreamSize);
-      WriteNonBlocking(@LBodyBytes[0], LStreamSize);
+      SetLength(LChunkBuf, LStreamSize);
+      AStream.ReadBuffer(LChunkBuf[0], LStreamSize);
+      WriteNonBlocking(@LChunkBuf[0], LStreamSize);
     end;
     Exit;
   end;
@@ -1803,11 +1948,18 @@ begin
 
   if LUseChunked then
   begin
-    FHeaders.AddOrSetValue('Transfer-Encoding', 'chunked');
-    FHeaders.Remove('Content-Length');
+    {$IFDEF FPC}
+    if AHeadersList = nil then
+      AHeadersList := TStringList.Create;
+    AHeadersList.Add('Transfer-Encoding=chunked');
+    {$ELSE}
+    if AHeadersList = nil then
+      AHeadersList := TDictionary<string, string>.Create;
+    AHeadersList.AddOrSetValue('Transfer-Encoding', 'chunked');
+    {$ENDIF}
   end;
 
-  SendHeaders;
+  SendHeaders(AHeadersList);
 
   SetLength(LChunkBuf, 8192);
   while True do
@@ -1838,19 +1990,25 @@ begin
     LTermStr := '0'#13#10#13#10;
     LTermBytes := TEncoding.ASCII.GetBytes(LTermStr);
     WriteNonBlocking(@LTermBytes[0], Length(LTermBytes));
+    {$IFDEF FPC}
+    if (AHeadersList <> nil) and (AHeadersList.Count = 1) and (AHeadersList.Names[0] = 'Transfer-Encoding') then
+      AHeadersList.Free;
+    {$ENDIF}
   end;
 end;
 
 procedure TEpollRawResponse.SendResponse(const ARes: THorseResponse);
 var
   LBodyBytes: TBytes;
-  LPair: TPair<string, string>;
   LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
   LContentType: string;
   LHeaderBytes: TBytes;
   LIov: array[0..1] of iovec;
-  {$IFDEF FPC}
+  LHeaderStr: AnsiString;
   I: Integer;
+  LHasContentType, LHasConnection: Boolean;
+  {$IFNDEF FPC}
+  LPair: TPair<string, string>;
   {$ENDIF}
 begin
   FStatusCode := ARes.Status;
@@ -1870,53 +2028,77 @@ begin
     FReason := 'OK';
   end;
 
-  {$IFDEF FPC}
-  LContentType := ARes.CSContentType;
-  {$ELSE}
-  if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.ContentType <> '') then
-    LContentType := ARes.RawWebResponse.ContentType
-  else
-    LContentType := ARes.CSContentType;
-  {$ENDIF}
-
-  if LContentType = '' then
-    LContentType := 'text/html; charset=utf-8';
-
-  FHeaders.AddOrSetValue('Content-Type', LContentType);
-
-  LHeadersList := ARes.CustomHeaders;
-  if LHeadersList <> nil then
-  begin
-    {$IFDEF FPC}
-    for I := 0 to LHeadersList.Count - 1 do
-      FHeaders.AddOrSetValue(LHeadersList.Names[I], LHeadersList.ValueFromIndex[I]);
-    {$ELSE}
-    for LPair in LHeadersList do
-      FHeaders.AddOrSetValue(LPair.Key, LPair.Value);
-    {$ENDIF}
-  end;
-
   if ARes.ContentStream <> nil then
   begin
     SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
     Exit;
   end;
 
-  if Length(LBodyBytes) = 0 then
+  if ARes.BodyText <> '' then
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
+  {$IFNDEF FPC}
+  else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
+  {$ENDIF};
+
+  LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
+  
+  LHasContentType := False;
+  LHasConnection := False;
+
+  LHeadersList := ARes.CustomHeaders;
+  if LHeadersList <> nil then
   begin
-    if ARes.BodyText <> '' then
-      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
-    {$IFNDEF FPC}
-    else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
-      LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
-    {$ENDIF};
+    {$IFDEF FPC}
+    for I := 0 to LHeadersList.Count - 1 do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LHeadersList.Names[I]) + ': ' + AnsiString(LHeadersList.ValueFromIndex[I]) + #13#10;
+      if SameText(LHeadersList.Names[I], 'Content-Type') then LHasContentType := True;
+      if SameText(LHeadersList.Names[I], 'Connection') then LHasConnection := True;
+    end;
+    {$ELSE}
+    for LPair in LHeadersList do
+    begin
+      LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+      if SameText(LPair.Key, 'Content-Type') then LHasContentType := True;
+      if SameText(LPair.Key, 'Connection') then LHasConnection := True;
+    end;
+    {$ENDIF}
   end;
 
-  FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)));
+  if not LHasContentType then
+  begin
+    {$IFDEF FPC}
+    LContentType := ARes.CSContentType;
+    {$ELSE}
+    if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.ContentType <> '') then
+      LContentType := ARes.RawWebResponse.ContentType
+    else
+      LContentType := ARes.CSContentType;
+    {$ENDIF}
+    if LContentType = '' then
+      LContentType := 'text/html; charset=utf-8';
+    LHeaderStr := LHeaderStr + 'Content-Type: ' + AnsiString(LContentType) + #13#10;
+  end;
+
+  LHeaderStr := LHeaderStr + 'Content-Length: ' + AnsiString(IntToStr(Length(LBodyBytes))) + #13#10;
+
+  if not LHasConnection then
+  begin
+    if FIsKeepAlive then
+      LHeaderStr := LHeaderStr + 'Connection: keep-alive' + #13#10
+    else
+      LHeaderStr := LHeaderStr + 'Connection: close' + #13#10;
+  end;
+
+  LHeaderStr := LHeaderStr + #13#10;
+  
+  SetLength(LHeaderBytes, Length(LHeaderStr));
+  if Length(LHeaderStr) > 0 then
+    Move(LHeaderStr[1], LHeaderBytes[0], Length(LHeaderStr));
 
   if not FHeadersSent then
   begin
-    LHeaderBytes := PrepareHeaders;
     FHeadersSent := True;
     if Length(LBodyBytes) > 0 then
     begin
@@ -2053,9 +2235,20 @@ var
   I: Integer;
   HasPendingWrite: Boolean;
   LMethod: string;
+  {$IFDEF FPC}
+  LPathSpan: TByteSpan;
+  LQuerySpan: TByteSpan;
+  LVersionSpan: TByteSpan;
+  LStaticMatch: Boolean;
+  LRadixRouter: THorseRadixRouter;
+  LMethodType: TMethodType;
+  LStaticCallbacks: TList<THorseCallback>;
+  LFlow: TRadixFlow;
+  {$ELSE}
   LPath: string;
   LQuery: string;
   LVersion: string;
+  {$ENDIF}
   LHeaders: THeaderSegments;
   LBodyOffset: Integer;
   LContentLength: Int64;
@@ -2078,7 +2271,7 @@ begin
       {$ELSE}
       LBytesRead := recv(
         AContext.Socket, 
-        @AContext.Buffer[AContext.BytesReceived], 
+        AContext.Buffer[AContext.BytesReceived], 
         Length(AContext.Buffer) - AContext.BytesReceived, 
         0
       );
@@ -2178,7 +2371,7 @@ begin
         {$ELSE}
         LBytesRead := recv(
           AContext.Socket, 
-          @AContext.Buffer[AContext.BytesReceived], 
+          AContext.Buffer[AContext.BytesReceived], 
           AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
           0
         );
@@ -2387,11 +2580,12 @@ begin
             end;
           end;
         except
-          // Captura exceções para segurança na thread
+          // Captura exceÃ§Ãµes para seguranÃ§a na thread
         end;
       end);
     {$ELSE}
-    // Lazarus FPC: Despacha as rotas via GTaskPool de forma assíncrona
+    // Lazarus FPC: Despacha as rotas via GTaskPool de forma assÃ­ncrona
+    {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
     if GTaskPool <> nil then
     begin
       GTaskPool.QueueTask(TEpollFPCTask.Create(
@@ -2402,71 +2596,136 @@ begin
       ));
     end
     else
+    {$ENDIF}
     begin
       try
         if THorseHttpParser.TryParseRequest(
           AContext.Buffer,
           AContext.BytesReceived,
           LMethod,
-          LPath,
-          LQuery,
-          LVersion,
+          LPathSpan,
+          LQuerySpan,
+          LVersionSpan,
           LHeaders,
           LBodyOffset,
           LContentLength
         ) then
         begin
           AContext.Method := LMethod;
-          AContext.Path := LPath;
-          AContext.Query := LQuery;
-          AContext.Version := LVersion;
+          AContext.PathSpan := LPathSpan;
+          AContext.QuerySpan := LQuerySpan;
+          AContext.VersionSpan := LVersionSpan;
           AContext.Headers := LHeaders;
           AContext.BodyOffset := LBodyOffset;
           AContext.ContentLength := LContentLength;
         end;
 
-        LRawReq := TEpollRawRequest.Create(
-          AContext.Buffer,
-          AContext.Method,
-          AContext.Path,
-          AContext.Query,
-          AContext.Version,
-          AContext.Headers,
-          AContext.BodyOffset,
-          AContext.ContentLength,
-          AContext.FBodyStream,
-          AContext.FTempFileName,
-          AContext.ClientIP,
-          AContext.ClientPort
-        );
-        AContext.Buffer := nil;
-        AContext.FBodyStream := nil;
-        AContext.FTempFileName := '';
+        // Fast Path de Roteamento Estático Zero-Allocation
+        LStaticMatch := False;
+        LRadixRouter := GActiveRadixRouter;
 
-        LConnHeader := LRawReq.GetFieldByName('connection');
-        if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
-          LKeepAlive := not SameText(LConnHeader, 'close')
-        else
-          LKeepAlive := SameText(LConnHeader, 'keep-alive');
+        if LRadixRouter <> nil then
+        begin
+          LMethodType := TMethodType.FromString(AContext.Method);
+          if LRadixRouter.MatchStaticRoute(AContext.Buffer, AContext.PathSpan, LMethodType, LStaticCallbacks) then
+          begin
+            LStaticMatch := True;
+            LRawReq := TEpollRawRequest.Create(
+              AContext.Buffer,
+              AContext.Method,
+              AContext.PathSpan,
+              AContext.QuerySpan,
+              AContext.VersionSpan,
+              AContext.Headers,
+              AContext.BodyOffset,
+              AContext.ContentLength,
+              AContext.FBodyStream,
+              AContext.FTempFileName,
+              AContext.ClientIP,
+              AContext.ClientPort
+            );
+            AContext.Buffer := nil;
+            AContext.FBodyStream := nil;
+            AContext.FTempFileName := '';
 
-        LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
-        LRawRes := LRawResObj;
-        LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-        LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+            LConnHeader := LRawReq.GetFieldByName('connection');
+            if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+              LKeepAlive := not SameText(LConnHeader, 'close')
+            else
+              LKeepAlive := SameText(LConnHeader, 'keep-alive');
 
-        try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(nil);
-          LRes.SetCSRawWebResponse(LWebResponse);
-          try
-            THorseProviderEpoll.Execute(LReq, LRes);
-          finally
-            LRawResObj.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
+            LRawRes := LRawResObj;
+            LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+            LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
+            try
+              LReq := THorseRequest.Create(LWebRequest);
+              LRes := THorseResponse.Create(nil);
+              LRes.SetCSRawWebResponse(LWebResponse);
+              try
+                LFlow := TRadixFlow.Create(LStaticCallbacks, LReq, LRes);
+                try
+                  LFlow.Next;
+                finally
+                  LFlow.Free;
+                end;
+              finally
+                LRawResObj.SendResponse(LRes);
+                LReq.Free;
+                LRes.Free;
+              end;
+            finally
+              LWebRequest.Free;
+            end;
           end;
-        finally
-          LWebRequest.Free;
+        end;
+
+        if not LStaticMatch then
+        begin
+          LRawReq := TEpollRawRequest.Create(
+            AContext.Buffer,
+            AContext.Method,
+            AContext.PathSpan,
+            AContext.QuerySpan,
+            AContext.VersionSpan,
+            AContext.Headers,
+            AContext.BodyOffset,
+            AContext.ContentLength,
+            AContext.FBodyStream,
+            AContext.FTempFileName,
+            AContext.ClientIP,
+            AContext.ClientPort
+          );
+          AContext.Buffer := nil;
+          AContext.FBodyStream := nil;
+          AContext.FTempFileName := '';
+
+          LConnHeader := LRawReq.GetFieldByName('connection');
+          if SameText(LRawReq.GetProtocolVersion, 'HTTP/1.1') then
+            LKeepAlive := not SameText(LConnHeader, 'close')
+          else
+            LKeepAlive := SameText(LConnHeader, 'keep-alive');
+
+          LRawResObj := TEpollRawResponse.Create(AContext, LKeepAlive);
+          LRawRes := LRawResObj;
+          LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+          LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
+          try
+            LReq := THorseRequest.Create(LWebRequest);
+            LRes := THorseResponse.Create(nil);
+            LRes.SetCSRawWebResponse(LWebResponse);
+            try
+              THorseProviderEpoll.Execute(LReq, LRes);
+            finally
+              LRawResObj.SendResponse(LRes);
+              LReq.Free;
+              LRes.Free;
+            end;
+          finally
+            LWebRequest.Free;
+          end;
         end;
 
         HasPendingWrite := False;
@@ -2491,7 +2750,7 @@ begin
             CloseConnection(AContext);
         end;
       except
-        // Segurança no fallback síncrono
+        // SeguranÃ§a no fallback sÃ­ncrono
       end;
     end;
     {$ENDIF}
@@ -2536,11 +2795,11 @@ begin
       if AContext.FIsKeepAlive then
       begin
         AContext.ClearRequest;
-        SetLength(AContext.Buffer, 8192);
         AContext.BytesReceived := 0;
         AContext.FProcessing := False;
 
         LEvent.events := EPOLLIN or EPOLLET or EPOLLONESHOT;
+        SetLength(AContext.Buffer, 8192);
         LEvent.data.ptr := AContext;
         epoll_ctl(FEpollFd, EPOLL_CTL_MOD, AContext.Socket, @LEvent);
       end
@@ -2631,7 +2890,7 @@ var
   {$ENDIF}
   LEventCount: Integer;
   I: Integer;
-  LEvents: array[0..63] of epoll_event;
+  LEvents: array[0..255] of epoll_event;
   LEvent: epoll_event;
   LClientFd: Integer;
   LOptVal: Integer;
@@ -2732,8 +2991,6 @@ begin
             end;
 
             {$IFDEF FPC}
-            Writeln('Worker: Conexao aceita no socket = ', LClientFd);
-            Flush(Output);
             fpFcntl(LClientFd, F_SETFL, O_NONBLOCK);
             {$ELSE}
             fcntl(LClientFd, F_SETFL, O_NONBLOCK);
@@ -2816,7 +3073,7 @@ begin
   FWorkers := TObjectList<THorseEpollWorker>.Create(True);
   FRunning := False;
 
-  // Eleva o limite máximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
+  // Eleva o limite mÃ¡ximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
   LRLimit.rlim_cur := 65535;
   LRLimit.rlim_max := 65535;
   {$IFDEF FPC}
@@ -2954,8 +3211,10 @@ begin
     LThreadCount := 2;
 
   {$IFDEF FPC}
+  {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
   if GTaskPool = nil then
-    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 4);
+    GTaskPool := TEpollFPCTaskPool.Create(LThreadCount * 8);
+  {$ENDIF}
   {$ENDIF}
 
   try

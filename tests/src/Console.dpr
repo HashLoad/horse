@@ -12,6 +12,7 @@ uses
   Horse.Core.Route.Contract in '..\..\src\Horse.Core.Route.Contract.pas',
   Horse.Core.Route in '..\..\src\Horse.Core.Route.pas',
   Horse.Core.RouterTree in '..\..\src\Horse.Core.RouterTree.pas',
+  Horse.Core.Router.Radix in '..\..\src\Horse.Core.Router.Radix.pas',
   Horse.Exception in '..\..\src\Horse.Exception.pas',
   Horse in '..\..\src\Horse.pas',
   Horse.Provider.Abstract in '..\..\src\Horse.Provider.Abstract.pas',
@@ -25,13 +26,20 @@ uses
   Horse.Provider.ISAPI in '..\..\src\Horse.Provider.ISAPI.pas',
   Horse.WebModule in '..\..\src\Horse.WebModule.pas' {HorseWebModule: TWebModule},
   Horse.Proc in '..\..\src\Horse.Proc.pas',
+  {$IFDEF FPC}
+  Classes,
+  SysUtils,
+  {$ELSE}
   System.Classes,
   System.SysUtils,
+  {$ENDIF}
   {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
   {$ENDIF }
+  {$IFNDEF FPC}
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.NUnit,
+  {$ENDIF}
   DUnitX.TestFramework,
   Tests.Api.Console in 'tests\Tests.Api.Console.pas',
   Controllers.Api in 'controllers\Controllers.Api.pas',
@@ -56,6 +64,9 @@ uses
   Tests.AssertHelper in 'tests\Tests.AssertHelper.pas',
   Tests.CleanupHelper in 'tests\Tests.CleanupHelper.pas',
   Tests.Horse.Core.RouterTree in 'tests\Tests.Horse.Core.RouterTree.pas',
+  {$IFNDEF FPC}
+  Tests.Horse.Core.Router.Radix in 'tests\Tests.Horse.Core.Router.Radix.pas',
+  {$ENDIF}
   Tests.Horse.Request.Recycle in 'tests\Tests.Horse.Request.Recycle.pas',
   Tests.Horse.Core.Middleware in 'tests\Tests.Horse.Core.Middleware.pas',
   Tests.Integration.Concurrency in 'tests\Tests.Integration.Concurrency.pas',
@@ -63,6 +74,7 @@ uses
   Tests.Integration.HttpMethods in 'tests\Tests.Integration.HttpMethods.pas',
   Tests.Integration.KeepAlive in 'tests\Tests.Integration.KeepAlive.pas',
   Tests.Integration.LargePayload in 'tests\Tests.Integration.LargePayload.pas',
+  Tests.Integration.Query in 'tests\Tests.Integration.Query.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
   Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';
@@ -75,6 +87,9 @@ var
 
 begin
   ReportMemoryLeaksOnShutdown := True;
+  {$IFDEF HORSE_RADIX_ROUTER}
+  THorse.UseRadixRouter;
+  {$ENDIF}
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
 {$ELSE}
@@ -85,6 +100,7 @@ begin
     Runner.UseRTTI := False;
     Runner.FailsOnNoAsserts := True;
 
+    {$IFNDEF FPC}
     if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
     begin
       Logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
@@ -93,6 +109,7 @@ begin
 
     NunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     Runner.AddLogger(NunitLogger);
+    {$ENDIF}
 
     Results := Runner.Execute;
     if (not Results.AllPassed) then

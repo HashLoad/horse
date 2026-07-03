@@ -19,12 +19,13 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
+  Horse.Core.Router.Contract,
   Horse.Commons;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
 
-  THorseRouterTree = class
+  THorseRouterTree = class(TInterfacedObject, IHorseRouter)
   strict private
     FPrefix: string;
     FIsInitialized: Boolean;
@@ -37,18 +38,23 @@ type
     FIsParamsKey: Boolean;
     FRouterRegex: string;
     FIsRouterRegex: Boolean;
+    {$IF DEFINED(FPC)}
     FMiddleware: TList<THorseCallback>;
     FRegexedKeys: TList<string>;
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
+    {$ELSE}
+    FMiddleware: TArray<THorseCallback>;
+    FRegexedKeys: TList<string>;
+    FCallBack: TDictionary<TMethodType, TArray<THorseCallback>>;
+    {$ENDIF}
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
-    function GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
-    function ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
-    function CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
-    function HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
-    function CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
+    function ExecuteInternal(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
+    function CallNextPath(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+    function HasNext(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Boolean;
+    function CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Integer;
     class function NormalizeParamKey(const APart: string): string; static;
   public
     function CreateRouter(const APath: string): THorseRouterTree;
@@ -59,6 +65,10 @@ type
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+  protected
+    function _AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+    function _Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  public
     constructor Create;
     destructor Destroy; override;
 
@@ -108,18 +118,7 @@ begin
   Result := TlsNextCaller;
 end;
 
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-begin
-  Result := TMethodType.mtAny;
-  if ACommand = 'GET' then
-    Result := TMethodType.mtGet
-  else if ACommand = 'POST' then
-    Result := TMethodType.mtPost
-  else if ACommand = 'PUT' then
-    Result := TMethodType.mtPut
-  else if ACommand = 'HEAD' then
-    Result := TMethodType.mtHead;
-end;
+
 
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
 begin
@@ -153,18 +152,32 @@ begin
   end;
 end;
 
-function THorseRouterTree.CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+function THorseRouterTree.CallNextPath(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse): Boolean;
 var
-  LCurrent, LKey: string;
+  LCurrent: THorseBufferSlice;
+  LKey: string;
   LAcceptable: THorseRouterTree;
   LFound, LIsGroup: Boolean;
   LBestAcceptable: THorseRouterTree;
   LBestScore, LScore: Integer;
+  LPair: TPair<string, THorseRouterTree>;
 begin
   LIsGroup := False;
   LCurrent := ASegments[AIndex];
-  LFound := FRoute.TryGetValue(LCurrent, LAcceptable);
+  
+  LFound := False;
+  LAcceptable := nil;
+  for LPair in FRoute do
+  begin
+    if LCurrent.Compare(LPair.Key) or (LPair.Key = '*') then
+    begin
+      LAcceptable := LPair.Value;
+      LFound := True;
+      Break;
+    end;
+  end;
+
   if (not LFound) then
   begin
     LFound := FRoute.TryGetValue(EmptyStr, LAcceptable);
@@ -195,12 +208,27 @@ begin
   Result := LFound;
 end;
 
+function THorseRouterTree._AddRef: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+begin
+  Result := -1;
+end;
+
+function THorseRouterTree._Release: Integer; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+begin
+  Result := -1;
+end;
+
 constructor THorseRouterTree.Create;
 begin
+  {$IF DEFINED(FPC)}
   FMiddleware := TList<THorseCallback>.Create;
+  FCallBack := TObjectDictionary<TMethodType, TList<THorseCallback>>.Create([doOwnsValues]);
+  {$ELSE}
+  FMiddleware := nil;
+  FCallBack := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
+  {$ENDIF}
   FRoute := TObjectDictionary<string, THorseRouterTree>.Create([doOwnsValues]);
   FRegexedKeys := TList<string>.Create;
-  FCallBack := TObjectDictionary < TMethodType, TList < THorseCallback >>.Create([doOwnsValues]);
   FHandlerMethods := TList<TMethodType>.Create;
   FPrefix := '';
   FIsRouterRegex := False;
@@ -208,41 +236,46 @@ end;
 
 destructor THorseRouterTree.Destroy;
 begin
+  {$IF DEFINED(FPC)}
   FMiddleware.Free;
+  FreeAndNil(FCallBack);
+  {$ELSE}
+  FMiddleware := nil;
+  FreeAndNil(FCallBack);
+  {$ENDIF}
   FreeAndNil(FRoute);
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
-  FCallBack.Free;
+  FHandlerMethods.Clear;
   FHandlerMethods.Free;
   inherited;
 end;
 
 function THorseRouterTree.Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 var
-  LPathInfo: string;
-  LSegments, LSegmentsNotFound: TArray<string>;
+  LSegments, LSegmentsNotFound: TArray<THorseBufferSlice>;
   LMethodType: TMethodType;
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+  LBufferNotFound: TBytes;
 begin
   LRawWebRequest := ARequest.RawWebRequest;
   if not Assigned(LRawWebRequest) then
   begin
-    LPathInfo   := ARequest.RawPathInfo;
     LMethodType := ARequest.MethodType;
   end
   else
   begin
-    LPathInfo := {$IF DEFINED(FPC)}LRawWebRequest.PathInfo
-                 {$ELSE}LRawWebRequest.RawPathInfo{$ENDIF};
-    LMethodType := StringCommandToMethodType(LRawWebRequest.Method);
+    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
   end;
-  if LPathInfo.IsEmpty then
-    LPathInfo := '/';
-  LSegments := GetArrayPath(LPathInfo, False);
+  LSegments := ARequest.GetPathSegments;
   Result := ExecuteInternal(LSegments, 0, LMethodType, ARequest, AResponse);
   if not Result then
   begin
-    LSegmentsNotFound := GetArrayPath('/*', False);
+    SetLength(LSegmentsNotFound, 2);
+    LBufferNotFound := TEncoding.UTF8.GetBytes('/*');
+    LSegmentsNotFound[0] := THorseBufferSlice.Create(LBufferNotFound, 0, 0);
+    LSegmentsNotFound[1] := THorseBufferSlice.Create(LBufferNotFound, 1, 1);
+    
     Result := ExecuteInternal(LSegmentsNotFound, 0, LMethodType, ARequest, AResponse);
     if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
       AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
@@ -250,7 +283,7 @@ begin
   AResponse.FlushCookiesToWebResponse;
 end;
 
-function THorseRouterTree.ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
+function THorseRouterTree.ExecuteInternal(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
 var
   LNextCaller: TNextCaller;
@@ -271,6 +304,7 @@ begin
       FTag,
       FIsParamsKey,
       CallNextPath,
+      FPart,
       LFound
     );
     LNextCaller.Init;
@@ -350,56 +384,15 @@ begin
   end;
 end;
 
-function THorseRouterTree.GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
+
+
+function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Integer;
 var
-  LStart, LLen, LPathLen: Integer;
-  LPart: string;
-  LList: TList<string>;
-begin
-  if AUsePrefix then
-  begin
-    if not APath.StartsWith('/') then
-      APath := (FPrefix + '/' + APath)
-    else
-      APath := (FPrefix + APath);
-  end;
-
-  LList := TList<string>.Create;
-  try
-    if APath.StartsWith('/') then
-      LList.Add(EmptyStr);
-
-    LPathLen := Length(APath);
-    LStart := 1;
-    while LStart <= LPathLen do
-    begin
-      while (LStart <= LPathLen) and (APath[LStart] = '/') do
-        Inc(LStart);
-      
-      if LStart > LPathLen then
-        Break;
-        
-      LLen := 0;
-      while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
-        Inc(LLen);
-        
-      if LLen > 0 then
-      begin
-        LPart := Copy(APath, LStart, LLen);
-        LList.Add(LPart);
-        LStart := LStart + LLen;
-      end;
-    end;
-    Result := LList.ToArray;
-  finally
-    LList.Free;
-  end;
-end;
-
-function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
-var
-  LNext, LKey: string;
+  LNext: THorseBufferSlice;
+  LKey: string;
   LNextRoute: THorseRouterTree;
+  LPair: TPair<string, THorseRouterTree>;
+  LFound: Boolean;
 begin
   Result := 0;
   if (Length(APaths) <= AIndex) then
@@ -415,7 +408,19 @@ begin
   LNext := APaths[AIndex + 1];
   Inc(AIndex);
 
-  if FRoute.TryGetValue(LNext, LNextRoute) then
+  LFound := False;
+  LNextRoute := nil;
+  for LPair in FRoute do
+  begin
+    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
+    begin
+      LNextRoute := LPair.Value;
+      LFound := True;
+      Break;
+    end;
+  end;
+
+  if LFound then
   begin
     Result := 1 + LNextRoute.CountLiteralSegments(AMethod, APaths, AIndex);
     Exit;
@@ -431,27 +436,43 @@ begin
   end;
 end;
 
-function THorseRouterTree.HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
+function THorseRouterTree.HasNext(const AMethod: TMethodType; const APaths: TArray<THorseBufferSlice>; AIndex: Integer = 0): Boolean;
 var
-  LNext, LKey: string;
+  LNext: THorseBufferSlice;
+  LKey: string;
   LNextRoute: THorseRouterTree;
+  LPair: TPair<string, THorseRouterTree>;
+  LFound: Boolean;
 begin
   Result := False;
   if (Length(APaths) <= AIndex) then
     Exit(False);
-  if (Length(APaths) - 1 = AIndex) and ((APaths[AIndex] = FPart) or FIsParamsKey) then
+  if (Length(APaths) - 1 = AIndex) and (APaths[AIndex].Compare(FPart) or FIsParamsKey) then
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
 
 {$IFNDEF FPC}
   if FIsRouterRegex then
   begin
-    Result := TRegEx.IsMatch(APaths[AIndex], Format('^%s$', [FRouterRegex]));
+    Result := TRegEx.IsMatch(APaths[AIndex].ToString, Format('^%s$', [FRouterRegex]));
     Exit;
   end;
 {$ENDIF}
   LNext := APaths[AIndex + 1];
   Inc(AIndex);
-  if FRoute.TryGetValue(LNext, LNextRoute) then
+  
+  LFound := False;
+  LNextRoute := nil;
+  for LPair in FRoute do
+  begin
+    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
+    begin
+      LNextRoute := LPair.Value;
+      LFound := True;
+      Break;
+    end;
+  end;
+
+  if LFound then
   begin
     Result := LNextRoute.HasNext(AMethod, APaths, AIndex);
   end
@@ -469,7 +490,11 @@ procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var AP
 var
   LNextPart: string;
   LNormalizedNextPart: string;
+  {$IF DEFINED(FPC)}
   LCallbacks: TList<THorseCallback>;
+  {$ELSE}
+  LCallbacks: TArray<THorseCallback>;
+  {$ENDIF}
   LForceRouter: THorseRouterTree;
   LRawPart: string;
 begin
@@ -495,12 +520,21 @@ begin
       raise Exception.Create(Format('Duplicate route detected: [%s] %s',
         [AHTTPType.ToString.ToUpper, AFullPath]));
 
+    {$IF DEFINED(FPC)}
     if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
     begin
       LCallbacks := TList<THorseCallback>.Create;
       FCallBack.Add(AHTTPType, LCallbacks);
     end;
     LCallbacks.Add(ACallback);
+    {$ELSE}
+    if not FCallBack.TryGetValue(AHTTPType, LCallbacks) then
+    begin
+      LCallbacks := [];
+    end;
+    LCallbacks := LCallbacks + [ACallback];
+    FCallBack.AddOrSetValue(AHTTPType, LCallbacks);
+    {$ENDIF}
 
     if not AIsMiddleware then
       FHandlerMethods.Add(AHTTPType);
@@ -524,7 +558,11 @@ end;
 
 procedure THorseRouterTree.RegisterMiddleware(const AMiddleware: THorseCallback);
 begin
+  {$IF DEFINED(FPC)}
   FMiddleware.Add(AMiddleware);
+  {$ELSE}
+  FMiddleware := FMiddleware + [AMiddleware];
+  {$ENDIF}
 end;
 
 procedure THorseRouterTree.RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback);
@@ -543,7 +581,11 @@ procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>;
 begin
   APath.Dequeue;
   if APath.Count = 0 then
+    {$IF DEFINED(FPC)}
     FMiddleware.Add(AMiddleware)
+    {$ELSE}
+    FMiddleware := FMiddleware + [AMiddleware]
+    {$ENDIF}
   else
     ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
 end;

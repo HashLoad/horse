@@ -15,17 +15,16 @@ uses
     Generics.Defaults,
     Windows,
     SyncObjs,
-    httpprotocol,
   {$ELSE}
     System.SysUtils,
     System.Classes,
     System.SyncObjs,
     System.Threading,
-    System.NetEncoding,
     System.Generics.Collections,
     System.Generics.Defaults,
     Winapi.Windows,
   {$ENDIF}
+  Horse.Utils,
   Horse.Provider.Abstract,
   Horse.Provider.Config,
   Horse.Request,
@@ -33,7 +32,9 @@ uses
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core,
+  Horse.Core.Context;
 
 const
   HTTPAPI_DLL = 'httpapi.dll';
@@ -411,6 +412,14 @@ type
     constructor Create(const ARawRes: IHorseRawResponse); reintroduce;
   end;
 
+  PHttpSysOverlapped = ^THttpSysOverlapped;
+  THttpSysOverlapped = record
+    Overlapped: TOverlapped;
+    Buffer: TBytes;
+    RequestId: HTTP_REQUEST_ID;
+    ReqQueue: THandle;
+  end;
+
   // Listener Thread
   THttpSysListenerThread = class(TThread)
   private
@@ -433,7 +442,8 @@ type
     class var FServerSessionId: HTTP_SERVER_SESSION_ID;
     class var FUrlGroupId: HTTP_URL_GROUP_ID;
     class var FReqQueue: THandle;
-    class var FListenerThread: THttpSysListenerThread;
+    class var FCompletionPort: THandle;
+    class var FListenerThreads: TList<THttpSysListenerThread>;
     class var FKnownRequestHeadersMap: TDictionary<string, Integer>;
     class var FKnownResponseHeadersMap: TDictionary<string, Integer>;
     class var FBufferPool: THttpSysBufferPool;
@@ -447,6 +457,7 @@ type
 
     class procedure InternalListen;
     class procedure InternalStopListen;
+    class procedure PostNewReceive(AOverlapped: PHttpSysOverlapped); static;
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
@@ -499,6 +510,7 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LCurrentBuf: TBytes;
 begin
@@ -514,14 +526,16 @@ begin
       LWebRequest := TInterfacedWebRequest.Create(LRawReq);
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
-        LReq := THorseRequest.Create(LWebRequest);
-        LRes := THorseResponse.Create(LWebResponse);
+        LContextObj := THorseContextPool.Instance.Acquire;
+        LReq := THorseRequest(LContextObj.Request);
+        LReq.SetCSRawWebRequest(LWebRequest);
+        LRes := THorseResponse(LContextObj.Response);
+        LRes.SetCSRawWebResponse(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
         finally
           LConcreteRes.SendResponse(LRes);
-          LReq.Free;
-          LRes.Free;
+          THorseContextPool.Instance.Release(LContextObj);
         end;
       finally
         LWebRequest.Free;
@@ -692,6 +706,7 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
+  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LHasItem: Boolean;
 begin
@@ -721,14 +736,16 @@ begin
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
-          LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(LWebResponse);
+          LContextObj := THorseContextPool.Instance.Acquire;
+          LReq := THorseRequest(LContextObj.Request);
+          LReq.SetCSRawWebRequest(LWebRequest);
+          LRes := THorseResponse(LContextObj.Response);
+          LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);
           finally
             LConcreteRes.SendResponse(LRes);
-            LReq.Free;
-            LRes.Free;
+            THorseContextPool.Instance.Release(LContextObj);
           end;
         finally
           LWebRequest.Free;
@@ -1193,18 +1210,15 @@ begin
       LName := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LQuery, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
@@ -1242,18 +1256,15 @@ begin
       LName := Copy(LBody, LStart, LEqPos - LStart);
       LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
-      if Pos('%', LValue) > 0 then
-        LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
+      LName := DecodeParam(LName);
+      LValue := DecodeParam(LValue);
         
       ADest.Add(LName + '=' + LValue);
     end
     else
     begin
       LName := Copy(LBody, LStart, I - LStart);
-      if Pos('%', LName) > 0 then
-        LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
+      LName := DecodeParam(LName);
       ADest.Add(LName + '=');
     end;
 
@@ -1673,66 +1684,53 @@ end;
 
 procedure THttpSysListenerThread.Execute;
 var
-  LBuffer: TBytes;
-  LRequest: PHTTP_REQUEST;
   LBytesReturned: ULONG;
-  LRet: ULONG;
-  LRequestId: HTTP_REQUEST_ID;
-  LCurrentSize: Integer;
+  LCompletionKey: ULONG_PTR;
+  LOverlapped: POverlapped;
+  LHttpOverlapped: PHttpSysOverlapped;
+  LStatus: DWORD;
 begin
-  LRequestId := 0;
-  LBuffer := nil;
-  LRequest := nil;
-  LCurrentSize := 16384;
   while not Terminated and FRunning do
   begin
-    if LRequestId = 0 then
-    begin
-      LBuffer := THorseProviderHttpSys.BufferPool.Acquire(LCurrentSize);
-      LRequest := PHTTP_REQUEST(@LBuffer[0]);
-      FillChar(LRequest^, SizeOf(HTTP_REQUEST), 0);
-    end;
     LBytesReturned := 0;
+    LCompletionKey := 0;
+    LOverlapped := nil;
 
-    LRet := HttpReceiveHttpRequest(
-      FReqQueue,
-      LRequestId,
-      0,
-      LRequest,
-      Length(LBuffer),
-      LBytesReturned,
-      nil
-    );
+    if GetQueuedCompletionStatus(THorseProviderHttpSys.FCompletionPort, LBytesReturned, LCompletionKey, LOverlapped, 500) then
+    begin
+      if Assigned(LOverlapped) then
+      begin
+        LHttpOverlapped := PHttpSysOverlapped(LOverlapped);
+        
+        // Dispatch processing concurrently
+        DispatchRequest(LHttpOverlapped.Buffer);
 
-    if LRet = ERROR_SUCCESS then
-    begin
-      // Dispatch processing concurrently
-      DispatchRequest(LBuffer);
-      LBuffer := nil;
-      LRequestId := 0;
-      LCurrentSize := 16384;
-    end
-    else if LRet = ERROR_MORE_DATA then
-    begin
-      // Re-allocate enough space for large request headers and try again
-      LRequestId := LRequest.RequestId;
-      LCurrentSize := LBytesReturned;
-      SetLength(LBuffer, LCurrentSize);
-      LRequest := PHTTP_REQUEST(@LBuffer[0]);
+        // Re-allocate a fresh buffer and post a new async receive
+        LHttpOverlapped.Buffer := THorseProviderHttpSys.BufferPool.Acquire(65536);
+        LHttpOverlapped.RequestId := 0;
+        THorseProviderHttpSys.PostNewReceive(LHttpOverlapped);
+      end;
     end
     else
     begin
-      LRequestId := 0;
-      if LBuffer <> nil then
-        THorseProviderHttpSys.BufferPool.Release(LBuffer);
-      if (LRet = 1229) or (LRet = ERROR_CONNECTION_INVALID) then // 1229 = ERROR_CONNECTION_INVALID
-        // Connection lost, continue
-      else if not FRunning then
-        Break;
+      LStatus := GetLastError;
+      if LStatus = WAIT_TIMEOUT then
+        Continue;
+
+      if Assigned(LOverlapped) then
+      begin
+        LHttpOverlapped := PHttpSysOverlapped(LOverlapped);
+        if LStatus = ERROR_MORE_DATA then
+        begin
+          SetLength(LHttpOverlapped.Buffer, LBytesReturned);
+          THorseProviderHttpSys.PostNewReceive(LHttpOverlapped);
+          Continue;
+        end;
+
+        THorseProviderHttpSys.PostNewReceive(LHttpOverlapped);
+      end;
     end;
   end;
-  if LBuffer <> nil then
-    THorseProviderHttpSys.BufferPool.Release(LBuffer);
 end;
 
 
@@ -1748,7 +1746,7 @@ begin
   FServerSessionId := 0;
   FUrlGroupId := 0;
   FReqQueue := 0;
-  FListenerThread := nil;
+  FListenerThreads := nil;
   FBufferPool := THttpSysBufferPool.Create;
 
   {$IF DEFINED(FPC)}
@@ -1773,6 +1771,7 @@ begin
   FKnownRequestHeadersMap.Free;
   FKnownResponseHeadersMap.Free;
   FBufferPool.Free;
+  FListenerThreads.Free;
 end;
 
 class procedure THorseProviderHttpSys.SetPort(const AValue: Integer);
@@ -1805,11 +1804,46 @@ begin
   Result := '0.0.0.0';
 end;
 
+class procedure THorseProviderHttpSys.PostNewReceive(AOverlapped: PHttpSysOverlapped);
+var
+  LRet: ULONG;
+  LBytesReturned: ULONG;
+  LRequest: PHTTP_REQUEST;
+begin
+  LBytesReturned := 0;
+  LRequest := PHTTP_REQUEST(@AOverlapped.Buffer[0]);
+  FillChar(LRequest^, SizeOf(HTTP_REQUEST), 0);
+  FillChar(AOverlapped.Overlapped, SizeOf(TOverlapped), 0);
+
+  LRet := HttpReceiveHttpRequest(
+    AOverlapped.ReqQueue,
+    AOverlapped.RequestId,
+    0,
+    LRequest,
+    Length(AOverlapped.Buffer),
+    LBytesReturned,
+    POverlapped(AOverlapped)
+  );
+
+  if (LRet <> ERROR_SUCCESS) and (LRet <> ERROR_IO_PENDING) then
+  begin
+    if LRet = ERROR_MORE_DATA then
+    begin
+      SetLength(AOverlapped.Buffer, LBytesReturned);
+      PostNewReceive(AOverlapped);
+    end;
+  end;
+end;
+
 class procedure THorseProviderHttpSys.InternalListen;
 var
   LPrefix: string;
   LRet: ULONG;
   LBinding: HTTP_BINDING_INFO;
+  I: Integer;
+  LThreadCount: Integer;
+  LListener: THttpSysListenerThread;
+  LHttpOver: PHttpSysOverlapped;
 begin
   if FRunning then Exit;
 
@@ -1840,6 +1874,11 @@ begin
         if LRet <> ERROR_SUCCESS then
           raise EOSError.Create('HttpCreateRequestQueue failed with error code: ' + IntToStr(LRet));
 
+        // Create I/O Completion Port
+        FCompletionPort := CreateIoCompletionPort(FReqQueue, 0, 0, 0);
+        if FCompletionPort = 0 then
+          raise EOSError.Create('CreateIoCompletionPort failed with error: ' + IntToStr(GetLastError));
+
         // 4. Set Request Queue Binding Property
         LBinding.Flags := 1;
         LBinding.RequestQueueHandle := FReqQueue;
@@ -1858,14 +1897,34 @@ begin
         if LRet <> ERROR_SUCCESS then
           raise EOSError.Create('HttpAddUrlToUrlGroup failed to register ' + LPrefix + ' with error code: ' + IntToStr(LRet));
 
-        // 6. Start Listener Thread
+        // 6. Start Listener Threads (Listen Paralelo Concorrente)
         FRunning := True;
         {$IF DEFINED(FPC)}
         THttpSysThreadPool.FInstance := THttpSysThreadPool.Create(32);
         {$ENDIF}
-        FListenerThread := THttpSysListenerThread.Create(FReqQueue);
-        FListenerThread.Running := True;
-        FListenerThread.Start;
+
+        FListenerThreads := TList<THttpSysListenerThread>.Create;
+        LThreadCount := TThread.ProcessorCount;
+        if LThreadCount < 1 then
+          LThreadCount := 1;
+
+        // Post initial async receives to saturate the IOCP queue
+        for I := 1 to LThreadCount * 16 do
+        begin
+          LHttpOver := AllocMem(SizeOf(THttpSysOverlapped));
+          LHttpOver.ReqQueue := FReqQueue;
+          LHttpOver.RequestId := 0;
+          LHttpOver.Buffer := THorseProviderHttpSys.BufferPool.Acquire(65536);
+          PostNewReceive(LHttpOver);
+        end;
+
+        for I := 1 to LThreadCount do
+        begin
+          LListener := THttpSysListenerThread.Create(FReqQueue);
+          LListener.Running := True;
+          LListener.Start;
+          FListenerThreads.Add(LListener);
+        end;
 
         DoOnListen;
 
@@ -1911,16 +1970,28 @@ begin
 end;
 
 class procedure THorseProviderHttpSys.InternalStopListen;
+var
+  LListener: THttpSysListenerThread;
 begin
   if not FRunning then Exit;
 
   FRunning := False;
 
-  // Signal and stop listener thread
-  if FListenerThread <> nil then
+  // Signal and stop listener threads
+  if FListenerThreads <> nil then
   begin
-    FListenerThread.Running := False;
-    FListenerThread.Terminate;
+    for LListener in FListenerThreads do
+    begin
+      LListener.Running := False;
+      LListener.Terminate;
+    end;
+  end;
+
+  // Close the Completion Port handle to unblock listener threads immediately
+  if FCompletionPort <> 0 then
+  begin
+    CloseHandle(FCompletionPort);
+    FCompletionPort := 0;
   end;
 
   // Closing the request queue cancels any pending HttpReceiveHttpRequest API calls, forcing thread to exit
@@ -1930,10 +2001,14 @@ begin
     FReqQueue := 0;
   end;
 
-  if FListenerThread <> nil then
+  if FListenerThreads <> nil then
   begin
-    FListenerThread.WaitFor;
-    FreeAndNil(FListenerThread);
+    for LListener in FListenerThreads do
+    begin
+      LListener.WaitFor;
+      LListener.Free;
+    end;
+    FreeAndNil(FListenerThreads);
   end;
 
   {$IF DEFINED(FPC)}

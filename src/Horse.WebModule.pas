@@ -68,11 +68,11 @@ end;
 
 constructor THorseWebModule.Create(AOwner: TComponent);
 begin
-{$IF DEFINED(FPC)}
+  {$IF DEFINED(FPC)}
   inherited CreateNew(AOwner, 0);
-{$ELSE}
+  {$ELSE}
   inherited;
-{$ENDIF}
+  {$ENDIF}
   FHorse := THorseCore.GetInstance;
   FInstance := Self;
 end;
@@ -98,8 +98,10 @@ begin
       FHorse.Routes.Execute(LRequest, LResponse);
     except
       on E: Exception do
+      begin
         if not E.InheritsFrom(EHorseCallbackInterrupted) then
           raise;
+      end;
     end;
   finally
     if LRequest.Body<TObject> = LResponse.Content then

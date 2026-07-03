@@ -161,6 +161,30 @@ end;
 
 For non-trivial apps, keep the route registration centralised in one unit so the layout is obvious from a single file.
 
+## Radix Router (Optional - Extreme Performance)
+
+For large-scale applications or high-performance APIs with hundreds of routes, Horse optionally includes a routing engine based on a **Prefix Tree (Radix Tree)**.
+
+Unlike the default linear router which performs path resolution in $O(N)$ (scanning routes sequentially), the Radix router resolves URLs in $O(K)$, where $K$ is the path string length. This guarantees extreme throughput and constant-time routing performance, regardless of the amount of registered routes in your application.
+
+### Activating the Radix Router
+
+Simply invoke the static class procedure `THorse.UseRadixRouter` at the very beginning of your application setup, before registering any route handlers:
+
+```delphi
+begin
+  THorse.UseRadixRouter;
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+
+  THorse.Listen(9000);
+end.
+```
+
 ## See also
 
 - [Request & Response](./request-response.md) — what you do inside the callback.

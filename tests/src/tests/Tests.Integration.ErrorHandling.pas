@@ -47,13 +47,13 @@ begin
       THorse.Listen(TEST_PORT);
     end).Start;
 
-  Sleep(500);
+  Sleep(2000);
 end;
 
 procedure TTestIntegrationErrorHandling.TearDownFixture;
 begin
   ClearGlobalState;
-  Sleep(100);
+  Sleep(500);
 end;
 
 procedure TTestIntegrationErrorHandling.TestGenericExceptionReturnsHTTP500;

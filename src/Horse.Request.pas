@@ -36,28 +36,30 @@ type
     FSession: TObject;
     FOwnsSession: Boolean;
     FSessions: THorseSessions;
+    FArena: THorseArenaAllocator;
+    FOwnsArena: Boolean;
 { ===========================================================================
-  PATCH-REQ-3 � CrossSocket shadow fields (populated by Populate, nil by default)
+  PATCH-REQ-3  CrossSocket shadow fields (populated by Populate, nil by default)
   =========================================================================== }
     FCSMethod:      string;
     FCSMethodType:  TMethodType;
     FCSPathInfo:    string;
     FCSContentType: string;
     FCSRemoteAddr:  string;
-{ PATCH-REQ-9 � cached decoded body string for the CrossSocket path.
+{ PATCH-REQ-9  cached decoded body string for the CrossSocket path.
   Populated once at populate time by SetBodyString (called from
   TRequestBridge.MapBody); returned directly by Body: string so the stream
   is read and UTF-8-decoded exactly once per request, not on every call. }
     FBodyString:    string;
 { =========================================================================== }
 { ===========================================================================
-  PATCH-REQ-8 � Owned TWebRequest / TRequest adapter for middleware
+  PATCH-REQ-8  Owned TWebRequest / TRequest adapter for middleware
   compatibility on the CrossSocket path.
 
   Problem solved:
     Existing middleware (e.g. Horse.CORS) reads Req.RawWebRequest.Method / .Host /
     .GetFieldByName(...). Before this patch, RawWebRequest returned the raw
-    FWebRequest, which is nil on the CrossSocket path � every such call AV'd.
+    FWebRequest, which is nil on the CrossSocket path  every such call AV'd.
 
   Design:
     The CrossSocket provider's TRequestBridge.Populate constructs a concrete
@@ -65,7 +67,7 @@ type
     backed by ICrossHttpRequest, and hands it to SetCSRawWebRequest. THorseRequest
     OWNS the adapter: Clear and Destroy free it.
 
-  Field stays nil on the Indy path � FWebRequest remains the authoritative source
+  Field stays nil on the Indy path  FWebRequest remains the authoritative source
   there (owned by the Indy provider, as before).
 
   See: Horse.Provider.CrossSocket.WebRequestAdapter.pas
@@ -76,7 +78,7 @@ type
     procedure InitializeParams;
     procedure InitializeContentFields;
     procedure InitializeCookie;
-{ PATCH-COOKIE-2 � RFC 6265 single-pair parser shared by InitializeCookie and
+{ PATCH-COOKIE-2  RFC 6265 single-pair parser shared by InitializeCookie and
   PopulateCookiesFromHeader: split on the FIRST '=' only (values may contain
   '='), trim OWS, strip one layer of surrounding quotes. Adds to FCookie. }
     procedure AddCookiePair(const APair: string);
@@ -97,7 +99,7 @@ type
     function Sessions: THorseSessions; virtual;
     function MethodType: TMethodType; virtual;
 { ===========================================================================
-  PATCH-REQ-10 � Method: string accessor
+  PATCH-REQ-10  Method: string accessor
   Convenience companion to MethodType. TMethodType collapses OPTIONS / TRACE /
   CONNECT into mtAny, so middleware that needs to discriminate by raw verb
   (e.g. OPTIONS preflight handling) cannot use the enum.
@@ -111,11 +113,12 @@ type
 { =========================================================================== }
     function ContentType: string; virtual;
     function Host: string; virtual;
+    property Arena: THorseArenaAllocator read FArena write FArena;
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}); overload;
 { ===========================================================================
-  PATCH-REQ-1 � added parameterless constructor overload
+  PATCH-REQ-1  added parameterless constructor overload
   Reason: THorseContextPool.WarmUp pre-allocates THorseRequest instances at
   application startup, before any HTTP request arrives and before any
   TWebRequest exists. The pool calls this overload; the original constructor
@@ -124,31 +127,31 @@ type
     constructor Create; overload;
 { =========================================================================== }
 { ===========================================================================
-  PATCH-REQ-2 � added Clear procedure
+  PATCH-REQ-2  added Clear procedure
   Reason: THorseContext.Reset recycles pooled objects between requests
   without Free/Create overhead. Rules enforced:
-    � FBody       � freed only when FOwnsBody=True (Jhonson-style owned objects);
+     FBody        freed only when FOwnsBody=True (Jhonson-style owned objects);
                     set to nil when FOwnsBody=False (CrossSocket non-owning buffer ref)
-    � FBodyString � set to '' (cached decoded body; repopulated by MapBody)
-    � FSession    � freed when FOwnsSession=True; set to nil otherwise
-    � FWebRequest � set to nil (belongs to previous Indy context)
-    � param collections � cleared in place, objects reused
+     FBodyString  set to '' (cached decoded body; repopulated by MapBody)
+     FSession     freed when FOwnsSession=True; set to nil otherwise
+     FWebRequest  set to nil (belongs to previous Indy context)
+     param collections  cleared in place, objects reused
   =========================================================================== }
     procedure Clear;
 { =========================================================================== }
 { ===========================================================================
-  PATCH-REQ-3 � added Populate procedure and RemoteAddr function
+  PATCH-REQ-3  added Populate procedure and RemoteAddr function
   Reason: The CrossSocket bridge must inject per-request values directly
   into THorseRequest without a live TWebRequest.  All fields below were
   previously read-only delegations to FWebRequest; they now have private
   shadow fields that are populated here and returned when FWebRequest is nil.
 
   Fields injected via Populate:
-    FCSMethod      � method string ('GET','POST',�)
-    FCSMethodType  � parsed TMethodType
-    FCSPathInfo    � decoded path ('/api/users/1')
-    FCSContentType � Content-Type header value
-    FCSRemoteAddr  � real peer socket address
+    FCSMethod       method string ('GET','POST',)
+    FCSMethodType   parsed TMethodType
+    FCSPathInfo     decoded path ('/api/users/1')
+    FCSContentType  Content-Type header value
+    FCSRemoteAddr   real peer socket address
 
   RemoteAddr is a new public function (no equivalent existed before).
   MethodType, ContentType, PathInfo fall through to the CS fields when
@@ -162,10 +165,11 @@ type
       const ARemoteAddr:  string
     );
     function RemoteAddr: string; virtual;
+    function GetPathSegments: TArray<THorseBufferSlice>;
 { ===========================================================================
-  PATCH-REQ-5 � RawPathInfo
+  PATCH-REQ-5  RawPathInfo
   Returns the undecoded (percent-encoded) request path on the Delphi/Indy
-  path � preserving the exact value THorseRouterTree.Execute previously read
+  path  preserving the exact value THorseRouterTree.Execute previously read
   from ARequest.RawWebRequest.RawPathInfo.
 
   Three execution paths:
@@ -181,7 +185,7 @@ type
   =========================================================================== }
     function RawPathInfo: string; virtual;
 { ===========================================================================
-  PATCH-REQ-4 � PopulateCookiesFromHeader
+  PATCH-REQ-4  PopulateCookiesFromHeader
   Parses the raw "Cookie: name=value; name2=value2" header string into the
   FCookie param collection.  Called by the CrossSocket request bridge after
   Populate() so that Req.Cookie works on the CrossSocket path without any
@@ -190,14 +194,14 @@ type
     procedure PopulateCookiesFromHeader(const ACookieHeader: string);
 { =========================================================================== }
 { ===========================================================================
-  PATCH-REQ-8 � setter for the owned RawWebRequest adapter. Called once per
+  PATCH-REQ-8  setter for the owned RawWebRequest adapter. Called once per
   request by the CrossSocket bridge right after Populate / header / cookie
-  population. Replaces any prior adapter instance (defence in depth �
+  population. Replaces any prior adapter instance (defence in depth 
   Clear normally nils it first).
   =========================================================================== }
     procedure SetCSRawWebRequest(const ARawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 { =========================================================================== }
-{ PATCH-REQ-9 � called by TRequestBridge.MapBody to cache the decoded body. }
+{ PATCH-REQ-9  called by TRequestBridge.MapBody to cache the decoded body. }
     procedure SetBodyString(const AValue: string);
 { =========================================================================== }
     destructor Destroy; override;
@@ -208,17 +212,22 @@ implementation
 uses      
 {$IF DEFINED(FPC)}
   Classes,
+  Generics.Defaults,
 {$ELSE}
   System.Classes,
+  System.Generics.Defaults,
 {$ENDIF}
+  Horse.Utils,
   Horse.Core.Param.Header;
 
+
+
 { ===========================================================================
-  PATCH-REQ-5 / PATCH-REQ-9 � Body: string
+  PATCH-REQ-5 / PATCH-REQ-9  Body: string
   On the CrossSocket path FWebRequest is nil.  PATCH-REQ-9 pre-populates
   FBodyString once at populate time (TRequestBridge.MapBody - SetBodyString)
   so this accessor is O(1) regardless of body size and is safe to call
-  multiple times.  Binary/non-text bodies are not decoded here � callers
+  multiple times.  Binary/non-text bodies are not decoded here  callers
   that need the raw bytes should use Body<TStream>.
   =========================================================================== }
 function THorseRequest.Body: string;
@@ -231,9 +240,9 @@ begin
   Result := FWebRequest.Content;
 end;
 
-{ PATCH-REQ-11 � AOwnsBody controls whether Clear frees FBody on pool recycle.
+{ PATCH-REQ-11  AOwnsBody controls whether Clear frees FBody on pool recycle.
   Default True preserves upstream ownership semantics (Jhonson, etc.).
-  CrossSocket's MapBody passes False � the body is a non-owning reference
+  CrossSocket's MapBody passes False  the body is a non-owning reference
   into CrossSocket's receive buffer that must never be freed by Horse. }
 function THorseRequest.Body(const ABody: TObject; AOwnsBody: Boolean = True): THorseRequest;
 begin
@@ -275,7 +284,7 @@ begin
 end;
 
 { ===========================================================================
-  PATCH-REQ-1 � parameterless constructor implementation
+  PATCH-REQ-1  parameterless constructor implementation
   =========================================================================== }
 constructor THorseRequest.Create;
 begin
@@ -285,12 +294,12 @@ end;
 { =========================================================================== }
 
 { ===========================================================================
-  PATCH-REQ-2 � Clear implementation
+  PATCH-REQ-2  Clear implementation
   THorseCoreParam owns FParams (a TDictionary<string,string>) which is
   exposed via the public Dictionary property. Calling Dictionary.Clear
   wipes all entries in-place without freeing the THorseCoreParam object
   itself, so the next request reuses the same objects with no heap churn.
-  FContent is a lazy TStrings cache inside THorseCoreParam � it is freed
+  FContent is a lazy TStrings cache inside THorseCoreParam  it is freed
   and nil-ed here via FreeAndNil on the param object then recreated by the
   next InitializeXxx call. Because FContent is private to THorseCoreParam
   the cleanest way to reset it is to FreeAndNil the whole THorseCoreParam
@@ -299,19 +308,19 @@ end;
   lazy InitializeXxx pattern (already used everywhere in this class) when
   a full reset including FContent is required.
   Strategy per field:
-    FHeaders      � Dictionary.Clear  (header map reused, no FContent used)
-    FQuery        � FreeAndNil + lazy rebuild via InitializeQuery
-    FParams       � Dictionary.Clear  (route params repopulated by router)
-    FContentFields� FreeAndNil + lazy rebuild via InitializeContentFields
-    FCookie       � FreeAndNil + lazy rebuild via InitializeCookie
-    FSessions     � Clear in-place (PATCH-SES-1); no allocation on hot path
+    FHeaders       Dictionary.Clear  (header map reused, no FContent used)
+    FQuery         FreeAndNil + lazy rebuild via InitializeQuery
+    FParams        Dictionary.Clear  (route params repopulated by router)
+    FContentFields FreeAndNil + lazy rebuild via InitializeContentFields
+    FCookie        FreeAndNil + lazy rebuild via InitializeCookie
+    FSessions      Clear in-place (PATCH-SES-1); no allocation on hot path
   =========================================================================== }
 procedure THorseRequest.Clear;
 begin
   FWebRequest := nil;
-  { PATCH-REQ-11 � respect body ownership.
-    FOwnsBody=True  - owned object (e.g. Jhonson JSON) � free it.
-    FOwnsBody=False - non-owning ref (CrossSocket buffer) � just nil. }
+  { PATCH-REQ-11  respect body ownership.
+    FOwnsBody=True  - owned object (e.g. Jhonson JSON)  free it.
+    FOwnsBody=False - non-owning ref (CrossSocket buffer)  just nil. }
   if FOwnsBody and Assigned(FBody) then
     FreeAndNil(FBody)
   else
@@ -320,8 +329,8 @@ begin
 
   FBodyString := '';    { PATCH-REQ-9 }
 
-  { PATCH-REQ-10 - libera sess�o owned antes de reutilizar o request.
-    No provider mORMot o THorseRequest � reaproveitado pelo pool; apenas
+  { PATCH-REQ-10 - libera sesso owned antes de reutilizar o request.
+    No provider mORMot o THorseRequest  reaproveitado pelo pool; apenas
     zerar FSession deixa o objeto anterior sem dono e causa vazamento. }
   if FOwnsSession and Assigned(FSession) then
     FreeAndNil(FSession)
@@ -329,28 +338,31 @@ begin
     FSession := nil;
   FOwnsSession := False;
 
-{ PATCH-REQ-3 � wipe shadow fields so next request starts clean }
+{ PATCH-REQ-3  wipe shadow fields so next request starts clean }
   FCSMethod      := '';
   FCSMethodType  := mtAny;
   FCSPathInfo    := '';
   FCSContentType := '';
   FCSRemoteAddr  := '';
 { end PATCH-REQ-3 }
-{ PATCH-REQ-8 � free the per-request TWebRequest adapter (owned).
+{ PATCH-REQ-8  free the per-request TWebRequest adapter (owned).
   Nil on the Indy path (never assigned there); owned on CrossSocket path. }
   if Assigned(FCSRawWebRequest) then
     FreeAndNil(FCSRawWebRequest);
 { end PATCH-REQ-8 }
+  if FOwnsArena and Assigned(FArena) then
+    FreeAndNil(FArena);
+  FOwnsArena := False;
   if Assigned(FHeaders) then
-    FHeaders.Clear;
+    FreeAndNil(FHeaders);
   if Assigned(FQuery) then
-    FQuery.Clear;
+    FreeAndNil(FQuery);
   if Assigned(FParams) then
-    FParams.Clear;
+    FreeAndNil(FParams);
   if Assigned(FContentFields) then
-    FContentFields.Clear;
+    FreeAndNil(FContentFields);
   if Assigned(FCookie) then
-    FCookie.Clear;
+    FreeAndNil(FCookie);
 { PATCH-SES-1 � reuse the existing THorseSessions object across pool recycles.
   THorseSessions.Clear calls TObjectDictionary.Clear which frees owned TSession
   values before emptying the map � no allocation on the hot path. }
@@ -386,6 +398,8 @@ begin
   if Assigned(FCSRawWebRequest) then
     FCSRawWebRequest.Free;
 { end PATCH-REQ-8 }
+  if FOwnsArena and Assigned(FArena) then
+    FreeAndNil(FArena);
   inherited;
 end;
 
@@ -401,7 +415,7 @@ begin
   create an empty param rather than crashing on GetHeaders(nil). }
     if not Assigned(FWebRequest) then
     begin
-      FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False);
+      FHeaders := THorseCoreParam.Create(THorseList.Create({$IFDEF FPC}THorseHeaderComparer.Create{$ELSE}TIStringComparer.Ordinal{$ENDIF})).Required(False);
       Exit(FHeaders);
     end;
 { end PATCH-REQ-3 }
@@ -601,10 +615,8 @@ begin
       LKey := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      if Pos('%', LKey) > 0 then
-        LKey := HTTPDecode(LKey);
-      if Pos('%', LValue) > 0 then
-        LValue := HTTPDecode(LValue);
+      LKey := DecodeParam(LKey);
+      LValue := DecodeParam(LValue);
         
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, LValue)
@@ -614,8 +626,7 @@ begin
     else
     begin
       LKey := Copy(LQuery, LStart, I - LStart);
-      if Pos('%', LKey) > 0 then
-        LKey := HTTPDecode(LKey);
+      LKey := DecodeParam(LKey);
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, '');
     end;
@@ -660,14 +671,13 @@ end;
 
 function THorseRequest.MethodType: TMethodType;
 begin
-{ PATCH-REQ-3 � nil-guard: return shadow field when FWebRequest is nil }
+{ PATCH-REQ-3 }
   if not Assigned(FWebRequest) then
     Exit(FCSMethodType);
-{ end PATCH-REQ-3 }
-  Result := {$IF DEFINED(FPC)}StringCommandToMethodType(FWebRequest.Method); {$ELSE}FWebRequest.MethodType; {$ENDIF}
+  Result := TMethodType.FromString(FWebRequest.Method);
 end;
 
-{ PATCH-REQ-10 � Method: string }
+{ PATCH-REQ-10  Method: string }
 function THorseRequest.Method: string;
 begin
   if not Assigned(FWebRequest) then
@@ -753,7 +763,7 @@ begin
   // never reaches THorseCoreParamHeader.GetHeaders(nil).
   // The bridge then populates it via FHeaders.Dictionary.AddOrSetValue.
   if not Assigned(FHeaders) then
-    FHeaders := THorseCoreParam.Create(THorseList.Create).Required(False)
+    FHeaders := THorseCoreParam.Create(THorseList.Create({$IFDEF FPC}THorseHeaderComparer.Create{$ELSE}TIStringComparer.Ordinal{$ENDIF})).Required(False)
   else
     FHeaders.Clear;
 end;
@@ -775,6 +785,76 @@ begin
 {$ELSE}
   Result := FWebRequest.RawPathInfo;
 {$ENDIF}
+end;
+
+function THorseRequest.GetPathSegments: TArray<THorseBufferSlice>;
+var
+  LPath: string;
+  LPathLen: Integer;
+  LByteCount: Integer;
+  LBytes: TBytes;
+  LTempBytes: TBytes;
+  LSlice: THorseBufferSlice;
+  LStartOffset: Integer;
+  I, LLen: Integer;
+  LStart, LCount: Integer;
+begin
+  LPath := RawPathInfo;
+  LPathLen := Length(LPath);
+  if LPathLen = 0 then
+    Exit(nil);
+
+  if FArena = nil then
+  begin
+    FArena := THorseArenaAllocator.Create(64 * 1024);
+    FOwnsArena := True;
+  end;
+
+{$IF DEFINED(FPC)}
+  LByteCount := Length(LPath);
+  LSlice := FArena.Allocate(LByteCount);
+  LBytes := LSlice.Buffer;
+  LStartOffset := LSlice.Start;
+  if LByteCount > 0 then
+    Move(Pointer(LPath)^, LBytes[LStartOffset], LByteCount);
+{$ELSE}
+  LTempBytes := TEncoding.UTF8.GetBytes(LPath);
+  LByteCount := Length(LTempBytes);
+  LSlice := FArena.Allocate(LByteCount);
+  LBytes := LSlice.Buffer;
+  LStartOffset := LSlice.Start;
+  if LByteCount > 0 then
+    Move(LTempBytes[0], LBytes[LStartOffset], LByteCount);
+{$ENDIF}
+
+  SetLength(Result, 0);
+  LStart := LStartOffset;
+  LCount := 0;
+
+  I := LStartOffset;
+  while I < LStartOffset + LByteCount do
+  begin
+    if LBytes[I] = 47 then // '/'
+    begin
+      LLen := I - LStart;
+      if (LLen > 0) or (LStart = LStartOffset) then
+      begin
+        Inc(LCount);
+        SetLength(Result, LCount);
+        Result[LCount - 1] := THorseBufferSlice.Create(LBytes, LStart, LLen);
+      end;
+      LStart := I + 1;
+    end;
+    Inc(I);
+  end;
+
+  LLen := (LStartOffset + LByteCount) - LStart;
+  if LLen > 0 then
+  begin
+    Inc(LCount);
+    SetLength(Result, LCount);
+    Result[LCount - 1] := THorseBufferSlice.Create(LBytes, LStart, LLen);
+  end;
 end;
 { =========================================================================== }
 
@@ -827,6 +907,7 @@ begin
   if Assigned(FCSRawWebRequest) and (FCSRawWebRequest <> ARawWebRequest) then
     FreeAndNil(FCSRawWebRequest);
   FCSRawWebRequest := ARawWebRequest;
+  FWebRequest := ARawWebRequest;
 end;
 { =========================================================================== }
 

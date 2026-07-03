@@ -17,9 +17,7 @@ uses
 {$ENDIF}
 
 type
-{$IF DEFINED(FPC)}
-  TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch);
-{$ENDIF}
+  TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch, mtQuery);
 
 {$SCOPEDENUMS ON}
   THTTPStatus = (
@@ -113,11 +111,67 @@ type
 
   TLhsBrackets = set of TLhsBracketsType;
 
+{$IF DEFINED(FPC)}
+  THorseBufferSlice = record
+  private
+    FBuffer: TBytes;
+    FStart: Integer;
+    FLen: Integer;
+  public
+    class function Create(const ABuffer: TBytes; const AStart, ALen: Integer): THorseBufferSlice; static;
+    class function Empty: THorseBufferSlice; static;
+    function ToString: string;
+    function Compare(const AText: string; ACaseInsensitive: Boolean = True): Boolean; overload;
+    function Compare(const AOther: THorseBufferSlice; ACaseInsensitive: Boolean = True): Boolean; overload;
+    function CompareBytes(const ABytes: TBytes; const AStart, ALen: Integer; ACaseInsensitive: Boolean = True): Boolean;
+    function SubSlice(const AStartOffset, ALen: Integer): THorseBufferSlice;
+    function IndexOf(const AByte: Byte; const AOffset: Integer = 0): Integer;
+    property Buffer: TBytes read FBuffer;
+    property Start: Integer read FStart;
+    property Len: Integer read FLen;
+    function IsEmpty: Boolean;
+  end;
+{$ELSE}
+  THorseBufferSlice = record
+  private
+    FBuffer: TBytes;
+    FStart: Integer;
+    FLen: Integer;
+    function GetIsEmpty: Boolean; inline;
+  public
+    class function Create(const ABuffer: TBytes; const AStart, ALen: Integer): THorseBufferSlice; static;
+    class function Empty: THorseBufferSlice; static;
+    function ToString: string;
+    function Compare(const AText: string; ACaseInsensitive: Boolean = True): Boolean; overload;
+    function Compare(const AOther: THorseBufferSlice; ACaseInsensitive: Boolean = True): Boolean; overload;
+    function CompareBytes(const ABytes: TBytes; const AStart, ALen: Integer; ACaseInsensitive: Boolean = True): Boolean;
+    function SubSlice(const AStartOffset, ALen: Integer): THorseBufferSlice;
+    function IndexOf(const AByte: Byte; const AOffset: Integer = 0): Integer;
+    property Buffer: TBytes read FBuffer;
+    property Start: Integer read FStart;
+    property Len: Integer read FLen;
+    property IsEmpty: Boolean read GetIsEmpty;
+  end;
+{$ENDIF}
+
+  THorseArenaAllocator = class
+  private
+    FBuffer: TBytes;
+    FOffset: Integer;
+    FSize: Integer;
+  public
+    constructor Create(ASize: Integer);
+    destructor Destroy; override;
+    function Allocate(ALen: Integer): THorseBufferSlice;
+    procedure Reset;
+  end;
+
   THTTPStatusHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for THTTPStatus
     function ToInteger: Integer;
   end;
 
   TMethodTypeHelper = {$IF DEFINED(FPC)} type {$ELSE} record {$ENDIF} helper for TMethodType
+    class function FromString(const AMethod: string): TMethodType; static;
     function ToString: string;
   end;
 
@@ -129,9 +183,7 @@ type
     function ToString: string;
   end;
 
-{$IF DEFINED(FPC)}
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-{$ENDIF}
+
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
@@ -144,26 +196,7 @@ uses
   System.RegularExpressions;    
 {$ENDIF}
 
-{$IF DEFINED(FPC)}
-function StringCommandToMethodType(const ACommand: string): TMethodType;
-begin
-  Result := TMethodType.mtAny;
-  case AnsiIndexText(ACommand, ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST', 'PUT']) of
-    0:
-      Result := TMethodType.mtDelete;
-    1:
-      Result := TMethodType.mtGet;
-    2:
-      Result := TMethodType.mtHead;
-    3:
-      Result := TMethodType.mtPatch;
-    4:
-      Result := TMethodType.mtPost;
-    5:
-      Result := TMethodType.mtPut;
-  end;
-end;
-{$ENDIF}
+
 
 function MatchRoute(const AText: string; const AValues: array of string): Boolean;
 
@@ -301,6 +334,28 @@ end;
 
 { TMethodTypeHelper }
 
+class function TMethodTypeHelper.FromString(const AMethod: string): TMethodType;
+var
+  LMethod: string;
+begin
+  Result := mtAny;
+  LMethod := UpperCase(AMethod);
+  if LMethod = 'GET' then
+    Result := mtGet
+  else if LMethod = 'POST' then
+    Result := mtPost
+  else if LMethod = 'PUT' then
+    Result := mtPut
+  else if LMethod = 'PATCH' then
+    Result := mtPatch
+  else if LMethod = 'DELETE' then
+    Result := mtDelete
+  else if LMethod = 'HEAD' then
+    Result := mtHead
+  else if LMethod = 'QUERY' then
+    Result := mtQuery;
+end;
+
 function TMethodTypeHelper.ToString: string;
 begin
   case Self of
@@ -318,7 +373,285 @@ begin
       Result := 'Delete';
     mtPatch:
       Result := 'Patch';
+    mtQuery:
+      Result := 'Query';
   end;
+end;
+
+{ THorseBufferSlice }
+
+{$IF DEFINED(FPC)}
+class function THorseBufferSlice.Create(const ABuffer: TBytes; const AStart, ALen: Integer): THorseBufferSlice;
+begin
+  Result.FBuffer := ABuffer;
+  Result.FStart := AStart;
+  Result.FLen := ALen;
+end;
+
+class function THorseBufferSlice.Empty: THorseBufferSlice;
+begin
+  Result.FBuffer := nil;
+  Result.FStart := 0;
+  Result.FLen := 0;
+end;
+
+function THorseBufferSlice.ToString: string;
+begin
+  if FLen <= 0 then
+    Result := ''
+  else
+    Result := TEncoding.UTF8.GetString(FBuffer, FStart, FLen);
+end;
+
+function THorseBufferSlice.Compare(const AText: string; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if Length(AText) <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := Ord(AText[I + 1]);
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.Compare(const AOther: THorseBufferSlice; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if AOther.FLen <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := AOther.FBuffer[AOther.FStart + I];
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.CompareBytes(const ABytes: TBytes; const AStart, ALen: Integer; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if ALen <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := ABytes[AStart + I];
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.SubSlice(const AStartOffset, ALen: Integer): THorseBufferSlice;
+begin
+  if (AStartOffset < 0) or (AStartOffset + ALen > FLen) then
+    raise ERangeError.Create('SubSlice range index out of bounds');
+  Result.FBuffer := FBuffer;
+  Result.FStart := FStart + AStartOffset;
+  Result.FLen := ALen;
+end;
+
+function THorseBufferSlice.IndexOf(const AByte: Byte; const AOffset: Integer): Integer;
+var
+  I: Integer;
+begin
+  Result := -1;
+  for I := AOffset to FLen - 1 do
+  begin
+    if FBuffer[FStart + I] = AByte then
+      Exit(I);
+  end;
+end;
+
+function THorseBufferSlice.IsEmpty: Boolean;
+begin
+  Result := (FLen <= 0) or (FBuffer = nil);
+end;
+{$ELSE}
+class function THorseBufferSlice.Create(const ABuffer: TBytes; const AStart, ALen: Integer): THorseBufferSlice;
+begin
+  Result.FBuffer := ABuffer;
+  Result.FStart := AStart;
+  Result.FLen := ALen;
+end;
+
+class function THorseBufferSlice.Empty: THorseBufferSlice;
+begin
+  Result.FBuffer := nil;
+  Result.FStart := 0;
+  Result.FLen := 0;
+end;
+
+function THorseBufferSlice.GetIsEmpty: Boolean;
+begin
+  Result := (FLen <= 0) or (FBuffer = nil);
+end;
+
+function THorseBufferSlice.ToString: string;
+begin
+  if FLen <= 0 then
+    Result := ''
+  else
+    Result := TEncoding.UTF8.GetString(FBuffer, FStart, FLen);
+end;
+
+function THorseBufferSlice.Compare(const AText: string; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if Length(AText) <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := Ord(AText[I + 1]);
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.Compare(const AOther: THorseBufferSlice; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if AOther.FLen <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := AOther.FBuffer[AOther.FStart + I];
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.CompareBytes(const ABytes: TBytes; const AStart, ALen: Integer; ACaseInsensitive: Boolean): Boolean;
+var
+  I: Integer;
+  B1, B2: Byte;
+begin
+  if ALen <> FLen then
+    Exit(False);
+  if FLen = 0 then
+    Exit(True);
+  for I := 0 to FLen - 1 do
+  begin
+    B1 := FBuffer[FStart + I];
+    B2 := ABytes[AStart + I];
+    if ACaseInsensitive then
+    begin
+      if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+      if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+    end;
+    if B1 <> B2 then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
+function THorseBufferSlice.SubSlice(const AStartOffset, ALen: Integer): THorseBufferSlice;
+begin
+  if (AStartOffset < 0) or (AStartOffset + ALen > FLen) then
+    raise ERangeError.Create('SubSlice range index out of bounds');
+  Result.FBuffer := FBuffer;
+  Result.FStart := FStart + AStartOffset;
+  Result.FLen := ALen;
+end;
+
+function THorseBufferSlice.IndexOf(const AByte: Byte; const AOffset: Integer): Integer;
+var
+  I: Integer;
+begin
+  Result := -1;
+  for I := AOffset to FLen - 1 do
+  begin
+    if FBuffer[FStart + I] = AByte then
+      Exit(I);
+  end;
+end;
+{$ENDIF}
+
+{ THorseArenaAllocator }
+
+constructor THorseArenaAllocator.Create(ASize: Integer);
+begin
+  inherited Create;
+  FSize := ASize;
+  SetLength(FBuffer, FSize);
+  FOffset := 0;
+end;
+
+destructor THorseArenaAllocator.Destroy;
+begin
+  FBuffer := nil;
+  inherited;
+end;
+
+function THorseArenaAllocator.Allocate(ALen: Integer): THorseBufferSlice;
+begin
+  if FOffset + ALen > FSize then
+  begin
+    FSize := (FOffset + ALen) * 2;
+    SetLength(FBuffer, FSize);
+  end;
+  Result := THorseBufferSlice.Create(FBuffer, FOffset, ALen);
+  FOffset := FOffset + ALen;
+end;
+
+procedure THorseArenaAllocator.Reset;
+begin
+  FOffset := 0;
 end;
 
 end.

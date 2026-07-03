@@ -7,13 +7,20 @@ unit Horse.Core.Route.Contract;
 interface
 
 uses
+  {$IF DEFINED(FPC)}
+  Generics.Collections,
+  {$ENDIF}
   Horse.Callback;
 
 type
   IHorseCoreRoute<T: class> = interface
     ['{8D593D98-44B3-4FD2-A21B-BA29F784B3AA}']
     function AddCallback(const ACallback: THorseCallback): IHorseCoreRoute<T>;
+    {$IF DEFINED(FPC)}
+    function AddCallbacks(const ACallbacks: TList<THorseCallback>): IHorseCoreRoute<T>;
+    {$ELSE}
     function AddCallbacks(const ACallbacks: TArray<THorseCallback>): IHorseCoreRoute<T>;
+    {$ENDIF}
     function All(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(const AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(const ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
