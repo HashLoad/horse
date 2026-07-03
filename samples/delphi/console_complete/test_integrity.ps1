@@ -97,6 +97,28 @@ function Run-IntegrityTest($RouterName, $Define) {
         $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9085/qualquercoisa"
         Assert-Response "GET /qualquercoisa (Cai no Wildcard)" $res "coringao"
 
+        # Testes de Integridade da issue #357 (Group + Route + End + Put)
+        # 1. DELETE /api/test1/123
+        $res = Invoke-RestMethod -Method Delete -Uri "http://localhost:9085/api/test1/123"
+        Assert-Response "DELETE /api/test1/:id (Group Delete)" $res "delete1"
+
+        # 2. GET /api/test2 (dentro do Route)
+        $res = Invoke-RestMethod -Method Get -Uri "http://localhost:9085/api/test2"
+        Assert-Response "GET /api/test2 (Group Route Get)" $res "get2"
+
+        # 3. POST /api/test2 (dentro do Route)
+        $res = Invoke-RestMethod -Method Post -Uri "http://localhost:9085/api/test2"
+        Assert-Response "POST /api/test2 (Group Route Post)" $res "post2"
+
+        # 4. PUT /api/teste3 (apos o &End do Route no mesmo grupo)
+        try {
+            $res = Invoke-RestMethod -Method Put -Uri "http://localhost:9085/api/teste3"
+            Assert-Response "PUT /api/teste3 (Group Route End Put)" $res "put3"
+        } catch {
+            Write-Host "  [FALHA] PUT /api/teste3 falhou com erro HTTP (esperado no bug #357)" -ForegroundColor Red
+            $global:errors++
+        }
+
         # Teste de Resiliencia: Access Violation Simulado (esperamos HTTP 500 sem cair o servidor)
         try {
             $resErr = curl.exe -s -i "http://localhost:9085/av-trigger"

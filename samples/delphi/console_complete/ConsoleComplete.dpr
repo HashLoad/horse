@@ -121,6 +121,31 @@ begin
       Res.Send('pessoas');
     end);
 
+  // Teste de integridade para a issue #357 (Group + Route + End + Put)
+  THorse.Group.Prefix('/api')
+    .Delete('/test1/:id',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        Res.Send('delete1');
+      end)
+    .Route('/test2')
+      .Get(
+        procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+        begin
+          Res.Send('get2');
+        end)
+      .Post(
+        procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+        begin
+          Res.Send('post2');
+        end)
+    .&End
+    .Put('/teste3',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        Res.Send('put3');
+      end);
+
   // 12. GET * -> Rota wildcard genérica (coringão)
   THorse.Get('*',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
