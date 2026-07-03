@@ -170,12 +170,17 @@ begin
   LAcceptable := nil;
   for LPair in FRoute do
   begin
-    if LCurrent.Compare(LPair.Key) or (LPair.Key = '*') then
+    if (LPair.Key <> '*') and LCurrent.Compare(LPair.Key) then
     begin
       LAcceptable := LPair.Value;
       LFound := True;
       Break;
     end;
+  end;
+
+  if not LFound then
+  begin
+    LFound := FRoute.TryGetValue('*', LAcceptable);
   end;
 
   if (not LFound) then
