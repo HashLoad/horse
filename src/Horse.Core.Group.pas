@@ -24,7 +24,11 @@ type
   public
     constructor Create;
     function Prefix(const APrefix: string): IHorseCoreGroup<T>;
+    {$IF DEFINED(FPC)}
+    function Route(const APath: string): IHorseCoreRoute<T>;
+    {$ELSE}
     function Route(const APath: string): IHorseCoreRoute<IHorseCoreGroup<T>>;
+    {$ENDIF}
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
     {$IF DEFINED(FPC)}
     function AddCallbacks(const ACallbacks: TList<THorseCallback>): IHorseCoreGroup<T>;
@@ -82,6 +86,7 @@ type
     function &End: T;
   end;
 
+  {$IFNDEF FPC}
   THorseCoreGroupRoute<T: THorseCoreBase> = class(TInterfacedObject, IHorseCoreRoute<IHorseCoreGroup<T>>)
   private
     FPath: string;
@@ -139,6 +144,7 @@ type
     {$ENDIF}
     function &End: IHorseCoreGroup<T>;
   end;
+  {$ENDIF}
 
 implementation
 
@@ -300,10 +306,17 @@ begin
   FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
+{$IF DEFINED(FPC)}
+function THorseCoreGroup<T>.Route(const APath: string): IHorseCoreRoute<T>;
+begin
+  Result := THorseCoreBase(FHorseCore).BaseRoute(NormalizePath(APath)) as IHorseCoreRoute<T>;
+end;
+{$ELSE}
 function THorseCoreGroup<T>.Route(const APath: string): IHorseCoreRoute<IHorseCoreGroup<T>>;
 begin
   Result := THorseCoreGroupRoute<T>.Create(Self, FHorseCore, NormalizePath(APath));
 end;
+{$ENDIF}
 
 function THorseCoreGroup<T>.Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
@@ -413,6 +426,7 @@ begin
   THorseCoreBase(FHorseCore).BasePost(NormalizePath(APath), ACallback);
 end;
 
+{$IFNDEF FPC}
 { THorseCoreGroupRoute<T> }
 
 constructor THorseCoreGroupRoute<T>.Create(const AGroup: IHorseCoreGroup<T>; const AHorseCore: T; const APath: string);
@@ -639,5 +653,6 @@ function THorseCoreGroupRoute<T>.&End: IHorseCoreGroup<T>;
 begin
   Result := FGroup;
 end;
+{$ENDIF}
 
 end.
