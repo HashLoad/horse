@@ -1,4 +1,4 @@
-unit Horse.Provider.IOCP;
+﻿unit Horse.Provider.IOCP;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -849,7 +849,7 @@ var
   LReadCount: Integer;
   LPair: TPair<string, string>;
 begin
-  if AHeadersList <> nil then
+  if Assigned(AHeadersList) then
   begin
     {$IFDEF FPC}
     for LReadCount := 0 to AHeadersList.Count - 1 do
@@ -910,7 +910,7 @@ begin
   else FStatusReason := 'HTTP Response';
 
   LHeadersList := ARes.CustomHeaders;
-  if LHeadersList <> nil then
+  if Assigned(LHeadersList) then
   begin
     {$IFDEF FPC}
     for LStatusCode := 0 to LHeadersList.Count - 1 do
@@ -1045,7 +1045,7 @@ end;
 
 procedure THorseIocpWorker.CloseConnection(AContext: TIocpConnectionContext);
 begin
-  if AContext = nil then Exit;
+  if not Assigned(AContext) then Exit;
   if InterlockedExchange(AContext.Closed, 1) = 0 then
   begin
     FConnectionsSync.Enter;
@@ -1233,7 +1233,7 @@ begin
     pOverlap := nil;
     LResult := GetQueuedCompletionStatus(FIocpHandle, dwBytes, dwKey, pOverlap, 500);
 
-    if pOverlap <> nil then
+    if Assigned(pOverlap) then
     begin
       LOverlap := PIocpOverlapped(pOverlap);
       LContext := TIocpConnectionContext(LOverlap.Context);

@@ -1,4 +1,4 @@
-unit Horse.Mime;
+﻿unit Horse.Mime;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -116,11 +116,11 @@ end;
 
 class function THorseMimeTypesExt.GetDefault: THorseMimeTypesExt;
 begin
-  if FInstance = nil then
+  if not Assigned(FInstance) then
   begin
     FLock.Enter;
     try
-      if FInstance = nil then
+      if not Assigned(FInstance) then
       begin
         FInstance := THorseMimeTypesExt.Create;
         FInstance.InitializeFileType;

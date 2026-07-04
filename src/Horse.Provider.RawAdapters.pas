@@ -1,4 +1,4 @@
-unit Horse.Provider.RawAdapters;
+﻿unit Horse.Provider.RawAdapters;
 
 {
   Horse Provider Raw Adapters
@@ -205,7 +205,7 @@ end;
 
 function TInterfacedWebRequest.GetStringVariable(Index: Integer): string;
 begin
-  if FRawReq = nil then Exit('');
+  if not Assigned(FRawReq) then Exit('');
   case Index of
     HRV_Method:           Result := FRawReq.GetMethod;
     HRV_ProtocolVersion:  Result := FRawReq.GetProtocolVersion;
@@ -252,7 +252,7 @@ function TInterfacedWebRequest.GetIntegerVariable(Index: Integer): Int64;
 function TInterfacedWebRequest.GetIntegerVariable(Index: Integer): Integer;
 {$IFEND}
 begin
-  if FRawReq = nil then Exit(-1);
+  if not Assigned(FRawReq) then Exit(-1);
   case Index of
     HRV_ContentLength:  Result := FRawReq.GetContentLength;
     HRV_ServerPort:     Result := FRawReq.GetServerPort;

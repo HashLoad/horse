@@ -603,7 +603,7 @@ end;
 
 procedure THttpSysBufferPool.Release(var ABuffer: TBytes);
 begin
-  if ABuffer = nil then Exit;
+  if not Assigned(ABuffer) then Exit;
   FSync.Acquire;
   try
     if (FBuffers.Count < 1000) and (Length(ABuffer) <= 65536) then
@@ -840,7 +840,7 @@ var
   LContentLength: Int64;
   LChunkLength: ULONG;
 begin
-  if FBodyStream <> nil then Exit;
+  if Assigned(FBodyStream) then Exit;
 
   LContentLength := GetContentLength;
 
@@ -858,14 +858,14 @@ begin
 
   try
     // 1. Copy initial body chunk if any
-    if (FRequest.EntityChunkCount > 0) and (FRequest.pEntityChunks <> nil) then
+    if (FRequest.EntityChunkCount > 0) and Assigned(FRequest.pEntityChunks) then
     begin
       PChunk := PHTTP_DATA_CHUNK_INMEMORY(FRequest.pEntityChunks);
       for I := 0 to FRequest.EntityChunkCount - 1 do
       begin
         if PChunk.DataChunkType = hctFromMemory then
         begin
-          if (PChunk.pBuffer <> nil) and (PChunk.BufferLength > 0) then
+          if Assigned(PChunk.pBuffer) and (PChunk.BufferLength > 0) then
           begin
             LChunkLength := PChunk.BufferLength;
 
@@ -974,7 +974,7 @@ begin
     HttpVerbTRACE: Result := 'TRACE';
     HttpVerbCONNECT: Result := 'CONNECT';
   else
-    if FRequest.pUnknownVerb <> nil then
+    if Assigned(FRequest.pUnknownVerb) then
       SetString(Result, PAnsiChar(FRequest.pUnknownVerb), FRequest.UnknownVerbLength)
     else
       Result := 'GET';
@@ -995,7 +995,7 @@ end;
 
 function THttpSysRawRequest.GetURL: string;
 begin
-  if FRequest.pRawUrl <> nil then
+  if Assigned(FRequest.pRawUrl) then
     SetString(Result, PAnsiChar(FRequest.pRawUrl), FRequest.RawUrlLength)
   else
     Result := '/';
@@ -1003,7 +1003,7 @@ end;
 
 function THttpSysRawRequest.GetPathInfo: string;
 begin
-  if FRequest.CookedUrl.pAbsPath <> nil then
+  if Assigned(FRequest.CookedUrl.pAbsPath) then
     SetString(Result, FRequest.CookedUrl.pAbsPath, FRequest.CookedUrl.AbsPathLength div SizeOf(WideChar))
   else
     Result := '/';
@@ -1011,7 +1011,7 @@ end;
 
 function THttpSysRawRequest.GetQueryString: string;
 begin
-  if FRequest.CookedUrl.pQueryString <> nil then
+  if Assigned(FRequest.CookedUrl.pQueryString) then
     SetString(Result, FRequest.CookedUrl.pQueryString, FRequest.CookedUrl.QueryStringLength div SizeOf(WideChar))
   else
     Result := '';
@@ -1020,7 +1020,7 @@ end;
 function THttpSysRawRequest.GetHost: string;
 begin
   Result := GetFieldByName('Host');
-  if (Result = '') and (FRequest.CookedUrl.pHost <> nil) then
+  if (Result = '') and Assigned(FRequest.CookedUrl.pHost) then
     SetString(Result, FRequest.CookedUrl.pHost, FRequest.CookedUrl.HostLength div SizeOf(WideChar));
 end;
 
@@ -1029,7 +1029,7 @@ var
   LFamily: Word;
   LIPv4: PSockAddrIn;
 begin
-  if FRequest.Address.pRemoteAddress = nil then
+  if not Assigned(FRequest.Address.pRemoteAddress) then
     Exit('127.0.0.1');
 
   LFamily := PWord(FRequest.Address.pRemoteAddress)^;
@@ -1047,7 +1047,7 @@ var
   LFamily: Word;
   LIPv4: PSockAddrIn;
 begin
-  if FRequest.Address.pLocalAddress = nil then
+  if not Assigned(FRequest.Address.pLocalAddress) then
     Exit(80);
 
   LFamily := PWord(FRequest.Address.pLocalAddress)^;
@@ -1102,7 +1102,7 @@ var
   I: Integer;
   LAnsiName: AnsiString;
 begin
-  if FHeadersCache <> nil then
+  if Assigned(FHeadersCache) then
   begin
     if FHeadersCache.TryGetValue(AName, Result) then
       Exit;
@@ -1115,7 +1115,7 @@ begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
     begin
       SetString(Result, PAnsiChar(FRequest.Headers.KnownHeaders[LIndex].pRawValue), FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
-      if FHeadersCache = nil then
+      if not Assigned(FHeadersCache) then
       begin
         {$IF DEFINED(FPC)}
         FHeadersCache := TDictionary<string, string>.Create;
@@ -1128,7 +1128,7 @@ begin
     end;
   end;
 
-  if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
+  if (FRequest.Headers.UnknownHeaderCount > 0) and Assigned(FRequest.Headers.pUnknownHeaders) then
   begin
     LAnsiName := AnsiString(AName);
     for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
@@ -1138,7 +1138,7 @@ begin
         if (NameLength = Length(LAnsiName)) and AnsiStrEqualNoCase(pName, PAnsiChar(LAnsiName), NameLength) then
         begin
           SetString(Result, pRawValue, RawValueLength);
-          if FHeadersCache = nil then
+          if not Assigned(FHeadersCache) then
           begin
             {$IF DEFINED(FPC)}
             FHeadersCache := TDictionary<string, string>.Create;
@@ -1153,7 +1153,7 @@ begin
     end;
   end;
 
-  if FHeadersCache = nil then
+  if not Assigned(FHeadersCache) then
   begin
     {$IF DEFINED(FPC)}
     FHeadersCache := TDictionary<string, string>.Create;
@@ -1373,7 +1373,7 @@ begin
 
   // Set Custom Headers
   LHeadersList := ARes.CustomHeaders;
-  if LHeadersList <> nil then
+  if Assigned(LHeadersList) then
     LHeaderCount := LHeadersList.Count
   else
     LHeaderCount := 0;
@@ -1723,7 +1723,7 @@ begin
     else
     begin
       LRequestId := 0;
-      if LBuffer <> nil then
+      if Assigned(LBuffer) then
         THorseProviderHttpSys.BufferPool.Release(LBuffer);
       if (LRet = 1229) or (LRet = ERROR_CONNECTION_INVALID) then // 1229 = ERROR_CONNECTION_INVALID
         // Connection lost, continue
@@ -1731,7 +1731,7 @@ begin
         Break;
     end;
   end;
-  if LBuffer <> nil then
+  if Assigned(LBuffer) then
     THorseProviderHttpSys.BufferPool.Release(LBuffer);
 end;
 
@@ -1917,7 +1917,7 @@ begin
   FRunning := False;
 
   // Signal and stop listener thread
-  if FListenerThread <> nil then
+  if Assigned(FListenerThread) then
   begin
     FListenerThread.Running := False;
     FListenerThread.Terminate;
@@ -1930,7 +1930,7 @@ begin
     FReqQueue := 0;
   end;
 
-  if FListenerThread <> nil then
+  if Assigned(FListenerThread) then
   begin
     FListenerThread.WaitFor;
     FreeAndNil(FListenerThread);

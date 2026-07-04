@@ -1,4 +1,4 @@
-unit Horse.Exception;
+﻿unit Horse.Exception;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -99,7 +99,7 @@ end;
 {$ELSE}
 function EHorseException.Custom<V>(const AKey: String; AValue: V): EHorseException;
 begin
-  if FCustomFields = nil then
+  if not Assigned(FCustomFields) then
     FCustomFields := TDictionary<String, String>.Create();
 
   FCustomFields.AddOrSetValue(AKey, TValue.From<V>(AValue).ToString());
@@ -239,7 +239,7 @@ begin
   if not FDetail.Trim.IsEmpty then
     Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('detail', FDetail);
 
-  if FCustomFields <> nil then
+  if Assigned(FCustomFields) then
   begin
     for FieldEntry in FCustomFields do
       Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}(FieldEntry.Key, FieldEntry.Value);
@@ -249,7 +249,7 @@ end;
 
 destructor EHorseException.Destroy;
 begin
-  if FCustomFields <> nil then
+  if Assigned(FCustomFields) then
     FCustomFields.Free();
   inherited;
 end;

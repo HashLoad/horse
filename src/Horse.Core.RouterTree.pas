@@ -1,4 +1,4 @@
-unit Horse.Core.RouterTree;
+﻿unit Horse.Core.RouterTree;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -95,7 +95,7 @@ var
 
 function GetNextCaller: TNextCaller;
 begin
-  if TlsNextCaller = nil then
+  if not Assigned(TlsNextCaller) then
   begin
     TlsNextCaller := TNextCaller.Create;
     GAllNextCallersCS.Enter;
@@ -180,14 +180,14 @@ begin
       if LAcceptable.HasNext(AHTTPType, ASegments, AIndex) then
       begin
         LScore := LAcceptable.CountLiteralSegments(AHTTPType, ASegments, AIndex);
-        if (LBestAcceptable = nil) or (LScore > LBestScore) then
+        if (not Assigned(LBestAcceptable)) or (LScore > LBestScore) then
         begin
           LBestAcceptable := LAcceptable;
           LBestScore := LScore;
         end;
       end;
     end;
-    if LBestAcceptable <> nil then
+    if Assigned(LBestAcceptable) then
       LFound := LBestAcceptable.ExecuteInternal(ASegments, AIndex, AHTTPType, ARequest, AResponse);
   end
   else if LFound then

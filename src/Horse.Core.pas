@@ -1,4 +1,4 @@
-unit Horse.Core;
+﻿unit Horse.Core;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -143,7 +143,7 @@ uses
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
 begin
   Result := GetInstance;
-  if FCallbacks = nil then
+  if not Assigned(FCallbacks) then
     FCallbacks := TList<THorseCallback>.Create;
   FCallbacks.Add(ACallback);
 end;
@@ -159,16 +159,16 @@ end;
 
 constructor THorseCore.Create;
 begin
-  if FDefaultHorse <> nil then
+  if Assigned(FDefaultHorse) then
     raise Exception.Create('The Horse instance has already been created');
-  if FRoutes = nil then
+  if not Assigned(FRoutes) then
     FRoutes := THorseRouterTree.Create;
   FDefaultHorse := Self;
 end;
 
 class function THorseCore.GetInstance: THorseCore;
 begin
-  if FDefaultHorse = nil then
+  if not Assigned(FDefaultHorse) then
     FDefaultHorse := THorseCore.Create;
   Result := FDefaultHorse;
 end;
@@ -262,11 +262,11 @@ end;
 
 class destructor THorseCore.UnInitialize;
 begin
-  if FDefaultHorse <> nil then
+  if Assigned(FDefaultHorse) then
     FreeAndNil(FDefaultHorse);
-  if FRoutes <> nil then
+  if Assigned(FRoutes) then
     FreeAndNil(FRoutes);
-  if FCallbacks <> nil then
+  if Assigned(FCallbacks) then
     FreeAndNil(FCallbacks);
 end;
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}

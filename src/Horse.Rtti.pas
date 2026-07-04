@@ -1,4 +1,4 @@
-unit Horse.Rtti;
+﻿unit Horse.Rtti;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -37,7 +37,7 @@ uses
 
 constructor THorseRtti.Create;
 begin
-  if FHorseRtti <> nil then
+  if Assigned(FHorseRtti) then
     raise Exception.Create('The Horse Rtti instance has already been created');
   FContext := TRttiContext.Create;
   FHorseRtti := Self;
@@ -45,7 +45,7 @@ end;
 
 class function THorseRtti.GetDefaultHorseRtti: THorseRtti;
 begin
-  if FHorseRtti = nil then
+  if not Assigned(FHorseRtti) then
     FHorseRtti := THorseRtti.Create;
   Result := FHorseRtti;
 end;
@@ -62,7 +62,7 @@ end;
 
 class destructor THorseRtti.UnInitialize;
 begin
-  if FHorseRtti <> nil then
+  if Assigned(FHorseRtti) then
     FreeAndNil(FHorseRtti);
 end;
 
