@@ -973,7 +973,7 @@ begin
     HttpVerbCONNECT: Result := 'CONNECT';
   else
     if Assigned(FRequest.pUnknownVerb) then
-      SetString(Result, PAnsiChar(FRequest.pUnknownVerb), FRequest.UnknownVerbLength)
+      SetString(Result, FRequest.pUnknownVerb, FRequest.UnknownVerbLength)
     else
       Result := 'GET';
   end;
@@ -994,7 +994,7 @@ end;
 function THttpSysRawRequest.GetURL: string;
 begin
   if Assigned(FRequest.pRawUrl) then
-    SetString(Result, PAnsiChar(FRequest.pRawUrl), FRequest.RawUrlLength)
+    SetString(Result, FRequest.pRawUrl, FRequest.RawUrlLength)
   else
     Result := '/';
 end;
@@ -1112,7 +1112,7 @@ begin
   begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
     begin
-      SetString(Result, PAnsiChar(FRequest.Headers.KnownHeaders[LIndex].pRawValue), FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
+      SetString(Result, FRequest.Headers.KnownHeaders[LIndex].pRawValue, FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
       if not Assigned(FHeadersCache) then
       begin
         {$IF DEFINED(FPC)}
