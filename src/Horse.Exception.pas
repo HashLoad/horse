@@ -59,7 +59,7 @@ type
 {$ENDIF}
     function ToJSON: string; virtual;
     function ToJSONObject: TJSONObject; virtual;
-    destructor Destroy(); override;
+    destructor Destroy; override;
     class function New: EHorseException;
   end;
 
@@ -91,7 +91,7 @@ end;
 function EHorseException.Custom(const AKey: string; AValue: string): EHorseException;
 begin
   if FCustomFields = nil then
-    FCustomFields := TDictionary<string, string>.Create();
+    FCustomFields := TDictionary<string, string>.Create;
 
   FCustomFields.AddOrSetValue(AKey, AValue);
   Result := Self;
@@ -100,9 +100,9 @@ end;
 function EHorseException.Custom<V>(const AKey: string; AValue: V): EHorseException;
 begin
   if not Assigned(FCustomFields) then
-    FCustomFields := TDictionary<string, string>.Create();
+    FCustomFields := TDictionary<string, string>.Create;
 
-  FCustomFields.AddOrSetValue(AKey, TValue.From<V>(AValue).ToString());
+  FCustomFields.AddOrSetValue(AKey, TValue.From<V>(AValue).ToString);
   Result := Self;
 end;
 {$ENDIF}
@@ -250,7 +250,7 @@ end;
 destructor EHorseException.Destroy;
 begin
   if Assigned(FCustomFields) then
-    FCustomFields.Free();
+    FCustomFields.Free;
   inherited;
 end;
 

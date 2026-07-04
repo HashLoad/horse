@@ -203,7 +203,7 @@ end;
 
 class function THorseCore.Group: IHorseCoreGroup<THorseCore>;
 begin
-  Result := GetInstance.InternalGroup();
+  Result := GetInstance.InternalGroup;
 end;
 
 class function THorseCore.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;

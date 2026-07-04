@@ -1466,7 +1466,7 @@ begin
 
   if WSARecv(AContext.Socket, @LWSABuf, 1, dwBytes, dwFlags, @AContext.ReadOverlapped.Overlapped, nil) = SOCKET_ERROR then
   begin
-    if WSAGetLastError() <> WSA_IO_PENDING then
+    if WSAGetLastError <> WSA_IO_PENDING then
     begin
       closesocket(AContext.Socket);
       AContext.Socket := INVALID_SOCKET;

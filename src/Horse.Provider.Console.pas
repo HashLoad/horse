@@ -247,7 +247,7 @@ begin
     if IsConsole then
     begin
       while FRunning do
-        GetDefaultEvent.WaitFor();
+        GetDefaultEvent.WaitFor;
     end;
   except
     on E: Exception do
