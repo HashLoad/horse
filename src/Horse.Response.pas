@@ -15,9 +15,6 @@ uses
 {$ELSE}
   System.Classes,
   Web.HTTPApp,
-{$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
-{$ENDIF}
 {$ENDIF}
 { ===========================================================================
   PATCH-RES-1 � added System.Generics.Collections (Delphi only)

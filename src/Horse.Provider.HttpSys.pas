@@ -20,7 +20,6 @@ uses
     System.SysUtils,
     System.Classes,
     System.SyncObjs,
-    System.Threading,
     System.NetEncoding,
     System.Generics.Collections,
     System.Generics.Defaults,
@@ -32,8 +31,7 @@ uses
   Horse.Response,
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
-  Horse.Proc,
-  Horse.Commons;
+  Horse.Proc;
 
 const
   HTTPAPI_DLL = 'httpapi.dll';

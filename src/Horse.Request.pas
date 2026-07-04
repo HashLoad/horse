@@ -1,4 +1,4 @@
-unit Horse.Request;
+﻿unit Horse.Request;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -14,9 +14,6 @@ uses
 {$ELSE}
   System.SysUtils,
   Web.HTTPApp,
-{$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
-{$ENDIF}
 {$ENDIF}
   Horse.Core.Param,
   Horse.Session,

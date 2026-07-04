@@ -11,16 +11,14 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
-  Generics.Collections,
   fpHTTP,
+  Horse.Commons,
 {$ELSE}
   Web.HTTPApp,
-  System.Generics.Collections,
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Proc,
-  Horse.Commons;
+  Horse.Proc;
 
 type
 {$IF DEFINED(FPC)}

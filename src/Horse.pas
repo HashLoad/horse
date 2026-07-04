@@ -336,11 +336,6 @@ uses
 {$ELSE}
   System.SysUtils,
   Horse.Provider.Console,
-  Horse.Provider.Daemon,
-  Horse.Provider.ISAPI,
-  Horse.Provider.Apache,
-  Horse.Provider.CGI,
-  Horse.Provider.VCL,
 {$ENDIF}
   Horse.Mime,
   Horse.Core,

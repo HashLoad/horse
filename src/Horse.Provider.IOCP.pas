@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.IOCP;
+unit Horse.Provider.IOCP;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -29,7 +29,6 @@ uses
   Horse.Response,
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
-  Horse.Commons,
   Horse.Proc,
   Horse.Exception.Interrupted;
 
