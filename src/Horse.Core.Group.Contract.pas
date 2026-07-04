@@ -18,7 +18,11 @@ type
   IHorseCoreGroup<T: class> = interface
     ['{5EB734D6-6944-473E-9C79-506647E2F5E8}']
     function Prefix(const APrefix: string): IHorseCoreGroup<T>;
+    {$IF DEFINED(FPC)}
+    function Route(const APath: string): IHorseCoreRoute<T>;
+    {$ELSE}
     function Route(const APath: string): IHorseCoreRoute<IHorseCoreGroup<T>>;
+    {$ENDIF}
     function AddCallback(const ACallback: THorseCallback): IHorseCoreGroup<T>;
     {$IF DEFINED(FPC)}
     function AddCallbacks(const ACallbacks: TList<THorseCallback>): IHorseCoreGroup<T>;
