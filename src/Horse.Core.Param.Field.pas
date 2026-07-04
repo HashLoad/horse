@@ -53,7 +53,7 @@ type
     function ReturnUTC(const AValue: Boolean): THorseCoreParamField;
     function TimeFormat(const AValue: string): THorseCoreParamField;
     function TrueValue(const AValue: string): THorseCoreParamField;
-    procedure SaveToFile(const AFileName: String);
+    procedure SaveToFile(const AFileName: string);
     function AsBoolean: Boolean;
     function AsCurrency: Currency;
     function AsDate: TDateTime;
@@ -425,7 +425,7 @@ begin
   FReturnUTC := AValue;
 end;
 
-procedure THorseCoreParamField.SaveToFile(const AFileName: String);
+procedure THorseCoreParamField.SaveToFile(const AFileName: string);
 var
   LMemoryStream: TMemoryStream;
 begin

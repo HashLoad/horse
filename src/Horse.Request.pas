@@ -457,8 +457,8 @@ const
 {$ENDIF}
 var
   I: Integer;
-  LName: String;
-  LValue: String;
+  LName: string;
+  LValue: string;
 begin
   FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
 { PATCH-REQ-4 � nil-guard: on CrossSocket path FWebRequest is nil.

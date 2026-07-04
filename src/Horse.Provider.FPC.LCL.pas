@@ -1,6 +1,6 @@
 unit Horse.Provider.FPC.LCL;
 
-{ PATCH-FPCLCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
+{ PATCH-FPCLCL-1: ListenWithConfig override ï¿½ same root cause as PATCH-CONSOLE-1. }
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -40,7 +40,7 @@ type
     procedure StartServer;
     procedure StopServer;
     property Port: Integer read FPort write FPort;
-    property Host: String read FHost write FHost;
+    property Host: string read FHost write FHost;
     property ListenQueue: Word read FListenQueue write FListenQueue;
     procedure Execute; override;
     Procedure DoTerminate; override;

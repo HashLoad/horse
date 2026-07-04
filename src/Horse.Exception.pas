@@ -20,7 +20,7 @@ uses
   Horse.Commons;
 
 type
-  TStringDictionary = TDictionary<String, String>;
+  TStringDictionary = TDictionary<string, string>;
 
   EHorseException = class(Exception)
   strict private
@@ -53,9 +53,9 @@ type
     function Detail(const AValue: string): EHorseException; overload;
     function Detail: string; overload;
 {$IF DEFINED(FPC)}
-    function Custom(const AKey: String; AValue: String): EHorseException; overload;
+    function Custom(const AKey: string; AValue: string): EHorseException; overload;
 {$ELSE}
-    function Custom<V>(const AKey: String; AValue: V): EHorseException; overload;
+    function Custom<V>(const AKey: string; AValue: V): EHorseException; overload;
 {$ENDIF}
     function ToJSON: string; virtual;
     function ToJSONObject: TJSONObject; virtual;
@@ -88,19 +88,19 @@ begin
 end;
 
 {$IF DEFINED(FPC)}
-function EHorseException.Custom(const AKey: String; AValue: String): EHorseException;
+function EHorseException.Custom(const AKey: string; AValue: string): EHorseException;
 begin
   if FCustomFields = nil then
-    FCustomFields := TDictionary<String, String>.Create();
+    FCustomFields := TDictionary<string, string>.Create();
 
   FCustomFields.AddOrSetValue(AKey, AValue);
   Result := Self;
 end;
 {$ELSE}
-function EHorseException.Custom<V>(const AKey: String; AValue: V): EHorseException;
+function EHorseException.Custom<V>(const AKey: string; AValue: V): EHorseException;
 begin
   if not Assigned(FCustomFields) then
-    FCustomFields := TDictionary<String, String>.Create();
+    FCustomFields := TDictionary<string, string>.Create();
 
   FCustomFields.AddOrSetValue(AKey, TValue.From<V>(AValue).ToString());
   Result := Self;

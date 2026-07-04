@@ -132,7 +132,7 @@ begin
   Result := FInstance;
 end;
 
-function THorseMimeTypesExt.NormalizeExt(const AFileExt: String): string;
+function THorseMimeTypesExt.NormalizeExt(const AFileExt: string): string;
 begin
   Result := ExtractFileExt(AFileExt.Trim.ToLower);
   if (Result <> EmptyStr) and (Result[Low(Result)] = '.') then

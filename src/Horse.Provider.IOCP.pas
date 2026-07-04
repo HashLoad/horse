@@ -401,7 +401,7 @@ begin
   LRawPath := GetMethodString(ABuffer, LSpace1 + 1, LPathLen);
   AVersion := GetMethodString(ABuffer, LSpace2 + 1, LVersionLen);
 
-  // Divide Path e Query String
+  // Divide Path e Query string
   I := Pos('?', LRawPath);
   if I > 0 then
   begin

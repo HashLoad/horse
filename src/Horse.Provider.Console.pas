@@ -41,7 +41,7 @@ type
     class function GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
     class function GetDefaultEvent: TEvent;
     class function HTTPWebBrokerIsNil: Boolean;
-    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
+    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
     class procedure OnConnect(AContext: TIdContext);
     class procedure SetListenQueue(const AValue: Integer); static;
@@ -331,7 +331,7 @@ begin
 end;
 { =========================================================================== }
 
-class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
+class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
 begin
   VHandled := True;
 end;

@@ -1,10 +1,10 @@
 unit Horse.Provider.Daemon;
 
-{ PATCH-DAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1.
+{ PATCH-DAEMON-1: ListenWithConfig override ï¿½ same root cause as PATCH-CONSOLE-1.
   THorseProviderAbstract.ListenWithConfig calls the no-arg Listen, entering
   InternalListen with FPort = 0 - DEFAULT_PORT (9000).  Fix: override
   ListenWithConfig here so it calls SetPort(APort) before InternalListen.
-  AConfig is intentionally ignored — Daemon/Indy has no use for CrossSocket config. }
+  AConfig is intentionally ignored ï¿½ Daemon/Indy has no use for CrossSocket config. }
 
 interface
 
@@ -35,7 +35,7 @@ type
     class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
     class function GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
     class function HTTPWebBrokerIsNil: Boolean;
-    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
+    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
     class procedure OnConnect(AContext: TIdContext);
     class procedure SetListenQueue(const AValue: Integer); static;
@@ -151,7 +151,7 @@ end;
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
   loopback the keep-alive request/response ping-pong collides with the ~40 ms
   delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
-  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+  Harmless (beneficial) on Windows. See bench-analysis-report.md ï¿½7.5. }
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
@@ -357,7 +357,7 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean);
+class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
 begin
   VHandled := True;
 end;

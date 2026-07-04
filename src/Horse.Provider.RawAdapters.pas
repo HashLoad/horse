@@ -135,7 +135,7 @@ type
 implementation
 
 { --------------------------------------------------------------------------- }
-{ String variable indices — same as Web.HTTPApp TWebRequest private constants  }
+{ string variable indices — same as Web.HTTPApp TWebRequest private constants  }
 { Stable across Delphi versions from XE onward.                               }
 { --------------------------------------------------------------------------- }
 {$IF NOT DEFINED(FPC)}
