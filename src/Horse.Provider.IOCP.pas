@@ -60,7 +60,7 @@ type
     class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
   public
     class function TryParseRequest(
-      const ABuffer: TBytes; 
+      const ABuffer: TBytes;
       ALength: Integer;
       out AMethod: string;
       out APath: string;
@@ -120,7 +120,7 @@ type
     function GetServerPort: Integer;
     function GetContentType: string;
     function GetContent: string;
-    
+
     {$IFDEF FPC}
     function GetContentLength: Integer;
     {$ELSE}
@@ -349,7 +349,7 @@ begin
 end;
 
 class function THorseHttpParser.TryParseRequest(
-  const ABuffer: TBytes; 
+  const ABuffer: TBytes;
   ALength: Integer;
   out AMethod: string;
   out APath: string;
@@ -430,12 +430,12 @@ begin
       SetLength(AHeaders, Length(AHeaders) + 1);
       AHeaders[High(AHeaders)].KeyStart := LLineStart;
       AHeaders[High(AHeaders)].KeyLen := LColon - LLineStart;
-      
+
       // Trim espaços após os dois pontos
       I := LColon + 1;
       while (I < LLineEnd) and (ABuffer[I] = 32) do
         Inc(I);
-      
+
       AHeaders[High(AHeaders)].ValueStart := I;
       AHeaders[High(AHeaders)].ValueLen := LLineEnd - I;
 
@@ -772,10 +772,10 @@ begin
   LBuilder := TStringBuilder.Create;
   try
     LBuilder.Append('HTTP/1.1 ').Append(FStatusCode).Append(' ').Append(FStatusReason).Append(#13#10);
-    
+
     if not FHeaders.ContainsKey('Content-Type') then
       LBuilder.Append('Content-Type: text/plain; charset=utf-8'#13#10);
-      
+
     if not FHeaders.ContainsKey('Date') then
       LBuilder.Append('Date: ').Append(FormatDateTime('ddd, dd mmm yyyy hh:nn:ss" GMT"', System.SysUtils.Now)).Append(#13#10);
 
@@ -807,21 +807,21 @@ var
   LFlags: DWORD;
 begin
   LBufCount := 0;
-  
+
   if Length(AHeaderBytes) > 0 then
   begin
     LBufs[LBufCount].buf := PAnsiChar(@AHeaderBytes[0]);
     LBufs[LBufCount].len := Length(AHeaderBytes);
     Inc(LBufCount);
   end;
-  
+
   if Length(ABodyBytes) > 0 then
   begin
     LBufs[LBufCount].buf := PAnsiChar(@ABodyBytes[0]);
     LBufs[LBufCount].len := Length(ABodyBytes);
     Inc(LBufCount);
   end;
-  
+
   if LBufCount > 0 then
   begin
     LFlags := 0;
@@ -902,7 +902,7 @@ var
   {$ENDIF}
 begin
   FStatusCode := ARes.Status;
-  
+
   if FStatusCode = 200 then FStatusReason := 'OK'
   else if FStatusCode = 204 then FStatusReason := 'No Content'
   else if FStatusCode = 404 then FStatusReason := 'Not Found'
@@ -944,7 +944,7 @@ begin
   begin
     send(FContext.Socket, LBodyBytes[0], Length(LBodyBytes), 0);
   end;
-    
+
   FinalizeResponse;
 end;
 
@@ -1136,7 +1136,7 @@ var
   {$ENDIF}
 begin
   AContext.LastActive := GetTickCount64;
-  
+
   // Copia dados recebidos para o buffer de acumulação da conexão
   LNewLen := AContext.BytesReceived + Integer(ABytesTransferred);
   if LNewLen > Length(AContext.Buffer) then
@@ -1157,7 +1157,7 @@ begin
     end;
 
     AContext.Processing := True;
-    
+
     LRawReq := TIocpRawRequest.Create(
       AContext.Buffer,
       AContext.BytesReceived,
@@ -1173,7 +1173,7 @@ begin
       AContext.ClientIP,
       AContext.ClientPort
     );
-      
+
     LRawRes := TIocpRawResponse.Create(AContext, True);
 
     New(LData);
@@ -1187,11 +1187,11 @@ begin
     {$ELSE}
     LWebRequest := TInterfacedWebRequest.Create(LRawReq);
     LWebResponse := TInterfacedWebResponse.Create(LRawRes);
-    
+
     LReq := THorseRequest.Create(LWebRequest);
     LRes := THorseResponse.Create(nil);
     LRes.SetCSRawWebResponse(LWebResponse);
-    
+
     LData.Req := LReq;
     LData.Res := LRes;
     LData.WebRequest := LWebRequest;
@@ -1242,13 +1242,13 @@ begin
       begin
         // Atualiza o contexto do soquete aceito com as propriedades do soquete de escuta
         setsockopt(LOverlap.Socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, PAnsiChar(@FListenSocket), SizeOf(FListenSocket));
-        
+
         // Associa o soquete do cliente aceito ao Completion Port
         CreateIoCompletionPort(LOverlap.Socket, FIocpHandle, ULONG_PTR(LContext), 0);
-        
+
         // Dispara a leitura inicial assíncrona usando WSARecv
         PostRead(LContext);
-        
+
         // Posta o próximo accept assíncrono para fila do IOCP
         PostAccept;
       end
@@ -1261,7 +1261,7 @@ begin
         else
         begin
           ProcessClientRead(LContext, dwBytes);
-          
+
           // Re-enfileira próxima leitura se Keep-Alive
           if not LContext.Processing then
             PostRead(LContext);
@@ -1379,13 +1379,13 @@ var
   LPtr: Pointer;
 begin
   FListenSocket := CreateListenSocket(FPort, FHost);
-  
+
   // Obtém ponteiros das extensões do Winsock
   if GetWSAExtensionPointer(FListenSocket, GuidAcceptEx, LPtr) then
     fnAcceptEx := LPtr
   else
     raise Exception.Create('Falha ao obter funcao AcceptEx.');
-    
+
   if GetWSAExtensionPointer(FListenSocket, GuidGetAcceptExSockaddrs, LPtr) then
     fnGetAcceptExSockaddrs := LPtr
   else
@@ -1398,13 +1398,13 @@ begin
 
   FRunning := True;
   LCPUCount := CPUCount;
-  
+
   // Cria os workers
   for I := 1 to LCPUCount do
   begin
     LWorker := THorseIocpWorker.Create(FListenSocket, FIocpHandle);
     FWorkers.Add(LWorker);
-    
+
     // Inicia os primeiros aceites assíncronos no worker
     LWorker.PostAccept;
   end;
@@ -1415,7 +1415,7 @@ var
   I: Integer;
 begin
   FRunning := False;
-  
+
   for I := 0 to FWorkers.Count - 1 do
     FWorkers[I].TerminateWorker;
 
@@ -1464,7 +1464,7 @@ begin
   LWSABuf.buf := PAnsiChar(@AContext.ReadOverlapped.Buffer[0]);
   dwFlags := 0;
   dwBytes := 0;
-  
+
   if WSARecv(AContext.Socket, @LWSABuf, 1, dwBytes, dwFlags, @AContext.ReadOverlapped.Overlapped, nil) = SOCKET_ERROR then
   begin
     if WSAGetLastError() <> WSA_IO_PENDING then

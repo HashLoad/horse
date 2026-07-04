@@ -179,7 +179,7 @@ type
 
 implementation
 
-uses        
+uses
 {$IF DEFINED(FPC)}
   SysUtils,
 {$ELSE}

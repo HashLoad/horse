@@ -65,7 +65,7 @@ type
 
 implementation
 
-uses   
+uses
 {$IF DEFINED(FPC)}
   TypInfo;
 {$ELSE}

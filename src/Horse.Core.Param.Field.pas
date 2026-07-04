@@ -82,7 +82,7 @@ uses
   Horse.Exception,
   Horse.Commons,
   Horse.Core.Param.Config,
-{$IF DEFINED(FPC)}  
+{$IF DEFINED(FPC)}
   DateUtils;
 {$ELSE}
   System.DateUtils,

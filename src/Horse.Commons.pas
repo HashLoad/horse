@@ -137,11 +137,11 @@ function MatchRoute(const AText: string; const AValues: array of string): Boolea
 
 implementation
 
-uses  
+uses
 {$IF DEFINED(FPC)}
   RegExpr;
 {$ELSE}
-  System.RegularExpressions;    
+  System.RegularExpressions;
 {$ENDIF}
 
 {$IF DEFINED(FPC)}

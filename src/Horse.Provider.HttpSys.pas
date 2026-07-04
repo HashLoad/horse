@@ -645,15 +645,15 @@ var
 begin
   if AValue = 0 then
     Exit('0');
-  
+
   LPtr := @LBuffer[31];
   LPtr^ := #0;
-  
+
   if AValue < 0 then
     LVal := UInt64(-AValue)
   else
     LVal := UInt64(AValue);
-    
+
   while LVal > 0 do
   begin
     Dec(LPtr);
@@ -661,13 +661,13 @@ begin
     LPtr^ := AnsiChar(Ord('0') + LDigit);
     LVal := LVal div 10;
   end;
-  
+
   if AValue < 0 then
   begin
     Dec(LPtr);
     LPtr^ := '-';
   end;
-  
+
   SetString(Result, LPtr, @LBuffer[31] - LPtr);
 end;
 
@@ -1109,7 +1109,7 @@ begin
   end;
 
   Result := '';
-  
+
   if THorseProviderHttpSys.KnownRequestHeadersMap.TryGetValue(AName, LIndex) then
   begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
@@ -1192,12 +1192,12 @@ begin
     begin
       LName := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
-      
+
       if Pos('%', LName) > 0 then
         LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
       if Pos('%', LValue) > 0 then
         LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
-        
+
       ADest.Add(LName + '=' + LValue);
     end
     else
@@ -1241,12 +1241,12 @@ begin
     begin
       LName := Copy(LBody, LStart, LEqPos - LStart);
       LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
-      
+
       if Pos('%', LName) > 0 then
         LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
       if Pos('%', LValue) > 0 then
         LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
-        
+
       ADest.Add(LName + '=' + LValue);
     end
     else
@@ -1341,10 +1341,10 @@ var
   LSendFlags: ULONG;
 begin
   FillChar(LResponse, SizeOf(LResponse), 0);
-  
+
   LStatusCode := ARes.Status;
   LResponse.StatusCode := LStatusCode;
-  
+
   LReason := 'OK';
   if LStatusCode = 201 then LReason := 'Created'
   else if LStatusCode = 204 then LReason := 'No Content'
@@ -1353,7 +1353,7 @@ begin
   else if LStatusCode = 403 then LReason := 'Forbidden'
   else if LStatusCode = 404 then LReason := 'Not Found'
   else if LStatusCode = 500 then LReason := 'Internal Server Error';
-  
+
   LResponse.ReasonLength := Length(LReason);
   LResponse.pReason := PAnsiChar(LReason);
   LResponse.Version.MajorVersion := 1;
@@ -1367,7 +1367,7 @@ begin
 
   if LContentType = '' then
     LContentType := 'text/html; charset=utf-8';
-  
+
   LResponse.Headers.KnownHeaders[12].pRawValue := PAnsiChar(LContentType);
   LResponse.Headers.KnownHeaders[12].RawValueLength := Length(LContentType);
 
@@ -1387,7 +1387,7 @@ begin
     begin
       LHeaderStrings[I * 2] := AnsiString(LHeadersList.Names[I]);
       LHeaderStrings[I * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
-      
+
       LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
       LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
       LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
@@ -1399,7 +1399,7 @@ begin
     begin
       LHeaderStrings[I * 2] := AnsiString(LPair.Key);
       LHeaderStrings[I * 2 + 1] := AnsiString(LPair.Value);
-      
+
       LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
       LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
       LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);

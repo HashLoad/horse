@@ -85,7 +85,7 @@ function DecodeParam(const AValue: string): string;
 begin
   if Pos('%', AValue) = 0 then
     Exit(AValue);
-    
+
   {$IF DEFINED(FPC)}
   Result := HTTPDecode(AValue);
   {$ELSE}

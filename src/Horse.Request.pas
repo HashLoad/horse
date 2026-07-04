@@ -205,7 +205,7 @@ type
 
 implementation
 
-uses      
+uses
 {$IF DEFINED(FPC)}
   Classes,
 {$ELSE}
@@ -578,7 +578,7 @@ begin
   FQuery := THorseCoreParam.Create(THorseList.Create).Required(False);
   if not Assigned(FWebRequest) then
     Exit;  // CrossSocket path: bridge populates query dict directly
-  
+
   LQuery := FWebRequest.Query;
   if LQuery = '' then
     Exit;
@@ -600,12 +600,12 @@ begin
     begin
       LKey := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
-      
+
       if Pos('%', LKey) > 0 then
         LKey := HTTPDecode(LKey);
       if Pos('%', LValue) > 0 then
         LValue := HTTPDecode(LValue);
-        
+
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, LValue)
       else

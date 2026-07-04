@@ -333,14 +333,14 @@ begin
   begin
     while (LStart <= LPathLen) and (APath[LStart] = '/') do
       Inc(LStart);
-    
+
     if LStart > LPathLen then
       Break;
-      
+
     LLen := 0;
     while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
       Inc(LLen);
-      
+
     if LLen > 0 then
     begin
       LPart := Copy(APath, LStart, LLen);
@@ -375,14 +375,14 @@ begin
     begin
       while (LStart <= LPathLen) and (APath[LStart] = '/') do
         Inc(LStart);
-      
+
       if LStart > LPathLen then
         Break;
-        
+
       LLen := 0;
       while (LStart + LLen <= LPathLen) and (APath[LStart + LLen] <> '/') do
         Inc(LLen);
-        
+
       if LLen > 0 then
       begin
         LPart := Copy(APath, LStart, LLen);

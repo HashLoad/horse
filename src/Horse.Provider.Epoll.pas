@@ -69,7 +69,7 @@ type
     class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
   public
     class function TryParseRequest(
-      const ABuffer: TBytes; 
+      const ABuffer: TBytes;
       ALength: Integer;
       out AMethod: string;
       out APath: string;
@@ -316,18 +316,18 @@ begin
     B := ABuffer[I];
     if (B = 99) or (B = 67) then
     begin
-      if ((ABuffer[I + 1] = 111) or (ABuffer[I + 1] = 79)) and 
-         ((ABuffer[I + 2] = 110) or (ABuffer[I + 2] = 78)) and 
-         ((ABuffer[I + 3] = 116) or (ABuffer[I + 3] = 84)) and 
-         ((ABuffer[I + 4] = 101) or (ABuffer[I + 4] = 69)) and 
-         ((ABuffer[I + 5] = 110) or (ABuffer[I + 5] = 78)) and 
-         ((ABuffer[I + 6] = 116) or (ABuffer[I + 6] = 84)) and 
-         (ABuffer[I + 7] = 45) and 
-         ((ABuffer[I + 8] = 108) or (ABuffer[I + 8] = 76)) and 
-         ((ABuffer[I + 9] = 101) or (ABuffer[I + 9] = 69)) and 
-         ((ABuffer[I + 10] = 110) or (ABuffer[I + 10] = 78)) and 
-         ((ABuffer[I + 11] = 103) or (ABuffer[I + 11] = 71)) and 
-         ((ABuffer[I + 12] = 116) or (ABuffer[I + 12] = 84)) and 
+      if ((ABuffer[I + 1] = 111) or (ABuffer[I + 1] = 79)) and
+         ((ABuffer[I + 2] = 110) or (ABuffer[I + 2] = 78)) and
+         ((ABuffer[I + 3] = 116) or (ABuffer[I + 3] = 84)) and
+         ((ABuffer[I + 4] = 101) or (ABuffer[I + 4] = 69)) and
+         ((ABuffer[I + 5] = 110) or (ABuffer[I + 5] = 78)) and
+         ((ABuffer[I + 6] = 116) or (ABuffer[I + 6] = 84)) and
+         (ABuffer[I + 7] = 45) and
+         ((ABuffer[I + 8] = 108) or (ABuffer[I + 8] = 76)) and
+         ((ABuffer[I + 9] = 101) or (ABuffer[I + 9] = 69)) and
+         ((ABuffer[I + 10] = 110) or (ABuffer[I + 10] = 78)) and
+         ((ABuffer[I + 11] = 103) or (ABuffer[I + 11] = 71)) and
+         ((ABuffer[I + 12] = 116) or (ABuffer[I + 12] = 84)) and
          ((ABuffer[I + 13] = 104) or (ABuffer[I + 13] = 72)) then
       begin
         J := I + 14;
@@ -360,33 +360,33 @@ begin
     B := ABuffer[I];
     if (B = 116) or (B = 84) then
     begin
-      if ((ABuffer[I + 1] = 114) or (ABuffer[I + 1] = 82)) and 
-         ((ABuffer[I + 2] = 97) or (ABuffer[I + 2] = 65)) and 
-         ((ABuffer[I + 3] = 110) or (ABuffer[I + 3] = 78)) and 
-         ((ABuffer[I + 4] = 115) or (ABuffer[I + 4] = 83)) and 
-         ((ABuffer[I + 5] = 102) or (ABuffer[I + 5] = 70)) and 
-         ((ABuffer[I + 6] = 101) or (ABuffer[I + 6] = 69)) and 
-         ((ABuffer[I + 7] = 114) or (ABuffer[I + 7] = 82)) and 
-         (ABuffer[I + 8] = 45) and 
-         ((ABuffer[I + 9] = 101) or (ABuffer[I + 9] = 69)) and 
-         ((ABuffer[I + 10] = 110) or (ABuffer[I + 10] = 78)) and 
-         ((ABuffer[I + 11] = 99) or (ABuffer[I + 11] = 67)) and 
-         ((ABuffer[I + 12] = 111) or (ABuffer[I + 12] = 79)) and 
-         ((ABuffer[I + 13] = 100) or (ABuffer[I + 13] = 68)) and 
-         ((ABuffer[I + 14] = 105) or (ABuffer[I + 14] = 73)) and 
-         ((ABuffer[I + 15] = 110) or (ABuffer[I + 15] = 78)) and 
+      if ((ABuffer[I + 1] = 114) or (ABuffer[I + 1] = 82)) and
+         ((ABuffer[I + 2] = 97) or (ABuffer[I + 2] = 65)) and
+         ((ABuffer[I + 3] = 110) or (ABuffer[I + 3] = 78)) and
+         ((ABuffer[I + 4] = 115) or (ABuffer[I + 4] = 83)) and
+         ((ABuffer[I + 5] = 102) or (ABuffer[I + 5] = 70)) and
+         ((ABuffer[I + 6] = 101) or (ABuffer[I + 6] = 69)) and
+         ((ABuffer[I + 7] = 114) or (ABuffer[I + 7] = 82)) and
+         (ABuffer[I + 8] = 45) and
+         ((ABuffer[I + 9] = 101) or (ABuffer[I + 9] = 69)) and
+         ((ABuffer[I + 10] = 110) or (ABuffer[I + 10] = 78)) and
+         ((ABuffer[I + 11] = 99) or (ABuffer[I + 11] = 67)) and
+         ((ABuffer[I + 12] = 111) or (ABuffer[I + 12] = 79)) and
+         ((ABuffer[I + 13] = 100) or (ABuffer[I + 13] = 68)) and
+         ((ABuffer[I + 14] = 105) or (ABuffer[I + 14] = 73)) and
+         ((ABuffer[I + 15] = 110) or (ABuffer[I + 15] = 78)) and
          ((ABuffer[I + 16] = 103) or (ABuffer[I + 16] = 71)) then
       begin
         J := I + 17;
         while (J < ABodyOffset) and ((ABuffer[J] = 32) or (ABuffer[J] = 58) or (ABuffer[J] = 9)) do
           Inc(J);
-        if (J + 7 <= ABodyOffset) and 
-           ((ABuffer[J] = 99) or (ABuffer[J] = 67)) and 
-           ((ABuffer[J + 1] = 104) or (ABuffer[J + 1] = 72)) and 
-           ((ABuffer[J + 2] = 117) or (ABuffer[J + 2] = 85)) and 
-           ((ABuffer[J + 3] = 110) or (ABuffer[J + 3] = 78)) and 
-           ((ABuffer[J + 4] = 107) or (ABuffer[J + 4] = 75)) and 
-           ((ABuffer[J + 5] = 101) or (ABuffer[J + 5] = 69)) and 
+        if (J + 7 <= ABodyOffset) and
+           ((ABuffer[J] = 99) or (ABuffer[J] = 67)) and
+           ((ABuffer[J + 1] = 104) or (ABuffer[J + 1] = 72)) and
+           ((ABuffer[J + 2] = 117) or (ABuffer[J + 2] = 85)) and
+           ((ABuffer[J + 3] = 110) or (ABuffer[J + 3] = 78)) and
+           ((ABuffer[J + 4] = 107) or (ABuffer[J + 4] = 75)) and
+           ((ABuffer[J + 5] = 101) or (ABuffer[J + 5] = 69)) and
            ((ABuffer[J + 6] = 100) or (ABuffer[J + 6] = 68)) then
         begin
           Exit(True);
@@ -581,7 +581,7 @@ begin
         Result := True;
         Exit;
       end;
-      
+
       while (AIovCnt > 0) and (LWritten >= NativeInt(AIov^.iov_len)) do
       begin
         Dec(LWritten, AIov^.iov_len);
@@ -611,7 +611,7 @@ begin
       Epoll_FD_SET(ASocket, LFDSet);
       LTimeVal.tv_sec := 5;
       LTimeVal.tv_usec := 0;
-      
+
       LRet := select(ASocket + 1, nil, @LFDSet, nil, @LTimeVal);
       if LRet <= 0 then
         Exit;
@@ -676,7 +676,7 @@ var
   LConnHeader: string;
 begin
   LPool := TEpollFPCTaskPool(FPool);
-  
+
   try
     while not Terminated and LPool.FActive do
     begin
@@ -809,7 +809,7 @@ begin
   FWorkers := TList<TEpollFPCWorkerThread>.Create;
   FLock := TCriticalSection.Create;
   FEvent := TEvent.Create(nil, False, False, '');
-  
+
   for I := 1 to AThreadCount do
     FWorkers.Add(TEpollFPCWorkerThread.Create(Self));
 end;
@@ -821,12 +821,12 @@ var
 begin
   FActive := False;
   FEvent.SetEvent;
-  
+
   for I := 0 to FWorkers.Count - 1 do
     FWorkers[I].Terminate;
-  
+
   FEvent.SetEvent;
-  
+
   for I := 0 to FWorkers.Count - 1 do
   begin
     FWorkers[I].WaitFor;
@@ -845,7 +845,7 @@ begin
   finally
     FLock.Leave;
   end;
-  
+
   FLock.Free;
   FEvent.Free;
   inherited;
@@ -1002,12 +1002,12 @@ begin
       begin
         LByte := ABuffer[I];
         Inc(I);
-        
+
         if LByte = 10 then // '\n'
         begin
           if (FChunkLineLen > 0) and (FChunkLineBytes[FChunkLineLen - 1] = 13) then
             Dec(FChunkLineLen);
-            
+
           if FChunkLineLen > 0 then
           begin
             LHexStr := Trim(TEncoding.ASCII.GetString(FChunkLineBytes, 0, FChunkLineLen));
@@ -1016,7 +1016,7 @@ begin
             FChunkSize := StrToInt64Def('$' + LHexStr, 0);
             FChunkRemaining := FChunkSize;
             FChunkLineLen := 0;
-            
+
             if FChunkSize = 0 then
             begin
               FChunkState := 3; // Fim
@@ -1042,24 +1042,24 @@ begin
           end;
         end;
       end;
-      
+
       1: // Lendo dados do chunk
       begin
         LWriteCount := AOffset + ALength - I;
         if LWriteCount > FChunkRemaining then
           LWriteCount := FChunkRemaining;
-          
+
         if LWriteCount > 0 then
         begin
           WriteToBodyStream(ABuffer, I, LWriteCount);
           FChunkRemaining := FChunkRemaining - LWriteCount;
           I := I + LWriteCount;
         end;
-        
+
         if FChunkRemaining = 0 then
           FChunkState := 2;
       end;
-      
+
       2: // Aguardar CRLF
       begin
         LByte := ABuffer[I];
@@ -1067,7 +1067,7 @@ begin
         if LByte = 10 then
           FChunkState := 0;
       end;
-      
+
       3: // Fim do chunked
       begin
         Result := True;
@@ -1143,7 +1143,7 @@ begin
 end;
 
 class function THorseHttpParser.TryParseRequest(
-  const ABuffer: TBytes; 
+  const ABuffer: TBytes;
   ALength: Integer;
   out AMethod: string;
   out APath: string;
@@ -1202,7 +1202,7 @@ begin
 
   // Method (cached/optimized)
   AMethod := GetMethodString(ABuffer, 0, Space1);
-  
+
   QueryStart := FindByte(ABuffer, Space1 + 1, Space2, 63); // '?'
   if QueryStart <> -1 then
   begin
@@ -1240,7 +1240,7 @@ begin
       begin
         Segment.KeyStart := LineStart;
         Segment.KeyLen := Colon - LineStart;
-        
+
         // Remove espaços do valor (Trim rápido dos bytes)
         I := Colon + 1;
         while (I < LineEnd) and (ABuffer[I] = 32) do Inc(I);
@@ -1319,7 +1319,7 @@ begin
   FHeaders := AHeaders;
   FBodyOffset := ABodyOffset;
   FContentLength := AContentLength;
-  
+
   if (ABodyStream = nil) and (ATempFileName = '') and (AContentLength > 0) then
     FBodyStream := TEpollReadOnlyBytesStream.Create(FBuffer, FBodyOffset, FContentLength)
   else
@@ -1461,12 +1461,12 @@ begin
     begin
       LName := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
-      
+
       if Pos('%', LName) > 0 then
         LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
       if Pos('%', LValue) > 0 then
         LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
-        
+
       ADest.Add(LName + '=' + LValue);
     end
     else
@@ -1510,12 +1510,12 @@ begin
     begin
       LName := Copy(LBody, LStart, LEqPos - LStart);
       LValue := Copy(LBody, LEqPos + 1, I - LEqPos - 1);
-      
+
       if Pos('%', LName) > 0 then
         LName := {$IF DEFINED(FPC)}HTTPDecode(LName){$ELSE}TNetEncoding.URL.Decode(LName){$ENDIF};
       if Pos('%', LValue) > 0 then
         LValue := {$IF DEFINED(FPC)}HTTPDecode(LValue){$ELSE}TNetEncoding.URL.Decode(LValue){$ENDIF};
-        
+
       ADest.Add(LName + '=' + LValue);
     end
     else
@@ -1600,7 +1600,7 @@ var
   LPair: TPair<string, string>;
 begin
   LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
-  
+
   if not FHeaders.ContainsKey('Content-Type') then
     FHeaders.Add('Content-Type', 'text/html; charset=utf-8');
 
@@ -1616,7 +1616,7 @@ begin
     LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
 
   LHeaderStr := LHeaderStr + #13#10;
-  
+
   SetLength(Result, Length(LHeaderStr));
   if Length(LHeaderStr) > 0 then
     Move(LHeaderStr[1], Result[0], Length(LHeaderStr));
@@ -1667,13 +1667,13 @@ begin
     Exit(True);
 
   LRes := writev(FSocket, LIovs, AIovCnt);
-  
+
   if LRes >= 0 then
   begin
     Writeln('WriteNonBlockingV: writev sucesso, bytes enviados: ', LRes, ' / total: ', LTotalBytes);
     if NativeUInt(LRes) = LTotalBytes then
       Exit(True);
-    
+
     LRemainderLen := LTotalBytes - LRes;
     SetLength(FContext.FWriteBuffer, LRemainderLen);
     LDestPos := 0;
@@ -1769,7 +1769,7 @@ begin
 
   LStreamSize := AStream.Size - AStream.Position;
 
-  
+
   if (not LHasChunkedHeader) and (AStream is TFileStream) then
   begin
     LFileHandle := TFileStream(AStream).Handle;
@@ -1854,7 +1854,7 @@ var
   {$ENDIF}
 begin
   FStatusCode := ARes.Status;
-  
+
   case FStatusCode of
     200: FReason := 'OK';
     201: FReason := 'Created';
@@ -2070,16 +2070,16 @@ begin
     begin
       {$IFDEF FPC}
       LBytesRead := fpRecv(
-        AContext.Socket, 
-        @AContext.Buffer[AContext.BytesReceived], 
-        Length(AContext.Buffer) - AContext.BytesReceived, 
+        AContext.Socket,
+        @AContext.Buffer[AContext.BytesReceived],
+        Length(AContext.Buffer) - AContext.BytesReceived,
         0
       );
       {$ELSE}
       LBytesRead := recv(
-        AContext.Socket, 
-        @AContext.Buffer[AContext.BytesReceived], 
-        Length(AContext.Buffer) - AContext.BytesReceived, 
+        AContext.Socket,
+        @AContext.Buffer[AContext.BytesReceived],
+        Length(AContext.Buffer) - AContext.BytesReceived,
         0
       );
       {$ENDIF}
@@ -2165,21 +2165,21 @@ begin
     begin
       if Length(AContext.Buffer) < AContext.BodyOffset + AContext.ContentLength then
         SetLength(AContext.Buffer, AContext.BodyOffset + AContext.ContentLength);
-        
+
       while True do
       begin
         {$IFDEF FPC}
         LBytesRead := fpRecv(
-          AContext.Socket, 
-          @AContext.Buffer[AContext.BytesReceived], 
-          AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
+          AContext.Socket,
+          @AContext.Buffer[AContext.BytesReceived],
+          AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived,
           0
         );
         {$ELSE}
         LBytesRead := recv(
-          AContext.Socket, 
-          @AContext.Buffer[AContext.BytesReceived], 
-          AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived, 
+          AContext.Socket,
+          @AContext.Buffer[AContext.BytesReceived],
+          AContext.BodyOffset + AContext.ContentLength - AContext.BytesReceived,
           0
         );
         {$ENDIF}
@@ -2700,7 +2700,7 @@ begin
       for I := 0 to LEventCount - 1 do
       begin
         LEvent := LEvents[I];
-        
+
         LContext := TEpollConnectionContext(LEvent.data.ptr);
         if LContext = FPipeContext then
         begin
@@ -2967,7 +2967,7 @@ begin
       FWorkers.Add(LWorker);
       LWorker.Start;
     end;
-    
+
     FRunning := True;
     DoOnListen;
   except
@@ -3008,7 +3008,7 @@ begin
     __close(FListenSockets[I]);
     {$ENDIF}
   end;
-  
+
   FListenSockets.Clear;
   DoOnStopListen;
 end;
