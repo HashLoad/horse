@@ -423,9 +423,9 @@ begin
 
   for LKey in FRegexedKeys do
   begin
-    if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then
+    if FRoute[LKey].HasNext(AMethod, APaths, AIndex) then
     begin
-      Result := FRoute.Items[LKey].CountLiteralSegments(AMethod, APaths, AIndex);
+      Result := FRoute[LKey].CountLiteralSegments(AMethod, APaths, AIndex);
       Exit;
     end;
   end;
@@ -459,7 +459,7 @@ begin
   begin
     for LKey in FRegexedKeys do
     begin
-      if FRoute.Items[LKey].HasNext(AMethod, APaths, AIndex) then
+      if FRoute[LKey].HasNext(AMethod, APaths, AIndex) then
         Exit(True);
     end;
   end;
@@ -561,7 +561,7 @@ finalization
   begin
     while GQueuePool.Count > 0 do
     begin
-      GQueuePool.Items[GQueuePool.Count - 1].Free;
+      GQueuePool[GQueuePool.Count - 1].Free;
       GQueuePool.Delete(GQueuePool.Count - 1);
     end;
     GQueuePool.Free;
@@ -572,7 +572,7 @@ finalization
   begin
     while GNextCallerPool.Count > 0 do
     begin
-      GNextCallerPool.Items[GNextCallerPool.Count - 1].Free;
+      GNextCallerPool[GNextCallerPool.Count - 1].Free;
       GNextCallerPool.Delete(GNextCallerPool.Count - 1);
     end;
     GNextCallerPool.Free;
@@ -585,7 +585,7 @@ finalization
     try
       while GAllNextCallers.Count > 0 do
       begin
-        GAllNextCallers.Items[GAllNextCallers.Count - 1].Free;
+        GAllNextCallers[GAllNextCallers.Count - 1].Free;
         GAllNextCallers.Delete(GAllNextCallers.Count - 1);
       end;
       GAllNextCallers.Free;

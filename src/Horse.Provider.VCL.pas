@@ -1,6 +1,6 @@
 unit Horse.Provider.VCL;
 
-{ PATCH-VCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
+{ PATCH-VCL-1: ListenWithConfig override ï¿½ same root cause as PATCH-CONSOLE-1. }
 
 interface
 
@@ -121,7 +121,7 @@ end;
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
   loopback the keep-alive request/response ping-pong collides with the ~40 ms
   delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
-  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+  Harmless (beneficial) on Windows. See bench-analysis-report.md ï¿½7.5. }
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
@@ -214,8 +214,8 @@ begin
     if FHost <> GetDefaultHost then
     begin
       LIdHTTPWebBrokerBridge.Bindings.Add;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+      LIdHTTPWebBrokerBridge.Bindings[0].IP := FHost;
+      LIdHTTPWebBrokerBridge.Bindings[0].Port := FPort;
     end;
 
     LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;

@@ -269,8 +269,8 @@ begin
         if FHost <> GetDefaultHost then
         begin
           LIdHTTPWebBrokerBridge.Bindings.Add;
-          LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-          LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+          LIdHTTPWebBrokerBridge.Bindings[0].IP := FHost;
+          LIdHTTPWebBrokerBridge.Bindings[0].Port := FPort;
         end;
         LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
         LIdHTTPWebBrokerBridge.DefaultPort := FPort;

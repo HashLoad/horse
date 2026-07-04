@@ -126,7 +126,7 @@ begin
   if (FMiddleware.Count > FIndex) then
   begin
     FFound^ := True;
-    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
+    Self.FMiddleware[FIndex](FRequest, FResponse, Next);
     if (FMiddleware.Count > FIndex) then
       Next;
   end
@@ -139,7 +139,7 @@ begin
       begin
         try
           FFound^ := True;
-          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
+          LCallback[FIndexCallback](FRequest, FResponse, Next);
         except
           on E: Exception do
           begin

@@ -28,7 +28,7 @@ type
     function TryGetSession<T: class>(out ASession: T): Boolean;
     function Contains(const ASessionClass: TSessionClass): Boolean;
     function SetSession(const ASessionClass: TSessionClass; const AInstance: TSession): THorseSessions;
-{ PATCH-SES-1 — Clear: wipe all stored sessions in-place for pool reuse.
+{ PATCH-SES-1 ï¿½ Clear: wipe all stored sessions in-place for pool reuse.
   TObjectDictionary([doOwnsValues]).Clear frees every TSession before removing
   it, so callers do not need to free sessions manually.  The dictionary object
   itself is kept alive so the next request reuses it without any allocation. }
@@ -69,12 +69,12 @@ end;
 
 function THorseSessions.GetObject(const ASessionClass: TSessionClass): TObject;
 begin
-  Result := FSessions.Items[ASessionClass];
+  Result := FSessions[ASessionClass];
 end;
 
 function THorseSessions.GetSession(const ASessionClass: TSessionClass): TSession;
 begin
-  Result := FSessions.Items[ASessionClass];
+  Result := FSessions[ASessionClass];
 end;
 
 function THorseSessions.SetSession(const ASessionClass: TSessionClass; const AInstance: TSession): THorseSessions;

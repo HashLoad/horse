@@ -333,7 +333,7 @@ begin
   end;
 
   if FContains then
-    FValue := AParams.Items[LKey];
+    FValue := AParams[LKey];
 
   InitializeLhsBrackets(AParams, AFieldName);
 end;
@@ -374,7 +374,7 @@ begin
     begin
       if AParams.ContainsKey(FFieldName + LLhsBracketType.ToString) then
       begin
-        FLhsBrackets.SetValue(LLhsBracketType, AParams.Items[FFieldName+LLhsBracketType.ToString]);
+        FLhsBrackets.SetValue(LLhsBracketType, AParams[FFieldName+LLhsBracketType.ToString]);
         FLhsBrackets.Types := FLhsBrackets.Types + [LLhsBracketType];
       end;
     end;

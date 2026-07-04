@@ -1763,7 +1763,7 @@ begin
       if SameText(AHeadersList.Names[I], 'Transfer-Encoding') and SameText(AHeadersList.ValueFromIndex[I], 'chunked') then
         LHasChunkedHeader := True;
     {$ELSE}
-    LHasChunkedHeader := AHeadersList.ContainsKey('Transfer-Encoding') and SameText(AHeadersList.Items['Transfer-Encoding'], 'chunked');
+    LHasChunkedHeader := AHeadersList.ContainsKey('Transfer-Encoding') and SameText(AHeadersList['Transfer-Encoding'], 'chunked');
     {$ENDIF}
   end;
 
