@@ -60,7 +60,7 @@ var
   LName, LValue: string;
   LHeaders: TStrings;
 begin
-  Result := THorseList.create;
+  Result := THorseList.Create;
   try
     LHeaders := GetHeadersList(AWebRequest);
     try
@@ -95,7 +95,7 @@ class function THorseCoreParamHeader.GetHeadersList(const AWebRequest: TRequest)
 var
   LRequest: TFPHTTPConnectionRequest;
 begin
-  Result := TStringList.create;
+  Result := TStringList.Create;
   try
     if AWebRequest is TFPHTTPConnectionRequest then
     begin
@@ -130,7 +130,7 @@ var
   LObject: TObject;
 {$ENDIF}
 begin
-  Result := TStringList.create;
+  Result := TStringList.Create;
   try
     Result.NameValueSeparator := ':';
 

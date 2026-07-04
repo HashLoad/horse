@@ -21,7 +21,7 @@ uses
   System.SyncObjs,
   System.Generics.Collections,
   Winapi.Windows,
-  Winapi.WinSock2,
+  Winapi.Winsock2,
   {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
@@ -800,7 +800,7 @@ end;
 
 procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
 var
-  LBufs: array[0..1] of TWSABUF;
+  LBufs: array[0..1] of TWsaBuf;
   LBufCount: DWORD;
   LBytesSent: DWORD;
   LFlags: DWORD;
@@ -1332,7 +1332,7 @@ end;
 class function THorseProviderIOCP.CreateListenSocket(const APort: Integer; const AHost: string): TSocket;
 var
   LAddr: TSockAddrIn;
-  wsaData: TWSAData;
+  wsaData: TWsaData;
   LOpt: Integer;
 begin
   WSAStartup(MakeWord(2, 2), wsaData);
@@ -1360,7 +1360,7 @@ begin
   {$IF DEFINED(FPC)}
   if WinSock2.listen(Result, SOMAXCONN) = SOCKET_ERROR then
   {$ELSE}
-  if Winapi.WinSock2.listen(Result, SOMAXCONN) = SOCKET_ERROR then
+  if Winapi.Winsock2.listen(Result, SOMAXCONN) = SOCKET_ERROR then
   {$ENDIF}
   begin
     closesocket(Result);
@@ -1455,7 +1455,7 @@ end;
 
 class procedure THorseProviderIOCP.PostReadConnection(AContext: TIocpConnectionContext);
 var
-  LWSABuf: TWSABuf;
+  LWSABuf: TWsaBuf;
   dwFlags, dwBytes: DWORD;
 begin
   FillChar(AContext.ReadOverlapped.Overlapped, SizeOf(OVERLAPPED), 0);

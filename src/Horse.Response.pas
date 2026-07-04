@@ -252,7 +252,7 @@ begin
 { end PATCH-RES-4 }
   if Assigned(FWebResponse) then
   begin
-{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.Ok.ToInteger;
+{$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := THTTPStatus.OK.ToInteger;
 {$IF DEFINED(FPC)}
     FWebResponse.FreeContentStream := True;
 {$ENDIF}

@@ -213,7 +213,7 @@ begin
   end;
 end;
 
-function EHorseException.ToJSONObject: TJsonObject;
+function EHorseException.ToJSONObject: TJSONObject;
 var
   FieldEntry: TPair<string, string>;
 begin

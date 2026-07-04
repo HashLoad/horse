@@ -244,7 +244,7 @@ begin
         tkFloat:
           Result.Add(TValue.From<Double>(StrToFloat(ValueArray[i])).AsType<T>);
         tkVariant:
-          Result.Add(TValue.From<variant>(ValueArray[i]).AsType<T>);
+          Result.Add(TValue.From<Variant>(ValueArray[i]).AsType<T>);
       else
         // Specific handling for Datetime, Date, and Time, as they are not present in the TypeKind list.
         begin

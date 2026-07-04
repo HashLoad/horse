@@ -1030,7 +1030,7 @@ begin
   if not Assigned(FRequest.Address.pRemoteAddress) then
     Exit('127.0.0.1');
 
-  LFamily := PWord(FRequest.Address.pRemoteAddress)^;
+  LFamily := PWORD(FRequest.Address.pRemoteAddress)^;
   if LFamily = 2 then // AF_INET
   begin
     LIPv4 := PSockAddrIn(FRequest.Address.pRemoteAddress);
@@ -1048,7 +1048,7 @@ begin
   if not Assigned(FRequest.Address.pLocalAddress) then
     Exit(80);
 
-  LFamily := PWord(FRequest.Address.pLocalAddress)^;
+  LFamily := PWORD(FRequest.Address.pLocalAddress)^;
   if LFamily = 2 then // AF_INET
   begin
     LIPv4 := PSockAddrIn(FRequest.Address.pLocalAddress);
