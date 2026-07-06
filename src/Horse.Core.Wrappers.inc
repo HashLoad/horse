@@ -135,10 +135,10 @@ procedure W1_62(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin
 procedure W1_63(Req: THorseRequest; Res: THorseResponse; Next: TNextProc); begin Res.Status(THTTPStatus.NoContent); GCallbacks1[63](Req); end;
 
 const
-  GWrapperList2: array[0..63] of THorseCallback = (
+  GWrapperList2: array[0..63] of Pointer = (
     @W2_0, @W2_1, @W2_2, @W2_3, @W2_4, @W2_5, @W2_6, @W2_7, @W2_8, @W2_9, @W2_10, @W2_11, @W2_12, @W2_13, @W2_14, @W2_15, @W2_16, @W2_17, @W2_18, @W2_19, @W2_20, @W2_21, @W2_22, @W2_23, @W2_24, @W2_25, @W2_26, @W2_27, @W2_28, @W2_29, @W2_30, @W2_31, @W2_32, @W2_33, @W2_34, @W2_35, @W2_36, @W2_37, @W2_38, @W2_39, @W2_40, @W2_41, @W2_42, @W2_43, @W2_44, @W2_45, @W2_46, @W2_47, @W2_48, @W2_49, @W2_50, @W2_51, @W2_52, @W2_53, @W2_54, @W2_55, @W2_56, @W2_57, @W2_58, @W2_59, @W2_60, @W2_61, @W2_62, @W2_63
   );
-  GWrapperList1: array[0..63] of THorseCallback = (
+  GWrapperList1: array[0..63] of Pointer = (
     @W1_0, @W1_1, @W1_2, @W1_3, @W1_4, @W1_5, @W1_6, @W1_7, @W1_8, @W1_9, @W1_10, @W1_11, @W1_12, @W1_13, @W1_14, @W1_15, @W1_16, @W1_17, @W1_18, @W1_19, @W1_20, @W1_21, @W1_22, @W1_23, @W1_24, @W1_25, @W1_26, @W1_27, @W1_28, @W1_29, @W1_30, @W1_31, @W1_32, @W1_33, @W1_34, @W1_35, @W1_36, @W1_37, @W1_38, @W1_39, @W1_40, @W1_41, @W1_42, @W1_43, @W1_44, @W1_45, @W1_46, @W1_47, @W1_48, @W1_49, @W1_50, @W1_51, @W1_52, @W1_53, @W1_54, @W1_55, @W1_56, @W1_57, @W1_58, @W1_59, @W1_60, @W1_61, @W1_62, @W1_63
   );
 {$ENDIF}
