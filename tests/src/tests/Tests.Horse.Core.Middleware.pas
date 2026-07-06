@@ -6,7 +6,8 @@ uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
   System.SysUtils, System.Generics.Collections,
   Horse.Exception.Interrupted,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons,
+  Horse, Horse.Proc, Horse.Callback;
 
 type
   [TestFixture]
@@ -27,6 +28,8 @@ type
     procedure TestMiddlewareEarlyInterruption;
     [Test]
     procedure TestMiddlewareExceptionPropagation;
+    [Test]
+    procedure TestFPCLegacyCallbackAssignment;
   end;
 
 implementation
@@ -163,6 +166,24 @@ begin
       FRouterTree.Execute(FRequest, FResponse);
     end,
     EOSError);
+end;
+
+procedure MyLegacyCallback(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+begin
+  //
+end;
+
+function GetLegacyCallback: THorseCallback;
+begin
+  Result := MyLegacyCallback;
+end;
+
+procedure TTestHorseCoreMiddleware.TestFPCLegacyCallbackAssignment;
+var
+  LCallback: THorseCallback;
+begin
+  LCallback := GetLegacyCallback;
+  Assert.IsNotNull(Pointer(LCallback));
 end;
 
 initialization
