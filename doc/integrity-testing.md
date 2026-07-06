@@ -76,3 +76,38 @@ cd samples/delphi/console_complete
 ```
 
 The script manages the compilation of both routers using the Delphi compiler (`dcc32`), launches the background process for each scenario, executes the validation requests, terminates the servers, and prints a final combined success/failure summary.
+
+---
+
+## Running via Docker
+
+For development isolation, or to avoid installing FPC and PAServer on your local host, you can orchestrate your Linux testing environment using the provided [docker-compose.yml](../tests/docker-compose.yml) inside the `tests/` directory.
+
+### 1. Running Lazarus / FPC Tests
+To compile and run the full test suite under Lazarus/FPC on Linux (Ubuntu environment):
+```bash
+cd tests
+docker compose run --build tests-lazarus
+```
+This command automatically:
+- Resolves unit test dependencies via Boss.
+- Clones DUnitX.
+- Compiles the console test runner.
+- Executes the tests and outputs the results to your terminal.
+
+### 2. Running PAServer for Delphi (Cross-Compilation / Debugging)
+If you are developing on Windows and want to target, deploy, and debug your Delphi application directly on a Linux container:
+```bash
+cd tests
+docker compose up -d paserver
+```
+This will launch the Delphi Platform Assistant (`PAServer`) on port `64211` without a password.
+To connect your Delphi IDE (Windows) to this PAServer instance:
+1. Open Delphi and go to **Tools > Options > Deployment > Connection Profile Manager**.
+2. Add a new Connection Profile:
+   - **Platform**: 64-bit Linux
+   - **Host name**: `localhost` (or the IP of your Docker host)
+   - **Port**: `64211`
+   - **Password**: Leave empty.
+3. In your Delphi Project Manager, select **Linux 64-bit** as the target platform, choose the newly created connection profile, and run/debug.
+```
