@@ -78,6 +78,13 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | Automated integration, resilience (Access Violation) and SO limit testing | [Integrity Testing](./doc/integrity-testing.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
 
+### 🤖 AI Coding Skills
+To help your AI agent (like Antigravity, GitHub Copilot, or Claude) understand and write idiomatic, thread-safe, and memory-safe Horse code, we provide pre-packaged instruction files in [`doc/skills/`](./doc/skills/README.md).
+
+To use them:
+* **Copilot / Claude / Custom AIs:** Refer to the files in [`doc/skills/`](./doc/skills/README.md) to feed context to your agent.
+* **Antigravity IDE:** Copy the files to your project's `.agents/skills/` directory (ensuring each is named `SKILL.md` inside its respective folder, e.g. `.agents/skills/<skill-name>/SKILL.md`) or register the path in your local `.agents/skills.json` configuration file.
+
 ## 🔌 Providers (transport layer)
 
 A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** and **mORMot2** Providers replace both with async **IOCP / epoll / kqueue** I/O; the optional **ICS** Provider (Delphi; Windows + Linux64/macOS) swaps in OverbyteICS's modern **OpenSSL 3.x / 4.x** stack — TLS 1.3, SNI, mTLS. The **HttpSys** Provider (Windows) is **built into Horse** — it drives the OS's **http.sys** kernel-mode HTTP stack (the same one IIS uses) with no external library.
