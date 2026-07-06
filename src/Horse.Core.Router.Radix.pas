@@ -502,6 +502,8 @@ var
   LStartSegmentIndex: Integer;
   LKeys: TArray<string>;
   I: Integer;
+  LKey: TMethodType;
+  LAllow: string;
 begin
   try
     Result := False;
@@ -540,7 +542,21 @@ begin
           else
           begin
             if LNode.Callbacks.Count > 0 then
-              {$IF DEFINED(FPC)}LCallbacksList.Add(@RadixMethodNotAllowedFinalizer){$ELSE}LCallbacksList.Add(RadixMethodNotAllowedFinalizer){$ENDIF}
+            begin
+              LAllow := '';
+              for LKey in LNode.Callbacks.Keys do
+              begin
+                if LKey <> TMethodType.mtAny then
+                begin
+                  if LAllow <> '' then
+                    LAllow := LAllow + ', ';
+                  LAllow := LAllow + UpperCase(LKey.ToString);
+                end;
+              end;
+              if LAllow <> '' then
+                AResponse.AddHeader('Allow', LAllow);
+              {$IF DEFINED(FPC)}LCallbacksList.Add(@RadixMethodNotAllowedFinalizer){$ELSE}LCallbacksList.Add(RadixMethodNotAllowedFinalizer){$ENDIF};
+            end
             else
               {$IF DEFINED(FPC)}LCallbacksList.Add(@RadixNotFoundFinalizer){$ELSE}LCallbacksList.Add(RadixNotFoundFinalizer){$ENDIF};
           end;

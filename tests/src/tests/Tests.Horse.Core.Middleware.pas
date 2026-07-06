@@ -28,8 +28,10 @@ type
     procedure TestMiddlewareEarlyInterruption;
     [Test]
     procedure TestMiddlewareExceptionPropagation;
+    {$IF DEFINED(FPC)}
     [Test]
     procedure TestFPCLegacyCallbackAssignment;
+    {$ENDIF}
   end;
 
 implementation
@@ -168,6 +170,7 @@ begin
     EOSError);
 end;
 
+{$IF DEFINED(FPC)}
 procedure MyLegacyCallback(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
   //
@@ -185,6 +188,7 @@ begin
   LCallback := GetLegacyCallback;
   Assert.IsNotNull(Pointer(LCallback));
 end;
+{$ENDIF}
 
 initialization
   TDUnitX.RegisterTestFixture(TTestHorseCoreMiddleware);

@@ -44,6 +44,8 @@ type
     procedure ExecuteRouteWithMiddlewares;
     [Test]
     procedure ExecuteRouteWithCoringaoPriority;
+    [Test]
+    procedure ExecuteRouteWithMethodNotAllowedAllowHeader;
   end;
 
 implementation
@@ -332,6 +334,34 @@ begin
   Assert.IsFalse(LClientesCalled);
   Assert.IsFalse(LPessoasCalled);
   Assert.IsTrue(LCoringaoCalled);
+end;
+
+procedure TTestHorseCoreRouterRadix.ExecuteRouteWithMethodNotAllowedAllowHeader;
+var
+  LAllow: string;
+begin
+  FRouter.RegisterRoute(mtGet, '/users',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+    end);
+
+  FRouter.RegisterRoute(mtPost, '/users',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+    end);
+
+  FRequest.Populate('PUT', mtPut, '/users', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.AreEqual(405, FResponse.Status);
+
+  {$IF DEFINED(FPC)}
+  LAllow := FResponse.CustomHeaders.Values['Allow'];
+  {$ELSE}
+  LAllow := FResponse.CustomHeaders.Items['Allow'];
+  {$ENDIF}
+
+  Assert.IsTrue(LAllow.Contains('GET'));
+  Assert.IsTrue(LAllow.Contains('POST'));
 end;
 
 initialization

@@ -22,6 +22,8 @@ type
     procedure TestOptionsMethodInterceptedByMiddleware;
     [Test]
     procedure TestTraceMethodInterceptedByMiddleware;
+    [Test]
+    procedure TestMethodNotAllowedAllowHeader;
   end;
 
 implementation
@@ -55,6 +57,13 @@ begin
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
       Res.Send('get-ok');
+    end);
+
+  // Rota POST normal usando TNextProc
+  THorse.Post('/resource',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      Res.Send('post-ok');
     end);
 
   TThread.CreateAnonymousThread(
@@ -97,6 +106,24 @@ begin
     LRes := LClient.Execute('TRACE', Format('http://localhost:%d/resource', [TEST_PORT])) as IHTTPResponse;
     Assert.AreEqual(200, LRes.StatusCode);
     Assert.AreEqual('trace-interceptor-ok', LRes.ContentAsString);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TTestIntegrationHttpMethods.TestMethodNotAllowedAllowHeader;
+var
+  LClient: THTTPClient;
+  LRes: IHTTPResponse;
+  LAllow: string;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LRes := LClient.Execute('PUT', Format('http://localhost:%d/resource', [TEST_PORT])) as IHTTPResponse;
+    Assert.AreEqual(405, LRes.StatusCode);
+    LAllow := LRes.HeaderValue['Allow'];
+    Assert.IsTrue(LAllow.Contains('GET'));
+    Assert.IsTrue(LAllow.Contains('POST'));
   finally
     LClient.Free;
   end;
