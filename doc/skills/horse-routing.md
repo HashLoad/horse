@@ -38,6 +38,27 @@ THorse.Get('/public/*', ServeStaticFilesHandler);
 
 ---
 
+## Route Grouping & Prefixes (THorse.Group)
+You can group related routes under a common path prefix using `THorse.Group`. This is highly useful for API versioning (e.g., `/v1`) and isolating group-level middlewares:
+
+*   **Prefixing Routes**:
+    ```pascal
+    THorse.Group.Prefix('/v1')
+      .Get('/products', GetProductsHandler)
+      .Get('/customers', GetCustomersHandler);
+    ```
+
+*   **Group-level Middlewares (Restricted Middlewares)**:
+    Instead of registering a middleware globally via `THorse.Use`, you can register it specifically for a group using `.Use()`. The middleware will only run for endpoints defined inside that group:
+    ```pascal
+    THorse.Group.Prefix('/admin')
+      .Use(AuthMiddleware) // Only runs for routes under /admin
+      .Get('/dashboard', GetDashboardHandler)
+      .Get('/settings', GetSettingsHandler);
+    ```
+
+---
+
 ## Grouping with Controllers
 To keep routes organized, group them logically within static class methods or dedicated units:
 

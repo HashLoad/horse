@@ -10,7 +10,11 @@ The `THorseRequest` object contains all details of the incoming HTTP request.
 
 *   **Body**: To read the raw text payload, use `Req.Body`. If the `Jhonson` middleware is active, you can read the parsed JSON directly:
     ```pascal
-    var LBody: TJSONObject := Req.Body<TJSONObject>;
+    var
+      LBody: TJSONObject;
+    begin
+      LBody := Req.Body<TJSONObject>;
+    end;
     ```
 *   **Params**: For path parameters (defined with `:name`), use `Req.Params.Items['name']` (or `Req.Params['name']`).
 *   **Query**: For query parameters (e.g., `?page=1&limit=10`), use `Req.Query.Items['page']` (or `Req.Query['page']`).
@@ -23,16 +27,57 @@ Instead of accessing raw string dictionary values (e.g., `Req.Params['id']`) and
 
 *   **Type Conversion**: Convert parameters to the target type without manually calling `StrToInt` or `StrToBool`:
     ```pascal
-    var LId := Req.Params.Field('id').AsInteger;
-    var LActive := Req.Query.Field('active').AsBoolean;
-    var LDate := Req.Query.Field('since').AsISO8601DateTime;
+    var
+      LId: Integer;
+      LActive: Boolean;
+      LDate: TDateTime;
+    begin
+      LId := Req.Params.Field('id').AsInteger;
+      LActive := Req.Query.Field('active').AsBoolean;
+      LDate := Req.Query.Field('since').AsISO8601DateTime;
+    end;
     ```
 *   **Required Check**: Automatically halt execution and return a 400 Bad Request with a custom error message if the parameter is missing:
     ```pascal
-    // Automatically raises EHorseException if 'email' query param is empty
-    var LEmail := Req.Query.Field('email').Required.RequiredMessage('The "email" parameter is required.').AsString;
+    var
+      LEmail: string;
+    begin
+      // Automatically raises EHorseException if 'email' query param is empty
+      LEmail := Req.Query.Field('email').Required.RequiredMessage('The "email" parameter is required.').AsString;
+    end;
     ```
 *   **Supported Converters**: `AsInteger`, `AsInt64`, `AsBoolean`, `AsFloat`, `AsCurrency`, `AsDateTime`, `AsISO8601DateTime`, `AsStream` (for multipart uploads), and `AsString`.
+
+---
+
+## Cookies Management
+Horse provides a provider-agnostic, typed API to read cookies from requests and write them back in responses (RFC 6265 compliant).
+
+*   **Reading Cookies**: Read incoming cookies safely using the `.Field()` helper:
+    ```pascal
+    var
+      LSessionToken: string;
+    begin
+      LSessionToken := Req.Cookie.Field('session_token').AsString;
+    end;
+    ```
+
+*   **Writing Cookies (Set-Cookie)**: Write response cookies using `Res.Cookie` and configure properties fluently:
+    ```pascal
+    uses Horse.Core.Cookie;
+
+    procedure SetCookieHandler(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+    begin
+      // Creates, registers, and configures the cookie fluently (XE7 compatible)
+      Res.Cookie('session_id', 'xyz789')
+        .Path('/')
+        .HttpOnly(True)
+        .Secure(True)
+        .SameSite(TSameSite.ssLax);
+
+      Res.Send('Cookie has been set');
+    end;
+    ```
 
 ---
 
@@ -66,14 +111,17 @@ To return error responses with custom HTTP statuses and error details, raise `EH
 uses Horse.Exception, Horse.Commons;
 
 procedure GetProduct(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+var
+  LId: Integer;
+  LProduct: TProduct;
 begin
-  var LId := Req.Params.Field('id').AsInteger;
+  LId := Req.Params.Field('id').AsInteger;
   if LId <= 0 then
     raise EHorseException.New
       .Status(THTTPStatus.BadRequest)
       .Error('Invalid product ID');
 
-  var LProduct := FindProduct(LId);
+  LProduct := FindProduct(LId);
   if not Assigned(LProduct) then
     raise EHorseException.New
       .Status(THTTPStatus.NotFound)

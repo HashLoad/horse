@@ -13,6 +13,7 @@
 | **horse-routing** | `horse-routing.md` | Configuring HTTP methods, route parameters, wildcards, or grouping routes within Controllers. |
 | **horse-middlewares** | `horse-middlewares.md` | Configuring official middlewares (Johnson, CORS, basic-auth, compression, logger) and ensuring correct execution order. |
 | **horse-request-response** | `horse-request-response.md` | Reading request payload, query parameters, route parameters, headers, or sending HTTP responses and setting statuses. |
+| **horse-files-streams** | `horse-files-streams.md` | Handling file uploads (multipart formData), file downloads, or custom data streams. |
 | **horse-providers** | `horse-providers.md` | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
 | **horse-writing-middleware** | `horse-writing-middleware.md` | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
 
@@ -25,3 +26,4 @@
 3. **Route Parameters**: Parameters are defined using the colon syntax (e.g., `/products/:id`), not curly braces (e.g., `/products/{id}`).
 4. **Thread-Safety**: Horse is inherently multithreaded. **NEVER** share physical database connections (`TFDConnection` or query components) globally across requests. Every route handler must instantiate its own database connection (preferably using connection pooling) or protect shared resources using locks (`TCriticalSection`).
 5. **Console Output**: Call `SetConsoleCharSet` in console mode endpoints if necessary to prevent character encoding issues.
+6. **Stream Management**: The `THorseResponse` object takes ownership of any stream passed to `SendFile`, `Download`, or `Render`. **NEVER** call `.Free` or `FreeAndNil` on a stream after sending it via these response methods.

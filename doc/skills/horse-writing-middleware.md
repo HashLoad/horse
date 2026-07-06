@@ -29,8 +29,10 @@ If a validation fails (e.g., authentication is missing), do **NOT** call `Next`.
 
 ```pascal
 procedure AuthMiddleware(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+var
+  LToken: string;
 begin
-  var LToken := Req.Headers.Items['Authorization'];
+  LToken := Req.Headers.Items['Authorization'];
   
   if LToken.IsEmpty then
   begin
