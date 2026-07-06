@@ -78,6 +78,13 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack | [Testes de Integridade](./doc/integrity-testing.pt-BR.md) |
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
 
+### 🤖 AI Coding Skills
+Para ajudar seu agente de IA (como Antigravity, GitHub Copilot ou Claude) a entender e escrever código Horse idiomático, thread-safe e livre de vazamento de memória, fornecemos arquivos de instrução pré-empacotados em [`doc/skills/`](./doc/skills/README.md).
+
+Para utilizá-los:
+* **Copilot / Claude / IAs Customizadas:** Mencione os arquivos em [`doc/skills/`](./doc/skills/README.md) para alimentar o contexto do seu agente.
+* **Antigravity IDE:** Copie os arquivos para o diretório `.agents/skills/` do seu projeto (garantindo que cada um se chame `SKILL.md` dentro de sua respectiva pasta, ex: `.agents/skills/<nome-da-skill>/SKILL.md`) ou registre o caminho no seu arquivo de configuração local `.agents/skills.json`.
+
 ## 🔌 Providers (camada de transporte)
 
 Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições aos seus handlers de rota. **O mesmo código de handler roda em qualquer provider** — você seleciona um em tempo de compilação via uma Conditional Define. O Provider padrão depende do compilador: **Indy** no Delphi (para Console / VCL / Daemon), **`fphttpserver`** no FPC (para Daemon / HTTPApplication / LCL). Os Providers opcionais **CrossSocket** e **mORMot2** substituem ambos por E/S assíncrona **IOCP / epoll / kqueue**; o Provider opcional **ICS** (Delphi; Windows + Linux64/macOS) traz a pilha moderna **OpenSSL 3.x / 4.x** do OverbyteICS — TLS 1.3, SNI, mTLS. O Provider **HttpSys** (Windows) é **nativo do Horse** — usa a pilha HTTP em modo kernel **http.sys** do sistema (a mesma do IIS), sem biblioteca externa.
