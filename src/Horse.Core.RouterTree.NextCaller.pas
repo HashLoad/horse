@@ -153,6 +153,8 @@ var
   LCallback: TArray<THorseCallback>;
   LMiddlewareCount, LCallbackCount: Integer;
   {$ENDIF}
+  LKey: TMethodType;
+  LAllow: string;
 begin
   {$IF DEFINED(FPC)}
   LMiddlewareCount := FMiddleware.Count;
@@ -213,6 +215,18 @@ begin
       if FCallBack.Count > 0 then
       begin
         FFound^ := True;
+        LAllow := '';
+        for LKey in FCallBack.Keys do
+        begin
+          if LKey <> TMethodType.mtAny then
+          begin
+            if LAllow <> '' then
+              LAllow := LAllow + ', ';
+            LAllow := LAllow + UpperCase(LKey.ToString);
+          end;
+        end;
+        if LAllow <> '' then
+          FResponse.AddHeader('Allow', LAllow);
         FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
       end
       else
