@@ -1,4 +1,4 @@
-unit Horse.Core.Param;
+﻿unit Horse.Core.Param;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -126,8 +126,7 @@ procedure THorseCoreParam.Clear;
 begin
   FParams.Clear;
 
-  if Assigned(FContent) then
-    FreeAndNil(FContent);
+  FreeAndNil(FContent);
 
   ClearFields;
 

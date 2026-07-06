@@ -62,8 +62,7 @@ end;
 
 class destructor THorseRtti.UnInitialize;
 begin
-  if Assigned(FHorseRtti) then
-    FreeAndNil(FHorseRtti);
+  FreeAndNil(FHorseRtti);
 end;
 
 end.

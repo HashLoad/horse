@@ -1,4 +1,4 @@
-unit Horse.Provider.IOCP;
+﻿unit Horse.Provider.IOCP;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -497,8 +497,7 @@ end;
 destructor TIocpRawRequest.Destroy;
 begin
   FResolvedHeaders.Free;
-  if Assigned(FBodyStream) then
-    FBodyStream.Free;
+  FBodyStream.Free;
   if (FTempFileName <> '') and System.SysUtils.FileExists(FTempFileName) then
     System.SysUtils.DeleteFile(FTempFileName);
   inherited;

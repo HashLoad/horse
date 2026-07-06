@@ -1,4 +1,4 @@
-unit Horse.Provider.Console;
+﻿unit Horse.Provider.Console;
 
 { ===========================================================================
   PATCH-CONSOLE-1 � ListenWithConfig override
@@ -369,8 +369,7 @@ end;
 class destructor THorseProvider.UnInitialize;
 begin
   FreeAndNil(FIdHTTPWebBrokerBridge);
-  if Assigned(FEvent) then
-    FreeAndNil(FEvent);
+  FreeAndNil(FEvent);
 end;
 
 initialization

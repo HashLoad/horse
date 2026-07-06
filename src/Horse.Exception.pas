@@ -249,8 +249,7 @@ end;
 
 destructor EHorseException.Destroy;
 begin
-  if Assigned(FCustomFields) then
-    FCustomFields.Free;
+  FCustomFields.Free;
   inherited;
 end;
 

@@ -1,4 +1,4 @@
-unit Horse.Provider.HttpSys;
+﻿unit Horse.Provider.HttpSys;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -817,12 +817,10 @@ end;
 
 destructor THttpSysRawRequest.Destroy;
 begin
-  if Assigned(FBodyStream) then
-    FBodyStream.Free;
+  FBodyStream.Free;
   if FTempFileName <> '' then
     HttpSysDeleteFile(FTempFileName);
-  if Assigned(FHeadersCache) then
-    FHeadersCache.Free;
+  FHeadersCache.Free;
   inherited;
 end;
 

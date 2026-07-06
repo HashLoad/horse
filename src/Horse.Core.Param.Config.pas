@@ -1,4 +1,4 @@
-unit Horse.Core.Param.Config;
+﻿unit Horse.Core.Param.Config;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -144,8 +144,7 @@ end;
 
 class destructor THorseCoreParamConfig.UnInitialize;
 begin
-  if Assigned(FInstance) then
-    FreeAndNil(FInstance);
+  FreeAndNil(FInstance);
 end;
 
 end.

@@ -1,4 +1,4 @@
-unit Horse.Provider.Epoll;
+﻿unit Horse.Provider.Epoll;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -914,8 +914,7 @@ begin
   Headers := nil;
   Buffer := nil;
   FWriteBuffer := nil;
-  if Assigned(FBodyStream) then
-    FBodyStream.Free;
+  FBodyStream.Free;
   if FTempFileName <> '' then
     DeleteFile(FTempFileName);
   inherited;
@@ -1334,8 +1333,7 @@ end;
 destructor TEpollRawRequest.Destroy;
 begin
   FResolvedHeaders.Free;
-  if Assigned(FBodyStream) then
-    FBodyStream.Free;
+  FBodyStream.Free;
   if FTempFileName <> '' then
     DeleteFile(FTempFileName);
   inherited;

@@ -262,12 +262,9 @@ end;
 
 class destructor THorseCore.UnInitialize;
 begin
-  if Assigned(FDefaultHorse) then
-    FreeAndNil(FDefaultHorse);
-  if Assigned(FRoutes) then
-    FreeAndNil(FRoutes);
-  if Assigned(FCallbacks) then
-    FreeAndNil(FCallbacks);
+  FreeAndNil(FDefaultHorse);
+  FreeAndNil(FRoutes);
+  FreeAndNil(FCallbacks);
 end;
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}
 

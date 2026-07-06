@@ -271,8 +271,7 @@ procedure THorseResponse.Clear;
 begin
   FWebResponse := nil;
 
-  if Assigned(FContent) then
-    FreeAndNil(FContent);
+  FreeAndNil(FContent);
 
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Clear;
@@ -289,8 +288,7 @@ begin
 { end PATCH-RES-4 }
 { PATCH-RES-6 � free the per-request TWebResponse adapter (owned).
   Nil on the Indy path (never assigned there); owned on CrossSocket path. }
-  if Assigned(FCSRawWebResponse) then
-    FreeAndNil(FCSRawWebResponse);
+  FreeAndNil(FCSRawWebResponse);
 { end PATCH-RES-6 }
 { PATCH-COOKIE-1 � drop the owned cookies on pool recycle. }
   if Assigned(FCookies) then
@@ -312,25 +310,21 @@ end;
 
 destructor THorseResponse.Destroy;
 begin
-  if Assigned(FContent) then
-    FContent.Free;
+  FContent.Free;
 { ===========================================================================
   PATCH-RES-1 � free FCustomHeaders
   =========================================================================== }
-  if Assigned(FCustomHeaders) then
-    FCustomHeaders.Free;
+  FCustomHeaders.Free;
 { =========================================================================== }
 { PATCH-RES-6 � free the owned TWebResponse adapter if Clear was not called
   before Destroy (e.g. pool shutdown path). }
-  if Assigned(FCSRawWebResponse) then
-    FCSRawWebResponse.Free;
+  FCSRawWebResponse.Free;
 { end PATCH-RES-6 }
 { PATCH-SENDFILE-1 � free the owned SendFile/Download copy if still held. }
   if FCSOwnsContentStream and Assigned(FCSContentStream) then
     FreeAndNil(FCSContentStream);
 { PATCH-COOKIE-1 � free the owned cookie list. }
-  if Assigned(FCookies) then
-    FreeAndNil(FCookies);
+  FreeAndNil(FCookies);
   inherited;
 end;
 

@@ -335,8 +335,7 @@ begin
 { end PATCH-REQ-3 }
 { PATCH-REQ-8 � free the per-request TWebRequest adapter (owned).
   Nil on the Indy path (never assigned there); owned on CrossSocket path. }
-  if Assigned(FCSRawWebRequest) then
-    FreeAndNil(FCSRawWebRequest);
+  FreeAndNil(FCSRawWebRequest);
 { end PATCH-REQ-8 }
   if Assigned(FHeaders) then
     FHeaders.Clear;
@@ -361,27 +360,20 @@ end;
 
 destructor THorseRequest.Destroy;
 begin
-  if Assigned(FHeaders) then
-    FreeAndNil(FHeaders);
-  if Assigned(FQuery) then
-    FreeAndNil(FQuery);
-  if Assigned(FParams) then
-    FreeAndNil(FParams);
-  if Assigned(FContentFields) then
-    FreeAndNil(FContentFields);
-  if Assigned(FCookie) then
-    FreeAndNil(FCookie);
+  FreeAndNil(FHeaders);
+  FreeAndNil(FQuery);
+  FreeAndNil(FParams);
+  FreeAndNil(FContentFields);
+  FreeAndNil(FCookie);
   if FOwnsBody and Assigned(FBody) then
     FBody.Free;
   if FOwnsSession and Assigned(FSession) then
     FreeAndNil(FSession);
-  if Assigned(FSessions) then
-    FSessions.Free;
+  FSessions.Free;
 { PATCH-REQ-8 � free the owned TWebRequest adapter if Clear was not called
   before Destroy (e.g. pool shutdown path). Safe because FCSRawWebRequest is
   only ever populated on the CrossSocket path and is owned by THorseRequest. }
-  if Assigned(FCSRawWebRequest) then
-    FCSRawWebRequest.Free;
+  FCSRawWebRequest.Free;
 { end PATCH-REQ-8 }
   inherited;
 end;
