@@ -20,6 +20,8 @@
 | **horse-security-auth** | [`horse-security-auth/SKILL.md`](./horse-security-auth/SKILL.md) | Securing endpoints using JWT or Basic-Auth middlewares and configuring protected route groups. |
 | **horse-ssl-tls** | [`horse-ssl-tls/SKILL.md`](./horse-ssl-tls/SKILL.md) | Enabling SSL/TLS (HTTPS) configuration across different providers (HTTP.sys, ICS). |
 | **horse-integration-tests** | [`horse-integration-tests/SKILL.md`](./horse-integration-tests/SKILL.md) | Writing automated HTTP tests for endpoints using DUnit/DUnitX and mock server configurations. |
+| **horse-lazarus-compatibility** | [`horse-lazarus-compatibility/SKILL.md`](./horse-lazarus-compatibility/SKILL.md) | Ensuring Lazarus and FPC cross-compiler compatibility, handling anonymous methods differences and FPC JSON libs. |
+| **horse-performance-tuning** | [`horse-performance-tuning/SKILL.md`](./horse-performance-tuning/SKILL.md) | Writing high-performance handlers, optimizing heap allocations, and selecting optimal transport providers. |
 
 ---
 
