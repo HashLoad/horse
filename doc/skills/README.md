@@ -16,6 +16,10 @@
 | **horse-files-streams** | [`horse-files-streams/SKILL.md`](./horse-files-streams/SKILL.md) | Handling file uploads (multipart formData), file downloads, or custom data streams. |
 | **horse-providers** | [`horse-providers/SKILL.md`](./horse-providers/SKILL.md) | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
 | **horse-writing-middleware** | [`horse-writing-middleware/SKILL.md`](./horse-writing-middleware/SKILL.md) | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
+| **horse-database-pooling** | [`horse-database-pooling/SKILL.md`](./horse-database-pooling/SKILL.md) | Enforcing thread-safety during database connection setup, configuring connection pooling (FireDAC / UniDAC). |
+| **horse-security-auth** | [`horse-security-auth/SKILL.md`](./horse-security-auth/SKILL.md) | Securing endpoints using JWT or Basic-Auth middlewares and configuring protected route groups. |
+| **horse-ssl-tls** | [`horse-ssl-tls/SKILL.md`](./horse-ssl-tls/SKILL.md) | Enabling SSL/TLS (HTTPS) configuration across different providers (HTTP.sys, ICS). |
+| **horse-integration-tests** | [`horse-integration-tests/SKILL.md`](./horse-integration-tests/SKILL.md) | Writing automated HTTP tests for endpoints using DUnit/DUnitX and mock server configurations. |
 
 ---
 
