@@ -3,19 +3,32 @@
 > [!NOTE]
 > **Purpose**: This directory contains instruction packages optimized for AI agents (such as Antigravity, Claude, and GitHub Copilot). While the standard documentation is designed for human developers, these skills are optimized to help AIs quickly understand and apply correct, memory-safe, and idiomatic patterns when working with the Horse Web Framework.
 
+<p align="center">
+  <i>Read this in <a href="./README.md">English</a> or <a href="./README.pt-BR.md">Português (BR)</a>.</i>
+</p>
+
 ---
 
 ## Available Skills
 
-| Skill Name | Filename | Load When |
+| Skill Name | Path | Load When |
 | :--- | :--- | :--- |
-| **horse-app-structure** | `horse-app-structure.md` | Setting up a new project, setting up the `.dpr` bootstrap, initial middleware pipeline configuration, or port listening. |
-| **horse-routing** | `horse-routing.md` | Configuring HTTP methods, route parameters, wildcards, or grouping routes within Controllers. |
-| **horse-middlewares** | `horse-middlewares.md` | Configuring official middlewares (Johnson, CORS, basic-auth, compression, logger) and ensuring correct execution order. |
-| **horse-request-response** | `horse-request-response.md` | Reading request payload, query parameters, route parameters, headers, or sending HTTP responses and setting statuses. |
-| **horse-files-streams** | `horse-files-streams.md` | Handling file uploads (multipart formData), file downloads, or custom data streams. |
-| **horse-providers** | `horse-providers.md` | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
-| **horse-writing-middleware** | `horse-writing-middleware.md` | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
+| **horse-app-structure** | [`horse-app-structure/SKILL.md`](./horse-app-structure/SKILL.md) | Setting up a new project, setting up the `.dpr` bootstrap, initial middleware pipeline configuration, or port listening. |
+| **horse-routing** | [`horse-routing/SKILL.md`](./horse-routing/SKILL.md) | Configuring HTTP methods, route parameters, wildcards, or grouping routes within Controllers. |
+| **horse-middlewares** | [`horse-middlewares/SKILL.md`](./horse-middlewares/SKILL.md) | Configuring official middlewares (Johnson, CORS, basic-auth, compression, logger) and ensuring correct execution order. |
+| **horse-request-response** | [`horse-request-response/SKILL.md`](./horse-request-response/SKILL.md) | Reading request payload, query parameters, route parameters, headers, or sending HTTP responses and setting statuses. |
+| **horse-files-streams** | [`horse-files-streams/SKILL.md`](./horse-files-streams/SKILL.md) | Handling file uploads (multipart formData), file downloads, or custom data streams. |
+| **horse-providers** | [`horse-providers/SKILL.md`](./horse-providers/SKILL.md) | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
+| **horse-writing-middleware** | [`horse-writing-middleware/SKILL.md`](./horse-writing-middleware/SKILL.md) | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
+| **horse-database-pooling** | [`horse-database-pooling/SKILL.md`](./horse-database-pooling/SKILL.md) | Enforcing thread-safety during database connection setup, configuring connection pooling (FireDAC / UniDAC). |
+| **horse-security-auth** | [`horse-security-auth/SKILL.md`](./horse-security-auth/SKILL.md) | Securing endpoints using JWT or Basic-Auth middlewares and configuring protected route groups. |
+| **horse-ssl-tls** | [`horse-ssl-tls/SKILL.md`](./horse-ssl-tls/SKILL.md) | Enabling SSL/TLS (HTTPS) configuration across different providers (HTTP.sys, ICS). |
+| **horse-integration-tests** | [`horse-integration-tests/SKILL.md`](./horse-integration-tests/SKILL.md) | Writing automated HTTP tests for endpoints using DUnit/DUnitX and mock server configurations. |
+| **horse-lazarus-compatibility** | [`horse-lazarus-compatibility/SKILL.md`](./horse-lazarus-compatibility/SKILL.md) | Ensuring Lazarus and FPC cross-compiler compatibility, handling anonymous methods differences and FPC JSON libs. |
+| **horse-performance-tuning** | [`horse-performance-tuning/SKILL.md`](./horse-performance-tuning/SKILL.md) | Writing high-performance handlers, optimizing heap allocations, and selecting optimal transport providers. |
+| **horse-zero-allocation** | [`horse-zero-allocation/SKILL.md`](./horse-zero-allocation/SKILL.md) | Coding for Zero-Allocation, using stack buffers, string slices, object pooling, and avoiding thread lock contention. |
+| **horse-mvc-architecture** | [`horse-mvc-architecture/SKILL.md`](./horse-mvc-architecture/SKILL.md) | Structuring corporate APIs using Clean MVC principles, separating transport from business logic. |
+| **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Building rapid, low-boilerplate microservices and mock APIs inside single-file bootstrap models. |
 
 ---
 

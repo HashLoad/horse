@@ -65,7 +65,7 @@ procedure GetCustomerHandler(Req: THorseRequest; Res: THorseResponse; Next: TPro
 var
   LConnection: TFDConnection;
   LQuery: TFDQuery;
-begin
+ begin
   LConnection := TFDConnection.Create(nil);
   LQuery := TFDQuery.Create(nil);
   try

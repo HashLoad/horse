@@ -79,11 +79,19 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
 
 ### 🤖 AI Coding Skills
-Para ajudar seu agente de IA (como Antigravity, GitHub Copilot ou Claude) a entender e escrever código Horse idiomático, thread-safe e livre de vazamento de memória, fornecemos arquivos de instrução pré-empacotados em [`doc/skills/`](./doc/skills/README.md).
+Para ajudar seu agente de IA (como Antigravity, GitHub Copilot ou Claude) a entender e escrever código Horse idiomático, thread-safe e livre de vazamento de memória, fornecemos arquivos de instrução pré-empacotados em [`doc/skills/`](./doc/skills/README.pt-BR.md).
 
 Para utilizá-los:
-* **Copilot / Claude / IAs Customizadas:** Mencione os arquivos em [`doc/skills/`](./doc/skills/README.md) para alimentar o contexto do seu agente.
-* **Antigravity IDE:** Copie os arquivos para o diretório `.agents/skills/` do seu projeto (garantindo que cada um se chame `SKILL.md` dentro de sua respectiva pasta, ex: `.agents/skills/<nome-da-skill>/SKILL.md`) ou registre o caminho no seu arquivo de configuração local `.agents/skills.json`.
+* **Copilot / Claude / IAs Customizadas:** Mencione os arquivos em [`doc/skills/`](./doc/skills/README.pt-BR.md) para alimentar o contexto do seu agente.
+* **Antigravity IDE:** Adicione o caminho do diretório `doc/` do repositório do Horse no arquivo `.agents/skills.json` do seu projeto para carregar todas as skills automaticamente:
+  ```json
+  {
+    "entries": [
+      { "path": "caminho/para/horse/doc" }
+    ]
+  }
+  ```
+  Ou copie as pastas das skills diretamente para o diretório `.agents/skills/` do seu projeto.
 
 ## 🔌 Providers (camada de transporte)
 
