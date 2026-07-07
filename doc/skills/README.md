@@ -23,6 +23,8 @@
 | **horse-lazarus-compatibility** | [`horse-lazarus-compatibility/SKILL.md`](./horse-lazarus-compatibility/SKILL.md) | Ensuring Lazarus and FPC cross-compiler compatibility, handling anonymous methods differences and FPC JSON libs. |
 | **horse-performance-tuning** | [`horse-performance-tuning/SKILL.md`](./horse-performance-tuning/SKILL.md) | Writing high-performance handlers, optimizing heap allocations, and selecting optimal transport providers. |
 | **horse-zero-allocation** | [`horse-zero-allocation/SKILL.md`](./horse-zero-allocation/SKILL.md) | Coding for Zero-Allocation, using stack buffers, string slices, object pooling, and avoiding thread lock contention. |
+| **horse-mvc-architecture** | [`horse-mvc-architecture/SKILL.md`](./horse-mvc-architecture/SKILL.md) | Structuring corporate APIs using Clean MVC principles, separating transport from business logic. |
+| **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Building rapid, low-boilerplate microservices and mock APIs inside single-file bootstrap models. |
 
 ---
 
