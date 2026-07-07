@@ -3,6 +3,10 @@
 > [!NOTE]
 > **Purpose**: This directory contains instruction packages optimized for AI agents (such as Antigravity, Claude, and GitHub Copilot). While the standard documentation is designed for human developers, these skills are optimized to help AIs quickly understand and apply correct, memory-safe, and idiomatic patterns when working with the Horse Web Framework.
 
+<p align="center">
+  <i>Read this in <a href="./README.md">English</a> or <a href="./README.pt-BR.md">Português (BR)</a>.</i>
+</p>
+
 ---
 
 ## Available Skills
