@@ -22,6 +22,7 @@
 | **horse-integration-tests** | [`horse-integration-tests/SKILL.md`](./horse-integration-tests/SKILL.md) | Writing automated HTTP tests for endpoints using DUnit/DUnitX and mock server configurations. |
 | **horse-lazarus-compatibility** | [`horse-lazarus-compatibility/SKILL.md`](./horse-lazarus-compatibility/SKILL.md) | Ensuring Lazarus and FPC cross-compiler compatibility, handling anonymous methods differences and FPC JSON libs. |
 | **horse-performance-tuning** | [`horse-performance-tuning/SKILL.md`](./horse-performance-tuning/SKILL.md) | Writing high-performance handlers, optimizing heap allocations, and selecting optimal transport providers. |
+| **horse-zero-allocation** | [`horse-zero-allocation/SKILL.md`](./horse-zero-allocation/SKILL.md) | Coding for Zero-Allocation, using stack buffers, string slices, object pooling, and avoiding thread lock contention. |
 
 ---
 
