@@ -363,7 +363,8 @@ begin
   Result.ShortTimeFormat := FTimeFormat;
 end;
 
-procedure THorseCoreParamField.InitializeLhsBrackets(const AParams: TDictionary<string, string>; const AFieldName: string);
+procedure THorseCoreParamField.InitializeLhsBrackets(const AParams: TDictionary<string, string>;
+  const AFieldName: string);
 var
   LLhsBracketType: TLhsBracketsType;
 begin

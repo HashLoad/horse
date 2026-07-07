@@ -65,7 +65,8 @@ type
   private
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
     class function FindCRLF(const ABuffer: TBytes; AStart, AEnd: Integer): Integer; static; inline;
-    class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean; static; inline;
+    class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer;
+      const AStr: string): Boolean; static; inline;
     class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
   public
     class function TryParseRequest(
@@ -162,7 +163,8 @@ type
     FIsKeepAlive: Boolean;
     function PrepareHeaders: TBytes;
     procedure SendHeaders;
-    procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+    procedure SendStreamResponse(AStream: TStream;
+      AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     function WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
     function WriteNonBlockingV(AIovCnt: Integer; AIov: Pointer): Boolean;
   public
@@ -263,10 +265,14 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
+      const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
     class procedure StopListen; override;
     class function IsRunning: Boolean;
@@ -283,7 +289,8 @@ implementation
 
 {$IFDEF LINUX}
 
-function FastFindHeaderEndAndContentLength(const ABuffer: TBytes; ABytesReceived: Integer; out ABodyOffset: Integer; out AContentLength: Int64): Boolean;
+function FastFindHeaderEndAndContentLength(const ABuffer: TBytes; ABytesReceived: Integer;
+  out ABodyOffset: Integer; out AContentLength: Int64): Boolean;
 var
   I, J: Integer;
   B: Byte;
@@ -495,9 +502,11 @@ function writev(fd: Integer; iov: piovec; iovcnt: Integer): NativeInt; cdecl; ex
 {$ENDIF}
 
 {$IFDEF FPC}
-function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet; timeout: PEpollTimeVal): Integer; cdecl; external 'libc' name 'select';
+function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet;
+  timeout: PEpollTimeVal): Integer; cdecl; external 'libc' name 'select';
 {$ELSE}
-function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet; timeout: PEpollTimeVal): Integer; cdecl; external libc name 'select';
+function select(nfds: Integer; readfds: PEpollFDSet; writefds: PEpollFDSet; exceptfds: PEpollFDSet;
+  timeout: PEpollTimeVal): Integer; cdecl; external libc name 'select';
 {$ENDIF}
 
 {$IFNDEF FPC}
@@ -517,8 +526,10 @@ type
   end;
 
 function epoll_create1(flags: Integer): Integer; cdecl; external libc name 'epoll_create1';
-function epoll_ctl(epfd: Integer; op: Integer; fd: Integer; event: pepoll_event): Integer; cdecl; external libc name 'epoll_ctl';
-function epoll_wait(epfd: Integer; events: pepoll_event; maxevents: Integer; timeout: Integer): Integer; cdecl; external libc name 'epoll_wait';
+function epoll_ctl(epfd: Integer; op: Integer; fd: Integer; event: pepoll_event): Integer;
+  cdecl; external libc name 'epoll_ctl';
+function epoll_wait(epfd: Integer; events: pepoll_event; maxevents: Integer; timeout: Integer): Integer;
+  cdecl; external libc name 'epoll_wait';
 function pipe(filedes: PInteger): Integer; cdecl; external libc name 'pipe';
 function setrlimit(resource: Integer; const rlim: rlimit): Integer; cdecl; external libc name 'setrlimit';
 function clock_gettime(clk_id: Integer; var tp: TEpollTimeSpec): Integer; cdecl; external libc name 'clock_gettime';
@@ -530,7 +541,8 @@ const
   libc = 'libc.so.6';
 {$ENDIF}
 
-function sendfile(out_fd: Integer; in_fd: Integer; offset: PInt64; count: NativeUInt): NativeInt; cdecl; external libc name 'sendfile';
+function sendfile(out_fd: Integer; in_fd: Integer; offset: PInt64; count: NativeUInt): NativeInt;
+  cdecl; external libc name 'sendfile';
 
 {$IFNDEF FPC}
 function GetTickCount64: Int64;
@@ -638,7 +650,8 @@ end;
 {$IFDEF FPC}
 { TEpollFPCTask }
 
-constructor TEpollFPCTask.Create(AContext: TEpollConnectionContext; AKeepAlive: Boolean; AEpollFd: Integer; AWorker: TThread);
+constructor TEpollFPCTask.Create(AContext: TEpollConnectionContext; AKeepAlive: Boolean;
+  AEpollFd: Integer; AWorker: TThread);
 begin
   inherited Create;
   Context := AContext;
@@ -1098,7 +1111,8 @@ begin
   Result := -1;
 end;
 
-class function THorseHttpParser.CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean;
+class function THorseHttpParser.CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer;
+  const AStr: string): Boolean;
 var
   I: Integer;
   B1, B2: Byte;
@@ -1124,18 +1138,24 @@ begin
       else if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 85) and (ABuffer[AStart+2] = 84) then
         Exit('PUT');
     4:
-      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 79) and (ABuffer[AStart+2] = 83) and (ABuffer[AStart+3] = 84) then
+      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 79) and (ABuffer[AStart+2] = 83)
+        and (ABuffer[AStart+3] = 84) then
         Exit('POST')
-      else if (ABuffer[AStart] = 72) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 65) and (ABuffer[AStart+3] = 68) then
+      else if (ABuffer[AStart] = 72) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 65)
+        and (ABuffer[AStart+3] = 68) then
         Exit('HEAD');
     5:
-      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 65) and (ABuffer[AStart+2] = 84) and (ABuffer[AStart+3] = 67) and (ABuffer[AStart+4] = 72) then
+      if (ABuffer[AStart] = 80) and (ABuffer[AStart+1] = 65) and (ABuffer[AStart+2] = 84)
+        and (ABuffer[AStart+3] = 67) and (ABuffer[AStart+4] = 72) then
         Exit('PATCH');
     6:
-      if (ABuffer[AStart] = 68) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 76) and (ABuffer[AStart+3] = 69) and (ABuffer[AStart+4] = 84) and (ABuffer[AStart+5] = 69) then
+      if (ABuffer[AStart] = 68) and (ABuffer[AStart+1] = 69) and (ABuffer[AStart+2] = 76)
+        and (ABuffer[AStart+3] = 69) and (ABuffer[AStart+4] = 84) and (ABuffer[AStart+5] = 69) then
         Exit('DELETE');
     7:
-      if (ABuffer[AStart] = 79) and (ABuffer[AStart+1] = 80) and (ABuffer[AStart+2] = 84) and (ABuffer[AStart+3] = 73) and (ABuffer[AStart+4] = 79) and (ABuffer[AStart+5] = 78) and (ABuffer[AStart+6] = 83) then
+      if (ABuffer[AStart] = 79) and (ABuffer[AStart+1] = 80) and (ABuffer[AStart+2] = 84)
+        and (ABuffer[AStart+3] = 73) and (ABuffer[AStart+4] = 79) and (ABuffer[AStart+5] = 78)
+        and (ABuffer[AStart+6] = 83) then
         Exit('OPTIONS');
   end;
   Result := TEncoding.UTF8.GetString(ABuffer, AStart, ALen);
@@ -1361,7 +1381,8 @@ begin
     LSegment := FHeaders[I];
     if THorseHttpParser.CompareBytesCI(FBuffer, LSegment.KeyStart, LSegment.KeyLen, LLowerName) then
     begin
-      if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0) and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
+      if (LSegment.ValueLen > 0) and (LSegment.ValueStart >= 0)
+        and (LSegment.ValueStart + LSegment.ValueLen <= Length(FBuffer)) then
       begin
         SetString(LRawVal, PAnsiChar(@FBuffer[LSegment.ValueStart]), LSegment.ValueLen);
         Result := Trim(string(LRawVal));
@@ -1735,7 +1756,8 @@ begin
   Exit(False);
 end;
 
-procedure TEpollRawResponse.SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+procedure TEpollRawResponse.SendStreamResponse(AStream: TStream;
+  AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
 var
   LUseChunked: Boolean;
   LChunkBuf: TBytes;
@@ -1758,10 +1780,12 @@ begin
   begin
     {$IFDEF FPC}
     for I := 0 to AHeadersList.Count - 1 do
-      if SameText(AHeadersList.Names[I], 'Transfer-Encoding') and SameText(AHeadersList.ValueFromIndex[I], 'chunked') then
+      if SameText(AHeadersList.Names[I], 'Transfer-Encoding')
+        and SameText(AHeadersList.ValueFromIndex[I], 'chunked') then
         LHasChunkedHeader := True;
     {$ELSE}
-    LHasChunkedHeader := AHeadersList.ContainsKey('Transfer-Encoding') and SameText(AHeadersList['Transfer-Encoding'], 'chunked');
+    LHasChunkedHeader := AHeadersList.ContainsKey('Transfer-Encoding')
+      and SameText(AHeadersList['Transfer-Encoding'], 'chunked');
     {$ENDIF}
   end;
 
@@ -2777,7 +2801,8 @@ begin
             on E: Exception do
             begin
               {$IFDEF FPC}
-              Writeln('Worker: Excecao ao processar leitura: ', E.ClassName, ' - ', E.Message, ' no endereco ', HexStr(ExceptAddr));
+              Writeln('Worker: Excecao ao processar leitura: ', E.ClassName,
+                ' - ', E.Message, ' no endereco ', HexStr(ExceptAddr));
               Flush(Output);
               {$ENDIF}
               CloseConnection(LContext);
@@ -3016,7 +3041,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProviderEpoll.Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProviderEpoll.Listen(const APort: Integer;
+  const ACallbackListen: TProc; const ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   OnListen := ACallbackListen;
@@ -3024,7 +3050,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProviderEpoll.Listen(const APort: Integer; const AHost: string; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProviderEpoll.Listen(const APort: Integer; const AHost: string;
+  const ACallbackListen: TProc; const ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -3033,7 +3060,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProviderEpoll.Listen(const AHost: string; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProviderEpoll.Listen(const AHost: string;
+  const ACallbackListen: TProc; const ACallbackStopListen: TProc);
 begin
   SetHost(AHost);
   OnListen := ACallbackListen;

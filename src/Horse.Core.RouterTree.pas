@@ -42,20 +42,26 @@ type
     FCallBack: TObjectDictionary<TMethodType, TList<THorseCallback>>;
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
-    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
+    procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>;
+      const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
     function GetArrayPath(APath: string; const AUsePrefix: Boolean = True): TArray<string>;
-    function ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
-    function CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+    function ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer;
+      const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse;
+      const AIsGroup: Boolean = False): Boolean;
+    function CallNextPath(const ASegments: TArray<string>; AIndex: Integer;
+      const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
     function HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
-    function CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
+    function CountLiteralSegments(const AMethod: TMethodType;
+      const APaths: TArray<string>; AIndex: Integer = 0): Integer;
     class function NormalizeParamKey(const APart: string): string; static;
   public
     function CreateRouter(const APath: string): THorseRouterTree;
     function GetPrefix: string;
     procedure Prefix(const APrefix: string);
     procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
-    procedure RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+    procedure RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string;
+      const ACallback: THorseCallback);
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
     procedure RegisterMiddleware(const AMiddleware: THorseCallback); overload;
     function Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
@@ -129,7 +135,8 @@ begin
     Result := APart;
 end;
 
-procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterRoute(const AHTTPType: TMethodType; const APath: string;
+  const ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
 begin
@@ -141,7 +148,8 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
+procedure THorseRouterTree.RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string;
+  const ACallback: THorseCallback);
 var
   LPathChain: TQueue<string>;
 begin
@@ -153,8 +161,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.CallNextPath(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
-  const AResponse: THorseResponse): Boolean;
+function THorseRouterTree.CallNextPath(const ASegments: TArray<string>; AIndex: Integer;
+  const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
 var
   LCurrent, LKey: string;
   LAcceptable: THorseRouterTree;
@@ -250,8 +258,9 @@ begin
   AResponse.FlushCookiesToWebResponse;
 end;
 
-function THorseRouterTree.ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
-  const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
+function THorseRouterTree.ExecuteInternal(const ASegments: TArray<string>; AIndex: Integer;
+  const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse;
+  const AIsGroup: Boolean = False): Boolean;
 var
   LNextCaller: TNextCaller;
   LFound: Boolean;
@@ -396,7 +405,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Integer;
+function THorseRouterTree.CountLiteralSegments(const AMethod: TMethodType;
+  const APaths: TArray<string>; AIndex: Integer = 0): Integer;
 var
   LNext, LKey: string;
   LNextRoute: THorseRouterTree;
@@ -431,7 +441,8 @@ begin
   end;
 end;
 
-function THorseRouterTree.HasNext(const AMethod: TMethodType; const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
+function THorseRouterTree.HasNext(const AMethod: TMethodType;
+  const APaths: TArray<string>; AIndex: Integer = 0): Boolean;
 var
   LNext, LKey: string;
   LNextRoute: THorseRouterTree;
@@ -465,7 +476,8 @@ begin
   end;
 end;
 
-procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
+procedure THorseRouterTree.RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>;
+  const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
 var
   LNextPart: string;
   LNormalizedNextPart: string;

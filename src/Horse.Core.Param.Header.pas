@@ -54,7 +54,8 @@ uses
 {$ENDIF}
   Horse.Rtti;
 
-class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
+class function THorseCoreParamHeader.GetHeaders(
+  const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var
   I: Integer;
   LName, LValue: string;
@@ -158,7 +159,8 @@ begin
         begin
           {$IF COMPILERVERSION <= 32}
             Result.Add(NormalizeEnvVarHeaderName(LEnvironmentVariables.Names[LEnvVarIndex]));
-            Result.Values[LEnvironmentVariables.Names[LEnvVarIndex]] := LEnvironmentVariables.ValueFromIndex[LEnvVarIndex];
+            Result.Values[LEnvironmentVariables.Names[LEnvVarIndex]] :=
+              LEnvironmentVariables.ValueFromIndex[LEnvVarIndex];
           {$ELSE}
             Result.AddPair(
               NormalizeEnvVarHeaderName(LEnvironmentVariables.KeyNames[LEnvVarIndex]),

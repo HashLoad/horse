@@ -34,7 +34,8 @@ type
     function GetHorseRouterTree: PHorseRouterTree;
   public
     function ToHorse: THorseCore;
-    constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
+    constructor Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore;
+      const AHorseRouterTree: PHorseRouterTree);
   end;
 
   THorseCore = class
@@ -42,7 +43,8 @@ type
     class var FRoutes: THorseRouterTree;
     class var FCallbacks: TList<THorseCallback>;
     class function TrimPath(const APath: string): string;
-    class function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
+    class function RegisterRoute(const AHTTPType: TMethodType; const APath: string;
+      const ACallback: THorseCallback): THorseCore;
     class var FDefaultHorse: THorseCore;
 
     function InternalRoute(const APath: string): IHorseCoreRoute<THorseCore>;
@@ -206,7 +208,8 @@ begin
   Result := GetInstance.InternalGroup;
 end;
 
-class function THorseCore.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
+class function THorseCore.RegisterRoute(const AHTTPType: TMethodType; const APath: string;
+  const ACallback: THorseCallback): THorseCore;
 var
   LDefaultHorse: THorseCore;
 begin
@@ -509,7 +512,8 @@ begin
 end;
 {$IFEND}
 
-constructor THorseModule.Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore; const AHorseRouterTree: PHorseRouterTree);
+constructor THorseModule.Create(const ASelfInstance, ADefaultHorseCoreInstance: PHorseCore;
+  const AHorseRouterTree: PHorseRouterTree);
 begin
   FSelfInstance := ASelfInstance;
   FDefaultHorseCoreInstance := ADefaultHorseCoreInstance;

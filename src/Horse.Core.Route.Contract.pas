@@ -17,7 +17,8 @@ type
     function All(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(const AMiddleware, ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function All(const ACallbacks: array of THorseCallback): IHorseCoreRoute<T>; overload;
-    function All(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function All(const ACallbacks: array of THorseCallback;
+      const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Get(const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
     function Get(const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
     function Get(const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;

@@ -101,7 +101,8 @@ begin
   LApacheApplication.Initialize;
 end;
 
-class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var pmoduleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest;
+  var pmoduleClass: TCustomHTTPModuleClass);
 begin
   pmoduleClass := THorseWebModule;
 end;

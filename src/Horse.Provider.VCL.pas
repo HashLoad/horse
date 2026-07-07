@@ -32,7 +32,8 @@ type
     class function GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
     class function GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
     class function HTTPWebBrokerIsNil: Boolean;
-    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
+    class procedure OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string;
+      var VUsername, VPassword: string; var VHandled: Boolean);
     class procedure OnQuerySSLPort(APort: Word; var VUseSSL: Boolean);
     class procedure OnConnect(AContext: TIdContext);
     class procedure SetListenQueue(const AValue: Integer); static;
@@ -51,7 +52,8 @@ type
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
     class procedure InternalStopListen; virtual;
-    class procedure InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
+    class procedure InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
+      const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
@@ -61,10 +63,14 @@ type
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
+      const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     // PATCH-VCL-1
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); override;
@@ -169,7 +175,8 @@ begin
   Result := FPort;
 end;
 
-class procedure THorseProvider.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
+class procedure THorseProvider.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
+  const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
 var
   LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;
 begin
@@ -252,7 +259,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc);
+class procedure THorseProvider.Listen(const APort: Integer; const AHost: string;
+  const ACallbackListen, ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -284,7 +292,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string; var VUsername, VPassword: string; var VHandled: Boolean);
+class procedure THorseProvider.OnAuthentication(AContext: TIdContext; const AAuthType, AAuthData: string;
+  var VUsername, VPassword: string; var VHandled: Boolean);
 begin
   VHandled := True;
 end;

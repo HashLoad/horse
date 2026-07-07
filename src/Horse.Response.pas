@@ -106,9 +106,11 @@ type
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload; virtual;
     function Status(const AStatus: Integer): THorseResponse; overload; virtual;
     function Status(const AStatus: THTTPStatus): THorseResponse; overload; virtual;
-    function SendFile(const AFileStream: TStream; const AFileName: string = ''; const AContentType: string = ''): THorseResponse; overload; virtual;
+    function SendFile(const AFileStream: TStream; const AFileName: string = '';
+      const AContentType: string = ''): THorseResponse; overload; virtual;
     function SendFile(const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
-    function Download(const AFileStream: TStream; const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
+    function Download(const AFileStream: TStream; const AFileName: string;
+      const AContentType: string = ''): THorseResponse; overload; virtual;
     function Download(const AFileName: string; const AContentType: string = ''): THorseResponse; overload; virtual;
     function Render(const AFileStream: TStream; const AFileName: string): THorseResponse; overload; virtual;
     function Render(const AFileName: string): THorseResponse; overload; virtual;
@@ -153,7 +155,8 @@ type
   forward response headers to ICrossHttpResponse. Read-only � the bridge
   iterates only; all writes go through AddHeader as before.
   =========================================================================== }
-    property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
+    property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF}
+      read FCustomHeaders;
 { =========================================================================== }
 { ===========================================================================
   PATCH-COOKIE-1 � read-only cookie list for the response bridges. nil until
@@ -503,7 +506,8 @@ begin
   Result := Self;
 end;
 
-function THorseResponse.SendFile(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
+function THorseResponse.SendFile(const AFileStream: TStream; const AFileName: string;
+  const AContentType: string): THorseResponse;
 var
   LFileName:    string;
   LContentType: string;
@@ -570,7 +574,8 @@ begin
   end;
 end;
 
-function THorseResponse.Download(const AFileStream: TStream; const AFileName: string; const AContentType: string): THorseResponse;
+function THorseResponse.Download(const AFileStream: TStream; const AFileName: string;
+  const AContentType: string): THorseResponse;
 var
   LFileName:    string;
   LContentType: string;

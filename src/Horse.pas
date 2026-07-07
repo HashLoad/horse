@@ -135,48 +135,48 @@ unit Horse;
 { Rule 1 — self-hosted Provider × host-managed runtime }
 {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
   {$IF DEFINED(HORSE_HOST_ISAPI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'CROSSSOCKET cannot combine with ISAPI (IIS owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_APACHE)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'CROSSSOCKET cannot combine with APACHE (Apache owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_CGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'CROSSSOCKET cannot combine with CGI (the web server owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_FCGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'CROSSSOCKET cannot combine with FCGI (FastCGI talks to a web server).'}
   {$ENDIF}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_MORMOT)}
   {$IF DEFINED(HORSE_HOST_ISAPI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'MORMOT cannot combine with ISAPI (IIS owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_APACHE)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'MORMOT cannot combine with APACHE (Apache owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_CGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'MORMOT cannot combine with CGI (the web server owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_FCGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'MORMOT cannot combine with FCGI (FastCGI talks to a web server).'}
   {$ENDIF}
   {$DEFINE FPC_HAS_EXPLICIT_INTERLOCKED_POINTER}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_ICS)}
   {$IF DEFINED(HORSE_HOST_ISAPI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'ICS cannot combine with ISAPI (IIS owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_APACHE)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'ICS cannot combine with APACHE (Apache owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_CGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'ICS cannot combine with CGI (the web server owns the socket).'}
   {$ENDIF}
   {$IF DEFINED(HORSE_HOST_FCGI)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+    {$MESSAGE FATAL 'ICS cannot combine with FCGI (FastCGI talks to a web server).'}
   {$ENDIF}
   {$IF DEFINED(FPC)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS is Delphi-only. ICS POSIX support (Ics.Posix.*) rides the Delphi POSIX RTL; FPC/Lazarus support is deferred until drapid/ICS_Lazarus is validated against ICS 9.7.'}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_ICS is Delphi-only.'}
   {$ENDIF}
   {$IF NOT (DEFINED(MSWINDOWS) OR DEFINED(POSIX))}
     {$MESSAGE FATAL 'HORSE_PROVIDER_ICS supports Windows and Delphi POSIX (Linux64 / macOS) targets only.'}
@@ -196,26 +196,37 @@ unit Horse;
 
 { Rule 3 — HORSE_NOPROVIDER × anything else }
 {$IF DEFINED(HORSE_NOPROVIDER)}
-  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_ICS) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
-    {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with all HORSE_PROVIDER_*, HORSE_APPTYPE_*, and HORSE_HOST_* defines — remove one.'}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_ICS)}
+    {$DEFINE HAS_CONFLICT}
+  {$IFEND}
+  {$IF DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL)}
+    {$DEFINE HAS_CONFLICT}
+  {$IFEND}
+  {$IF DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
+    {$DEFINE HAS_CONFLICT}
+  {$IFEND}
+  {$IF DEFINED(HAS_CONFLICT)}
+    {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with other defines.'}
   {$IFEND}
 {$IFEND}
 
 { Rule 4 — mutually-exclusive Providers (Axis A admits at most one) }
 {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_MORMOT)}
-  {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_MORMOT are mutually exclusive — pick exactly one transport Provider per build.'}
+  {$MESSAGE FATAL 'CROSSSOCKET and MORMOT are mutually exclusive.'}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) and DEFINED(HORSE_PROVIDER_ICS)}
-  {$MESSAGE FATAL 'HORSE_PROVIDER_CROSSSOCKET and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
+  {$MESSAGE FATAL 'CROSSSOCKET and ICS are mutually exclusive.'}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_MORMOT) and DEFINED(HORSE_PROVIDER_ICS)}
-  {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
+  {$MESSAGE FATAL 'MORMOT and ICS are mutually exclusive.'}
 {$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT))}
-  {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
+  {$MESSAGE FATAL 'HTTPSYS is mutually exclusive.'}
 {$IFEND}
-{$IF DEFINED(HORSE_PROVIDER_EPOLL) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_HTTPSYS))}
-  {$MESSAGE FATAL 'HORSE_PROVIDER_EPOLL is mutually exclusive with other transport Providers — pick exactly one per build.'}
+{$IF DEFINED(HORSE_PROVIDER_EPOLL)}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_HTTPSYS)}
+    {$MESSAGE FATAL 'EPOLL is mutually exclusive.'}
+  {$IFEND}
 {$IFEND}
 { =========================================================================== }
 

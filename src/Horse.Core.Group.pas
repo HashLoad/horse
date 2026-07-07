@@ -26,7 +26,8 @@ type
     function Use(const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const AMiddleware, ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function Use(const ACallbacks: array of THorseCallback): IHorseCoreGroup<T>; overload;
-    function Use(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
+    function Use(const ACallbacks: array of THorseCallback;
+      const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function All(const APath: string; const ACallback: THorseCallback): IHorseCoreGroup<T>; overload;
     function All(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>; overload;
     function All(const APath: string; const ACallback: THorseCallbackRequest): IHorseCoreGroup<T>; overload;
@@ -90,7 +91,8 @@ begin
   Result := FHorseCore as T;
 end;
 
-function THorseCoreGroup<T>.Get(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Get(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Get(NormalizePath(APath), ACallback);
   Result := Self;
@@ -110,7 +112,8 @@ begin
 end;
 {$IFEND}
 
-function THorseCoreGroup<T>.Post(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Post(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Post(NormalizePath(APath), ACallback);
   Result := Self;
@@ -144,7 +147,8 @@ begin
   Result := Self;
 end;
 
-function THorseCoreGroup<T>.Put(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Put(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Put(NormalizePath(APath), ACallback);
   Result := Self;
@@ -164,7 +168,8 @@ begin
   Result := Self;
 end;
 
-function THorseCoreGroup<T>.Head(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Head(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Head(NormalizePath(APath), ACallback);
   Result := Self;
@@ -191,7 +196,8 @@ begin
   THorseCore(FHorseCore).All(NormalizePath(APath), ACallback);
 end;
 
-function THorseCoreGroup<T>.All(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.All(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).All(NormalizePath(APath), ACallback);
   Result := Self;
@@ -239,7 +245,8 @@ begin
   THorseCore(FHorseCore).Use(NormalizePath('/'), ACallback);
 end;
 
-function THorseCoreGroup<T>.Use(const ACallbacks: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Use(const ACallbacks: array of THorseCallback;
+  const ACallback: THorseCallback): IHorseCoreGroup<T>;
 begin
   Result := Self;
   THorseCore(FHorseCore).Use(NormalizePath('/'), ACallbacks);
@@ -291,7 +298,8 @@ begin
   Result := Self;
 end;
 
-function THorseCoreGroup<T>.Patch(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Patch(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Patch(NormalizePath(APath), ACallback);
   Result := Self;
@@ -311,7 +319,8 @@ begin
   Result := Self;
 end;
 
-function THorseCoreGroup<T>.Delete(const APath: string; const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
+function THorseCoreGroup<T>.Delete(const APath: string;
+  const ACallback: THorseCallbackRequestResponse): IHorseCoreGroup<T>;
 begin
   THorseCore(FHorseCore).Delete(NormalizePath(APath), ACallback);
   Result := Self;

@@ -272,21 +272,36 @@ const
   );
 
 // Windows Http.sys native APIs
-function HttpInitialize(Version: HTTPAPI_VERSION; Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpInitialize(Version: HTTPAPI_VERSION; Flags: ULONG; pReserved: Pointer): ULONG;
+  stdcall; external HTTPAPI_DLL;
 function HttpTerminate(Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpCreateServerSession(Version: HTTPAPI_VERSION; var ServerSessionId: HTTP_SERVER_SESSION_ID; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpCreateServerSession(Version: HTTPAPI_VERSION; var ServerSessionId: HTTP_SERVER_SESSION_ID;
+  Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpCloseServerSession(ServerSessionId: HTTP_SERVER_SESSION_ID): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpCreateUrlGroup(ServerSessionId: HTTP_SERVER_SESSION_ID; var UrlGroupId: HTTP_URL_GROUP_ID; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpCreateUrlGroup(ServerSessionId: HTTP_SERVER_SESSION_ID; var UrlGroupId: HTTP_URL_GROUP_ID;
+  Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpCloseUrlGroup(UrlGroupId: HTTP_URL_GROUP_ID): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpAddUrlToUrlGroup(UrlGroupId: HTTP_URL_GROUP_ID; pFullyQualifiedUrl: PWideChar; UrlContext: HTTP_URL_CONTEXT; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpRemoveUrlFromUrlGroup(UrlGroupId: HTTP_URL_GROUP_ID; pFullyQualifiedUrl: PWideChar; Flags: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpCreateRequestQueue(Version: HTTPAPI_VERSION; pName: PWideChar; pSecurityAttributes: Pointer; Flags: ULONG; var ReqQueueHandle: THandle): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpAddUrlToUrlGroup(UrlGroupId: HTTP_URL_GROUP_ID; pFullyQualifiedUrl: PWideChar;
+  UrlContext: HTTP_URL_CONTEXT; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpRemoveUrlFromUrlGroup(UrlGroupId: HTTP_URL_GROUP_ID; pFullyQualifiedUrl: PWideChar;
+  Flags: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpCreateRequestQueue(Version: HTTPAPI_VERSION; pName: PWideChar; pSecurityAttributes: Pointer;
+  Flags: ULONG; var ReqQueueHandle: THandle): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpCloseRequestQueue(ReqQueueHandle: THandle): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpReceiveHttpRequest(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pRequestBuffer: PHTTP_REQUEST; RequestBufferLength: ULONG; var BytesReturned: ULONG; pOverlapped: POverlapped): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpReceiveRequestEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pBuffer: Pointer; BufferLength: ULONG; var BytesReceived: ULONG; pOverlapped: POverlapped): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpSendHttpResponse(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; pHttpResponse: PHTTP_RESPONSE; pReserved1: Pointer; var BytesSent: ULONG; pReserved2: Pointer; Reserved3: ULONG; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpSendResponseEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG; EntityChunkCount: USHORT; pEntityChunks: Pointer; var BytesSent: ULONG; pReserved1: Pointer; pReserved2: Pointer; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
-function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: THTTP_SERVER_PROPERTY; pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpReceiveHttpRequest(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG;
+  pRequestBuffer: PHTTP_REQUEST; RequestBufferLength: ULONG; var BytesReturned: ULONG;
+  pOverlapped: POverlapped): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpReceiveRequestEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG;
+  pBuffer: Pointer; BufferLength: ULONG; var BytesReceived: ULONG; pOverlapped: POverlapped): ULONG;
+  stdcall; external HTTPAPI_DLL;
+function HttpSendHttpResponse(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG;
+  pHttpResponse: PHTTP_RESPONSE; pReserved1: Pointer; var BytesSent: ULONG; pReserved2: Pointer;
+  Reserved3: ULONG; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpSendResponseEntityBody(ReqQueueHandle: THandle; RequestId: HTTP_REQUEST_ID; Flags: ULONG;
+  EntityChunkCount: USHORT; pEntityChunks: Pointer; var BytesSent: ULONG; pReserved1: Pointer;
+  pReserved2: Pointer; pOverlapped: POverlapped; pLogData: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
+function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: THTTP_SERVER_PROPERTY;
+  pPropertyInformation: Pointer; PropertyInformationLength: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
 
 {$MINENUMSIZE 1}
 
@@ -449,10 +464,14 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = 'localhost'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = 'localhost';
+      const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
     class procedure StopListen; override;
     class function IsRunning: Boolean;
@@ -483,7 +502,8 @@ type
     ReqQueue: THandle;
   end;
 
-function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL; stdcall; external 'kernel32.dll' name 'QueueUserWorkItem';
+function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL;
+  stdcall; external 'kernel32.dll' name 'QueueUserWorkItem';
 const
   WT_EXECUTEDEFAULT = $00000000;
 
@@ -843,7 +863,8 @@ begin
   if (LContentLength > 0) and (LContentLength >= 2097152) then
   begin
     LTempPath := GetWindowsTempPath;
-    LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+    LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' +
+      IntToStr(FRequest.RequestId) + '.tmp';
     FTempFileName := LTempFile;
     FBodyStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
   end
@@ -868,7 +889,8 @@ begin
             if (FBodyStream is TMemoryStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
-              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' +
+      IntToStr(FRequest.RequestId) + '.tmp';
               FTempFileName := LTempFile;
               LFileStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
               try
@@ -917,7 +939,8 @@ begin
             if (FBodyStream is TMemoryStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
-              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
+              LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' +
+      IntToStr(FRequest.RequestId) + '.tmp';
               FTempFileName := LTempFile;
               LFileStream := TFileStream.Create(LTempFile, fmCreate or fmOpenReadWrite);
               try
@@ -1110,7 +1133,8 @@ begin
   begin
     if FRequest.Headers.KnownHeaders[LIndex].RawValueLength > 0 then
     begin
-      SetString(Result, FRequest.Headers.KnownHeaders[LIndex].pRawValue, FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
+      SetString(Result, FRequest.Headers.KnownHeaders[LIndex].pRawValue,
+        FRequest.Headers.KnownHeaders[LIndex].RawValueLength);
       if not Assigned(FHeadersCache) then
       begin
         {$IF DEFINED(FPC)}
@@ -1852,7 +1876,8 @@ begin
 
         LRet := HttpAddUrlToUrlGroup(FUrlGroupId, PWideChar(WideString(LPrefix)), 0, 0);
         if LRet <> ERROR_SUCCESS then
-          raise EOSError.Create('HttpAddUrlToUrlGroup failed to register ' + LPrefix + ' with error code: ' + IntToStr(LRet));
+          raise EOSError.Create('HttpAddUrlToUrlGroup failed to register ' + LPrefix +
+            ' with error code: ' + IntToStr(LRet));
 
         // 6. Start Listener Thread
         FRunning := True;
@@ -1961,7 +1986,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProviderHttpSys.Listen(const APort: Integer; const AHost: string; const ACallbackListen, ACallbackStopListen: TProc);
+class procedure THorseProviderHttpSys.Listen(const APort: Integer; const AHost: string;
+  const ACallbackListen, ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);

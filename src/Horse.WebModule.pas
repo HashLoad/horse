@@ -25,7 +25,9 @@ type
 {$ELSE}
   THorseWebModule = class(TWebModule)
 {$ENDIF}
-    procedure HandlerAction(const Sender: TObject; const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; const Response: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; var Handled: Boolean);
+    procedure HandlerAction(const Sender: TObject;
+      const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+      const Response: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; var Handled: Boolean);
   private
     FHorse: THorseCore;
     class var FInstance: THorseWebModule;
@@ -78,13 +80,15 @@ begin
 end;
 
 {$IF DEFINED(FPC)}
-procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
+procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF};
+  AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
 begin
   HandlerAction(Self, ARequest, AResponse, AHandled);
 end;
 {$ENDIF}
 
-procedure THorseWebModule.HandlerAction(const Sender: TObject; const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+procedure THorseWebModule.HandlerAction(const Sender: TObject;
+  const Request: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
   const Response: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; var Handled: Boolean);
 var
   LRequest: THorseRequest;

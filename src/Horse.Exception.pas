@@ -207,7 +207,16 @@ var
 begin
   LJSON := ToJSONObject;
   try
-    Result := {$IF DEFINED(FPC)}LJSON.AsJSON{$ELSE}{$IF CompilerVersion > 27.0}LJSON.ToJSON{$ELSE}LJSON.ToString{$ENDIF}{$ENDIF};
+    Result :=
+      {$IF DEFINED(FPC)}
+      LJSON.AsJSON
+      {$ELSE}
+      {$IF CompilerVersion > 27.0}
+      LJSON.ToJSON
+      {$ELSE}
+      LJSON.ToString
+      {$IFEND}
+      {$ENDIF};
   finally
     LJSON.Free;
   end;
@@ -226,7 +235,9 @@ begin
     Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('title', FTitle);
 
   if FCode <> 0 then
-    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('code', {$IF DEFINED(FPC)}TJSONIntegerNumber{$ELSE}TJSONNumber{$ENDIF}.Create(FCode));
+    Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}(
+      'code',
+      {$IF DEFINED(FPC)}TJSONIntegerNumber{$ELSE}TJSONNumber{$ENDIF}.Create(FCode));
 
   Result.{$IF DEFINED(FPC)}Add{$ELSE}AddPair{$ENDIF}('error', FError);
 

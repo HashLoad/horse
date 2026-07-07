@@ -71,7 +71,8 @@ begin
   LCGIApplication.Run;
 end;
 
-class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest;
+  var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass := THorseWebModule;
 end;

@@ -44,7 +44,8 @@ type
     property ListenQueue: Word read FListenQueue write FListenQueue;
     procedure Execute; override;
     Procedure DoTerminate; override;
-    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
+    procedure OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest;
+      var AResponse: TFPHTTPConnectionResponse);
   end;
 
   THorseProvider = class(THorseProviderAbstract)
@@ -72,10 +73,14 @@ type
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class procedure StopListen; override;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
+      const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc;
+      const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     // PATCH-FPCLCL-1
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); override;
@@ -175,7 +180,8 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProvider.Listen(const APort: Integer; const AHost: string;
+  const ACallbackListen, ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
@@ -184,7 +190,8 @@ begin
   InternalListen;
 end;
 
-class procedure THorseProvider.Listen(const AHost: string; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProvider.Listen(const AHost: string; const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
   Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
@@ -201,7 +208,8 @@ begin
   FreeAndNil(FHTTPServerThread);
 end;
 
-class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
+class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
   Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
@@ -282,7 +290,8 @@ begin
   FServer.Active := False;
 end;
 
-procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
+procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest;
+  var AResponse: TFPHTTPConnectionResponse);
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;

@@ -55,7 +55,8 @@ type
   private
     class function FindByte(const ABuffer: TBytes; AStart, AEnd: Integer; AByte: Byte): Integer; static; inline;
     class function FindCRLF(const ABuffer: TBytes; AStart, AEnd: Integer): Integer; static; inline;
-    class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean; static; inline;
+    class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer;
+      const AStr: string): Boolean; static; inline;
     class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
   public
     class function TryParseRequest(
@@ -151,7 +152,8 @@ type
     function PrepareHeaders: TBytes;
     procedure WriteV(const AHeaderBytes, ABodyBytes: TBytes);
     procedure SendHeaders;
-    procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+    procedure SendStreamResponse(AStream: TStream;
+      AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     procedure FinalizeResponse;
   public
     constructor Create(AContext: TIocpConnectionContext; AIsKeepAlive: Boolean = True);
@@ -247,16 +249,22 @@ type
     class procedure InternalListen;
     class procedure InternalStopListen;
     class function CreateListenSocket(const APort: Integer; const AHost: string): TSocket; static;
-    class procedure InternalListenLoop(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc); static;
+    class procedure InternalListenLoop(const ACallbackListen: Horse.Proc.TProc;
+      const ACallbackStopListen: Horse.Proc.TProc); static;
     class procedure PostReadConnection(AContext: TIocpConnectionContext); static;
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: Horse.Proc.TProc = nil; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallbackListen: Horse.Proc.TProc = nil; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
+      const ACallbackListen: Horse.Proc.TProc = nil;
+      const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: Horse.Proc.TProc;
+      const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: Horse.Proc.TProc = nil;
+      const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: Horse.Proc.TProc;
+      const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
     class procedure StopListen; override;
     class function IsRunning: Boolean;
@@ -277,7 +285,8 @@ type
   end;
   PWorkItemData = ^TWorkItemData;
 
-  function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL; stdcall; external kernel32 name 'QueueUserWorkItem';
+  function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL;
+    stdcall; external kernel32 name 'QueueUserWorkItem';
 
 const
   WT_EXECUTEDEFAULT = $00000000;
@@ -326,7 +335,8 @@ begin
   Result := -1;
 end;
 
-class function THorseHttpParser.CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean;
+class function THorseHttpParser.CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer;
+  const AStr: string): Boolean;
 var
   I: Integer;
   B: Byte;
@@ -439,7 +449,8 @@ begin
       AHeaders[High(AHeaders)].ValueLen := LLineEnd - I;
 
       // Verifica se é Content-Length
-      if CompareBytesCI(ABuffer, AHeaders[High(AHeaders)].KeyStart, AHeaders[High(AHeaders)].KeyLen, 'content-length') then
+      if CompareBytesCI(ABuffer, AHeaders[High(AHeaders)].KeyStart,
+        AHeaders[High(AHeaders)].KeyLen, 'content-length') then
       begin
         LRawQuery := GetMethodString(ABuffer, AHeaders[High(AHeaders)].ValueStart, AHeaders[High(AHeaders)].ValueLen);
         TryStrToInt64(LRawQuery, AContentLength);
@@ -775,7 +786,8 @@ begin
       LBuilder.Append('Content-Type: text/plain; charset=utf-8'#13#10);
 
     if not FHeaders.ContainsKey('Date') then
-      LBuilder.Append('Date: ').Append(FormatDateTime('ddd, dd mmm yyyy hh:nn:ss" GMT"', System.SysUtils.Now)).Append(#13#10);
+      LBuilder.Append('Date: ').Append(
+        FormatDateTime('ddd, dd mmm yyyy hh:nn:ss" GMT"', System.SysUtils.Now)).Append(#13#10);
 
     if not FHeaders.ContainsKey('Server') then
       LBuilder.Append('Server: Horse IOCP Server/1.0'#13#10);
@@ -840,7 +852,8 @@ begin
   FHeadersSent := True;
 end;
 
-procedure TIocpRawResponse.SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+procedure TIocpRawResponse.SendStreamResponse(AStream: TStream;
+  AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
 var
   LStreamSize: Int64;
   LChunkBuf: TBytes;
@@ -1239,7 +1252,8 @@ begin
       if LOverlap.OpType = ioAccept then
       begin
         // Atualiza o contexto do soquete aceito com as propriedades do soquete de escuta
-        setsockopt(LOverlap.Socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, PAnsiChar(@FListenSocket), SizeOf(FListenSocket));
+        setsockopt(LOverlap.Socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
+          PAnsiChar(@FListenSocket), SizeOf(FListenSocket));
 
         // Associa o soquete do cliente aceito ao Completion Port
         CreateIoCompletionPort(LOverlap.Socket, FIocpHandle, ULONG_PTR(LContext), 0);
@@ -1463,7 +1477,8 @@ begin
   dwFlags := 0;
   dwBytes := 0;
 
-  if WSARecv(AContext.Socket, @LWSABuf, 1, dwBytes, dwFlags, @AContext.ReadOverlapped.Overlapped, nil) = SOCKET_ERROR then
+  if WSARecv(AContext.Socket, @LWSABuf, 1, dwBytes, dwFlags,
+    @AContext.ReadOverlapped.Overlapped, nil) = SOCKET_ERROR then
   begin
     if WSAGetLastError <> WSA_IO_PENDING then
     begin
@@ -1478,26 +1493,30 @@ begin
   InternalListenLoop(nil, nil);
 end;
 
-class procedure THorseProviderIOCP.Listen(const APort: Integer; const AHost: string; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+class procedure THorseProviderIOCP.Listen(const APort: Integer; const AHost: string;
+  const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
 begin
   FPort := APort;
   FHost := AHost;
   InternalListenLoop(ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProviderIOCP.Listen(const APort: Integer; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+class procedure THorseProviderIOCP.Listen(const APort: Integer;
+  const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
 begin
   FPort := APort;
   InternalListenLoop(ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProviderIOCP.Listen(const AHost: string; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+class procedure THorseProviderIOCP.Listen(const AHost: string;
+  const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
 begin
   FHost := AHost;
   InternalListenLoop(ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProviderIOCP.Listen(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+class procedure THorseProviderIOCP.Listen(const ACallbackListen: Horse.Proc.TProc;
+  const ACallbackStopListen: Horse.Proc.TProc);
 begin
   InternalListenLoop(ACallbackListen, ACallbackStopListen);
 end;

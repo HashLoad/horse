@@ -112,7 +112,8 @@ begin
   if FIsParamsKey and (LCurrent <> '') then
   begin
     if Pos('%', LCurrent) > 0 then
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF})
+      FRequest.Params.Dictionary.AddOrSetValue(FTag,
+        {$IF DEFINED(FPC)}HTTPDecode(LCurrent){$ELSE}TNetEncoding.URL.Decode(LCurrent){$ENDIF})
     else
       FRequest.Params.Dictionary.AddOrSetValue(FTag, LCurrent);
   end;

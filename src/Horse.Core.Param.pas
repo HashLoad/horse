@@ -64,7 +64,8 @@ type
           Destroy free the stream.  Used by the mORMot bridge, which synthesises
           a TMemoryStream per file part with no other owner (PATCH-PARAM-1). }
     function AddStream(const AKey: string; const AContent: TStream): THorseCoreParam; overload;
-    function AddStream(const AKey: string; const AContent: TStream; const AOwnsStream: Boolean): THorseCoreParam; overload;
+    function AddStream(const AKey: string; const AContent: TStream;
+      const AOwnsStream: Boolean): THorseCoreParam; overload;
 
     constructor Create(const AParams: THorseList);
     destructor Destroy; override;
@@ -193,7 +194,8 @@ begin
   Result := AddStream(AKey, AContent, False);
 end;
 
-function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream; const AOwnsStream: Boolean): THorseCoreParam;
+function THorseCoreParam.AddStream(const AKey: string; const AContent: TStream;
+  const AOwnsStream: Boolean): THorseCoreParam;
 begin
   Result := Self;
   if not Assigned(FFiles) then

@@ -41,7 +41,8 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
+      const ACallback: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const APort: Integer; const ACallback: TProc); reintroduce; overload; static;
     class procedure Listen(const AHost: string; const ACallback: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
@@ -108,7 +109,8 @@ begin
   LFastCGIApplication.Run;
 end;
 
-class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+class procedure THorseProvider.DoGetModule(Sender: TObject; ARequest: TRequest;
+  var ModuleClass: TCustomHTTPModuleClass);
 begin
   ModuleClass := THorseWebModule;
 end;
