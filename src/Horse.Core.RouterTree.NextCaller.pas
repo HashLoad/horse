@@ -11,14 +11,14 @@ uses
   Generics.Collections,
   fpHTTP,
   httpprotocol,
+  Horse.Commons,
 {$ELSE}
   Web.HTTPApp,
   System.Generics.Collections,
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Callback,
-  Horse.Commons;
+  Horse.Callback;
 
 type
   TNextCaller = class
@@ -64,6 +64,7 @@ uses
 {$ELSE}
   System.SysUtils,
   System.NetEncoding,
+  Horse.Commons,
 {$ENDIF}
   Horse.Exception,
   Horse.Exception.Interrupted;

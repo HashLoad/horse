@@ -9,6 +9,7 @@ interface
 uses
 {$IF DEFINED(FPC)}
   Generics.Collections,
+  Horse.Commons,
 {$ELSE}
   System.Generics.Collections,
   Web.HTTPApp,
@@ -16,8 +17,7 @@ uses
   Horse.Core.RouterTree,
   Horse.Callback,
   Horse.Core.Group.Contract,
-  Horse.Core.Route.Contract,
-  Horse.Commons;
+  Horse.Core.Route.Contract;
 
 type
   THorseCore = class;
@@ -137,6 +137,7 @@ uses
   System.SysUtils,
   Horse.Request,
   Horse.Response,
+  Horse.Commons,
 {$ENDIF}
   Horse.Core.Route,
   Horse.Core.Group,

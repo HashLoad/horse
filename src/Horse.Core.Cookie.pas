@@ -26,14 +26,6 @@ unit Horse.Core.Cookie;
 
 interface
 
-uses
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ELSE}
-  System.SysUtils,
-{$ENDIF}
-  Horse.Exception;
-
 type
   TSameSite = (ssNotSet, ssStrict, ssLax, ssNone);
 
@@ -92,6 +84,14 @@ type
   end;
 
 implementation
+
+uses
+{$IF DEFINED(FPC)}
+  SysUtils,
+{$ELSE}
+  System.SysUtils,
+{$ENDIF}
+  Horse.Exception;
 
 const
   IMF_DAYS: array[1..7] of string =

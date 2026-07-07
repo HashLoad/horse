@@ -29,8 +29,7 @@ uses
   Horse.Response,
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
-  Horse.Proc,
-  Horse.Exception.Interrupted;
+  Horse.Proc;
 
 type
   TIocpConnectionContext = class;
@@ -297,6 +296,9 @@ const
 implementation
 
 {$IFDEF MSWINDOWS}
+
+uses
+  Horse.Exception.Interrupted;
 
 var
   fnAcceptEx: TAcceptEx = nil;

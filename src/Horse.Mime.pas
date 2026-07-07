@@ -10,12 +10,9 @@
 
 interface
 
-uses
 {$IF DEFINED(FPC)}
-  Classes,
-  Generics.Collections;
-{$ELSE}
-  System.Generics.Collections;
+uses
+  Classes;
 {$ENDIF}
 
 type
@@ -34,8 +31,10 @@ uses
 
 {$IF DEFINED(FPC)}
   SysUtils,
+  Generics.Collections,
 {$ELSE}
   System.SysUtils,
+  System.Generics.Collections,
 {$ENDIF}
   SyncObjs;
 

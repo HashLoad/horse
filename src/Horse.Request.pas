@@ -7,17 +7,16 @@
 interface
 
 uses
-{$IF DEFINED(FPC)}
+{$IF DEFINED(FPC)}   
   SysUtils,
   fpHTTP,
   HTTPDefs,
+  Horse.Commons,
 {$ELSE}
-  System.SysUtils,
   Web.HTTPApp,
 {$ENDIF}
   Horse.Core.Param,
-  Horse.Session,
-  Horse.Commons;
+  Horse.Session;
 
 type
   THorseRequest = class
@@ -207,6 +206,8 @@ uses
   Classes,
 {$ELSE}
   System.Classes,
+  System.SysUtils,
+  Horse.Commons,
 {$ENDIF}
   Horse.Core.Param.Header;
 

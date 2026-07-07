@@ -17,7 +17,6 @@ uses
   System.Classes,
   System.Generics.Collections,
   Web.HTTPApp,
-  Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
     Web.ApacheHTTP,
     Web.HTTPD24,
@@ -51,6 +50,7 @@ uses
 {$ELSE}
   IdCustomHTTPServer,
   System.SysUtils,
+  Horse.Rtti.Helper,
 {$ENDIF}
   Horse.Rtti;
 

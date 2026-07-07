@@ -11,15 +11,14 @@ uses
   Generics.Collections,
   httpdefs,
   httpprotocol,
-  RegExpr,
+  Horse.Commons,
 {$ELSE}
   Web.HTTPApp,
   System.Generics.Collections,
 {$ENDIF}
   Horse.Request,
   Horse.Response,
-  Horse.Callback,
-  Horse.Commons;
+  Horse.Callback;
 
 type
   PHorseRouterTree = ^THorseRouterTree;
@@ -76,11 +75,13 @@ implementation
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
+  RegExpr,
   SyncObjs,
 {$ELSE}
   System.SysUtils,
   System.RegularExpressions,
   System.SyncObjs,
+  Horse.Commons,
 {$ENDIF}
   Horse.Core.RouterTree.NextCaller;
 

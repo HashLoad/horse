@@ -20,14 +20,11 @@ uses
     System.SysUtils,
     System.Classes,
     System.SyncObjs,
-    System.NetEncoding,
     System.Generics.Collections,
-    System.Generics.Defaults,
     Winapi.Windows,
   {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
-  Horse.Request,
   Horse.Response,
   Horse.Provider.RawInterfaces,
   Horse.Provider.RawAdapters,
@@ -494,6 +491,13 @@ type
 implementation
 
 {$IFDEF MSWINDOWS}
+
+uses
+  {$IFNDEF FPC}
+  System.NetEncoding,
+  System.Generics.Defaults,
+  {$ENDIF}
+  Horse.Request;
 
 type
   PHttpSysWorkItemData = ^THttpSysWorkItemData;

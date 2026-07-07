@@ -12,8 +12,7 @@ uses
   SysUtils,
   StrUtils;
 {$ELSE}
-  Web.HTTPApp,
-  System.SysUtils;
+  Web.HTTPApp;
 {$ENDIF}
 
 type
@@ -141,7 +140,8 @@ uses
 {$IF DEFINED(FPC)}
   RegExpr;
 {$ELSE}
-  System.RegularExpressions;
+  System.RegularExpressions,
+  System.SysUtils;
 {$ENDIF}
 
 {$IF DEFINED(FPC)}
