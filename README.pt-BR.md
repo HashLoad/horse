@@ -83,7 +83,15 @@ Para ajudar seu agente de IA (como Antigravity, GitHub Copilot ou Claude) a ente
 
 Para utilizá-los:
 * **Copilot / Claude / IAs Customizadas:** Mencione os arquivos em [`doc/skills/`](./doc/skills/README.md) para alimentar o contexto do seu agente.
-* **Antigravity IDE:** Copie os arquivos para o diretório `.agents/skills/` do seu projeto (garantindo que cada um se chame `SKILL.md` dentro de sua respectiva pasta, ex: `.agents/skills/<nome-da-skill>/SKILL.md`) ou registre o caminho no seu arquivo de configuração local `.agents/skills.json`.
+* **Antigravity IDE:** Adicione o caminho do diretório `doc/` do repositório do Horse no arquivo `.agents/skills.json` do seu projeto para carregar todas as skills automaticamente:
+  ```json
+  {
+    "entries": [
+      { "path": "caminho/para/horse/doc" }
+    ]
+  }
+  ```
+  Ou copie as pastas das skills diretamente para o diretório `.agents/skills/` do seu projeto.
 
 ## 🔌 Providers (camada de transporte)
 

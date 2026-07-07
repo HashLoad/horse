@@ -83,7 +83,15 @@ To help your AI agent (like Antigravity, GitHub Copilot, or Claude) understand a
 
 To use them:
 * **Copilot / Claude / Custom AIs:** Refer to the files in [`doc/skills/`](./doc/skills/README.md) to feed context to your agent.
-* **Antigravity IDE:** Copy the files to your project's `.agents/skills/` directory (ensuring each is named `SKILL.md` inside its respective folder, e.g. `.agents/skills/<skill-name>/SKILL.md`) or register the path in your local `.agents/skills.json` configuration file.
+* **Antigravity IDE:** Add the path to the `doc/` directory of the Horse repository in your local `.agents/skills.json` file to load all skills automatically:
+  ```json
+  {
+    "entries": [
+      { "path": "path/to/horse/doc" }
+    ]
+  }
+  ```
+  Or copy the skill folders directly into your project's `.agents/skills/` directory.
 
 ## 🔌 Providers (transport layer)
 

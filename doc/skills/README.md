@@ -7,15 +7,15 @@
 
 ## Available Skills
 
-| Skill Name | Filename | Load When |
+| Skill Name | Path | Load When |
 | :--- | :--- | :--- |
-| **horse-app-structure** | `horse-app-structure.md` | Setting up a new project, setting up the `.dpr` bootstrap, initial middleware pipeline configuration, or port listening. |
-| **horse-routing** | `horse-routing.md` | Configuring HTTP methods, route parameters, wildcards, or grouping routes within Controllers. |
-| **horse-middlewares** | `horse-middlewares.md` | Configuring official middlewares (Johnson, CORS, basic-auth, compression, logger) and ensuring correct execution order. |
-| **horse-request-response** | `horse-request-response.md` | Reading request payload, query parameters, route parameters, headers, or sending HTTP responses and setting statuses. |
-| **horse-files-streams** | `horse-files-streams.md` | Handling file uploads (multipart formData), file downloads, or custom data streams. |
-| **horse-providers** | `horse-providers.md` | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
-| **horse-writing-middleware** | `horse-writing-middleware.md` | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
+| **horse-app-structure** | [`horse-app-structure/SKILL.md`](./horse-app-structure/SKILL.md) | Setting up a new project, setting up the `.dpr` bootstrap, initial middleware pipeline configuration, or port listening. |
+| **horse-routing** | [`horse-routing/SKILL.md`](./horse-routing/SKILL.md) | Configuring HTTP methods, route parameters, wildcards, or grouping routes within Controllers. |
+| **horse-middlewares** | [`horse-middlewares/SKILL.md`](./horse-middlewares/SKILL.md) | Configuring official middlewares (Johnson, CORS, basic-auth, compression, logger) and ensuring correct execution order. |
+| **horse-request-response** | [`horse-request-response/SKILL.md`](./horse-request-response/SKILL.md) | Reading request payload, query parameters, route parameters, headers, or sending HTTP responses and setting statuses. |
+| **horse-files-streams** | [`horse-files-streams/SKILL.md`](./horse-files-streams/SKILL.md) | Handling file uploads (multipart formData), file downloads, or custom data streams. |
+| **horse-providers** | [`horse-providers/SKILL.md`](./horse-providers/SKILL.md) | Choosing or configuring server adapters (Indy, CGI, ISAPI, Apache, Daemon, HTTP.sys). |
+| **horse-writing-middleware** | [`horse-writing-middleware/SKILL.md`](./horse-writing-middleware/SKILL.md) | Implementing custom middlewares for Horse following the correct signature and execution sequence. |
 
 ---
 
