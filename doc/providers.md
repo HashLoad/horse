@@ -38,13 +38,10 @@ The **default Provider depends on the compiler**:
 | **`fphttpserver`** | _(none on FPC)_ | Default for FPC self-hosted | n/a | ✔ |
 | **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Optional, external package | ✔ | ✔ |
 | **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Optional, external package | ✔ | ✔ |
-<<<<<<< HEAD
-| **[HTTP.sys](./httpsys.md)** | `HORSE_PROVIDER_HTTPSYS` | Optional, built-in (Windows kernel mode) | ✔ | ✔ |
-| **[epoll](./epoll.md)** | `HORSE_PROVIDER_EPOLL` | Optional, built-in (Linux async event loop) | ✔ | ✔ |
-=======
 | **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Optional, external package (Delphi: Windows + Linux64/macOS) | ✔ | ❌ |
-| **HttpSys** _(`Horse.Provider.HttpSys`)_ | `HORSE_PROVIDER_HTTPSYS` | Built into Horse (Windows-only) | ✔ | ✔ |
->>>>>>> b8e74fc (feat: ICS provider (HORSE_PROVIDER_ICS) define guards + docs update)
+| **[HTTP.sys](./httpsys.md)** _(`Horse.Provider.HttpSys`)_ | `HORSE_PROVIDER_HTTPSYS` | Built into Horse (Windows kernel-mode) | ✔ | ✔ |
+| **[epoll](./epoll.md)** _(`Horse.Provider.Epoll`)_ | `HORSE_PROVIDER_EPOLL` | Built into Horse (Linux async event loop) | ✔ | ✔ |
+| **[IOCP](./iocp.md)** _(`Horse.Provider.IOCP`)_ | `HORSE_PROVIDER_IOCP` | Built into Horse (Windows async I/O completion ports) | ✔ | ✔ |
 
 > **What library does the HTTP work, per Application type?** This is the deciding question — and it's *not* always Indy. The unifying abstraction across every row is `Web.HTTPApp.TWebRequest` on Delphi or `fpHTTP.TRequest` on FPC; below that, the concrete library differs.
 >
@@ -54,13 +51,10 @@ The **default Provider depends on the compiler**:
 > | Daemon / HTTPApplication / LCL | FPC | **`fphttpserver`** | ✘ |
 > | Any self-hosted + `HORSE_CROSSSOCKET` | Either | **`Delphi-Cross-Socket`** | ✘ |
 > | Any self-hosted + `HORSE_PROVIDER_MORMOT` | Either | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
-<<<<<<< HEAD
-> | Any self-hosted + `HORSE_PROVIDER_HTTPSYS` | Either | **`HTTP.sys`** (Windows Kernel Driver) | ✘ |
-> | Any self-hosted + `HORSE_PROVIDER_EPOLL` | Either | **`epoll`** (Linux kernel epoll API) | ✘ |
-=======
 > | Self-hosted + `HORSE_PROVIDER_ICS` | Delphi (Windows / Linux64 / macOS) | **`OverbyteICS`** (`THttpServer` / `TSslHttpServer`) | ✘ |
 > | Self-hosted + `HORSE_PROVIDER_HTTPSYS` | Windows (Delphi / FPC) | **Windows http.sys** (`httpapi.dll`, kernel-mode) | ✘ |
->>>>>>> b8e74fc (feat: ICS provider (HORSE_PROVIDER_ICS) define guards + docs update)
+> | Self-hosted + `HORSE_PROVIDER_EPOLL` | Either | **`epoll`** (Linux kernel epoll API) | ✘ |
+> | Self-hosted + `HORSE_PROVIDER_IOCP` | Windows (Delphi / FPC) | **Windows IOCP** (Winsock2 Completion Ports) | ✘ |
 > | Apache module | Either | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **Web server's CGI runner** (via `Web.HTTPApp.TCGIRequest`) | ✘ |

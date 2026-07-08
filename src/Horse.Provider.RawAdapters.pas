@@ -68,7 +68,6 @@ type
 
 {$ELSE}
 
-type
   {$IF CompilerVersion >= 32.0}
   TWebString = string;
   {$ELSE}

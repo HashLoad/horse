@@ -48,7 +48,9 @@ $DefinesToTest = @(
     @{ Name = "Default";       Flags = '{$DEFINE CI}' },
     @{ Name = "Default+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' },
     @{ Name = "HttpSys";       Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' },
-    @{ Name = "HttpSys+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' }
+    @{ Name = "HttpSys+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' },
+    @{ Name = "IOCP";          Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}' },
+    @{ Name = "IOCP+Radix";    Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' }
 )
 
 # Verifica se o diretório do Studio existe
