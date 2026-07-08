@@ -145,6 +145,8 @@ procedure TRadixFlow.Next;
 var
   LIndex: Integer;
 begin
+  if FResponse.Aborted then
+    Exit;
   if (FIndex < FCallbacks.Count) and FActive then
   begin
     LIndex := FIndex;

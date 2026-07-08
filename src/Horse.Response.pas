@@ -35,6 +35,7 @@ type
   THorseResponse = class
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
+    FAborted: Boolean;
     FContent: TObject;
 { ===========================================================================
   PATCH-RES-1 — added FCustomHeaders field
@@ -174,6 +175,8 @@ type
     property ContentStream:  TStream read FCSContentStream;
     property CSContentType:  string  read FCSContentType;
 { =========================================================================== }
+    function Abort: THorseResponse; virtual;
+    property Aborted: Boolean read FAborted;
     destructor Destroy; override;
   end;
 
@@ -272,6 +275,7 @@ end;
   =========================================================================== }
 procedure THorseResponse.Clear;
 begin
+  FAborted := False;
   FWebResponse := nil;
 
   if Assigned(FContent) then
@@ -301,6 +305,12 @@ begin
 { end PATCH-COOKIE-1 }
 end;
 { =========================================================================== }
+
+function THorseResponse.Abort: THorseResponse;
+begin
+  Result := Self;
+  FAborted := True;
+end;
 
 { ===========================================================================
   PATCH-RES-6 — SetCSRawWebResponse implementation

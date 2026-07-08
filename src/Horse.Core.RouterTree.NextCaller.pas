@@ -156,6 +156,8 @@ var
   LKey: TMethodType;
   LAllow: string;
 begin
+  if FResponse.Aborted then
+    Exit;
   {$IF DEFINED(FPC)}
   LMiddlewareCount := FMiddleware.Count;
   {$ELSE}
