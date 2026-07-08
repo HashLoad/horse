@@ -928,7 +928,9 @@ begin
     Exit;
   end;
 
-  if ARes.BodyText <> '' then
+  if Length(ARes.BodyBytes) > 0 then
+    LBodyBytes := ARes.BodyBytes
+  else if ARes.BodyText <> '' then
     LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText);
 
   if Length(LBodyBytes) > 0 then

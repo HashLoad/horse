@@ -8,11 +8,13 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
+  SysUtils,
   Classes,
   Generics.Collections,
   fpHTTP,
   HTTPDefs,
 {$ELSE}
+  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
 {$IF CompilerVersion > 32.0}
@@ -35,6 +37,7 @@ type
   THorseResponse = class
   private
     FWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF};
+    FAborted: Boolean;
     FContent: TObject;
 { ===========================================================================
   PATCH-RES-1 — added FCustomHeaders field
@@ -72,6 +75,7 @@ type
   =========================================================================== }
     FCSStatusCode:    Integer;
     FCSBody:          string;
+    FCSBodyBytes:     TBytes;
     FCSContentType:   string;
     FCSContentStream: TStream;   // see FCSOwnsContentStream
 { PATCH-SENDFILE-1 — SendFile/Download on the shadow (CrossSocket/mORMot) path
@@ -104,6 +108,7 @@ type
 { =========================================================================== }
   public
     function Send(const AContent: string): THorseResponse; overload; virtual;
+    function Send(const AContent: TBytes): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
     function RedirectTo(const ALocation: string): THorseResponse; overload; virtual;
     function RedirectTo(const ALocation: string; const AStatus: THTTPStatus): THorseResponse; overload; virtual;
@@ -173,18 +178,16 @@ type
     property BodyText:       string  read FCSBody;
     property ContentStream:  TStream read FCSContentStream;
     property CSContentType:  string  read FCSContentType;
+    property BodyBytes:      TBytes  read FCSBodyBytes;
 { =========================================================================== }
+    function Abort: THorseResponse; virtual;
+    property Aborted: Boolean read FAborted;
     destructor Destroy; override;
   end;
 
 implementation
 
-uses        
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ELSE}
-  System.SysUtils,
-{$ENDIF}
+uses
   Horse.Core.Files,
   Horse.Mime;
 
@@ -272,6 +275,7 @@ end;
   =========================================================================== }
 procedure THorseResponse.Clear;
 begin
+  FAborted := False;
   FWebResponse := nil;
 
   if Assigned(FContent) then
@@ -281,6 +285,7 @@ begin
     FCustomHeaders.Clear;
 { PATCH-RES-4 — wipe CrossSocket shadow fields }
   FCSBody          := '';
+  FCSBodyBytes     := nil;
   FCSContentType   := '';
 { PATCH-SENDFILE-1 — free the owned copy (SendFile/Download); else just nil it. }
   if FCSOwnsContentStream and Assigned(FCSContentStream) then
@@ -301,6 +306,12 @@ begin
 { end PATCH-COOKIE-1 }
 end;
 { =========================================================================== }
+
+function THorseResponse.Abort: THorseResponse;
+begin
+  Result := Self;
+  FAborted := True;
+end;
 
 { ===========================================================================
   PATCH-RES-6 — SetCSRawWebResponse implementation
@@ -346,6 +357,23 @@ begin
     Exit(FWebResponse);
   Result := FCSRawWebResponse;
 { end PATCH-RES-6 }
+end;
+
+function THorseResponse.Send(const AContent: TBytes): THorseResponse;
+begin
+  if not Assigned(FWebResponse) then
+  begin
+    FCSBodyBytes := AContent;
+    Exit(Self);
+  end;
+  if Length(AContent) = 0 then
+  begin
+    FWebResponse.ContentStream := TMemoryStream.Create;
+    FWebResponse.ContentLength := 0;
+    Exit(Self);
+  end;
+  FWebResponse.ContentStream := TBytesStream.Create(AContent);
+  Result := Self;
 end;
 
 function THorseResponse.Send(const AContent: string): THorseResponse;

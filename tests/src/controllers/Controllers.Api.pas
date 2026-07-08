@@ -19,8 +19,54 @@ uses
   System.JSON,
   Horse.Commons;
 
-procedure Registry;
+procedure MiddlewareCORS(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 begin
+  Res.AddHeader('Access-Control-Allow-Origin', '*');
+  Res.AddHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  Res.AddHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if Req.Method = 'OPTIONS' then
+  begin
+    Res.Status(THTTPStatus.NoContent).Send('').Abort;
+    Exit;
+  end;
+  Next;
+end;
+
+procedure MiddlewareAuth(Req: THorseRequest; Res: THorseResponse; Next: TProc);
+begin
+  if Req.Headers['Authorization'] <> 'Bearer MySecretToken' then
+  begin
+    Res.Status(THTTPStatus.Unauthorized).Send('Unauthorized').Abort;
+    Exit;
+  end;
+  Next;
+end;
+
+procedure Registry;
+var
+  LAuthMiddleware: THorseCallback;
+begin
+  THorse.Use(MiddlewareCORS);
+
+  LAuthMiddleware := MiddlewareAuth;
+
+  THorse.Route('/Api/Protected')
+    .AddCallback(LAuthMiddleware)
+    .Get(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+         begin
+           Res.Send('SecretData');
+         end);
+
+  THorse.Route('/Api/Cors')
+    .Get(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+         begin
+           Res.Send('CorsData');
+         end)
+    .Post(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+          begin
+            Res.Send('CorsData');
+          end);
+
   THorse
     .Group
       .Prefix('/Api')

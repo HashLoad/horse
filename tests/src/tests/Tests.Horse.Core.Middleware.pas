@@ -30,6 +30,8 @@ type
     procedure TestMiddlewareExceptionPropagation;
     [Test]
     procedure TestMultipleMiddlewaresInRouterTree;
+    [Test]
+    procedure TestMiddlewareExceptionFreeAbort;
     {$IF DEFINED(FPC)}
     [Test]
     procedure TestFPCLegacyCallbackAssignment;
@@ -231,6 +233,46 @@ begin
   Assert.IsNotNull(Pointer(LCallback));
 end;
 {$ENDIF}
+
+procedure TTestHorseCoreMiddleware.TestMiddlewareExceptionFreeAbort;
+var
+  LTrace: TList<string>;
+begin
+  LTrace := TList<string>.Create;
+  try
+    FRouterTree.RegisterMiddleware(
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+      begin
+        LTrace.Add('M1_START');
+        Res.Status(THTTPStatus.BadRequest).Abort;
+        LTrace.Add('M1_ABORTED');
+      end);
+
+    FRouterTree.RegisterMiddleware(
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+      begin
+        LTrace.Add('M2');
+        Next();
+      end);
+
+    FRouterTree.RegisterRoute(mtGet, '/test',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+      begin
+        LTrace.Add('ROUTE');
+      end);
+
+    FRequest.Populate('GET', mtGet, '/test', '', '');
+    Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+
+    Assert.AreEqual(2, LTrace.Count);
+    Assert.AreEqual('M1_START', LTrace[0]);
+    Assert.AreEqual('M1_ABORTED', LTrace[1]);
+    Assert.IsTrue(FResponse.Aborted);
+    Assert.AreEqual(Integer(THTTPStatus.BadRequest), FResponse.Status);
+  finally
+    LTrace.Free;
+  end;
+end;
 
 initialization
   TDUnitX.RegisterTestFixture(TTestHorseCoreMiddleware);

@@ -1535,7 +1535,9 @@ begin
   end
   else
   begin
-    if ARes.BodyText <> '' then
+    if Length(ARes.BodyBytes) > 0 then
+      LBodyBytes := ARes.BodyBytes
+    else if ARes.BodyText <> '' then
       LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
     else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
       LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content);
