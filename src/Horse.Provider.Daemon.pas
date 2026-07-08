@@ -16,6 +16,7 @@ uses
   Horse.Provider.IOHandleSSL.Contract,
   IdHTTPWebBrokerBridge,
   IdSSLOpenSSL,
+  IdSchedulerOfThreadPool,
   IdContext,
   Horse.Provider.IOHandleSSL,
   System.SyncObjs,
@@ -132,6 +133,7 @@ begin
   if HTTPWebBrokerIsNil then
   begin
     FIdHTTPWebBrokerBridge := TIdHTTPWebBrokerBridge.Create(nil);
+    FIdHTTPWebBrokerBridge.Scheduler := TIdSchedulerOfThreadPool.Create(FIdHTTPWebBrokerBridge);
     FIdHTTPWebBrokerBridge.OnParseAuthentication := OnAuthentication;
     FIdHTTPWebBrokerBridge.OnQuerySSLPort := OnQuerySSLPort;
     FIdHTTPWebBrokerBridge.OnConnect := OnConnect;
@@ -156,6 +158,7 @@ end;
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
+  AContext.Binding.SetKeepAliveValues(True, 60000, 1000);
   if THorseProviderAbstract.ReadTimeout > 0 then
     AContext.Connection.Socket.ReadTimeout := THorseProviderAbstract.ReadTimeout;
 end;
