@@ -20,7 +20,8 @@ uses
 {$ENDIF}
   Horse.Core.Param,
   Horse.Session,
-  Horse.Commons;
+  Horse.Commons,
+  Horse.Core.Arena;
 
 type
   THorseRequest = class
@@ -38,6 +39,7 @@ type
     FSessions: THorseSessions;
     FArena: THorseArenaAllocator;
     FOwnsArena: Boolean;
+    function GetArena: THorseArenaAllocator;
 { ===========================================================================
   PATCH-REQ-3  CrossSocket shadow fields (populated by Populate, nil by default)
   =========================================================================== }
@@ -113,7 +115,7 @@ type
 { =========================================================================== }
     function ContentType: string; virtual;
     function Host: string; virtual;
-    property Arena: THorseArenaAllocator read FArena write FArena;
+    property Arena: THorseArenaAllocator read GetArena write FArena;
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
     constructor Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}); overload;
@@ -348,9 +350,8 @@ begin
   if Assigned(FCSRawWebRequest) then
     FreeAndNil(FCSRawWebRequest);
 { end PATCH-REQ-8 }
-  if FOwnsArena and Assigned(FArena) then
-    FreeAndNil(FArena);
-  FOwnsArena := False;
+  if Assigned(FArena) then
+    FArena.Reset;
   if Assigned(FHeaders) then
     FreeAndNil(FHeaders);
   if Assigned(FQuery) then
@@ -783,6 +784,16 @@ begin
 {$ELSE}
   Result := FWebRequest.RawPathInfo;
 {$ENDIF}
+end;
+
+function THorseRequest.GetArena: THorseArenaAllocator;
+begin
+  if not Assigned(FArena) then
+  begin
+    FArena := THorseArenaAllocator.Create;
+    FOwnsArena := True;
+  end;
+  Result := FArena;
 end;
 
 function THorseRequest.GetPathSegments: TArray<THorseBufferSlice>;
