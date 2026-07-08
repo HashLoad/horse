@@ -8,5 +8,4 @@ object HorseWebModule: THorseWebModule
     end>
   Height = 345
   Width = 623
-  PixelsPerInch = 144
 end

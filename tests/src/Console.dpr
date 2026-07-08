@@ -1,5 +1,7 @@
 program Console;
 
+{$I HorseTestDefines.inc}
+
 {$IFNDEF TESTINSIGHT}
 {$APPTYPE CONSOLE}
 {$ENDIF}{$STRONGLINKTYPES ON}
@@ -89,7 +91,11 @@ var
   NunitLogger: ITestLogger;
 
 begin
+  {$IFDEF HORSE_PROVIDER_HTTPSYS}
+  ReportMemoryLeaksOnShutdown := False;
+  {$ELSE}
   ReportMemoryLeaksOnShutdown := True;
+  {$ENDIF}
   {$IFDEF HORSE_RADIX_ROUTER}
   THorse.UseRadixRouter;
   {$ENDIF}
@@ -104,11 +110,16 @@ begin
     Runner.FailsOnNoAsserts := True;
 
     {$IFNDEF FPC}
+    {$IF CompilerVersion >= 32.0}
     if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
     begin
       Logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
       Runner.AddLogger(Logger);
     end;
+    {$ELSE}
+    Logger := TDUnitXConsoleLogger.Create(True);
+    Runner.AddLogger(Logger);
+    {$IFEND}
 
     NunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     Runner.AddLogger(NunitLogger);
