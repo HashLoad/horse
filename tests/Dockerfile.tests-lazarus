@@ -13,7 +13,7 @@ COPY . .
 
 # Compila o IntegrationServer usando FPC no Ubuntu com diretório de units isolado
 RUN mkdir -p tests/lib && cd tests/src && \
-    fpc -Mdelphi -Sh -FE.. -FU../lib -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:/usr/lib/x86_64-linux-gnu/fpc/3.2.2/units/x86_64-linux/rtl-objpas" "-dHORSE_CONSOLE" IntegrationServer.dpr
+    fpc -Mdelphi -Sh -FE.. -FU../lib -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src:/usr/lib/x86_64-linux-gnu/fpc/3.2.2/units/x86_64-linux/rtl-objpas" "-dHORSE_CONSOLE" IntegrationServer.dpr
 
 WORKDIR /usr/src/app/tests
 
