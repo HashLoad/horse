@@ -154,7 +154,7 @@ begin
       procedure
       begin
         THorse
-          .Use(Jhonson);
+          .Use(Jhonson());
 
         Controllers.Api.Registry;
         THorse.MaxConnections := 10;
