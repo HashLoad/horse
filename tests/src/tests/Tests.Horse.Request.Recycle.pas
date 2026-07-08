@@ -3,7 +3,7 @@ unit Tests.Horse.Request.Recycle;
 interface
 
 uses
-  DUnitX.TestFramework, Horse.Request, Horse.Core.Param, System.SysUtils,
+  DUnitX.TestFramework, Horse.Request, Horse.Response, Horse.Core.Param, System.SysUtils,
   System.Generics.Collections,
   {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
@@ -20,6 +20,10 @@ type
 
     [Test]
     procedure TestRequestRecyclingAndStateIsolation;
+    [Test]
+    procedure TestRequestArenaRecyclingAndObjectLifetime;
+    [Test]
+    procedure TestResponseSendBytesOverload;
   end;
 
 implementation
@@ -82,6 +86,66 @@ begin
   Assert.AreEqual<Integer>(1, FRequest.Headers.Dictionary.Count);
   Assert.AreEqual<Integer>(1, FRequest.Params.Dictionary.Count);
   Assert.AreEqual<Integer>(1, FRequest.Query.Dictionary.Count);
+end;
+
+type
+  TTestArenaObject = class
+  private
+    FDestroyedFlag: PBoolean;
+  public
+    constructor Create(ADestroyedFlag: PBoolean);
+    destructor Destroy; override;
+  end;
+
+constructor TTestArenaObject.Create(ADestroyedFlag: PBoolean);
+begin
+  inherited Create;
+  FDestroyedFlag := ADestroyedFlag;
+  FDestroyedFlag^ := False;
+end;
+
+destructor TTestArenaObject.Destroy;
+begin
+  FDestroyedFlag^ := True;
+  inherited;
+end;
+
+procedure TTestHorseRequestRecycle.TestRequestArenaRecyclingAndObjectLifetime;
+var
+  LObjectDestroyed: Boolean;
+  LTestObj: TTestArenaObject;
+begin
+  LObjectDestroyed := False;
+  Assert.IsNotNull(FRequest.Arena, 'Arena should be lazy-created');
+  LTestObj := TTestArenaObject.Create(@LObjectDestroyed);
+  FRequest.Arena.RegisterObject(LTestObj);
+  Assert.IsFalse(LObjectDestroyed, 'Object should be active');
+  FRequest.Clear;
+  Assert.IsTrue(LObjectDestroyed, 'Object should be automatically freed by Arena during request recycle');
+end;
+
+procedure TTestHorseRequestRecycle.TestResponseSendBytesOverload;
+var
+  LResponse: THorseResponse;
+  LBytes: TBytes;
+begin
+  LResponse := THorseResponse.Create(nil);
+  try
+    SetLength(LBytes, 4);
+    LBytes[0] := 1;
+    LBytes[1] := 2;
+    LBytes[2] := 3;
+    LBytes[3] := 4;
+
+    LResponse.Send(LBytes);
+    Assert.AreEqual<Integer>(4, Length(LResponse.BodyBytes));
+    Assert.AreEqual<Byte>(1, LResponse.BodyBytes[0]);
+    Assert.AreEqual<Byte>(2, LResponse.BodyBytes[1]);
+    Assert.AreEqual<Byte>(3, LResponse.BodyBytes[2]);
+    Assert.AreEqual<Byte>(4, LResponse.BodyBytes[3]);
+  finally
+    LResponse.Free;
+  end;
 end;
 
 initialization
