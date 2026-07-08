@@ -43,9 +43,21 @@ type
     [TestCase('Test05', 'PATCH request test')]
     procedure TestPatch(const AValue: string);
 
+    [Test]
+    procedure TestMiddlewareAuthUnauthorized;
+    [Test]
+    procedure TestMiddlewareAuthSuccess;
+    [Test]
+    procedure TestMiddlewareCorsHeaders;
+    [Test]
+    procedure TestMiddlewareCorsPreflightOptions;
+
   end;
 
 implementation
+
+uses
+  System.Net.HttpClient, System.Net.URLClient;
 
 procedure TApiTest.TestGet;
 var
@@ -138,6 +150,71 @@ begin
     Assert.AreEqual(AValue, FJSONObject.GetValue('value').Value)
   else
     Assert.Fail('The return is not in the correct format.');
+end;
+
+procedure TApiTest.TestMiddlewareAuthUnauthorized;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LResponse := LClient.Get('http://localhost:9000/Api/Protected');
+    Assert.AreEqual(401, LResponse.StatusCode);
+    Assert.AreEqual('Unauthorized', LResponse.ContentAsString);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestMiddlewareAuthSuccess;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LHeaders: TNetHeaders;
+begin
+  LClient := THTTPClient.Create;
+  try
+    SetLength(LHeaders, 1);
+    LHeaders[0] := TNetHeader.Create('Authorization', 'Bearer MySecretToken');
+    LResponse := LClient.Get('http://localhost:9000/Api/Protected', nil, LHeaders);
+    Assert.AreEqual(200, LResponse.StatusCode);
+    Assert.AreEqual('SecretData', LResponse.ContentAsString);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestMiddlewareCorsHeaders;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LResponse := LClient.Get('http://localhost:9000/Api/Cors');
+    Assert.AreEqual(200, LResponse.StatusCode);
+    Assert.AreEqual('CorsData', LResponse.ContentAsString);
+    Assert.AreEqual('*', LResponse.HeaderValue['Access-Control-Allow-Origin']);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestMiddlewareCorsPreflightOptions;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LResponse := LClient.Options('http://localhost:9000/Api/Cors');
+    Assert.AreEqual(204, LResponse.StatusCode);
+    Assert.AreEqual('*', LResponse.HeaderValue['Access-Control-Allow-Origin']);
+    Assert.AreEqual('GET, POST, OPTIONS', LResponse.HeaderValue['Access-Control-Allow-Methods']);
+  finally
+    LClient.Free;
+  end;
 end;
 
 procedure TApiTest.Setup;
