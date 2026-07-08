@@ -103,9 +103,10 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 | **`fphttpserver`** _(padrão FPC para self-hosted)_                                              | _(nenhum)_              | &nbsp;&nbsp;&nbsp;n/a | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
- 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** _(driver de modo kernel do Windows para ultra-baixa latência)_ | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** _(driver de modo kernel do Windows para ultra-baixa latência)_ | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[epoll](./doc/epoll.pt-BR.md)** _(event loop assíncrono nativo do Linux)_                  | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| 🆕 **[IOCP](./doc/iocp.pt-BR.md)** _(portas de conclusão de E/S assíncronas nativas do Windows)_ | `HORSE_PROVIDER_IOCP`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
@@ -114,6 +115,8 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 > **Instalação do OverbyteICS** — o Provider ICS requer o [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Instale o ICS seguindo as instruções oficiais do ICS** — baixe/clone o ICS e adicione a pasta `Source/` ao _search path_ do seu projeto (o ICS não é instalável via Boss). Para TLS, as bibliotecas OpenSSL acompanham o ICS (DLLs no Windows, `.so` no Linux). O Provider ICS é **somente Delphi — Windows e POSIX (Linux64 / macOS)** via o pump de mensagens próprio do ICS (`Ics.Posix.*`) (no Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); um port para **Lazarus/FPC não é viável** — a camada POSIX do ICS usa a RTL POSIX do Delphi e o ICS desativa o OpenSSL no FPC. Seu diferencial é a pilha OpenSSL 3.x / 4.x do ICS (TLS 1.3, SNI, mTLS). Veja [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) para configuração, a suíte de testes A–K e limitações conhecidas.
 
 > **HttpSys** — **sem instalação**: a unit `Horse.Provider.HttpSys` acompanha o Horse e usa diretamente a `httpapi.dll` do Windows (http.sys), portanto não há biblioteca externa. Defina `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi ou Lazarus). Como o http.sys é uma pilha HTTP em modo kernel e de escopo da máquina, vincular um host diferente de `localhost` ou uma porta privilegiada exige uma reserva de URL única (`netsh http add urlacl url=http://+:9000/ user=Everyone`) ou direitos de Administrador; o HTTPS usa o repositório de certificados do Windows via `netsh http add sslcert`. É mutuamente exclusivo com os Providers CrossSocket / mORMot / ICS (um transporte por build).
+
+> **IOCP** — **sem instalação**: a unit `Horse.Provider.IOCP` acompanha o Horse e se vincula diretamente às portas de conclusão de E/S (Input/Output Completion Ports) do Windows utilizando a API Winsock2 para altíssimo desempenho e escalabilidade em tipos de aplicação self-hosted no Windows. Defina `HORSE_PROVIDER_IOCP` (Windows; Delphi ou Lazarus). É mutuamente exclusivo com Indy, HttpSys e outros providers de socket (um transporte por build).
 
 ## 🎯 Tipos de aplicação
 

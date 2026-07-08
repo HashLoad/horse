@@ -106,6 +106,7 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 | 🆕 **[HTTP.sys](./doc/httpsys.md)** _(Windows kernel-mode driver for ultra-low latency)_        | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[epoll](./doc/epoll.md)** _(Linux-native asynchronous event loop)_                         | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_     | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| 🆕 **[IOCP](./doc/iocp.md)** _(Windows-native asynchronous I/O completion ports)_               | `HORSE_PROVIDER_IOCP`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Note** — Apache / ISAPI / CGI / FastCGI Application types (below) do **not** use any of these Providers. The host process (Apache, IIS, the web server) owns the socket; Horse runs in-process. See [Providers & Application types](./doc/providers.md) for the full model.
 
@@ -114,6 +115,8 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 > **OverbyteICS installation** — the ICS Provider requires [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Install ICS following the official ICS instructions** — download/clone ICS and add its `Source/` folder to your project search path (ICS is not Boss-installable). For TLS, the OpenSSL libraries ship with ICS (DLLs on Windows, `.so` on Linux). The ICS Provider is **Delphi only — Windows and POSIX (Linux64 / macOS)** via ICS's own `Ics.Posix.*` message pump (on Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); a **Lazarus/FPC** port is not viable — ICS's POSIX layer rides the Delphi POSIX RTL and ICS compiles out OpenSSL under FPC. Its distinctive value is ICS's OpenSSL 3.x / 4.x stack (TLS 1.3, SNI, mTLS). See [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) for setup, the A–K test suite, and known limitations.
 
 > **HttpSys** — **no install**: the `Horse.Provider.HttpSys` unit ships with Horse and binds directly to Windows' `httpapi.dll` (http.sys), so there's no external library. Set `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi or Lazarus). Because http.sys is a kernel-mode, machine-wide HTTP stack, binding a non-`localhost` host or a privileged port needs a one-time URL reservation (`netsh http add urlacl url=http://+:9000/ user=Everyone`) or Administrator rights; HTTPS uses the Windows certificate store via `netsh http add sslcert`. It is mutually exclusive with the CrossSocket / mORMot / ICS Providers (one transport per build).
+
+> **IOCP** — **no install**: the `Horse.Provider.IOCP` unit ships with Horse and binds directly to Windows' input/output completion ports using Winsock2 API for extremely high performance and scalability on Windows self-hosted application types. Set `HORSE_PROVIDER_IOCP` (Windows; Delphi or Lazarus). It is mutually exclusive with Indy, HttpSys and other socket providers (one transport per build).
 
 ## 🎯 Application types
 
