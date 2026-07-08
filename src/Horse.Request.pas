@@ -280,7 +280,6 @@ end;
 constructor THorseRequest.Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
-  FSessions := THorseSessions.Create;
 end;
 
 { ===========================================================================
@@ -289,7 +288,6 @@ end;
 constructor THorseRequest.Create;
 begin
   FWebRequest := nil;
-  FSessions := THorseSessions.Create;
 end;
 { =========================================================================== }
 
@@ -363,13 +361,11 @@ begin
     FreeAndNil(FContentFields);
   if Assigned(FCookie) then
     FreeAndNil(FCookie);
-{ PATCH-SES-1 � reuse the existing THorseSessions object across pool recycles.
+{ PATCH-SES-1  reuse the existing THorseSessions object across pool recycles.
   THorseSessions.Clear calls TObjectDictionary.Clear which frees owned TSession
-  values before emptying the map � no allocation on the hot path. }
+  values before emptying the map  no allocation on the hot path. }
   if Assigned(FSessions) then
-    FSessions.Clear
-  else
-    FSessions := THorseSessions.Create;
+    FSessions.Clear;
 { end PATCH-SES-1 }
 end;
 { =========================================================================== }
@@ -736,6 +732,8 @@ end;
 
 function THorseRequest.Sessions: THorseSessions;
 begin
+  if not Assigned(FSessions) then
+    FSessions := THorseSessions.Create;
   Result := FSessions;
 end;
 
