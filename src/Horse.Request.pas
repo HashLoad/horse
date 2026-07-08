@@ -20,8 +20,7 @@ uses
 {$ENDIF}
   Horse.Core.Param,
   Horse.Session,
-  Horse.Commons,
-  Horse.Core.Arena;
+  Horse.Commons;
 
 type
   THorseRequest = class
@@ -39,7 +38,6 @@ type
     FSessions: THorseSessions;
     FArena: THorseArenaAllocator;
     FOwnsArena: Boolean;
-    function GetArena: THorseArenaAllocator;
 { ===========================================================================
   PATCH-REQ-3  CrossSocket shadow fields (populated by Populate, nil by default)
   =========================================================================== }
@@ -76,6 +74,7 @@ type
   =========================================================================== }
     FCSRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
 { =========================================================================== }
+    function GetArena: THorseArenaAllocator;
     procedure InitializeQuery;
     procedure InitializeParams;
     procedure InitializeContentFields;
@@ -790,7 +789,7 @@ function THorseRequest.GetArena: THorseArenaAllocator;
 begin
   if not Assigned(FArena) then
   begin
-    FArena := THorseArenaAllocator.Create;
+    FArena := THorseArenaAllocator.Create(65536);
     FOwnsArena := True;
   end;
   Result := FArena;

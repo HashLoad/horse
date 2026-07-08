@@ -8,11 +8,13 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
+  SysUtils,
   Classes,
   Generics.Collections,
   fpHTTP,
   HTTPDefs,
 {$ELSE}
+  System.SysUtils,
   System.Classes,
   Web.HTTPApp,
 {$IF CompilerVersion > 32.0}
@@ -185,12 +187,7 @@ type
 
 implementation
 
-uses        
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ELSE}
-  System.SysUtils,
-{$ENDIF}
+uses
   Horse.Core.Files,
   Horse.Mime;
 

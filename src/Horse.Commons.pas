@@ -10,10 +10,12 @@ interface
 uses
 {$IF DEFINED(FPC)}
   SysUtils,
-  StrUtils;
+  StrUtils,
+  Classes;
 {$ELSE}
   Web.HTTPApp,
-  System.SysUtils;
+  System.SysUtils,
+  System.Classes;
 {$ENDIF}
 
 type
@@ -159,10 +161,12 @@ type
     FBuffer: TBytes;
     FOffset: Integer;
     FSize: Integer;
+    FRegisteredObjects: TList;
   public
     constructor Create(ASize: Integer);
     destructor Destroy; override;
     function Allocate(ALen: Integer): THorseBufferSlice;
+    procedure RegisterObject(AObject: TObject);
     procedure Reset;
   end;
 
@@ -630,10 +634,13 @@ begin
   FSize := ASize;
   SetLength(FBuffer, FSize);
   FOffset := 0;
+  FRegisteredObjects := TList.Create;
 end;
 
 destructor THorseArenaAllocator.Destroy;
 begin
+  Reset;
+  FRegisteredObjects.Free;
   FBuffer := nil;
   inherited;
 end;
@@ -649,9 +656,33 @@ begin
   FOffset := FOffset + ALen;
 end;
 
+procedure THorseArenaAllocator.RegisterObject(AObject: TObject);
+begin
+  if AObject <> nil then
+    FRegisteredObjects.Add(AObject);
+end;
+
 procedure THorseArenaAllocator.Reset;
+var
+  I: Integer;
+  LObj: TObject;
 begin
   FOffset := 0;
+  if Assigned(FRegisteredObjects) then
+  begin
+    for I := FRegisteredObjects.Count - 1 downto 0 do
+    begin
+      LObj := TObject(FRegisteredObjects.Items[I]);
+      if LObj <> nil then
+      begin
+        try
+          LObj.Free;
+        except
+        end;
+      end;
+    end;
+    FRegisteredObjects.Clear;
+  end;
 end;
 
 end.
