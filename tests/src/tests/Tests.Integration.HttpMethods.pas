@@ -4,7 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework, Horse, System.SysUtils, System.Classes,
-  System.Threading, System.Net.HttpClient, Tests.CleanupHelper,
+  System.Threading, System.Net.HttpClient, System.Net.URLClient, Tests.CleanupHelper,
   {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
@@ -103,7 +103,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LRes := LClient.Execute('TRACE', Format('http://localhost:%d/resource', [TEST_PORT])) as IHTTPResponse;
+    LRes := LClient.Trace(Format('http://localhost:%d/resource', [TEST_PORT]));
     Assert.AreEqual(200, LRes.StatusCode);
     Assert.AreEqual('trace-interceptor-ok', LRes.ContentAsString);
   finally
@@ -116,15 +116,18 @@ var
   LClient: THTTPClient;
   LRes: IHTTPResponse;
   LAllow: string;
+  LSource: TStringStream;
 begin
   LClient := THTTPClient.Create;
+  LSource := TStringStream.Create('');
   try
-    LRes := LClient.Execute('PUT', Format('http://localhost:%d/resource', [TEST_PORT])) as IHTTPResponse;
+    LRes := LClient.Put(Format('http://localhost:%d/resource', [TEST_PORT]), LSource);
     Assert.AreEqual(405, LRes.StatusCode);
     LAllow := LRes.HeaderValue['Allow'];
     Assert.IsTrue(LAllow.Contains('GET'));
     Assert.IsTrue(LAllow.Contains('POST'));
   finally
+    LSource.Free;
     LClient.Free;
   end;
 end;

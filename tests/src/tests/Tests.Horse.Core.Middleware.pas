@@ -28,6 +28,8 @@ type
     procedure TestMiddlewareEarlyInterruption;
     [Test]
     procedure TestMiddlewareExceptionPropagation;
+    [Test]
+    procedure TestMultipleMiddlewaresInRouterTree;
     {$IF DEFINED(FPC)}
     [Test]
     procedure TestFPCLegacyCallbackAssignment;
@@ -168,6 +170,46 @@ begin
       FRouterTree.Execute(FRequest, FResponse);
     end,
     EOSError);
+end;
+
+procedure TTestHorseCoreMiddleware.TestMultipleMiddlewaresInRouterTree;
+var
+  I: Integer;
+  LTrace: TList<Integer>;
+begin
+  LTrace := TList<Integer>.Create;
+  try
+    for I := 1 to 15 do
+    begin
+      FRouterTree.RegisterMiddleware(
+        procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+        begin
+          LTrace.Add(1);
+          Next();
+          LTrace.Add(-1);
+        end);
+    end;
+
+    FRouterTree.RegisterRoute(mtGet, '/test',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+      begin
+        LTrace.Add(100);
+      end);
+
+    FRequest.Populate('GET', mtGet, '/test', '', '');
+    Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+
+    Assert.AreEqual(31, LTrace.Count);
+    for I := 0 to 14 do
+      Assert.AreEqual(1, LTrace[I]);
+    
+    Assert.AreEqual(100, LTrace[15]);
+
+    for I := 16 to 30 do
+      Assert.AreEqual(-1, LTrace[I]);
+  finally
+    LTrace.Free;
+  end;
 end;
 
 {$IF DEFINED(FPC)}

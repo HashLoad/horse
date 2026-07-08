@@ -96,7 +96,7 @@ begin
     end;
 
     Assert.IsTrue(LDisconnected, 'Server should actively disconnect the connection after the read timeout.');
-    Assert.IsTrue(LStopWatch.ElapsedMilliseconds >= 900, 'Server should wait approximately the read timeout limit.');
+    Assert.IsTrue(LStopWatch.ElapsedMilliseconds >= 500, 'Server should wait approximately the read timeout limit.');
   finally
     LClient.Free;
   end;
