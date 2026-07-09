@@ -20,6 +20,36 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
   * Redução geral de alocação de memória no heap (*zero-allocation response mapping*).
   * Todos os providers do ecossistema (incluindo Indy legado) passariam a se beneficiar de envio zero-copy automaticamente, sem precisar reimplementar essa lógica individualmente.
 
+### 3. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
+* **Descrição:** Permitir declarar arrays de middlewares específicos diretamente na definição de um endpoint ou grupo de rotas.
+* **Ganhos:**
+  * Elimina a necessidade de registrar middlewares globais ou criar múltiplos controllers.
+  * Possibilita isolar autenticações (JWT/BasicAuth) a nível de rota com Fluent API: `THorse.Get('/secure', [Auth, Logger], Handler)`.
+
+### 4. Desligamento Suave (*Graceful Shutdown*)
+* **Descrição:** Implementar encerramento coordenado de conexões. O servidor encerra a escuta de novos sockets mas conclui requisições ativas dentro de um tempo limite de segurança.
+* **Ganhos:**
+  * Resiliência a nível enterprise para orquestradores de contêiner (como Docker/Kubernetes).
+  * Evita a corrupção de dados ou interrupção de transações em andamento ao atualizar serviços.
+
+### 5. Pipeline Global de Tratamento de Erros (*Error Handler Pipeline*)
+* **Descrição:** Oferecer um manipulador centralizado de exceções não tratadas disparadas durante o ciclo de vida das requisições.
+* **Ganhos:**
+  * Unificação de logs e formatação de respostas JSON padronizadas de erro (ex: `THorse.OnError(ErrorHandler)`).
+
+### 6. DTO Auto-Binding e Validação Declarativa
+* **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
+* **Ganhos:**
+  * Grande ganho em DX (*Developer Experience*), reduzindo boilerplate nos controllers.
+
+### 7. Ganchos de Telemetria Padronizados (Observabilidade / OpenTelemetry)
+* **Descrição:** Disponibilizar ganchos internos no Core para extração de latência, volumetria de requests e status HTTP sem perdas de performance.
+* **Ganhos:**
+  * Integração nativa facilitada com coletores de métricas do ecossistema APM (como Prometheus e Jaeger).
+
+### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
+* **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
