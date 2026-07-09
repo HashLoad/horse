@@ -67,6 +67,12 @@ begin
             Res.Send('CorsData');
           end);
 
+  THorse.Route('/Api/CustomHeader')
+    .Get(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+         begin
+           Res.Send(Req.Headers['X-Custom-Header']);
+         end);
+
   THorse
     .Group
       .Prefix('/Api')

@@ -368,6 +368,7 @@ type
     {$IFEND}
     function GetFieldByName(const AName: string): string;
 
+    procedure PopulateHeaders(ADest: TStrings);
     procedure PopulateQueryFields(ADest: TStrings);
     procedure PopulateContentFields(ADest: TStrings);
     procedure PopulateCookieFields(ADest: TStrings);
@@ -1179,6 +1180,34 @@ begin
     {$ENDIF}
   end;
   FHeadersCache.Add(AName, '');
+end;
+
+procedure THttpSysRawRequest.PopulateHeaders(ADest: TStrings);
+var
+  I: Integer;
+  LName, LValue: string;
+begin
+  for I := 0 to 40 do
+  begin
+    if FRequest.Headers.KnownHeaders[I].RawValueLength > 0 then
+    begin
+      SetString(LValue, PAnsiChar(FRequest.Headers.KnownHeaders[I].pRawValue), FRequest.Headers.KnownHeaders[I].RawValueLength);
+      ADest.Add(HTTP_KNOWN_REQUEST_HEADERS[I] + '=' + LValue);
+    end;
+  end;
+
+  if (FRequest.Headers.UnknownHeaderCount > 0) and (FRequest.Headers.pUnknownHeaders <> nil) then
+  begin
+    for I := 0 to FRequest.Headers.UnknownHeaderCount - 1 do
+    begin
+      with PHTTP_UNKNOWN_HEADER_ARRAY(FRequest.Headers.pUnknownHeaders)^[I] do
+      begin
+        SetString(LName, pName, NameLength);
+        SetString(LValue, pRawValue, RawValueLength);
+        ADest.Add(LName + '=' + LValue);
+      end;
+    end;
+  end;
 end;
 
 procedure THttpSysRawRequest.PopulateQueryFields(ADest: TStrings);

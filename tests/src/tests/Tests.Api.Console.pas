@@ -51,6 +51,8 @@ type
     procedure TestMiddlewareCorsHeaders;
     [Test]
     procedure TestMiddlewareCorsPreflightOptions;
+    [Test]
+    procedure TestCustomHeader;
 
   end;
 
@@ -212,6 +214,24 @@ begin
     Assert.AreEqual(204, LResponse.StatusCode);
     Assert.AreEqual('*', LResponse.HeaderValue['Access-Control-Allow-Origin']);
     Assert.AreEqual('GET, POST, OPTIONS', LResponse.HeaderValue['Access-Control-Allow-Methods']);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestCustomHeader;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+  LHeaders: TNetHeaders;
+begin
+  LClient := THTTPClient.Create;
+  try
+    SetLength(LHeaders, 1);
+    LHeaders[0] := TNetHeader.Create('X-Custom-Header', 'CustomValue');
+    LResponse := LClient.Get('http://localhost:9000/Api/CustomHeader', nil, LHeaders);
+    Assert.AreEqual(200, LResponse.StatusCode);
+    Assert.AreEqual('CustomValue', LResponse.ContentAsString);
   finally
     LClient.Free;
   end;

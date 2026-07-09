@@ -62,6 +62,7 @@ uses
   IdCustomHTTPServer,
   System.SysUtils,
 {$ENDIF}
+  Horse.Provider.RawAdapters,
   Horse.Rtti;
 
 {$IF DEFINED(FPC)}
@@ -133,7 +134,12 @@ var
 begin
   Result := TStringList.create;
   try
-    if AWebRequest is TFPHTTPConnectionRequest then
+    if AWebRequest is TInterfacedWebRequest then
+    begin
+      Result.NameValueSeparator := '=';
+      TInterfacedWebRequest(AWebRequest).RawReq.PopulateHeaders(Result);
+    end
+    else if AWebRequest is TFPHTTPConnectionRequest then
     begin
       LRequest := TFPHTTPConnectionRequest(AWebRequest);
       Result.NameValueSeparator := '=';
@@ -169,6 +175,12 @@ begin
   Result := TStringList.create;
   try
     Result.NameValueSeparator := ':';
+
+    if AWebRequest is TInterfacedWebRequest then
+    begin
+      TInterfacedWebRequest(AWebRequest).RawReq.PopulateHeaders(Result);
+      Exit;
+    end;
 
 {$IF DEFINED(HORSE_ISAPI)}
     Result.Text := AWebRequest.GetFieldByName('ALL_RAW');
