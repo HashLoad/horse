@@ -24,6 +24,8 @@ type
     procedure TestRequestArenaRecyclingAndObjectLifetime;
     [Test]
     procedure TestResponseSendBytesOverload;
+    [Test]
+    procedure TestRequestStateAndMatchedRouteCycle;
   end;
 
 implementation
@@ -146,6 +148,29 @@ begin
   finally
     LResponse.Free;
   end;
+end;
+
+procedure TTestHorseRequestRecycle.TestRequestStateAndMatchedRouteCycle;
+var
+  LDestroyed: Boolean;
+  LTestObj: TTestArenaObject;
+begin
+  LDestroyed := False;
+  FRequest.MatchedRoute := '/my/route/:id';
+  LTestObj := TTestArenaObject.Create(@LDestroyed);
+
+  FRequest.State.Add('context', LTestObj);
+
+  Assert.AreEqual('/my/route/:id', FRequest.MatchedRoute);
+  Assert.IsNotNull(FRequest.State.Items['context']);
+  Assert.IsFalse(LDestroyed);
+
+  // Limpa o request (reciclagem no pool)
+  FRequest.Clear;
+
+  Assert.AreEqual('', FRequest.MatchedRoute, 'MatchedRoute should be empty after Clear');
+  Assert.AreEqual<Integer>(0, FRequest.State.Count, 'State dictionary should be empty after Clear');
+  Assert.IsTrue(LDestroyed, 'State values should be automatically freed after Clear due to doOwnsValues');
 end;
 
 initialization

@@ -40,6 +40,7 @@ type
     Part: string;
     IsParam: Boolean;
     ParamName: string;
+    FullPath: string;
     Children: TObjectList<TRadixNode>;
     Callbacks: TDictionary<TMethodType, TArray<THorseCallback>>;
     Middlewares: TList<THorseCallback>;
@@ -400,6 +401,7 @@ begin
   end;
 
   LCurrent.AddRouteCallback(AHTTPType, ACallback, AIsMiddleware);
+  LCurrent.FullPath := '/' + APath.Trim(['/']);
 end;
 
 procedure THorseRadixRouter.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
@@ -530,6 +532,7 @@ begin
       
       if LNode <> nil then
       begin
+        ARequest.MatchedRoute := LNode.FullPath;
         if LParams <> nil then
         begin
           LKeys := LParams.Keys.ToArray;

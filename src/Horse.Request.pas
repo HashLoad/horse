@@ -11,9 +11,11 @@ uses
   SysUtils,
   fpHTTP,
   HTTPDefs,
+  Generics.Collections,
 {$ELSE}
   System.SysUtils,
   Web.HTTPApp,
+  System.Generics.Collections,
 {$IF CompilerVersion > 32.0}
   Web.ReqMulti,
 {$ENDIF}
@@ -73,6 +75,9 @@ type
   See: Horse.Provider.CrossSocket.WebRequestAdapter.pas
   =========================================================================== }
     FCSRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
+{ =========================================================================== }
+    FMatchedRoute: string;
+    FState: TObjectDictionary<string, TObject>;
 { =========================================================================== }
     function GetArena: THorseArenaAllocator;
     procedure InitializeQuery;
@@ -205,6 +210,8 @@ type
 { PATCH-REQ-9  called by TRequestBridge.MapBody to cache the decoded body. }
     procedure SetBodyString(const AValue: string);
 { =========================================================================== }
+    property MatchedRoute: string read FMatchedRoute write FMatchedRoute;
+    property State: TObjectDictionary<string, TObject> read FState;
     destructor Destroy; override;
   end;
 
@@ -281,6 +288,7 @@ end;
 constructor THorseRequest.Create(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF});
 begin
   FWebRequest := AWebRequest;
+  FState := TObjectDictionary<string, TObject>.Create([doOwnsValues]);
 end;
 
 { ===========================================================================
@@ -289,6 +297,7 @@ end;
 constructor THorseRequest.Create;
 begin
   FWebRequest := nil;
+  FState := TObjectDictionary<string, TObject>.Create([doOwnsValues]);
 end;
 { =========================================================================== }
 
@@ -367,6 +376,9 @@ begin
   if Assigned(FSessions) then
     FSessions.Clear;
 { end PATCH-SES-1 }
+  FMatchedRoute := '';
+  if Assigned(FState) then
+    FState.Clear;
 end;
 { =========================================================================== }
 
@@ -396,6 +408,8 @@ begin
 { end PATCH-REQ-8 }
   if FOwnsArena and Assigned(FArena) then
     FreeAndNil(FArena);
+  if Assigned(FState) then
+    FreeAndNil(FState);
   inherited;
 end;
 
