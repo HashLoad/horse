@@ -78,6 +78,7 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | Observability, distributed tracing (OpenTelemetry) and metrics collection (Prometheus) | [Observability & Telemetry](./doc/telemetry.md) |
 | Automated integration, resilience (Access Violation) and SO limit testing | [Integrity Testing](./doc/integrity-testing.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
+| Long-term architecture roadmap and technical backlog | [Roadmap](./doc/roadmap/README.md) |
 
 ### 🤖 AI Coding Skills
 To help your AI agent (like Antigravity, GitHub Copilot, or Claude) understand and write idiomatic, thread-safe, and memory-safe Horse code, we provide pre-packaged instruction files in [`doc/skills/`](./doc/skills/README.md).

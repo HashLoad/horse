@@ -2,6 +2,9 @@
 
 Este documento detalha o planejamento de melhorias arquiteturais de longo prazo no framework Horse.
 
+> [!TIP]
+> A matriz detalhada de priorização com cálculo de R.O.I. (Impacto vs. Dificuldade) para todos os itens pendentes está disponível em: [prioritization_matrix.md](prioritization_matrix.md).
+
 ---
 
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
