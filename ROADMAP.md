@@ -35,3 +35,7 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 3. Automação de CI/CD Multiplataforma Real (Linux / FPC / GitHub Actions)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Refatorado o arquivo `.github/workflows/tests.yml` do GitHub Actions para compilar de forma dinâmica a suíte de testes de console a partir das fontes usando o compilador FPC (Free Pascal Compiler) e executar em ambiente Linux (Ubuntu) real a cada push e pull request.
+
+### 4. Correção e Unificação dos Provedores Assíncronos (epoll, IOCP e HttpSys)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Padronizada a extração de cabeçalhos (`PopulateHeaders`) e o mapeamento de streams/textos de resposta no core e nos adaptadores assíncronos (`TInterfacedWebRequest` / `TInterfacedWebResponse`). Garantida compatibilidade completa entre Delphi (10 Seattle até 13 Florence) e Lazarus/FPC com testes automatizados rodando sob o loop `epoll` no Linux e todas as variações no Windows.
