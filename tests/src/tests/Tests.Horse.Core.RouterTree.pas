@@ -94,6 +94,7 @@ begin
     begin
       LCalled := True;
       Assert.AreEqual('123', Req.Params.Items['id']);
+      Assert.AreEqual('/users/:id', Req.MatchedRoute);
     end);
 
   FRequest.Populate('GET', mtGet, '/users/123', '', '');

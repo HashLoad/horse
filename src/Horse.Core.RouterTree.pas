@@ -35,6 +35,7 @@ type
   private
     FPart: string;
     FTag: string;
+    FFullPath: string;
     FIsParamsKey: Boolean;
     FRouterRegex: string;
     FIsRouterRegex: Boolean;
@@ -294,6 +295,8 @@ var
   LNextCaller: TNextCaller;
   LFound: Boolean;
 begin
+  if FFullPath <> '' then
+    ARequest.MatchedRoute := FFullPath;
   LFound := False;
   LNextCaller := TNextCaller.Create;
   try
@@ -544,6 +547,7 @@ begin
 
     if not AIsMiddleware then
       FHandlerMethods.Add(AHTTPType);
+    FFullPath := '/' + AFullPath.Trim(['/']);
   end;
 
   if APath.Count > 0 then
