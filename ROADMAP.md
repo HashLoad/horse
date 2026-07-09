@@ -50,6 +50,29 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
 * **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
 
+### 9. Ganchos de Ciclo de Vida da Requisição (*Lifecycle Hooks*)
+* **Descrição:** Oferecer eventos padronizados ao longo do pipeline (como `onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) inspirados no Fastify.
+* **Ganhos:**
+  * Permite que middlewares implementem caching inteligente, auditoria detalhada de payloads ou criptografia em tempo de tráfego sem acoplamento.
+
+### 10. Injeção de Dependência Contextual (*Request Scope / Context*)
+* **Descrição:** Prover um mecanismo estruturado para gerência de dependências cujo ciclo de vida está acoplado ao ciclo da requisição (ex: uma transação de banco de dados ou conexão FireDAC ativa).
+* **Ganhos:**
+  * Facilidade na gerência de concorrência com encerramento e liberação automática de recursos após o fim da requisição.
+
+### 11. Middleware Oficial de Compressão de Resposta (Gzip/Deflate/Brotli)
+* **Descrição:** Middleware oficial de alta performance integrado ao core para compressão dinâmica dos corpos de resposta HTTP.
+* **Ganhos:**
+  * Otimização de consumo de banda e redução no tempo de transferência de dados sem depender de proxies externos.
+
+### 12. Middleware de Limitação de Requisições (*Rate Limiting*)
+* **Descrição:** Solução nativa ou integrada para limitação e controle de tráfego baseado em chaves (como IP de origem ou Tokens) em memória ou integrado com Redis.
+* **Ganhos:**
+  * Proteção do servidor contra ataques de força bruta, scraping ou sobrecarga.
+
+### 13. Servidor de Arquivos Estáticos Otimizado com Suporte a Range (*Static File Streaming*)
+* **Descrição:** Middleware robusto e otimizado para entrega de arquivos físicos locais, incluindo cabeçalhos de controle de cache (`Cache-Control`, `ETags`) e suporte a requisições parciais (HTTP 206 para streaming de mídia).
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
