@@ -85,9 +85,22 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [isaquepinheiro/horse-jsonbr](https://github.com/HashLoad/JSONBr) | Helpers JSON | ✔️ | ❌ |
 | [IagooCesaar/Horse-JsonInterceptor](https://github.com/IagooCesaar/Horse-JsonInterceptor) | Interceptor de JSON em requisição/resposta | ✔️ | ❌ |
 | [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger) | Logger de dados estruturado | ✔️ | ❌ |
-| [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | Endpoint de métricas Prometheus | ✔️ | ❌ |
 | [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation) | Geração automática de docs de API | ✔️ | ❌ |
 | [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator) | Validação de payload de requisição | ✔️ | ❌ |
+
+---
+
+## Telemetria
+
+Estes são middlewares focados em observabilidade, métricas e rastreamento de aplicações:
+
+| Middleware | Descrição | Delphi | Lazarus |
+|---|---|:---:|:---:|
+| [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | Endpoint de métricas Prometheus | ✔️ | ❌ |
+| [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry) | Integração com OpenTelemetry para rastreamento distribuído | ✔️ | ✔️ |
+| [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus) | Integração com Prometheus para coleta de métricas | ✔️ | ✔️ |
+
+---
 
 ## Providers de transporte de terceiros
 

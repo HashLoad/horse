@@ -27,6 +27,7 @@ Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR
 | [Criando um Middleware](./writing-middleware.pt-BR.md) | Criando um middleware de qualidade de produção: esqueleto, padrões de configuração, thread safety, código neutro a Provider, armadilhas entre compiladores, matriz de testes, empacotamento Boss, publicação. |
 | [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys, epoll e IOCP embutidos) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
+| [Observabilidade e Telemetria](./telemetry.pt-BR.md) | Configuração de rastreamento distribuído (OpenTelemetry) e coleta de métricas (Prometheus). |
 | [Suporte de Compilador](./compiler-support.pt-BR.md) | Versões testadas do Delphi, versões do FPC, plataformas-alvo, guards de versão de compilador. |
 | [Cheatsheet de Deploy](./deployment.pt-BR.md) | Referência de uma página pra entregar um binário CrossSocket ou mORMot2 como qualquer um dos sete formatos de Aplicação (Console / VCL / Daemon / Serviço Windows / daemon FPC / LCL / HTTPApplication FPC). |
 | [Testes de Integridade](./integrity-testing.pt-BR.md) | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack. |
@@ -44,6 +45,7 @@ doc/
 ├── providers.*.md             ← escolha de transporte
 ├── iocp.*.md                  ← portas de conclusão assíncronas (Windows)
 ├── epoll.*.md                 ← laço de eventos assíncronos (Linux)
+├── telemetry.*.md             ← integração com OpenTelemetry e Prometheus
 ├── middleware-ecosystem.*.md  ← catálogo de pacotes
 ├── integrity-testing.*.md     ← testes de integridade e resiliência
 └── compiler-support.*.md      ← versões / plataformas

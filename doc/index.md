@@ -27,6 +27,7 @@ If you're new, start with [Getting Started](./getting-started.md). If you have a
 | [Writing a Middleware](./writing-middleware.md) | Authoring a production-quality middleware: skeleton, configuration patterns, thread safety, Provider-neutral coding, cross-compiler pitfalls, testing matrix, Boss packaging, publishing. |
 | [Providers & Application types](./providers.md) | The two-axis model: **Provider** (transport — Indy default; CrossSocket, mORMot2, ICS optional; HttpSys, epoll and IOCP built-in) × **Application type** (Console / VCL / Daemon / LCL / HTTPApplication, plus host-managed Apache / ISAPI / CGI / FCGI). Compatibility matrix and selection guidance. |
 | [Middleware Ecosystem](./middleware-ecosystem.md) | Official `HashLoad/*` packages and the community-maintained list. |
+| [Observability & Telemetry](./telemetry.md) | Setting up distributed tracing (OpenTelemetry) and metrics collection (Prometheus). |
 | [Compiler Support](./compiler-support.md) | Tested Delphi releases, FPC versions, target platforms, compiler-version guards. |
 | [Deployment Cheatsheet](./deployment.md) | One-page reference for shipping a CrossSocket or mORMot2 binary as any of the seven Application shapes (Console / VCL / Daemon / Windows Service / FPC daemon / LCL / FPC HTTPApplication). |
 | [Integrity Testing](./integrity-testing.md) | Automated integration, resilience (Access Violation) and SO limit testing. |
@@ -44,6 +45,7 @@ doc/
 ├── providers.md               ← choosing a transport
 ├── iocp.md                    ← Windows async I/O completion ports
 ├── epoll.md                   ← Linux async event loop
+├── telemetry.md               ← OpenTelemetry & Prometheus integration
 ├── middleware-ecosystem.md    ← package catalogue
 ├── integrity-testing.md       ← integrity and resilience testing
 └── compiler-support.md        ← versions / platforms
