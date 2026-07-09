@@ -168,6 +168,7 @@ type
     // Interface redirects (cont)
     function GetFieldByName(const AName: string): string;
 
+    procedure PopulateHeaders(ADest: TStrings);
     procedure PopulateQueryFields(ADest: TStrings);
     procedure PopulateContentFields(ADest: TStrings);
     procedure PopulateCookieFields(ADest: TStrings);
@@ -1566,6 +1567,21 @@ begin
   Result := ResolveHeader(AName);
 end;
 
+procedure TEpollRawRequest.PopulateHeaders(ADest: TStrings);
+var
+  I: Integer;
+  Seg: THeaderSegment;
+  K, V: AnsiString;
+begin
+  for I := 0 to Length(FHeaders) - 1 do
+  begin
+    Seg := FHeaders[I];
+    SetString(K, PAnsiChar(@FBuffer[Seg.KeyStart]), Seg.KeyLen);
+    SetString(V, PAnsiChar(@FBuffer[Seg.ValueStart]), Seg.ValueLen);
+    ADest.Add(string(Trim(K)) + ADest.NameValueSeparator + string(Trim(V)));
+  end;
+end;
+
 procedure TEpollRawRequest.PopulateQueryFields(ADest: TStrings);
 var
   LQuery: string;
@@ -2032,16 +2048,19 @@ begin
   begin
     SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
     Exit;
+  end
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).ContentStream <> nil) then
+  begin
+    SendStreamResponse(TInterfacedWebResponse(ARes.RawWebResponse).ContentStream, ARes.CustomHeaders);
+    Exit;
   end;
 
   if Length(ARes.BodyBytes) > 0 then
     LBodyBytes := ARes.BodyBytes
   else if ARes.BodyText <> '' then
     LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
-  {$IFNDEF FPC}
-  else if (ARes.RawWebResponse <> nil) and (ARes.RawWebResponse.Content <> '') then
-    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.RawWebResponse.Content)
-  {$ENDIF};
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).Content <> '') then
+    LBodyBytes := TEncoding.UTF8.GetBytes(TInterfacedWebResponse(ARes.RawWebResponse).Content);
 
   LHeaderStr := 'HTTP/1.1 ' + AnsiString(IntToStr(FStatusCode)) + ' ' + AnsiString(FReason) + #13#10;
   

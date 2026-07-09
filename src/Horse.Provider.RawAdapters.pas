@@ -88,7 +88,9 @@ type
 {$ELSE}
     function  GetIntegerVariable(Index: Integer): Integer; override;
 {$IFEND}
+{$IF CompilerVersion >= 32.0}
     function  GetRawContent: TBytes; override;
+{$IFEND}
   public
     constructor Create(const ARawReq: IHorseRawRequest); reintroduce;
     destructor  Destroy; override;
@@ -109,6 +111,8 @@ type
   TInterfacedWebResponse = class(TWebResponse)
   private
     FRawRes: IHorseRawResponse;
+    FContent: TWebString;
+    FContentStream: TStream;
   protected
     function  GetStringVariable(Index: Integer): TWebString; override;
     procedure SetStringVariable(Index: Integer; const Value: TWebString); override;
@@ -134,6 +138,7 @@ type
     procedure SendResponse; override;
     procedure SendRedirect(const URI: TWebString); override;
     property  RawRes: IHorseRawResponse read FRawRes;
+    property  ContentStream: TStream read FContentStream write FContentStream;
   end;
 
 {$ENDIF}
@@ -267,6 +272,7 @@ begin
   end;
 end;
 
+{$IF CompilerVersion >= 32.0}
 function TInterfacedWebRequest.GetRawContent: TBytes;
 var
   LContent: string;
@@ -282,6 +288,7 @@ begin
   else
     Result := nil;
 end;
+{$IFEND}
 
 function TInterfacedWebRequest.GetFieldByName(const Name: TWebString): TWebString;
 begin
@@ -346,6 +353,8 @@ end;
 destructor TInterfacedWebResponse.Destroy;
 begin
   FRawRes := nil;
+  if Assigned(FContentStream) then
+    FContentStream.Free;
   inherited;
 end;
 
@@ -389,17 +398,17 @@ end;
 
 function TInterfacedWebResponse.GetContent: TWebString;
 begin
-  Result := '';
+  Result := FContent;
 end;
 
 procedure TInterfacedWebResponse.SetContent(const Value: TWebString);
 begin
-  { Stub — use THorseResponse.Send }
+  FContent := Value;
 end;
 
 procedure TInterfacedWebResponse.SetContentStream(Value: TStream);
 begin
-  { Stub — use THorseResponse.SendFile }
+  FContentStream := Value;
 end;
 
 function TInterfacedWebResponse.GetStatusCode: Integer;

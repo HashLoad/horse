@@ -132,7 +132,7 @@ type
     {$ENDIF}
 
     function GetFieldByName(const AName: string): string;
-    procedure PopulateHeaders(ADict: TDictionary<string, string>);
+    procedure PopulateHeaders(ADest: TStrings);
     procedure PopulateQueryFields(ADest: TStrings);
     procedure PopulateContentFields(ADest: TStrings);
     procedure PopulateCookieFields(ADest: TStrings);
@@ -626,18 +626,18 @@ begin
   Result := ResolveHeader(AName);
 end;
 
-procedure TIocpRawRequest.PopulateHeaders(ADict: TDictionary<string, string>);
+procedure TIocpRawRequest.PopulateHeaders(ADest: TStrings);
 var
   I: Integer;
   Seg: THeaderSegment;
-  K, V: string;
+  K, V: AnsiString;
 begin
   for I := 0 to Length(FHeaders) - 1 do
   begin
     Seg := FHeaders[I];
-    K := TEncoding.UTF8.GetString(FBuffer, Seg.KeyStart, Seg.KeyLen).Trim;
-    V := TEncoding.UTF8.GetString(FBuffer, Seg.ValueStart, Seg.ValueLen).Trim;
-    ADict.AddOrSetValue(K, V);
+    SetString(K, PAnsiChar(@FBuffer[Seg.KeyStart]), Seg.KeyLen);
+    SetString(V, PAnsiChar(@FBuffer[Seg.ValueStart]), Seg.ValueLen);
+    ADest.Add(string(Trim(K)) + ADest.NameValueSeparator + string(Trim(V)));
   end;
 end;
 
@@ -926,12 +926,19 @@ begin
   begin
     SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
     Exit;
+  end
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).ContentStream <> nil) then
+  begin
+    SendStreamResponse(TInterfacedWebResponse(ARes.RawWebResponse).ContentStream, ARes.CustomHeaders);
+    Exit;
   end;
 
   if Length(ARes.BodyBytes) > 0 then
     LBodyBytes := ARes.BodyBytes
   else if ARes.BodyText <> '' then
-    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText);
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).Content <> '') then
+    LBodyBytes := TEncoding.UTF8.GetBytes(TInterfacedWebResponse(ARes.RawWebResponse).Content);
 
   if Length(LBodyBytes) > 0 then
     FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)))
