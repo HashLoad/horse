@@ -35,6 +35,27 @@ ulimit -n
 ulimit -n 65535
 ```
 
+## 🚀 Production Tuning for Linux
+
+For extreme loads and high-performance setups, tune the Linux kernel parameters in `/etc/sysctl.conf`:
+
+```ini
+# Increase max queued connections backlog
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+
+# Enable fast reuse of TIME_WAIT sockets
+net.ipv4.tcp_tw_reuse = 1
+
+# Increase ephemeral outbound port range
+net.ipv4.ip_local_port_range = 1024 65535
+
+# Increase max open file descriptors limit globally
+fs.file-max = 2097152
+```
+
+Run `sysctl -p` to apply kernel configurations immediately.
+
 ---
 
 ## ⚡ Quick Start

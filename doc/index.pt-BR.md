@@ -6,6 +6,23 @@ Bem-vindo. Este é o índice da documentação do [Horse](https://github.com/Has
 
 Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR.md). Se já tem um servidor rodando e quer fazer uma alteração específica, vá direto ao tópico relevante abaixo.
 
+## Fluxo de Execução de Middlewares
+
+Quando uma requisição HTTP chega ao servidor Horse, ela passa pelas camadas de middlewares na seguinte ordem de precedência:
+
+```mermaid
+graph TD
+    A[Requisição HTTP] --> B[Middlewares Globais<br>ex: CORS, Johnson]
+    B --> C{Pertence a um Grupo?}
+    C -- Sim --> D[Middlewares de Grupo<br>ex: Auth Restrita]
+    C -- Não --> E{Tem Middlewares na Rota?}
+    D --> E
+    E -- Sim --> F[Middlewares Locais da Rota<br>ex: Log, Validações]
+    E -- Não --> G[Handler Final da Rota<br>Executa a Lógica]
+    F --> G
+    G --> H[Resposta HTTP]
+```
+
 ---
 
 ## Ordem de leitura para iniciantes

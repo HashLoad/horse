@@ -57,6 +57,21 @@ You can group related routes under a common path prefix using `THorse.Group`. Th
       .Get('/settings', GetSettingsHandler);
     ```
 
+## Route-level Middlewares (Local)
+You can pass an array of route-specific middlewares (`array of THorseCallback`) to apply checks only to a single endpoint. These run after global and group-level middlewares:
+
+*   **Static routing**:
+    ```pascal
+    THorse.Get('/admin/dashboard', [AuthMiddleware, LoggerMiddleware], GetDashboardHandler);
+    ```
+
+*   **Fluent routing**:
+    ```pascal
+    THorse.Route('/reports')
+      .Get([AuthMiddleware, LoggerMiddleware], GetReportsHandler)
+      .Post([AuthMiddleware], CreateReportHandler);
+    ```
+
 ---
 
 ## Grouping with Controllers

@@ -63,6 +63,51 @@ type
     function Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
 {$IFEND}
 {$IFEND}
+
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+
+{$IF (DEFINED(FPC) OR (CompilerVersion > 27.0))}
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<T>; overload;
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<T>; overload;
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<T>; overload;
+{$IFNDEF FPC}
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<T>; overload;
+{$IFEND}
+{$IFEND}
+
     function &End: T;
   end;
 

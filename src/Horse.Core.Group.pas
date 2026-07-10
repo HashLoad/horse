@@ -142,6 +142,37 @@ type
     function Delete(const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
     {$ENDIF}
     {$ENDIF}
+
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+    function Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>; overload;
+
     function &End: IHorseCoreGroup<T>;
   end;
   {$ENDIF}
@@ -149,6 +180,7 @@ type
 implementation
 
 uses
+  Horse.Core,
 {$IF DEFINED(FPC)}
   SysUtils;
 {$ELSE}
@@ -648,6 +680,152 @@ begin
 end;
 {$ENDIF}
 {$ENDIF}
+
+function THorseCoreGroupRoute<T>.Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Get(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Get(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Get(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Get(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Get(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Put(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Put(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Put(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Put(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Put(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Head(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Head(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Head(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Head(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Head(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Post(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Post(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Post(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+// Corrigido typo do post response
+function THorseCoreGroupRoute<T>.Post(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Post(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Patch(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+// Corrigido typo do patch request response
+function THorseCoreGroupRoute<T>.Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Patch(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Patch(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Patch(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Patch(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallback): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Delete(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequestResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Delete(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackRequest): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Delete(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
+
+function THorseCoreGroupRoute<T>.Delete(const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): IHorseCoreRoute<IHorseCoreGroup<T>>;
+begin
+  THorseCore.Delete(FPath, AMiddlewares, ACallback);
+  Result := Self;
+end;
 
 function THorseCoreGroupRoute<T>.&End: IHorseCoreGroup<T>;
 begin

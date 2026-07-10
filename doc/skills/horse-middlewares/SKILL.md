@@ -32,6 +32,22 @@ end;
 
 ---
 
+## Middleware Scope & Execution Flow
+Middlewares can be declared at three levels:
+1. **Global** (via `THorse.Use`): Runs on every request.
+2. **Group-level** (via `THorseGroup.Use`): Runs on all routes inside a specific group prefix.
+3. **Route-level (Local)**: Runs only on that specific route (defined as an array `[Middleware1, Middleware2]` in the verb method).
+
+### Execution Flow:
+The execution order follows the nested onion pattern:
+```
+Global Middlewares → Group Middlewares → Route-level Middlewares → Final Route Handler
+```
+
+Always design middlewares to call `Next()` to pass control, or skip it to short-circuit the request (e.g., unauthorized requests).
+
+---
+
 ## The Johnson Middleware (Critical)
 The **`Jhonson`** middleware automatically handles JSON parsing (`TJSONObject` / `TJSONArray`) for requests and responses.
 

@@ -251,6 +251,36 @@ O framework converte a exception numa resposta JSON de erro. Qualquer outra exce
 
 Para interceptar exceptions globalmente, registre o middleware `handle-exception` ([`HashLoad/handle-exception`](https://github.com/HashLoad/handle-exception)) — ele formata seus erros de forma consistente.
 
+## Envio de Respostas Fragmentadas (Chunked Transfer)
+
+Quando você precisa enviar grandes volumes de dados (como relatórios massivos ou streams de áudio/vídeo) sem carregar todo o conteúdo na memória de uma só vez, você deve utilizar o envio fragmentado (**Chunked Transfer Encoding**):
+
+```delphi
+THorse.Get('/dados/pesados',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  var
+    Stream: TStringStream;
+  begin
+    // Indica que o conteúdo será fragmentado
+    Res.AddHeader('Transfer-Encoding', 'chunked');
+    Res.ContentType('text/plain');
+    
+    // Você pode fazer loops escrevendo pedaços de dados na resposta
+    Stream := TStringStream.Create('Primeiro pedaço de texto...');
+    try
+      Res.Send(Stream.DataString);
+      // O Horse gerencia o envio fragmentado de forma transparente dependendo do Provider
+    finally
+      Stream.Free;
+    end;
+  end);
+```
+
+## Boas Práticas com Grandes Payloads (Upload/Download)
+
+*   **Evite carregar arquivos inteiros em String/MemoryStream**: Use `TFileStream` para ler diretamente do disco ou gravar no disco, passando o stream para `Res.SendFile` ou `Res.Download`. O Horse fará o streaming do arquivo em blocos pequenos (geralmente 8KB), mantendo o consumo de memória do servidor constante.
+*   **Limites de tamanho de requisição**: No Indy (provider padrão), você pode configurar o tamanho máximo de requisição ou timeout diretamente nas propriedades do servidor subjacente (`THorse.RawWebserver`).
+
 ---
 
 ## Notas específicas de provider
