@@ -494,13 +494,28 @@ type
 {$ENDIF}
 
   THorse = class(THorseProvider)
+  private
+    class function GetActiveRequests: Integer; static; inline;
+    class function GetIsShuttingDown: Boolean; static; inline;
   public
     class procedure UseRadixRouter;
+    class property ActiveRequests: Integer read GetActiveRequests;
+    class property IsShuttingDown: Boolean read GetIsShuttingDown;
   end;
 
 implementation
 
 { THorse }
+
+class function THorse.GetActiveRequests: Integer;
+begin
+  Result := THorseCore.GetActiveRequests;
+end;
+
+class function THorse.GetIsShuttingDown: Boolean;
+begin
+  Result := THorseCore.GetIsShuttingDown;
+end;
 
 class procedure THorse.UseRadixRouter;
 begin

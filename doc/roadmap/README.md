@@ -24,13 +24,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
   * Todos os providers do ecossistema (incluindo Indy legado) passariam a se beneficiar de envio zero-copy automaticamente, sem precisar reimplementar essa lógica individualmente.
 
 
-### 4. Desligamento Suave (*Graceful Shutdown*)
-* **Descrição:** Implementar encerramento coordenado de conexões. O servidor encerra a escuta de novos sockets mas conclui requisições ativas dentro de um tempo limite de segurança.
-* **Ganhos:**
-  * Resiliência a nível enterprise para orquestradores de contêiner (como Docker/Kubernetes).
-  * Evita a corrupção de dados ou interrupção de transações em andamento ao atualizar serviços.
-
-
 ### 6. DTO Auto-Binding e Validação Declarativa
 * **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
 * **Ganhos:**
@@ -74,6 +67,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 6. Ganchos de Ciclo de Vida da Requisição (Lifecycle Hooks)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Adicionado suporte nativo e thread-safe a ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend` e `onResponse`) em cascata cooperativa (CPS) no Core e integrado a ambos os roteadores (`THorseRouterTree` e `THorseRadixRouter`), com testes de integração e exemplos documentados.
+
+### 7. Desligamento Suave (Graceful Shutdown)
+* **Status:** 🟡 **Em andamento**
+* **Implementação:** Desenvolvido o mecanismo de encerramento coordenado no Core e Provedor de Console (Indy), permitindo interromper novas escutas físicas do socket enquanto as requisições ativas (`ActiveRequests`) são concluídas de forma suave sob um timeout de segurança, expondo as propriedades de telemetria `ActiveRequests` e `IsShuttingDown` (sinalização para Kubernetes/Load Balancers).
 
 ---
 
