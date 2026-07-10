@@ -135,6 +135,16 @@ O módulo de controle central `THorseWebModule` intercepta a requisição e exec
    ```
 3. Caso contrário, o fluxo é desviado para a árvore de roteamento e middlewares legados e estáticos da fachada principal `THorseCore`.
 
+### 🌐 Sockets Standalone vs. Servidores Web Gerenciados (ISAPI, Apache, CGI, FastCGI)
+
+> [!NOTE]
+> Sob provedores locais standalone (como Indy, IOCP ou HttpSys), os listeners de sockets físicos são gerenciados como singletons globais do processo. Tentar iniciar múltiplos listeners físicos de sockets *concorrentemente* dentro do mesmo processo standalone causará colisões de bindings de portas, pois estes provedores não foram projetados para gerenciar múltiplos loops de sockets locais paralelos.
+>
+> Contudo, a arquitetura de `THorseInstance` brilha em produção quando implantada sob **Servidores Web Gerenciados** (como **IIS** via ISAPI, **Apache** via mod_delphi, **CGI** ou **FastCGI**):
+> - Nesses ambientes, o servidor externo (IIS/Apache) é quem gerencia fisicamente as escutas das portas (ex: porta `80` para API pública e `8080` para painel administrativo) e repassa os requests para o processo ou DLL do Horse.
+> - A requisição chega ao `THorseWebModule` contendo o cabeçalho correto `Request.ServerPort`.
+> - O Horse resolve e direciona a requisição perfeitamente para a árvore de rotas lógicas da `THorseInstance` correspondente, provendo isolamento completo sem conflitos de socket.
+
 ---
 
 ## ⚙️ Retrocompatibilidade e Estabilidade

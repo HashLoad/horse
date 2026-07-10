@@ -69,8 +69,18 @@ begin
   FInstance2.Listen(9002, DoListen2);
 
   Writeln('Servidores inicializados.');
-  Writeln('Pressione [ENTER] para interromper a execucao e sair...');
-  Readln;
+  
+  // Detecção de switch para testes automatizados ponta a ponta em background
+  if (ParamCount > 0) and ((ParamStr(1) = '--delay') or (ParamStr(1) = '-delay')) then
+  begin
+    Writeln('Execucao em modo automatizado detectada. Aguardando 10 segundos antes de encerrar...');
+    Sleep(10000);
+  end
+  else
+  begin
+    Writeln('Pressione [ENTER] para interromper a execucao e sair...');
+    Readln;
+  end;
 
   Writeln('Interrompendo a escuta das portas...');
   FInstance1.StopListen;

@@ -135,6 +135,16 @@ The `THorseWebModule` processes the request and resolves the execution context:
    ```
 3. If no instance is registered on that port, the execution falls back to the static `THorseCore` global routes.
 
+### 🌐 Standalone Sockets vs. Managed Web Servers (ISAPI, Apache, CGI, FastCGI)
+
+> [!NOTE]
+> Under standalone local providers (like Indy, IOCP, or HttpSys), physical socket listeners are managed as global singletons. Trying to run multiple physical socket listeners *concurrently* within the same standalone process will cause socket binding collisions because those providers are not designed to host multiple parallel local listeners.
+>
+> However, `THorseInstance` shines in production when deployed under **Managed Web Servers** (like **IIS** via ISAPI, **Apache** via mod_delphi, **CGI**, or **FastCGI**):
+> - In these environments, the external web server (IIS/Apache) handles the physical socket listening on multiple ports (e.g., port `80` for public API and `8080` for admin dashboard) and forwards all HTTP requests to the Horse DLL or process.
+> - The incoming request arrives at `THorseWebModule` containing the correct `Request.ServerPort` header.
+> - Horse successfully resolves and routes the request to the correct `THorseInstance` logical route tree, providing complete isolation without any socket conflicts.
+
 ---
 
 ## ⚙️ Backward Compatibility
