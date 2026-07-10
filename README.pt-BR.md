@@ -71,7 +71,8 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | Definir rotas, parâmetros de rota, grupos de rotas, query strings | [Roteamento](./doc/routing.pt-BR.md) |
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
 | Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
-| **Criar e publicar seu próprio middleware** — esqueleto, thread safety, neutralidade a Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
+| Ganchos de Ciclo de Vida — onRequest, preParsing, preValidation, onSend, onResponse | [Ganchos de Ciclo de Vida](./doc/lifecycle-hooks.pt-BR.md) |
+| **Criar e publicar o seu próprio middleware** — esqueleto, thread safety, neutralidade de Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
 | **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
 | **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |
 | Catálogo completo de middlewares com descrições estendidas | [Ecossistema de Middlewares](./doc/middleware-ecosystem.pt-BR.md) |

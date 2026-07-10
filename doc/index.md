@@ -41,6 +41,7 @@ graph TD
 | [Routing](./routing.md) | `THorse.Get` / `Post` / `Put` / `Delete` / `Patch` / `Head` / `Use`; path params; route groups; wildcards; HTTP method enum. |
 | [Request & Response](./request-response.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
 | [Middleware](./middleware.md) | The `Next` proc model; built-in vs custom; registration order; per-route vs global. |
+| [Lifecycle Hooks](./lifecycle-hooks.md) | Request lifecycle hooks (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) to extend and intercept request/response pipelines. |
 | [Writing a Middleware](./writing-middleware.md) | Authoring a production-quality middleware: skeleton, configuration patterns, thread safety, Provider-neutral coding, cross-compiler pitfalls, testing matrix, Boss packaging, publishing. |
 | [Providers & Application types](./providers.md) | The two-axis model: **Provider** (transport — Indy default; CrossSocket, mORMot2, ICS optional; HttpSys, epoll and IOCP built-in) × **Application type** (Console / VCL / Daemon / LCL / HTTPApplication, plus host-managed Apache / ISAPI / CGI / FCGI). Compatibility matrix and selection guidance. |
 | [Middleware Ecosystem](./middleware-ecosystem.md) | Official `HashLoad/*` packages and the community-maintained list. |
@@ -59,6 +60,7 @@ doc/
 ├── routing.md                 ← URL → handler binding
 ├── request-response.md        ← THorseRequest and THorseResponse API
 ├── middleware.md              ← chaining handlers
+├── lifecycle-hooks.md         ← request lifecycle hooks (onRequest, etc.)
 ├── providers.md               ← choosing a transport
 ├── iocp.md                    ← Windows async I/O completion ports
 ├── epoll.md                   ← Linux async event loop

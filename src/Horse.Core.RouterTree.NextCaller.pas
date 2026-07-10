@@ -188,34 +188,72 @@ begin
       {$ENDIF}
       if (LCallbackCount > FIndexCallback) then
       begin
-        try
-          FFound^ := True;
-          {$IF DEFINED(FPC)}
-          THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
-          {$ELSE}
-          LCallback[FIndexCallback](FRequest, FResponse, Next);
-          {$ENDIF}
-        except
-          on E: Exception do
-          begin
-            if E is EHorseCallbackInterrupted then
-              raise;
-            if E is EHorseException then
+        if FIndexCallback = 0 then
+        begin
+          THorse.ExecutePreValidation(FRequest, FResponse,
+            procedure
             begin
-              FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+              try
+                FFound^ := True;
+                {$IF DEFINED(FPC)}
+                THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
+                {$ELSE}
+                LCallback[FIndexCallback](FRequest, FResponse, Next);
+                {$ENDIF}
+              except
+                on E: Exception do
+                begin
+                  if E is EHorseCallbackInterrupted then
+                    raise;
+                  if E is EHorseException then
+                  begin
+                    FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+                    Exit;
+                  end;
+                  if THorse.HasOnError then
+                  begin
+                    THorse.ExecuteOnError(FRequest, FResponse, E);
+                    Exit;
+                  end;
+                  if FResponse.Status < Integer(THTTPStatus.BadRequest) then
+                    FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+                  Exit;
+                end;
+              end;
+              Next;
+            end);
+        end
+        else
+        begin
+          try
+            FFound^ := True;
+            {$IF DEFINED(FPC)}
+            THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
+            {$ELSE}
+            LCallback[FIndexCallback](FRequest, FResponse, Next);
+            {$ENDIF}
+          except
+            on E: Exception do
+            begin
+              if E is EHorseCallbackInterrupted then
+                raise;
+              if E is EHorseException then
+              begin
+                FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+                Exit;
+              end;
+              if THorse.HasOnError then
+              begin
+                THorse.ExecuteOnError(FRequest, FResponse, E);
+                Exit;
+              end;
+              if FResponse.Status < Integer(THTTPStatus.BadRequest) then
+                FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
               Exit;
             end;
-            if THorse.HasOnError then
-            begin
-              THorse.ExecuteOnError(FRequest, FResponse, E);
-              Exit;
-            end;
-            if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-              FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
-            Exit;
           end;
+          Next;
         end;
-        Next;
       end;
     end
     else
