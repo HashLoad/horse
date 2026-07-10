@@ -38,31 +38,20 @@ begin
   Writeln('Instancia 2 (Porta 9002): Pronta para receber conexoes em http://localhost:9002/admin/ping');
 end;
 
-type
-  TThread1 = class(TThread)
-  protected
-    procedure Execute; override;
-  end;
-
-  TThread2 = class(TThread)
-  protected
-    procedure Execute; override;
-  end;
-
-procedure TThread1.Execute;
 begin
-  FInstance1.Listen(9001, DoListen1);
-end;
+  // NOTA DIDÁTICA SOBRE CONSOLE / THREADS:
+  // O método Listen() do Horse bloqueia a thread chamadora apenas se 'IsConsole = True' 
+  // (mecanismo usado para evitar que programas de console finalizem imediatamente).
+  //
+  // Para rodar múltiplos servidores paralelos sem criar threads manuais (TThread):
+  // Definimos 'IsConsole := False'. Isso faz com que os métodos Listen() ativem os sockets
+  // em background (usando as threads de socket nativas dos provedores) e retornem a execução
+  // da Thread Principal imediatamente, permitindo que controlemos a parada com um Readln.
+  // 
+  // Em aplicações GUI (VCL/LCL) ou Serviços (Daemons), 'IsConsole' é False por padrão,
+  // portanto o Listen() nunca bloqueia e threads manuais não são necessárias de forma alguma.
+  IsConsole := False;
 
-procedure TThread2.Execute;
-begin
-  FInstance2.Listen(9002, DoListen2);
-end;
-
-var
-  LThread1: TThread1;
-  LThread2: TThread2;
-begin
   Writeln('====================================================');
   Writeln('      EXEMPLO HORSE MULTI-INSTANCE (LAZARUS)        ');
   Writeln('====================================================');
@@ -75,12 +64,9 @@ begin
   FInstance2 := THorseInstance.Create;
   FInstance2.Get('/admin/ping', DoAdminPing);
 
-  // 3. Inicializando os servidores em Threads separadas (compativel com FPC)
-  LThread1 := TThread1.Create(False);
-  LThread1.FreeOnTerminate := True;
-
-  LThread2 := TThread2.Create(False);
-  LThread2.FreeOnTerminate := True;
+  // 3. Inicializando as escutas físicas (ambas ativam e retornam instantaneamente)
+  FInstance1.Listen(9001, DoListen1);
+  FInstance2.Listen(9002, DoListen2);
 
   Writeln('Servidores inicializados.');
   Writeln('Pressione [ENTER] para interromper a execucao e sair...');

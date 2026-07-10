@@ -27,7 +27,18 @@ begin
 end;
 
 begin
-  IsConsole := True;
+  // NOTA DIDÁTICA SOBRE CONSOLE / THREADS:
+  // O método Listen() do Horse bloqueia a thread chamadora apenas se 'IsConsole = True' 
+  // (mecanismo usado para evitar que programas de console finalizem imediatamente).
+  //
+  // Para rodar múltiplos servidores paralelos sem criar threads manuais (TThread):
+  // Definimos 'IsConsole := False'. Isso faz com que os métodos Listen() ativem os sockets
+  // em background (usando as threads de socket nativas dos provedores) e retornem a execução
+  // da Thread Principal imediatamente, permitindo que controlemos a parada com um Readln.
+  // 
+  // Em aplicações GUI (VCL/LCL) ou Serviços (Daemons), 'IsConsole' é False por padrão,
+  // portanto o Listen() nunca bloqueia e threads manuais não são necessárias de forma alguma.
+  IsConsole := False;
   ReportMemoryLeaksOnShutdown := True;
 
   Writeln('====================================================');
@@ -50,18 +61,9 @@ begin
       Res.Send('Pong da Area Admin (Instancia 2)');
     end);
 
-  // 3. Inicializando os servidores em Threads separadas
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FInstance1.Listen(9001, DoListen1);
-    end).Start;
-
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FInstance2.Listen(9002, DoListen2);
-    end).Start;
+  // 3. Inicializando as escutas físicas (ambas ativam e retornam instantaneamente)
+  FInstance1.Listen(9001, DoListen1);
+  FInstance2.Listen(9002, DoListen2);
 
   Writeln('Servidores inicializados.');
   Writeln('Pressione [ENTER] para interromper a execucao e sair...');

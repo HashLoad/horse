@@ -31,7 +31,7 @@ graph TD
 
 ## 🚀 Basic Usage
 
-To run multiple servers, instantiate `THorseInstance` and call their respective setup methods:
+To run multiple servers concurrently without manual threads, you can disable the console-blocking loop by setting `IsConsole := False` and managing the shutdown with a `Readln`:
 
 ```pascal
 program MultiInstanceConsole;
@@ -48,6 +48,9 @@ var
   FAdminPanel: THorseInstance;
 
 begin
+  // Disable the console-blocking loop to let Listen() methods return immediately
+  IsConsole := False;
+
   // 1. Configure the first instance (Public API)
   FPublicApi := THorseInstance.Create;
   FPublicApi.Get('/ping',
@@ -64,18 +67,9 @@ begin
       Res.Send('Pong from Admin Panel');
     end);
 
-  // 3. Start listening in separate threads
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FPublicApi.Listen(9001);
-    end).Start;
-
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FAdminPanel.Listen(9002);
-    end).Start;
+  // 3. Start listening (both return control immediately)
+  FPublicApi.Listen(9001);
+  FAdminPanel.Listen(9002);
 
   Writeln('Servers are listening on ports 9001 and 9002.');
   Writeln('Press [ENTER] to exit...');
@@ -88,6 +82,40 @@ begin
   FPublicApi.Free;
   FAdminPanel.Free;
 end.
+```
+
+---
+
+## 🧵 Sockets, Blocking Execution & Thread Management
+
+The Horse physical transport providers (Indy, IOCP, HttpSys, Epoll) are internally multithreaded. When you invoke `Listen()`, the server spawns background thread pools to listen for incoming connections and handle requests asynchronously.
+
+The caller thread (e.g., Main Thread) only blocks inside `Listen()` when `IsConsole := True` is set. This is a didactical safety mechanism designed to prevent console programs from exiting scope and closing immediately.
+
+Depending on your application type, you can control thread execution in three ways:
+
+### A. Non-Console Applications (VCL, LCL, Windows Services, Linux Daemons)
+In GUI or background service applications, `IsConsole` is naturally `False`. Thus, calling `Listen()` on multiple instances **never blocks** the UI thread or calling thread. You can safely call `Listen` sequentially on the main thread:
+```pascal
+FInstance1.Listen(9001); // Returns control immediately
+FInstance2.Listen(9002); // Returns control immediately
+```
+
+### B. Console Applications (Deactivating Block)
+As shown in the basic usage above, setting `IsConsole := False` at the program startup disables the console-blocking loop. Both instances start their socket threads in background and return immediately to the main execution flow, letting you wait for keyboard input using `Readln`.
+
+### C. Hybrid Thread Approach (Keeping Console Block)
+If you want to keep `IsConsole := True` and let the console block naturally on the socket execution event, you can spawn background threads for all secondary instances, and run the last instance on the main thread:
+```pascal
+// Start Instance 1 in a background thread
+TThread.CreateAnonymousThread(
+  procedure
+  begin
+    FPublicApi.Listen(9001);
+  end).Start;
+
+// Start Instance 2 on the Main Thread (blocks execution and keeps console open)
+FAdminPanel.Listen(9002);
 ```
 
 ---

@@ -31,7 +31,7 @@ graph TD
 
 ## 🚀 Uso Básico
 
-Para inicializar múltiplos servidores lógicos concorrentes, basta criar instâncias de `THorseInstance` e configurar suas respectivas rotas:
+Para inicializar múltiplos servidores lógicos concorrentes sem criar threads manuais (TThread), basta desativar o bloqueio de console configurando `IsConsole := False` e gerenciando o encerramento do console com um `Readln`:
 
 ```pascal
 program MultiInstanceConsole;
@@ -48,6 +48,9 @@ var
   FAdminPanel: THorseInstance;
 
 begin
+  // Desativa o bloqueio interno do console para que os metodos Listen() retornem imediatamente
+  IsConsole := False;
+
   // 1. Configurando a primeira instância (API Pública)
   FPublicApi := THorseInstance.Create;
   FPublicApi.Get('/ping',
@@ -64,18 +67,9 @@ begin
       Res.Send('Pong do Painel Admin');
     end);
 
-  // 3. Inicializando a escuta em threads separadas
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FPublicApi.Listen(9001);
-    end).Start;
-
-  TThread.CreateAnonymousThread(
-    procedure
-    begin
-      FAdminPanel.Listen(9002);
-    end).Start;
+  // 3. Inicializando a escuta (ambos retornam o controle imediatamente)
+  FPublicApi.Listen(9001);
+  FAdminPanel.Listen(9002);
 
   Writeln('Servidores escutando nas portas 9001 e 9002.');
   Writeln('Pressione [ENTER] para sair...');
@@ -88,6 +82,40 @@ begin
   FPublicApi.Free;
   FAdminPanel.Free;
 end.
+```
+
+---
+
+## 🧵 Sockets, Bloqueio de Execução & Gerenciamento de Threads
+
+Os provedores físicos de transporte do Horse (Indy, IOCP, HttpSys, Epoll) já são internamente multithreaded. Quando você chama o método `Listen()`, o servidor cria pools de threads em background no sistema operacional para aceitar conexões e tratar requisições de forma assíncrona.
+
+A thread chamadora (ex: Main Thread) só bloqueia dentro do `Listen()` caso a flag global `IsConsole := True` esteja ativa. Este é um mecanismo didático de segurança projetado para evitar que o console do Delphi finalize sua execução de escopo de forma imediata.
+
+Dependendo do seu tipo de projeto, você pode controlar isso de três formas:
+
+### A. Aplicações Não-Console (VCL, LCL, Serviços Windows, Daemons Linux)
+Em aplicações com janelas GUI ou rodando como serviços de sistema, `IsConsole` é naturalmente `False`. Assim, chamar `Listen()` nas instâncias **nunca bloqueia** a thread principal, permitindo ativá-las sequencialmente:
+```pascal
+FInstance1.Listen(9001); // Ativa e retorna imediatamente
+FInstance2.Listen(9002); // Ativa e retorna imediatamente
+```
+
+### B. Aplicações Console (Desativando o Bloqueio)
+Como demonstrado no exemplo de uso básico acima, configurar `IsConsole := False` no escopo inicial do console permite que os métodos `Listen` retornem a execução na mesma hora, deixando o bloqueio e controle de parada para um `Readln` comum na thread principal.
+
+### C. Abordagem de Thread Híbrida (Mantendo o Bloqueio de Console)
+Se você preferir manter `IsConsole := True` e usar o bloqueio de conexão nativo do socket para segurar o console aberto, você deve encapsular apenas as instâncias iniciais em threads de background, e rodar a última instância na thread principal (Main Thread):
+```pascal
+// Executa a primeira instancia em thread separada
+TThread.CreateAnonymousThread(
+  procedure
+  begin
+    FPublicApi.Listen(9001);
+  end).Start;
+
+// Executa a segunda instancia diretamente na Main Thread (retém o console aberto)
+FAdminPanel.Listen(9002);
 ```
 
 ---
