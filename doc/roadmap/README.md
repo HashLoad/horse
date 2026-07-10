@@ -5,17 +5,7 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 > [!TIP]
 > A matriz detalhada de priorização com cálculo de R.O.I. (Impacto vs. Dificuldade) para todos os itens pendentes está disponível em: [prioritization_matrix.md](prioritization_matrix.md).
 
----
-
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
-
-### 1. Refatoração Multi-Instance (`THorseInstance`)
-* **Descrição:** Desacoplar o estado estático global de classe (`FRoutes`, `FCallbacks`, `FPort`, `FHost`) movendo-o para uma classe de instância chamada `THorseInstance`.
-* **Ganhos:**
-  * **Múltiplos Servidores no Mesmo Processo:** Possibilidade de rodar servidores de forma paralela (ex: um na porta `80` para a API de produção e outro na `8080` para métricas, telemetria e admin).
-  * **Isolamento de Middlewares:** Aplicação de middlewares pesados (como CORS ou JWT) apenas nas instâncias que de fato necessitam, mantendo outras instâncias ultraleves.
-  * **Testes Concorrentes Limpos:** Execução paralela da suíte de testes sem conflitos de estado no singleton global.
-* **Compatibilidade:** O `THorse` tradicional baseado em métodos estáticos de classe deve continuar existindo como um wrapper (*Facade*) apontando para uma instância default, garantindo **100% de retrocompatibilidade** com projetos e middlewares existentes.
 
 ### 2. Centralização de Pool de Buffers de Memória (`IMemoryBufferPool`)
 * **Descrição:** Unificar a alocação e reciclagem de streams e buffers de leitura/escrita no Core do framework.
@@ -72,10 +62,13 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvida a propriedade de ciclo de vida `Services` na classe `THorseRequest`, provendo um container de inversão de controle (IoC) thread-safe que permite injeção direta de instâncias e carregamento preguiçoso (lazy loading) via fábricas com descarte físico e destruição automáticos e determinísticos ao término do pipeline HTTP da requisição ativa.
 
+### 9. Refatoração Multi-Instance (`THorseInstance`)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desacoplado o estado estático global de roteamento, ganchos de ciclo de vida e middlewares para objetos de instância independentes de `THorseInstance`. Adicionado suporte à escuta simultânea de múltiplos servidores HTTP concorrentes em portas diferentes de forma thread-safe e com 100% de retrocompatibilidade mantendo a fachada `THorse` clássica.
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
-
 
 ### 1. Testes de Conexões Persistentes (HTTP Keep-Alive)
 * **Status:** 🟢 **Concluído e Liberado**

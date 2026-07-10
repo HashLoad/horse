@@ -21,3 +21,9 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 ## 🧪 Padrões de Testes e Concorrência
 * Ao escrever testes de integração que envolvam o encerramento do servidor ou simulação de tráfego, utilize sempre a biblioteca HTTP nativa do Delphi (`System.Net.HttpClient` e `System.Net.URLClient`) para garantir compatibilidade multiplataforma nativa no FPC (Lazarus/Linux) sem depender de pacotes externos.
 * Em testes de shutdown ou concorrência física, utilize o cabeçalho `Connection: close` na requisição do cliente HTTP para forçar a liberação imediata do socket no sistema operacional, evitando travamento de pools de conexão físicos.
+
+## 🟢 Arquitetura Multi-Instance (`THorseInstance`)
+* O Horse suporta a execução paralela de múltiplos servidores lógicos e isolados no mesmo processo de aplicação através da classe `THorseInstance`.
+* Ao projetar ou atualizar middlewares do ecossistema, garanta que eles não dependam de dados em variáveis globais ou estáticas (`class var` singletons) do core, permitindo que cada instância de `THorseInstance` configure isoladamente suas dependências, rotas e manipuladores.
+* Para preservar a compatibilidade de compilação cruzada multiplataforma FPC/Lazarus, evite o uso de closures ou procedimentos anônimos inline (`procedure begin end`) em manipuladores de ciclo de vida e rotas lógicas locais das instâncias do Horse, preferindo procedimentos regulares e delegados de objetos.
+

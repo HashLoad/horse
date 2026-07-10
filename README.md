@@ -72,7 +72,8 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request & Response](./doc/request-response.md) |
 | Using middleware, registration order, the `Next` proc | [Middleware](./doc/middleware.md) |
 | Request lifecycle hooks — onRequest, preParsing, preValidation, onSend, onResponse | [Lifecycle Hooks](./doc/lifecycle-hooks.md) |
-| Graceful Shutdown — draining active connections, telemetry ActiveRequests and IsShuttingDown | [Graceful Shutdown](./doc/graceful-shutdown.md) |
+| Graceful Shutdown — draining active connections, telemetry ActiveRequests and flag IsShuttingDown | [Graceful Shutdown](./doc/graceful-shutdown.md) |
+| Multi-Instance — running and isolating multiple independent HTTP servers concurrently inside the same process | [Multi-Instance](./doc/multi-instance.md) |
 | **Writing & publishing your own middleware** — skeleton, thread safety, Provider neutrality, Boss packaging | [**Writing a Middleware**](./doc/writing-middleware.md) |
 | **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
 | **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |

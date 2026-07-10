@@ -1,7 +1,7 @@
 unit Horse.Core;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -19,6 +19,7 @@ uses
 {$ENDIF}
   Horse.Core.RouterTree,
   Horse.Callback,
+  Horse.Proc,
   Horse.Core.Group.Contract,
   Horse.Core.Route.Contract,
   Horse.Commons,
@@ -29,8 +30,13 @@ uses
 
 type
   THorseOnError = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+  {$IF DEFINED(FPC)}
+  THorseOnSendString = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
+  THorseOnSendBytes = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
+  {$ELSE}
   THorseOnSendString = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
   THorseOnSendBytes = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
+  {$ENDIF}
 
   THorseCore = class;
   PHorseCore = ^THorseCore;
@@ -71,8 +77,8 @@ type
     function InternalGroup: IHorseCoreGroup<THorseCore>;
     function InternalGetRoutes: IHorseRouter;
     procedure InternalSetRoutes(const AValue: IHorseRouter);
-    class function GetRoutes: IHorseRouter; static;
-    class procedure SetRoutes(const AValue: IHorseRouter); static;
+    class function GetStaticRoutes: IHorseRouter; static;
+    class procedure SetStaticRoutes(const AValue: IHorseRouter); static;
     class function MakeHorseModule: THorseModule;
 
     class function GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback; overload;
@@ -86,6 +92,7 @@ type
     class function GetCallbacks: TArray<THorseCallback>;
     {$ENDIF}
     class function RegisterCallbacksRoute(const AMethod: TMethodType; const APath: string): THorseCore;
+    procedure EmptyNext;
   public
     constructor Create; virtual;
     class function ToModule: THorseModule;
@@ -243,9 +250,12 @@ type
     class function Query(const APath: string; const AMiddlewares: array of THorseCallback; const ACallback: THorseCallbackResponse): THorseCore; overload;
 {$IFEND}
 
-    class property Routes: IHorseRouter read GetRoutes write SetRoutes;
+    class property Routes: IHorseRouter read GetStaticRoutes write SetStaticRoutes;
     class function GetInstance: THorseCore;
     class function Version: string;
+    function GetRoutes: IHorseRouter; override;
+    procedure DoIncrementActiveRequests; override;
+    procedure DoDecrementActiveRequests; override;
 
     function BaseAddCallback(const ACallback: THorseCallback): THorseCoreBase; override;
     {$IF DEFINED(FPC)}
@@ -315,8 +325,7 @@ implementation
 uses
   Horse.Core.Route,
   Horse.Core.Group,
-  Horse.Constants,
-  Horse.Proc
+  Horse.Constants
   {$IFNDEF FPC}
   , Horse.Core.Factory
   {$ENDIF}
@@ -357,7 +366,11 @@ begin
   Inc(FIndex);
   if (FCallbacks <> nil) and (FIndex < FCallbacks.Count) then
   begin
+    {$IF DEFINED(FPC)}
+    THorseCallbackProc(FCallbacks[FIndex])(FRequest, FResponse, Next);
+    {$ELSE}
     FCallbacks[FIndex](FRequest, FResponse, Next);
+    {$ENDIF}
   end
   else if Assigned(FOnComplete) then
   begin
@@ -398,6 +411,10 @@ begin
   Result := GetInstance;
 end;
 {$ENDIF}
+
+procedure THorseCore.EmptyNext;
+begin
+end;
 
 constructor THorseCore.Create;
 begin
@@ -460,7 +477,7 @@ begin
   {$ENDIF}
 end;
 
-class function THorseCore.GetRoutes: IHorseRouter;
+class function THorseCore.GetStaticRoutes: IHorseRouter;
 begin
   Result := GetInstance.InternalGetRoutes;
 end;
@@ -493,7 +510,7 @@ begin
   Result := GetInstance.InternalRoute(APath);
 end;
 
-class procedure THorseCore.SetRoutes(const AValue: IHorseRouter);
+class procedure THorseCore.SetStaticRoutes(const AValue: IHorseRouter);
 begin
   GetInstance.InternalSetRoutes(AValue);
 end;
@@ -506,6 +523,21 @@ end;
 class function THorseCore.TrimPath(const APath: string): string;
 begin
   Result := '/' + APath.Trim(['/']);
+end;
+
+function THorseCore.GetRoutes: IHorseRouter;
+begin
+  Result := FRoutes;
+end;
+
+procedure THorseCore.DoIncrementActiveRequests;
+begin
+  THorseCore.IncrementActiveRequests;
+end;
+
+procedure THorseCore.DoDecrementActiveRequests;
+begin
+  THorseCore.DecrementActiveRequests;
 end;
 
 function THorseCore.InternalGetRoutes: IHorseRouter;
@@ -1416,12 +1448,20 @@ end;
 
 class procedure THorseCore.IncrementActiveRequests;
 begin
+  {$IF DEFINED(FPC)}
+  InterlockedIncrement(FActiveRequests);
+  {$ELSE}
   TInterlocked.Increment(FActiveRequests);
+  {$ENDIF}
 end;
 
 class procedure THorseCore.DecrementActiveRequests;
 begin
+  {$IF DEFINED(FPC)}
+  InterlockedDecrement(FActiveRequests);
+  {$ELSE}
   TInterlocked.Decrement(FActiveRequests);
+  {$ENDIF}
 end;
 
 class function THorseCore.GetIsShuttingDown: Boolean;
@@ -1504,7 +1544,11 @@ begin
     for LCallback in FOnResponse do
     begin
       try
+        {$IF DEFINED(FPC)}
+        THorseCallbackProc(LCallback)(ARequest, AResponse, GetInstance.EmptyNext);
+        {$ELSE}
         LCallback(ARequest, AResponse, procedure begin end);
+        {$ENDIF}
       except
         // Abafar exceções no onResponse para não crashar a finalização da thread de socket
       end;

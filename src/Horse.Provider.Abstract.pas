@@ -14,6 +14,7 @@ uses
   System.SysUtils,
 {$ENDIF}
   Horse.Core,
+  Horse.Core.Base,
 { ===========================================================================
   PATCH-ABS-1 — added unit Horse.Provider.Config
   =========================================================================== }
@@ -201,12 +202,32 @@ class procedure THorseProviderAbstract.Execute(
   const ARequest:  THorseRequest;
   const AResponse: THorseResponse
 );
+var
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  THorseCore.IncrementActiveRequests;
-  try
-    Routes.Execute(ARequest, AResponse);
-  finally
-    THorseCore.DecrementActiveRequests;
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if LInstance <> nil then
+  begin
+    LInstance.DoIncrementActiveRequests;
+    try
+      LInstance.GetRoutes.Execute(ARequest, AResponse);
+    finally
+      LInstance.DoDecrementActiveRequests;
+    end;
+  end
+  else
+  begin
+    THorseCore.IncrementActiveRequests;
+    try
+      THorseCore.Routes.Execute(ARequest, AResponse);
+    finally
+      THorseCore.DecrementActiveRequests;
+    end;
   end;
 end;
 { =========================================================================== }

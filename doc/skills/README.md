@@ -30,6 +30,7 @@
 | **horse-mvc-architecture** | [`horse-mvc-architecture/SKILL.md`](./horse-mvc-architecture/SKILL.md) | Structuring corporate APIs using Clean MVC principles, separating transport from business logic. |
 | **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Building rapid, low-boilerplate microservices and mock APIs inside single-file bootstrap models. |
 | **horse-dependency-injection** | [`horse-dependency-injection/SKILL.md`](./horse-dependency-injection/SKILL.md) | Managing request-scoped contextual services and IoC (dependency injection) in Delphi and Lazarus. |
+| **horse-multi-instance** | [`horse-multi-instance/SKILL.md`](./horse-multi-instance/SKILL.md) | Running or configuring multiple independent server instances (THorseInstance) concurrently inside the same application process. |
 
 ---
 

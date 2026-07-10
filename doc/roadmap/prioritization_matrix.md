@@ -20,7 +20,7 @@ Esta tabela classifica as 13 melhorias pendentes do roadmap técnico do Horse co
 | 9 | **Ganchos de Ciclo de Vida (Hooks)** | Ecossistema | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 4 | **Desligamento Suave (Graceful)** | Resiliência | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 10 | **Injeção de Dependência Contextual** | Arquitetura | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
-| 1 | **Refatoração Multi-Instance** | Arquitetura | 5 | 4 | **1.25** | ⚙️ **Transparente** (Mantém retrocompatibilidade) | 🎯 **Projeto Estratégico** (Exige refatoração global) |
+| 1 | **Refatoração Multi-Instance** | Arquitetura | 5 | 4 | **1.25** | ⚙️ **Transparente** (Mantém retrocompatibilidade) | 🟢 **Concluído** (Implementado e Liberado) |
 | 6 | **DTO Auto-Binding & Validação** | DX / Produtividade | 5 | 4 | **1.25** | ➕ **Novo Recurso** (Opcional) | 🎯 **Projeto Estratégico** (Uso avançado de RTTI/Atributos) |
 | 2 | **Pool de Buffers (MemoryBufferPool)** | Otimização | 4 | 4 | **1.00** | ⚙️ **Transparente** (Performance por baixo dos panos) | 🎯 **Projeto Estratégico** (Exige refatoração nos sockets) |
 | 7 | **Ganchos OpenTelemetry/APM** | Observabilidade | 3 | 3 | **1.00** | ⚙️ **Transparente / Opcional** | ⏳ **Segunda prioridade** |

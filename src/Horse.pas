@@ -356,7 +356,8 @@ uses
   Horse.Core.Param.Config,
   Horse.Callback,
   Horse.Provider.Config,
-  Horse.Core.Router.Radix;
+  Horse.Core.Router.Radix,
+  Horse.Instance;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -381,6 +382,7 @@ type
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
   THorseRadixRouter = Horse.Core.Router.Radix.THorseRadixRouter;
+  THorseInstance = Horse.Instance.THorseInstance;
 
 { PATCH-HORSE-2 — THorseProvider resolution follows the same three-axis model
   as the uses clause above:
