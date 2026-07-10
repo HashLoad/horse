@@ -81,6 +81,7 @@ uses
   Tests.Integration.Query in 'tests\Tests.Integration.Query.pas',
   Tests.Integration.LifecycleHooks in 'tests\Tests.Integration.LifecycleHooks.pas',
   Tests.Integration.GracefulShutdown in 'tests\Tests.Integration.GracefulShutdown.pas',
+  Tests.Integration.DependencyInjection in 'tests\Tests.Integration.DependencyInjection.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',

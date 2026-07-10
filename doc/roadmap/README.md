@@ -36,10 +36,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 
 ### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
 * **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
-### 10. Injeção de Dependência Contextual (*Request Scope / Context*)
-* **Descrição:** Prover um mecanismo estruturado para gerência de dependências cujo ciclo de vida está acoplado ao ciclo da requisição (ex: uma transação de banco de dados ou conexão FireDAC ativa).
-* **Ganhos:**
-  * Facilidade na gerência de concorrência com encerramento e liberação automática de recursos após o fim da requisição.
 
 
 ## ✅ Evolução Arquitetural Entregue (Concluído)
@@ -71,6 +67,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 7. Desligamento Suave (Graceful Shutdown)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvido o mecanismo de encerramento coordenado no Core e Provedor de Console (Indy), permitindo interromper novas escutas físicas do socket enquanto as requisições ativas (`ActiveRequests`) são concluídas de forma suave sob um timeout de segurança, expondo as propriedades de telemetria `ActiveRequests` e `IsShuttingDown` (sinalização para Kubernetes/Load Balancers).
+
+### 8. Injeção de Dependência Contextual (Request Scope)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvida a propriedade de ciclo de vida `Services` na classe `THorseRequest`, provendo um container de inversão de controle (IoC) thread-safe que permite injeção direta de instâncias e carregamento preguiçoso (lazy loading) via fábricas com descarte físico e destruição automáticos e determinísticos ao término do pipeline HTTP da requisição ativa.
 
 ---
 
