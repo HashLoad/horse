@@ -43,12 +43,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 
 ### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
 * **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
-
-### 9. Ganchos de Ciclo de Vida da Requisição (*Lifecycle Hooks*)
-* **Descrição:** Oferecer eventos padronizados ao longo do pipeline (como `onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) inspirados no Fastify.
-* **Ganhos:**
-  * Permite que middlewares implementem caching inteligente, auditoria detalhada de payloads ou criptografia em tempo de tráfego sem acoplamento.
-
 ### 10. Injeção de Dependência Contextual (*Request Scope / Context*)
 * **Descrição:** Prover um mecanismo estruturado para gerência de dependências cujo ciclo de vida está acoplado ao ciclo da requisição (ex: uma transação de banco de dados ou conexão FireDAC ativa).
 * **Ganhos:**
@@ -76,6 +70,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 5. Middleware de Servidor de Arquivos Estáticos (Static File Streaming)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvido o middleware de alta performance e thread-safe para servir arquivos estáticos locais de forma totalmente provider-agnostic, com suporte a HTTP 206 (Range/Partial Content) e controle de cache por ETag fraca e Last-Modified ([horse-static](https://github.com/regyssilveira/horse-static)).
+
+### 6. Ganchos de Ciclo de Vida da Requisição (Lifecycle Hooks)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Adicionado suporte nativo e thread-safe a ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend` e `onResponse`) em cascata cooperativa (CPS) no Core e integrado a ambos os roteadores (`THorseRouterTree` e `THorseRadixRouter`), com testes de integração e exemplos documentados.
 
 ---
 
