@@ -53,6 +53,10 @@ type
     procedure TestMiddlewareCorsPreflightOptions;
     [Test]
     procedure TestCustomHeader;
+    [Test]
+    procedure TestFluentRouteMiddlewares;
+    [Test]
+    procedure TestStaticRouteMiddlewares;
 
   end;
 
@@ -232,6 +236,40 @@ begin
     LResponse := LClient.Get('http://localhost:9000/Api/CustomHeader', nil, LHeaders);
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('CustomValue', LResponse.ContentAsString);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestFluentRouteMiddlewares;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LResponse := LClient.Get('http://localhost:9000/Api/RouteMiddlewares');
+    Assert.AreEqual(200, LResponse.StatusCode);
+    Assert.AreEqual('RouteMiddlewaresData', LResponse.ContentAsString);
+    Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step1']);
+    Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step2']);
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestStaticRouteMiddlewares;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    LResponse := LClient.Get('http://localhost:9000/Api/StaticRouteMiddlewares');
+    Assert.AreEqual(200, LResponse.StatusCode);
+    Assert.AreEqual('StaticRouteMiddlewaresData', LResponse.ContentAsString);
+    Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step1']);
+    Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step2']);
   finally
     LClient.Free;
   end;
