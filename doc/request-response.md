@@ -251,6 +251,36 @@ The framework converts the exception to a JSON error response. Any other uncaugh
 
 To intercept exceptions globally, register the `handle-exception` middleware ([`HashLoad/handle-exception`](https://github.com/HashLoad/handle-exception)) — it formats your errors consistently.
 
+## Chunked Transfer Encoding (Streaming Responses)
+
+When you need to send large payloads (like large report files or live video/audio streams) without loading the entire content into memory at once, use **Chunked Transfer Encoding**:
+
+```delphi
+THorse.Get('/data/heavy',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  var
+    Stream: TStringStream;
+  begin
+    // Indicated chunked transfer encoding
+    Res.AddHeader('Transfer-Encoding', 'chunked');
+    Res.ContentType('text/plain');
+    
+    // Write portions of data
+    Stream := TStringStream.Create('First chunk of text...');
+    try
+      Res.Send(Stream.DataString);
+      // Horse handles the underlying socket chunking automatically based on the Provider
+    finally
+      Stream.Free;
+    end;
+  end);
+```
+
+## Best Practices with Large Payloads (Upload/Download)
+
+*   **Avoid loading entire files into String or MemoryStream**: Always use a `TFileStream` to read from or write to disk directly, passing the stream reference to `Res.SendFile` or `Res.Download`. Horse will stream the file in small chunks (usually 8KB), keeping the server's memory consumption flat.
+*   **Request body size limits**: On Indy (default provider), you can configure max content length or timeouts directly in the underlying server instance (`THorse.RawWebserver`).
+
 ---
 
 ## Provider-specific notes

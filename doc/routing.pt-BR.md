@@ -93,6 +93,26 @@ THorse.Group
   .Post('/audit', WriteAudit);
 ```
 
+## Middlewares por Rota (Locais)
+
+Você pode passar uma cadeia de middlewares específicos para uma única rota em formato de array (`array of THorseCallback`):
+
+```delphi
+// Sintaxe Estática com array de middlewares
+THorse.Get('/admin/dashboard', [MiddlewareAutenticacao, MiddlewareLogAcesso],
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Painel Administrativo');
+  end);
+
+// Sintaxe Fluente de Rota com array de middlewares
+THorse.Route('/relatorios')
+  .Get([MiddlewareAutenticacao, MiddlewareLogAcesso], GetRelatorioHandler)
+  .Post([MiddlewareAutenticacao], PostRelatorioHandler);
+```
+
+Os middlewares de rota são executados após os middlewares globais e após os middlewares do grupo da rota, mas antes do callback final (handler) da rota.
+
 ## Middleware wildcard
 
 `THorse.Use(...)` registra middleware que roda em toda requisição, independentemente do caminho:

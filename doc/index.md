@@ -6,6 +6,23 @@ Welcome. This is the documentation hub for [Horse](https://github.com/HashLoad/h
 
 If you're new, start with [Getting Started](./getting-started.md). If you have a working server and want to make a specific change, jump straight to the relevant topic below.
 
+## Middleware Execution Flow
+
+When an HTTP request reaches the Horse server, it flows through the middleware layers in the following precedence order:
+
+```mermaid
+graph TD
+    A[HTTP Request] --> B[Global Middlewares<br>ex: CORS, Johnson]
+    B --> C{Belongs to a Group?}
+    C -- Yes --> D[Group Middlewares<br>ex: Restricted Auth]
+    C -- No --> E{Has Route-level Middlewares?}
+    D --> E
+    E -- Yes --> F[Route-level Middlewares<br>ex: Logs, Custom Checks]
+    E -- No --> G[Final Route Handler<br>Executes logic]
+    F --> G
+    G --> H[HTTP Response]
+```
+
 ---
 
 ## Reading order for newcomers

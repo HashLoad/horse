@@ -93,6 +93,26 @@ THorse.Group
   .Post('/audit', WriteAudit);
 ```
 
+## Route-level Middlewares (Local)
+
+You can pass an array of route-specific middlewares (`array of THorseCallback`) to apply checks only to a single endpoint:
+
+```delphi
+// Static Syntax with array of middlewares
+THorse.Get('/admin/dashboard', [AuthMiddleware, LoggerMiddleware],
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Admin Dashboard');
+  end);
+
+// Fluent Route Syntax with array of middlewares
+THorse.Route('/reports')
+  .Get([AuthMiddleware, LoggerMiddleware], GetReportsHandler)
+  .Post([AuthMiddleware], PostReportHandler);
+```
+
+Route-level middlewares execute after global middlewares and after any group-level middlewares, but right before the final route callback (handler) executes.
+
 ## Wildcard middleware
 
 `THorse.Use(...)` registers middleware that runs on every request, regardless of path:

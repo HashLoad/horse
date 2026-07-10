@@ -52,28 +52,32 @@ O padrão `try / finally` é a forma canônica de envolver a requisição inteir
 
 ## Registro
 
-`THorse.Use(...)` aceita:
+Você pode registrar middlewares em diferentes escopos no Horse:
+
+1. **Globais**: Registrados via `THorse.Use(...)` afetando todas as rotas (ou caminhos wildcard).
+2. **De Grupo**: Registrados via `.Use(...)` dentro de um grupo de rotas (`THorse.Group`).
+3. **Locais**: Passados como um array (`array of THorseCallback`) diretamente no verbo HTTP da rota.
 
 ```delphi
-THorse.Use(MyMiddleware);              // aplica a toda requisição
-THorse.Use('/api', MyMiddleware);      // aplica apenas a /api/*
+THorse.Use(MyGlobalMiddleware);        // Global
+
 THorse.Group.Prefix('/admin')
-  .Use(RequireAuth)                    // aplica apenas a /admin/*
-  .Get('/users', ListUsers);
+  .Use(MyGroupMiddleware)              // De Grupo
+  .Get('/users', [MyRouteMiddleware], ListUsers); // Local (de rota)
 ```
 
-**A ordem de registro importa.** O middleware roda na ordem em que foi registrado, num modelo cebola aninhado:
+**A ordem de registro importa.** O middleware roda na ordem em que foi registrado/mapeado, num modelo cebola aninhado:
 
 ```
-THorse.Use(A);                         // mais externo
-THorse.Use(B);
-THorse.Use(C);                         // mais interno
-THorse.Get('/x', Handler);
+THorse.Use(A);                         // Global (mais externo)
+THorse.Group.Prefix('/admin')
+  .Use(B)                              // De Grupo
+  .Get('/x', [C], Handler);            // Local de Rota (mais interno)
 ```
 
 Fluxo da requisição:
 ```
-A → B → C → Handler → C → B → A
+A (Global) → B (Grupo) → C (Rota) → Handler → C → B → A
 ```
 
 …onde o lado direito de cada seta é o código que roda após o `Next()` retornar. Então `A` roda primeiro e tem a última palavra; `C` envolve o handler mais de perto.
