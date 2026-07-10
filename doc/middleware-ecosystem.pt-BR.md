@@ -26,6 +26,7 @@ boss install <repo>
 | [horse/exception](https://github.com/HashLoad/handle-exception) | Converte exceptions lançadas em respostas JSON de erro consistentes | ✔️ | ✔️ |
 | [horse/logger](https://github.com/HashLoad/horse-logger) | Log de acesso por requisição | ✔️ | ✔️ |
 | [horse/compression](https://github.com/HashLoad/horse-compression) | Compressão gzip / deflate de resposta | ✔️ | ✔️ |
+| [horse/static](https://github.com/regyssilveira/horse-static) | Servidor de arquivos estáticos com suporte a Range e Cache | ✔️ | ✔️ |
 
 ### Composição típica
 

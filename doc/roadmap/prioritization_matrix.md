@@ -16,7 +16,7 @@ Esta tabela classifica as 13 melhorias pendentes do roadmap técnico do Horse co
 | 5 | **Pipeline Global de Erros (OnError)** | DX / Robustez | 4 | 2 | **2.00** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 12 | **Middleware de Rate Limiting** | Segurança | 4 | 2 | **2.00** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 11 | **Middleware de Compressão (Gzip/Deflate/Brotli)** | Otimização | 4 | 3 | **1.33** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
-| 13 | **Static File Server com Range/Cache** | DX / Recursos | 4 | 3 | **1.33** | ➕ **Novo Middleware** (Opcional) | 📅 **Planejar execução** (Melhora suporte web) |
+| 13 | **Static File Server com Range/Cache** | DX / Recursos | 4 | 3 | **1.33** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 9 | **Ganchos de Ciclo de Vida (Hooks)** | Ecossistema | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 📅 **Planejar execução** (Estruturar pipeline) |
 | 4 | **Desligamento Suave (Graceful)** | Resiliência | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 📅 **Planejar execução** (Vital para Docker/K8s) |
 | 10 | **Injeção de Dependência Contextual** | Arquitetura | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 📅 **Planejar execução** (Gerência de banco) |

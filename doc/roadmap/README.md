@@ -55,10 +55,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
   * Facilidade na gerência de concorrência com encerramento e liberação automática de recursos após o fim da requisição.
 
 
-### 13. Servidor de Arquivos Estáticos Otimizado com Suporte a Range (*Static File Streaming*)
-* **Descrição:** Middleware robusto e otimizado para entrega de arquivos físicos locais, incluindo cabeçalhos de controle de cache (`Cache-Control`, `ETags`) e suporte a requisições parciais (HTTP 206 para streaming de mídia).
-
-
 ## ✅ Evolução Arquitetural Entregue (Concluído)
 
 ### 1. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
@@ -76,6 +72,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 4. Middleware de Compressão de Resposta (Gzip/Deflate/Brotli)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvido o middleware de compressão de alta performance e *zero-allocation*, com suporte a Gzip, Deflate e Brotli, disponível no repositório de comunidade [horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2).
+
+### 5. Middleware de Servidor de Arquivos Estáticos (Static File Streaming)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvido o middleware de alta performance e thread-safe para servir arquivos estáticos locais de forma totalmente provider-agnostic, com suporte a HTTP 206 (Range/Partial Content) e controle de cache por ETag fraca e Last-Modified ([horse-static](https://github.com/regyssilveira/horse-static)).
 
 ---
 
