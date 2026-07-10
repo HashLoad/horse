@@ -29,6 +29,8 @@ uses
 
 type
   THorseOnError = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+  THorseOnSendString = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
+  THorseOnSendBytes = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
 
   THorseCore = class;
   PHorseCore = ^THorseCore;
@@ -51,6 +53,12 @@ type
   private
     class var FRoutes: IHorseRouter;
     class var FCallbacks: TList<THorseCallback>;
+    class var FOnRequest: TList<THorseCallback>;
+    class var FPreParsing: TList<THorseCallback>;
+    class var FPreValidation: TList<THorseCallback>;
+    class var FOnSendString: TList<THorseOnSendString>;
+    class var FOnSendBytes: TList<THorseOnSendBytes>;
+    class var FOnResponse: TList<THorseCallback>;
     class function TrimPath(const APath: string): string;
     class function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
     class function RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
@@ -93,6 +101,21 @@ type
     class procedure OnError(const ACallback: THorseOnError); static;
     class function HasOnError: Boolean; static;
     class procedure ExecuteOnError(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception); static;
+
+    class procedure AddOnRequest(const ACallback: THorseCallback); static;
+    class procedure AddPreParsing(const ACallback: THorseCallback); static;
+    class procedure AddPreValidation(const ACallback: THorseCallback); static;
+    class procedure AddOnSend(const ACallback: THorseOnSendString); overload; static;
+    class procedure AddOnSend(const ACallback: THorseOnSendBytes); overload; static;
+    class procedure AddOnResponse(const ACallback: THorseCallback); static;
+    class procedure ResetHooks; static;
+
+    class procedure ExecuteOnRequest(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc); static;
+    class procedure ExecutePreParsing(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc); static;
+    class procedure ExecutePreValidation(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc); static;
+    class procedure ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string); overload; static;
+    class procedure ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes); overload; static;
+    class procedure ExecuteOnResponse(const ARequest: THorseRequest; const AResponse: THorseResponse); static;
 
     class function Use(const APath: string; const ACallback: THorseCallback): THorseCore; overload;
     class function Use(const ACallback: THorseCallback): THorseCore; overload;
@@ -291,6 +314,49 @@ uses
   {$ENDIF}
   ;
 
+type
+  IHorseLifecycleExecutor = interface
+    ['{69A45BBE-C54D-4158-9A3E-9457DE85D833}']
+    procedure Next;
+  end;
+
+  THorseLifecycleExecutor = class(TInterfacedObject, IHorseLifecycleExecutor)
+  private
+    FCallbacks: TList<THorseCallback>;
+    FIndex: Integer;
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+    FOnComplete: TProc;
+  public
+    constructor Create(const ACallbacks: TList<THorseCallback>; const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
+    procedure Next;
+  end;
+
+constructor THorseLifecycleExecutor.Create(const ACallbacks: TList<THorseCallback>; const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
+begin
+  FCallbacks := ACallbacks;
+  FIndex := -1;
+  FRequest := ARequest;
+  FResponse := AResponse;
+  FOnComplete := AOnComplete;
+end;
+
+procedure THorseLifecycleExecutor.Next;
+begin
+  if FResponse.Aborted then
+    Exit;
+
+  Inc(FIndex);
+  if (FCallbacks <> nil) and (FIndex < FCallbacks.Count) then
+  begin
+    FCallbacks[FIndex](FRequest, FResponse, Next);
+  end
+  else if Assigned(FOnComplete) then
+  begin
+    FOnComplete();
+  end;
+end;
+
 {$I Horse.Core.Wrappers.inc}
 
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
@@ -474,6 +540,18 @@ begin
   FRoutes := nil;
   if FCallbacks <> nil then
     FreeAndNil(FCallbacks);
+  if FOnRequest <> nil then
+    FreeAndNil(FOnRequest);
+  if FPreParsing <> nil then
+    FreeAndNil(FPreParsing);
+  if FPreValidation <> nil then
+    FreeAndNil(FPreValidation);
+  if FOnSendString <> nil then
+    FreeAndNil(FOnSendString);
+  if FOnSendBytes <> nil then
+    FreeAndNil(FOnSendBytes);
+  if FOnResponse <> nil then
+    FreeAndNil(FOnResponse);
 end;
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}
 
@@ -1260,6 +1338,142 @@ begin
       on E: Exception do
       begin
         AResponse.Send('Internal Application Error in OnError: ' + E.Message).Status(THTTPStatus.InternalServerError);
+      end;
+    end;
+  end;
+end;
+
+class procedure THorseCore.AddOnRequest(const ACallback: THorseCallback);
+begin
+  if FOnRequest = nil then
+    FOnRequest := TList<THorseCallback>.Create;
+  FOnRequest.Add(ACallback);
+end;
+
+class procedure THorseCore.AddPreParsing(const ACallback: THorseCallback);
+begin
+  if FPreParsing = nil then
+    FPreParsing := TList<THorseCallback>.Create;
+  FPreParsing.Add(ACallback);
+end;
+
+class procedure THorseCore.AddPreValidation(const ACallback: THorseCallback);
+begin
+  if FPreValidation = nil then
+    FPreValidation := TList<THorseCallback>.Create;
+  FPreValidation.Add(ACallback);
+end;
+
+class procedure THorseCore.AddOnSend(const ACallback: THorseOnSendString);
+begin
+  if FOnSendString = nil then
+    FOnSendString := TList<THorseOnSendString>.Create;
+  FOnSendString.Add(ACallback);
+end;
+
+class procedure THorseCore.AddOnSend(const ACallback: THorseOnSendBytes);
+begin
+  if FOnSendBytes = nil then
+    FOnSendBytes := TList<THorseOnSendBytes>.Create;
+  FOnSendBytes.Add(ACallback);
+end;
+
+class procedure THorseCore.AddOnResponse(const ACallback: THorseCallback);
+begin
+  if FOnResponse = nil then
+    FOnResponse := TList<THorseCallback>.Create;
+  FOnResponse.Add(ACallback);
+end;
+
+class procedure THorseCore.ResetHooks;
+begin
+  if FOnRequest <> nil then
+    FOnRequest.Clear;
+  if FPreParsing <> nil then
+    FPreParsing.Clear;
+  if FPreValidation <> nil then
+    FPreValidation.Clear;
+  if FOnSendString <> nil then
+    FOnSendString.Clear;
+  if FOnSendBytes <> nil then
+    FOnSendBytes.Clear;
+  if FOnResponse <> nil then
+    FOnResponse.Clear;
+end;
+
+class procedure THorseCore.ExecuteOnRequest(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
+var
+  LExecutor: IHorseLifecycleExecutor;
+begin
+  if Assigned(ARequest) and (FOnRequest <> nil) and (FOnRequest.Count > 0) then
+  begin
+    LExecutor := THorseLifecycleExecutor.Create(FOnRequest, ARequest, AResponse, AOnComplete);
+    LExecutor.Next;
+  end
+  else
+    AOnComplete();
+end;
+
+class procedure THorseCore.ExecutePreParsing(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
+var
+  LExecutor: IHorseLifecycleExecutor;
+begin
+  if Assigned(ARequest) and (FPreParsing <> nil) and (FPreParsing.Count > 0) then
+  begin
+    LExecutor := THorseLifecycleExecutor.Create(FPreParsing, ARequest, AResponse, AOnComplete);
+    LExecutor.Next;
+  end
+  else
+    AOnComplete();
+end;
+
+class procedure THorseCore.ExecutePreValidation(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
+var
+  LExecutor: IHorseLifecycleExecutor;
+begin
+  if Assigned(ARequest) and (FPreValidation <> nil) and (FPreValidation.Count > 0) then
+  begin
+    LExecutor := THorseLifecycleExecutor.Create(FPreValidation, ARequest, AResponse, AOnComplete);
+    LExecutor.Next;
+  end
+  else
+    AOnComplete();
+end;
+
+class procedure THorseCore.ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
+var
+  LHook: THorseOnSendString;
+begin
+  if Assigned(ARequest) and (FOnSendString <> nil) then
+  begin
+    for LHook in FOnSendString do
+      LHook(ARequest, AResponse, AContent);
+  end;
+end;
+
+class procedure THorseCore.ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
+var
+  LHook: THorseOnSendBytes;
+begin
+  if Assigned(ARequest) and (FOnSendBytes <> nil) then
+  begin
+    for LHook in FOnSendBytes do
+      LHook(ARequest, AResponse, AContent);
+  end;
+end;
+
+class procedure THorseCore.ExecuteOnResponse(const ARequest: THorseRequest; const AResponse: THorseResponse);
+var
+  LCallback: THorseCallback;
+begin
+  if Assigned(ARequest) and (FOnResponse <> nil) then
+  begin
+    for LCallback in FOnResponse do
+    begin
+      try
+        LCallback(ARequest, AResponse, procedure begin end);
+      except
+        // Abafar exceções no onResponse para não crashar a finalização da thread de socket
       end;
     end;
   end;

@@ -41,6 +41,7 @@ graph TD
 | [Roteamento](./routing.pt-BR.md) | `THorse.Get` / `Post` / `Put` / `Delete` / `Patch` / `Head` / `Use`; parâmetros de caminho; grupos de rotas; wildcards; enum de método HTTP. |
 | [Request e Response](./request-response.pt-BR.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
 | [Middleware](./middleware.pt-BR.md) | O modelo `Next` proc; built-in vs custom; ordem de registro; por-rota vs global. |
+| [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
 | [Criando um Middleware](./writing-middleware.pt-BR.md) | Criando um middleware de qualidade de produção: esqueleto, padrões de configuração, thread safety, código neutro a Provider, armadilhas entre compiladores, matriz de testes, empacotamento Boss, publicação. |
 | [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys, epoll e IOCP embutidos) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
@@ -59,6 +60,7 @@ doc/
 ├── routing.*.md               ← ligação URL → handler
 ├── request-response.*.md      ← API de THorseRequest e THorseResponse
 ├── middleware.*.md            ← encadeamento de handlers
+├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── providers.*.md             ← escolha de transporte
 ├── iocp.*.md                  ← portas de conclusão assíncronas (Windows)
 ├── epoll.*.md                 ← laço de eventos assíncronos (Linux)

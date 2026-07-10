@@ -33,7 +33,10 @@ begin
   THorse.Host := '0.0.0.0';
   THorse.MaxConnections := 0;
 
-  // 4. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore e THorse via RTTI
+  // 4. Limpa todos os ganchos registrados de forma nativa e estática
+  THorseCore.ResetHooks;
+
+  // 5. Limpa a lista privada de middlewares globais (FCallbacks) no THorseCore e THorse via RTTI
   LContext := TRttiContext.Create;
   try
     LType := LContext.GetType(THorseCore) as TRttiInstanceType;

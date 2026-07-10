@@ -360,6 +360,8 @@ uses
 
 type
   EHorseException = Horse.Exception.EHorseException;
+  THorseOnSendString = Horse.Core.THorseOnSendString;
+  THorseOnSendBytes = Horse.Core.THorseOnSendBytes;
   EHorseCallbackInterrupted = Horse.Exception.Interrupted.EHorseCallbackInterrupted;
   TProc = Horse.Proc.TProc;
   TNextProc = Horse.Proc.TNextProc;
