@@ -81,7 +81,8 @@ uses
 {$ENDIF}
   Horse.Utils,
   Horse.Exception,
-  Horse.Exception.Interrupted;
+  Horse.Exception.Interrupted,
+  Horse;
 
 
 
@@ -204,8 +205,13 @@ begin
               FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
               Exit;
             end;
+            if THorse.HasOnError then
+            begin
+              THorse.ExecuteOnError(FRequest, FResponse, E);
+              Exit;
+            end;
             if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-              FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+              FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
             Exit;
           end;
         end;

@@ -30,10 +30,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
   * Resiliência a nível enterprise para orquestradores de contêiner (como Docker/Kubernetes).
   * Evita a corrupção de dados ou interrupção de transações em andamento ao atualizar serviços.
 
-### 5. Pipeline Global de Tratamento de Erros (*Error Handler Pipeline*)
-* **Descrição:** Oferecer um manipulador centralizado de exceções não tratadas disparadas durante o ciclo de vida das requisições.
-* **Ganhos:**
-  * Unificação de logs e formatação de respostas JSON padronizadas de erro (ex: `THorse.OnError(ErrorHandler)`).
 
 ### 6. DTO Auto-Binding e Validação Declarativa
 * **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
@@ -77,6 +73,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 1. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Permitida a declaração de múltiplos middlewares locais de rotas via Open Arrays (`array of THorseCallback`) em formato estático e fluente. Compatibilidade total de retrocompatibilidade e compilação multiplataforma.
+
+### 2. Pipeline Global de Tratamento de Erros (*Error Handler Pipeline*)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Disponibilizado o método global `THorse.OnError(...)` que permite interceptar todas as exceções não tratadas ocorridas no ciclo de vida das requisições (middlewares globais, grupos ou handlers de rota). Totalmente integrado de forma segura (fail-safe) e com suporte a compiladores XE7+ e Lazarus/FPC.
 
 ---
 

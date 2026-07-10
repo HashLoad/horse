@@ -16,6 +16,7 @@ procedure DoHeadApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 implementation
 
 uses
+  System.SysUtils,
   System.JSON,
   Horse.Commons;
 
@@ -111,6 +112,18 @@ begin
           .Patch(DoPatchApi)
           .Head(DoHeadApi)
         .&End;
+
+  THorse.Get('/Api/Exception/Normal',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      raise Exception.Create('Simulated Normal Error');
+    end);
+
+  THorse.Get('/Api/Exception/Horse',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      raise EHorseException.Create.Status(THTTPStatus.BadRequest).Error('Simulated Horse Error');
+    end);
 end;
 
 procedure DoGetApi(Req: THorseRequest; Res: THorseResponse; Next: TProc);

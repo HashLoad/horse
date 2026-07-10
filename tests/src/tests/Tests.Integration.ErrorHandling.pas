@@ -67,7 +67,7 @@ begin
     .Get;
 
   Assert.AreEqual(500, LRes.StatusCode, 'Generic exception should result in HTTP 500');
-  Assert.AreEqual('Internal Application Error', LRes.Content, 'Body should contain default error message');
+  Assert.AreEqual('Internal Application Error: Something went wrong internally', LRes.Content, 'Body should contain default error message');
 end;
 
 procedure TTestIntegrationErrorHandling.TestCustomHorseExceptionReturnsCorrectStatus;

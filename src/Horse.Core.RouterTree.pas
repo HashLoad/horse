@@ -87,7 +87,8 @@ uses
   System.RegularExpressions,
   System.SyncObjs,
 {$ENDIF}
-  Horse.Core.RouterTree.NextCaller;
+  Horse.Core.RouterTree.NextCaller,
+  Horse;
 
 threadvar
   TlsNextCaller: TNextCaller;
@@ -264,27 +265,49 @@ var
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
   LBufferNotFound: TBytes;
 begin
-  LRawWebRequest := ARequest.RawWebRequest;
-  if not Assigned(LRawWebRequest) then
-  begin
-    LMethodType := ARequest.MethodType;
-  end
-  else
-  begin
-    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
-  end;
-  LSegments := ARequest.GetPathSegments;
-  Result := ExecuteInternal(LSegments, 0, LMethodType, ARequest, AResponse);
-  if not Result then
-  begin
-    SetLength(LSegmentsNotFound, 2);
-    LBufferNotFound := TEncoding.UTF8.GetBytes('/*');
-    LSegmentsNotFound[0] := THorseBufferSlice.Create(LBufferNotFound, 0, 0);
-    LSegmentsNotFound[1] := THorseBufferSlice.Create(LBufferNotFound, 1, 1);
-    
-    Result := ExecuteInternal(LSegmentsNotFound, 0, LMethodType, ARequest, AResponse);
-    if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
-      AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+  try
+    LRawWebRequest := ARequest.RawWebRequest;
+    if not Assigned(LRawWebRequest) then
+    begin
+      LMethodType := ARequest.MethodType;
+    end
+    else
+    begin
+      LMethodType := TMethodType.FromString(LRawWebRequest.Method);
+    end;
+    LSegments := ARequest.GetPathSegments;
+    Result := ExecuteInternal(LSegments, 0, LMethodType, ARequest, AResponse);
+    if not Result then
+    begin
+      SetLength(LSegmentsNotFound, 2);
+      LBufferNotFound := TEncoding.UTF8.GetBytes('/*');
+      LSegmentsNotFound[0] := THorseBufferSlice.Create(LBufferNotFound, 0, 0);
+      LSegmentsNotFound[1] := THorseBufferSlice.Create(LBufferNotFound, 1, 1);
+      
+      Result := ExecuteInternal(LSegmentsNotFound, 0, LMethodType, ARequest, AResponse);
+      if Result and (AResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
+        AResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+    end;
+  except
+    on E: Exception do
+    begin
+      if THorse.HasOnError then
+      begin
+        if E is EHorseCallbackInterrupted then
+        begin
+          Result := True;
+        end
+        else
+        begin
+          THorse.ExecuteOnError(ARequest, AResponse, E);
+          Result := True;
+        end;
+      end
+      else
+      begin
+        raise;
+      end;
+    end;
   end;
   AResponse.FlushCookiesToWebResponse;
 end;
