@@ -8,9 +8,11 @@ interface
 
 uses
 {$IF DEFINED(FPC)}
+  SysUtils,
   Generics.Collections,
   SyncObjs,
 {$ELSE}
+  System.SysUtils,
   System.Generics.Collections,
   System.SyncObjs,
   Web.HTTPApp,
@@ -21,9 +23,13 @@ uses
   Horse.Core.Route.Contract,
   Horse.Commons,
   Horse.Core.Router.Contract,
-  Horse.Core.Base;
+  Horse.Core.Base,
+  Horse.Request,
+  Horse.Response;
 
 type
+  THorseOnError = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+
   THorseCore = class;
   PHorseCore = ^THorseCore;
   PHorseModule = ^THorseModule;
@@ -49,6 +55,7 @@ type
     class function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
     class function RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
     class var FDefaultHorse: THorseCore;
+    class var FOnError: THorseOnError;
 
     function InternalRoute(const APath: string): IHorseCoreRoute<THorseCore>;
     function InternalGroup: IHorseCoreGroup<THorseCore>;
@@ -82,6 +89,10 @@ type
 
     class function Group: IHorseCoreGroup<THorseCore>;
     class function Route(const APath: string): IHorseCoreRoute<THorseCore>; overload;
+
+    class procedure OnError(const ACallback: THorseOnError); static;
+    class function HasOnError: Boolean; static;
+    class procedure ExecuteOnError(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception); static;
 
     class function Use(const APath: string; const ACallback: THorseCallback): THorseCore; overload;
     class function Use(const ACallback: THorseCallback): THorseCore; overload;
@@ -271,16 +282,9 @@ type
 implementation
 
 uses
-{$IF DEFINED(FPC)}
-  SysUtils,
-{$ELSE}
-  System.SysUtils,
-{$ENDIF}
   Horse.Core.Route,
   Horse.Core.Group,
   Horse.Constants,
-  Horse.Request,
-  Horse.Response,
   Horse.Proc
   {$IFNDEF FPC}
   , Horse.Core.Factory
@@ -1235,6 +1239,31 @@ begin
   Result := Self;
 end;
 {$ENDIF}
+
+class procedure THorseCore.OnError(const ACallback: THorseOnError);
+begin
+  FOnError := ACallback;
+end;
+
+class function THorseCore.HasOnError: Boolean;
+begin
+  Result := Assigned(FOnError);
+end;
+
+class procedure THorseCore.ExecuteOnError(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+begin
+  if Assigned(FOnError) then
+  begin
+    try
+      FOnError(ARequest, AResponse, AException);
+    except
+      on E: Exception do
+      begin
+        AResponse.Send('Internal Application Error in OnError: ' + E.Message).Status(THTTPStatus.InternalServerError);
+      end;
+    end;
+  end;
+end;
 
 initialization
   GetHorseCoreInstance := @THorseCore.GetInstance;

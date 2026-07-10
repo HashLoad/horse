@@ -57,6 +57,14 @@ type
     procedure TestFluentRouteMiddlewares;
     [Test]
     procedure TestStaticRouteMiddlewares;
+    [Test]
+    procedure TestOnErrorDefault500;
+    [Test]
+    procedure TestOnErrorCustomHandler;
+    [Test]
+    procedure TestOnErrorCallbackCrash;
+    [Test]
+    procedure TestOnErrorHorseException;
 
   end;
 
@@ -271,6 +279,83 @@ begin
     Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step1']);
     Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step2']);
   finally
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestOnErrorDefault500;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    THorse.OnError(nil);
+    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    Assert.AreEqual(500, LResponse.StatusCode);
+    Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error: Simulated Normal Error'));
+  finally
+    LClient.Free;
+  end;
+end;
+
+procedure CustomErrorHandler(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+begin
+  AResponse.Send('Custom Error: ' + AException.Message).Status(THTTPStatus.ServiceUnavailable);
+end;
+
+procedure TApiTest.TestOnErrorCustomHandler;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    THorse.OnError(CustomErrorHandler);
+    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    Assert.AreEqual(503, LResponse.StatusCode);
+    Assert.AreEqual('Custom Error: Simulated Normal Error', LResponse.ContentAsString);
+  finally
+    THorse.OnError(nil);
+    LClient.Free;
+  end;
+end;
+
+procedure CrashingErrorHandler(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+begin
+  raise Exception.Create('Crash in OnError');
+end;
+
+procedure TApiTest.TestOnErrorCallbackCrash;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    THorse.OnError(CrashingErrorHandler);
+    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    Assert.AreEqual(500, LResponse.StatusCode);
+    Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error in OnError: Crash in OnError'));
+  finally
+    THorse.OnError(nil);
+    LClient.Free;
+  end;
+end;
+
+procedure TApiTest.TestOnErrorHorseException;
+var
+  LClient: THTTPClient;
+  LResponse: IHTTPResponse;
+begin
+  LClient := THTTPClient.Create;
+  try
+    THorse.OnError(CustomErrorHandler);
+    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Horse');
+    Assert.AreEqual(400, LResponse.StatusCode);
+    Assert.AreEqual('Simulated Horse Error', LResponse.ContentAsString);
+  finally
+    THorse.OnError(nil);
     LClient.Free;
   end;
 end;

@@ -99,7 +99,7 @@ uses
   {$ELSE}
   System.SysUtils, System.Classes,
   {$ENDIF}
-  Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils;
+  Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils, Horse;
 
 {$IFDEF FPC}
 function StringToBytes(const AStr: string): TBytes;
@@ -169,8 +169,13 @@ begin
           FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
           Exit;
         end;
+        if THorse.HasOnError then
+        begin
+          THorse.ExecuteOnError(FRequest, FResponse, E);
+          Exit;
+        end;
         if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-          FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
+          FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
         Exit;
       end;
     end;
@@ -610,10 +615,25 @@ begin
   except
     on E: Exception do
     begin
-      {$IF DEFINED(FPC)}
-      Writeln('CRITICAL RADIX ERROR: ', E.ClassName, ': ', E.Message); Flush(Output);
-      {$ENDIF}
-      raise;
+      if THorse.HasOnError then
+      begin
+        if E is EHorseCallbackInterrupted then
+        begin
+          Result := True;
+        end
+        else
+        begin
+          THorse.ExecuteOnError(ARequest, AResponse, E);
+          Result := True;
+        end;
+      end
+      else
+      begin
+        {$IF DEFINED(FPC)}
+        Writeln('CRITICAL RADIX ERROR: ', E.ClassName, ': ', E.Message); Flush(Output);
+        {$ENDIF}
+        raise;
+      end;
     end;
   end;
 end;

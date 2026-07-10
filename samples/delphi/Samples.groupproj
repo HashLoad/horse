@@ -12,6 +12,9 @@
         <Projects Include="console_route_middlewares\ConsoleRouteMiddlewares.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="console_error_handler\ConsoleErrorHandler.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="isapi\ISAPI.dproj">
             <Dependencies/>
         </Projects>
@@ -64,6 +67,15 @@
     </Target>
     <Target Name="ConsoleRouteMiddlewares:Make">
         <MSBuild Projects="console_route_middlewares\ConsoleRouteMiddlewares.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ConsoleErrorHandler">
+        <MSBuild Projects="console_error_handler\ConsoleErrorHandler.dproj"/>
+    </Target>
+    <Target Name="ConsoleErrorHandler:Clean">
+        <MSBuild Projects="console_error_handler\ConsoleErrorHandler.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ConsoleErrorHandler:Make">
+        <MSBuild Projects="console_error_handler\ConsoleErrorHandler.dproj" Targets="Make"/>
     </Target>
     <Target Name="ISAPI">
         <MSBuild Projects="isapi\ISAPI.dproj"/>
@@ -120,13 +132,13 @@
         <MSBuild Projects="vcl-ssl\VCL_SSL.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="VCL;Console;ConsoleRouteMiddlewares;ISAPI;WinSvc;Daemon;CGI;Apache;VCL_SSL"/>
+        <CallTarget Targets="VCL;Console;ConsoleRouteMiddlewares;ConsoleErrorHandler;ISAPI;WinSvc;Daemon;CGI;Apache;VCL_SSL"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="VCL:Clean;Console:Clean;ConsoleRouteMiddlewares:Clean;ISAPI:Clean;WinSvc:Clean;Daemon:Clean;CGI:Clean;Apache:Clean;VCL_SSL:Clean"/>
+        <CallTarget Targets="VCL:Clean;Console:Clean;ConsoleRouteMiddlewares:Clean;ConsoleErrorHandler:Clean;ISAPI:Clean;WinSvc:Clean;Daemon:Clean;CGI:Clean;Apache:Clean;VCL_SSL:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="VCL:Make;Console:Make;ConsoleRouteMiddlewares:Make;ISAPI:Make;WinSvc:Make;Daemon:Make;CGI:Make;Apache:Make;VCL_SSL:Make"/>
+        <CallTarget Targets="VCL:Make;Console:Make;ConsoleRouteMiddlewares:Make;ConsoleErrorHandler:Make;ISAPI:Make;WinSvc:Make;Daemon:Make;CGI:Make;Apache:Make;VCL_SSL:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
