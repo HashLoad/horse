@@ -26,7 +26,6 @@ boss install <repo>
 | [horse/exception](https://github.com/HashLoad/handle-exception) | Converte exceptions lançadas em respostas JSON de erro consistentes | ✔️ | ✔️ |
 | [horse/logger](https://github.com/HashLoad/horse-logger) | Log de acesso por requisição | ✔️ | ✔️ |
 | [horse/compression](https://github.com/HashLoad/horse-compression) | Compressão gzip / deflate de resposta | ✔️ | ✔️ |
-| [horse/static](https://github.com/regyssilveira/horse-static) | Servidor de arquivos estáticos com suporte a Range e Cache | ✔️ | ✔️ |
 
 ### Composição típica
 
@@ -90,6 +89,7 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator) | Validação de payload de requisição | ✔️ | ❌ |
 | [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Controle de limite de requisições (Rate Limiting) com suporte a múltiplos storages | ✔️ | ✔️ |
 | [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | Compressão de alta performance com suporte a Gzip, Deflate e Brotli | ✔️ | ✔️ |
+| [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | Servidor de arquivos estáticos de alta performance com suporte a Range, Cache e SPA Fallback | ✔️ | ✔️ |
 
 
 ---
