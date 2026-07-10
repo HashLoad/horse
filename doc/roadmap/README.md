@@ -59,11 +59,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Ganhos:**
   * Otimização de consumo de banda e redução no tempo de transferência de dados sem depender de proxies externos.
 
-### 12. Middleware de Limitação de Requisições (*Rate Limiting*)
-* **Descrição:** Solução nativa ou integrada para limitação e controle de tráfego baseado em chaves (como IP de origem ou Tokens) em memória ou integrado com Redis.
-* **Ganhos:**
-  * Proteção do servidor contra ataques de força bruta, scraping ou sobrecarga.
-
 ### 13. Servidor de Arquivos Estáticos Otimizado com Suporte a Range (*Static File Streaming*)
 * **Descrição:** Middleware robusto e otimizado para entrega de arquivos físicos locais, incluindo cabeçalhos de controle de cache (`Cache-Control`, `ETags`) e suporte a requisições parciais (HTTP 206 para streaming de mídia).
 
@@ -77,6 +72,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 2. Pipeline Global de Tratamento de Erros (*Error Handler Pipeline*)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Disponibilizado o método global `THorse.OnError(...)` que permite interceptar todas as exceções não tratadas ocorridas no ciclo de vida das requisições (middlewares globais, grupos ou handlers de rota). Totalmente integrado de forma segura (fail-safe) e com suporte a compiladores XE7+ e Lazarus/FPC.
+
+### 3. Middleware de Limitação de Requisições (*Rate Limiting*)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Disponibilizada a biblioteca externa oficial e integrada de limitação e controle de tráfego baseada em chaves (como IP de origem ou Tokens) em memória ou integrada ([horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit)), fornecendo proteção contra força bruta e sobrecargas no servidor de forma compatível com Delphi e Lazarus.
 
 ---
 
