@@ -23,11 +23,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
   * Redução geral de alocação de memória no heap (*zero-allocation response mapping*).
   * Todos os providers do ecossistema (incluindo Indy legado) passariam a se beneficiar de envio zero-copy automaticamente, sem precisar reimplementar essa lógica individualmente.
 
-### 3. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
-* **Descrição:** Permitir declarar arrays de middlewares específicos diretamente na definição de um endpoint ou grupo de rotas.
-* **Ganhos:**
-  * Elimina a necessidade de registrar middlewares globais ou criar múltiplos controllers.
-  * Possibilita isolar autenticações (JWT/BasicAuth) a nível de rota com Fluent API: `THorse.Get('/secure', [Auth, Logger], Handler)`.
 
 ### 4. Desligamento Suave (*Graceful Shutdown*)
 * **Descrição:** Implementar encerramento coordenado de conexões. O servidor encerra a escuta de novos sockets mas conclui requisições ativas dentro de um tempo limite de segurança.
@@ -76,9 +71,17 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 13. Servidor de Arquivos Estáticos Otimizado com Suporte a Range (*Static File Streaming*)
 * **Descrição:** Middleware robusto e otimizado para entrega de arquivos físicos locais, incluindo cabeçalhos de controle de cache (`Cache-Control`, `ETags`) e suporte a requisições parciais (HTTP 206 para streaming de mídia).
 
+
+## ✅ Evolução Arquitetural Entregue (Concluído)
+
+### 1. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Permitida a declaração de múltiplos middlewares locais de rotas via Open Arrays (`array of THorseCallback`) em formato estático e fluente. Compatibilidade total de retrocompatibilidade e compilação multiplataforma.
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
+
 
 ### 1. Testes de Conexões Persistentes (HTTP Keep-Alive)
 * **Status:** 🟢 **Concluído e Liberado**
