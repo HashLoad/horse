@@ -69,7 +69,7 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Implementação:** Adicionado suporte nativo e thread-safe a ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend` e `onResponse`) em cascata cooperativa (CPS) no Core e integrado a ambos os roteadores (`THorseRouterTree` e `THorseRadixRouter`), com testes de integração e exemplos documentados.
 
 ### 7. Desligamento Suave (Graceful Shutdown)
-* **Status:** 🟡 **Em andamento**
+* **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvido o mecanismo de encerramento coordenado no Core e Provedor de Console (Indy), permitindo interromper novas escutas físicas do socket enquanto as requisições ativas (`ActiveRequests`) são concluídas de forma suave sob um timeout de segurança, expondo as propriedades de telemetria `ActiveRequests` e `IsShuttingDown` (sinalização para Kubernetes/Load Balancers).
 
 ---
