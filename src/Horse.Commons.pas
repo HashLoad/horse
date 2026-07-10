@@ -21,6 +21,9 @@ uses
 type
   TMethodType = (mtAny, mtGet, mtPut, mtPost, mtHead, mtDelete, mtPatch, mtQuery);
 
+  THorseServiceFactory<T: class> = {$IF DEFINED(FPC)}function: T{$ELSE}reference to function: T{$ENDIF};
+  THorseServiceFactory = {$IF DEFINED(FPC)}function: TObject{$ELSE}reference to function: TObject{$ENDIF};
+
 {$SCOPEDENUMS ON}
   THTTPStatus = (
     Continue = 100,
