@@ -42,6 +42,7 @@ graph TD
 | [Request e Response](./request-response.pt-BR.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
 | [Middleware](./middleware.pt-BR.md) | O modelo `Next` proc; built-in vs custom; ordem de registro; por-rota vs global. |
 | [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
+| [Desligamento Suave](./graceful-shutdown.pt-BR.md) | Encerramento coordenado de conexões em ambientes produtivos (nuvem/Kubernetes); propriedades de telemetria `ActiveRequests` e flag `IsShuttingDown`. |
 | [Criando um Middleware](./writing-middleware.pt-BR.md) | Criando um middleware de qualidade de produção: esqueleto, padrões de configuração, thread safety, código neutro a Provider, armadilhas entre compiladores, matriz de testes, empacotamento Boss, publicação. |
 | [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys, epoll e IOCP embutidos) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
@@ -61,6 +62,7 @@ doc/
 ├── request-response.*.md      ← API de THorseRequest e THorseResponse
 ├── middleware.*.md            ← encadeamento de handlers
 ├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
+├── graceful-shutdown.*.md     ← desligamento suave em produção
 ├── providers.*.md             ← escolha de transporte
 ├── iocp.*.md                  ← portas de conclusão assíncronas (Windows)
 ├── epoll.*.md                 ← laço de eventos assíncronos (Linux)

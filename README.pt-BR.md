@@ -72,6 +72,7 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
 | Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
 | Ganchos de Ciclo de Vida — onRequest, preParsing, preValidation, onSend, onResponse | [Ganchos de Ciclo de Vida](./doc/lifecycle-hooks.pt-BR.md) |
+| Desligamento Suave (Graceful Shutdown) — escoamento de tráfego, telemetria ActiveRequests e IsShuttingDown | [Desligamento Suave](./doc/graceful-shutdown.pt-BR.md) |
 | **Criar e publicar o seu próprio middleware** — esqueleto, thread safety, neutralidade de Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
 | **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
 | **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |

@@ -64,6 +64,8 @@ type
     class function RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
     class var FDefaultHorse: THorseCore;
     class var FOnError: THorseOnError;
+    class var FActiveRequests: Integer;
+    class var FIsShuttingDown: Boolean;
 
     function InternalRoute(const APath: string): IHorseCoreRoute<THorseCore>;
     function InternalGroup: IHorseCoreGroup<THorseCore>;
@@ -109,6 +111,12 @@ type
     class procedure AddOnSend(const ACallback: THorseOnSendBytes); overload; static;
     class procedure AddOnResponse(const ACallback: THorseCallback); static;
     class procedure ResetHooks; static;
+
+    class function GetActiveRequests: Integer; static;
+    class procedure IncrementActiveRequests; static;
+    class procedure DecrementActiveRequests; static;
+    class function GetIsShuttingDown: Boolean; static;
+    class procedure SetIsShuttingDown(const AValue: Boolean); static;
 
     class procedure ExecuteOnRequest(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc); static;
     class procedure ExecutePreParsing(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc); static;
@@ -1399,6 +1407,31 @@ begin
     FOnSendBytes.Clear;
   if FOnResponse <> nil then
     FOnResponse.Clear;
+end;
+
+class function THorseCore.GetActiveRequests: Integer;
+begin
+  Result := FActiveRequests;
+end;
+
+class procedure THorseCore.IncrementActiveRequests;
+begin
+  TInterlocked.Increment(FActiveRequests);
+end;
+
+class procedure THorseCore.DecrementActiveRequests;
+begin
+  TInterlocked.Decrement(FActiveRequests);
+end;
+
+class function THorseCore.GetIsShuttingDown: Boolean;
+begin
+  Result := FIsShuttingDown;
+end;
+
+class procedure THorseCore.SetIsShuttingDown(const AValue: Boolean);
+begin
+  FIsShuttingDown := AValue;
 end;
 
 class procedure THorseCore.ExecuteOnRequest(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);

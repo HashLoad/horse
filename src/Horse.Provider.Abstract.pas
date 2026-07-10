@@ -67,6 +67,7 @@ type
 { end PATCH-ABS-4 }
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); virtual;
 { ===========================================================================
   PATCH-ABS-2 — added ListenWithConfig virtual class method
   =========================================================================== }
@@ -124,6 +125,16 @@ end;
 class procedure THorseProviderAbstract.StopListen;
 begin
   raise Exception.Create('StopListen not implemented');
+end;
+
+class procedure THorseProviderAbstract.StopListenGraceful(const ATimeoutMS: Integer);
+begin
+  THorseCore.SetIsShuttingDown(True);
+  try
+    StopListen;
+  finally
+    THorseCore.SetIsShuttingDown(False);
+  end;
 end;
 
 { ===========================================================================
@@ -191,7 +202,12 @@ class procedure THorseProviderAbstract.Execute(
   const AResponse: THorseResponse
 );
 begin
-  Routes.Execute(ARequest, AResponse);
+  THorseCore.IncrementActiveRequests;
+  try
+    Routes.Execute(ARequest, AResponse);
+  finally
+    THorseCore.DecrementActiveRequests;
+  end;
 end;
 { =========================================================================== }
 
