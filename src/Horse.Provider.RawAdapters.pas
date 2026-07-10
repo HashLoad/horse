@@ -68,6 +68,12 @@ type
 
 {$ELSE}
 
+  {$IF CompilerVersion >= 32.0}
+  TWebString = string;
+  {$ELSE}
+  TWebString = AnsiString;
+  {$IFEND}
+
   { TInterfacedWebRequest — Delphi TWebRequest subclass
     Delegates all abstract methods to IHorseRawRequest.
     Eagerly populates inherited QueryFields / ContentFields / CookieFields. }
@@ -75,25 +81,27 @@ type
   private
     FRawReq: IHorseRawRequest;
   protected
-    function  GetStringVariable(Index: Integer): string; override;
+    function  GetStringVariable(Index: Integer): TWebString; override;
     function  GetDateVariable(Index: Integer): TDateTime; override;
 {$IF CompilerVersion >= 32.0}  // Delphi 10.2 Tokyo+
     function  GetIntegerVariable(Index: Integer): Int64; override;
 {$ELSE}
     function  GetIntegerVariable(Index: Integer): Integer; override;
 {$IFEND}
+{$IF CompilerVersion >= 32.0}
     function  GetRawContent: TBytes; override;
+{$IFEND}
   public
     constructor Create(const ARawReq: IHorseRawRequest); reintroduce;
     destructor  Destroy; override;
-    function  GetFieldByName(const Name: string): string; override;
+    function  GetFieldByName(const Name: TWebString): TWebString; override;
     function  ReadClient(var Buffer; Count: Integer): Integer; override;
-    function  ReadString(Count: Integer): string; override;
+    function  ReadString(Count: Integer): TWebString; override;
     function  TranslateURI(const URI: string): string; override;
     function  WriteClient(var Buffer; Count: Integer): Integer; override;
-    function  WriteString(const AString: string): Boolean; override;
+    function  WriteString(const AString: TWebString): Boolean; override;
     function  WriteHeaders(StatusCode: Integer; const ReasonString,
-                           Headers: string): Boolean; override;
+                           Headers: TWebString): Boolean; override;
     property  RawReq: IHorseRawRequest read FRawReq;
   end;
 
@@ -103,9 +111,11 @@ type
   TInterfacedWebResponse = class(TWebResponse)
   private
     FRawRes: IHorseRawResponse;
+    FContent: TWebString;
+    FContentStream: TStream;
   protected
-    function  GetStringVariable(Index: Integer): string; override;
-    procedure SetStringVariable(Index: Integer; const Value: string); override;
+    function  GetStringVariable(Index: Integer): TWebString; override;
+    procedure SetStringVariable(Index: Integer; const Value: TWebString); override;
     function  GetDateVariable(Index: Integer): TDateTime; override;
     procedure SetDateVariable(Index: Integer; const Value: TDateTime); override;
 {$IF CompilerVersion >= 32.0}  // Delphi 10.2 Tokyo+
@@ -115,8 +125,8 @@ type
     function  GetIntegerVariable(Index: Integer): Integer; override;
     procedure SetIntegerVariable(Index: Integer; Value: Integer); override;
 {$IFEND}
-    function  GetContent: string; override;
-    procedure SetContent(const Value: string); override;
+    function  GetContent: TWebString; override;
+    procedure SetContent(const Value: TWebString); override;
     procedure SetContentStream(Value: TStream); override;
     function  GetStatusCode: Integer; override;
     procedure SetStatusCode(Value: Integer); override;
@@ -126,8 +136,9 @@ type
     constructor Create(const ARawRes: IHorseRawResponse); reintroduce;
     destructor  Destroy; override;
     procedure SendResponse; override;
-    procedure SendRedirect(const URI: string); override;
+    procedure SendRedirect(const URI: TWebString); override;
     property  RawRes: IHorseRawResponse read FRawRes;
+    property  ContentStream: TStream read FContentStream write FContentStream;
   end;
 
 {$ENDIF}
@@ -203,7 +214,7 @@ begin
   inherited;
 end;
 
-function TInterfacedWebRequest.GetStringVariable(Index: Integer): string;
+function TInterfacedWebRequest.GetStringVariable(Index: Integer): TWebString;
 begin
   if FRawReq = nil then Exit('');
   case Index of
@@ -261,6 +272,7 @@ begin
   end;
 end;
 
+{$IF CompilerVersion >= 32.0}
 function TInterfacedWebRequest.GetRawContent: TBytes;
 var
   LContent: string;
@@ -276,11 +288,12 @@ begin
   else
     Result := nil;
 end;
+{$IFEND}
 
-function TInterfacedWebRequest.GetFieldByName(const Name: string): string;
+function TInterfacedWebRequest.GetFieldByName(const Name: TWebString): TWebString;
 begin
   if Assigned(FRawReq) then
-    Result := FRawReq.GetFieldByName(Name)
+    Result := FRawReq.GetFieldByName(string(Name))
   else
     Result := '';
 end;
@@ -293,7 +306,7 @@ begin
     Result := 0;
 end;
 
-function TInterfacedWebRequest.ReadString(Count: Integer): string;
+function TInterfacedWebRequest.ReadString(Count: Integer): TWebString;
 var
   LBytes: TBytes;
   LRead:  Integer;
@@ -303,7 +316,7 @@ begin
   LRead := ReadClient(LBytes[0], Count);
   if LRead <= 0 then Exit('');
   SetLength(LBytes, LRead);
-  Result := TEncoding.UTF8.GetString(LBytes);
+  Result := TWebString(TEncoding.UTF8.GetString(LBytes));
 end;
 
 function TInterfacedWebRequest.TranslateURI(const URI: string): string;
@@ -316,13 +329,13 @@ begin
   Result := 0;
 end;
 
-function TInterfacedWebRequest.WriteString(const AString: string): Boolean;
+function TInterfacedWebRequest.WriteString(const AString: TWebString): Boolean;
 begin
   Result := False;
 end;
 
 function TInterfacedWebRequest.WriteHeaders(StatusCode: Integer;
-  const ReasonString, Headers: string): Boolean;
+  const ReasonString, Headers: TWebString): Boolean;
 begin
   Result := False;
 end;
@@ -340,15 +353,17 @@ end;
 destructor TInterfacedWebResponse.Destroy;
 begin
   FRawRes := nil;
+  if Assigned(FContentStream) then
+    FContentStream.Free;
   inherited;
 end;
 
-function TInterfacedWebResponse.GetStringVariable(Index: Integer): string;
+function TInterfacedWebResponse.GetStringVariable(Index: Integer): TWebString;
 begin
   Result := '';
 end;
 
-procedure TInterfacedWebResponse.SetStringVariable(Index: Integer; const Value: string);
+procedure TInterfacedWebResponse.SetStringVariable(Index: Integer; const Value: TWebString);
 begin
   { Stub }
 end;
@@ -381,19 +396,19 @@ begin
   { Stub }
 end;
 
-function TInterfacedWebResponse.GetContent: string;
+function TInterfacedWebResponse.GetContent: TWebString;
 begin
-  Result := '';
+  Result := FContent;
 end;
 
-procedure TInterfacedWebResponse.SetContent(const Value: string);
+procedure TInterfacedWebResponse.SetContent(const Value: TWebString);
 begin
-  { Stub — use THorseResponse.Send }
+  FContent := Value;
 end;
 
 procedure TInterfacedWebResponse.SetContentStream(Value: TStream);
 begin
-  { Stub — use THorseResponse.SendFile }
+  FContentStream := Value;
 end;
 
 function TInterfacedWebResponse.GetStatusCode: Integer;
@@ -421,7 +436,7 @@ begin
   { No-op — response sending goes through TResponseBridge.Flush }
 end;
 
-procedure TInterfacedWebResponse.SendRedirect(const URI: string);
+procedure TInterfacedWebResponse.SendRedirect(const URI: TWebString);
 begin
   { No-op — use THorseResponse.RedirectTo }
 end;
@@ -458,6 +473,7 @@ begin
     ServerPort      := IntToStr(FRawReq.GetServerPort);
     {$ENDIF}
 
+    QueryString     := FRawReq.GetQueryString;
     FRawReq.PopulateQueryFields(QueryFields);
     FRawReq.PopulateContentFields(ContentFields);
     FRawReq.PopulateCookieFields(CookieFields);

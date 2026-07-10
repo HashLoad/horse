@@ -71,11 +71,30 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | Definir rotas, parâmetros de rota, grupos de rotas, query strings | [Roteamento](./doc/routing.pt-BR.md) |
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request e Response](./doc/request-response.pt-BR.md) |
 | Usar middleware, ordem de registro, o `Next` proc | [Middleware](./doc/middleware.pt-BR.md) |
-| **Criar e publicar seu próprio middleware** — esqueleto, thread safety, neutralidade a Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
+| Ganchos de Ciclo de Vida — onRequest, preParsing, preValidation, onSend, onResponse | [Ganchos de Ciclo de Vida](./doc/lifecycle-hooks.pt-BR.md) |
+| **Criar e publicar o seu próprio middleware** — esqueleto, thread safety, neutralidade de Provider, empacotamento Boss | [**Criando um Middleware**](./doc/writing-middleware.pt-BR.md) |
 | **Escolher um provider de transporte** — Indy (padrão), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.pt-BR.md) |
 | **Deploy** como Console / VCL / Daemon / Serviço Windows / LCL / HTTPApplication — receita de uma página | [**Cheatsheet de Deploy**](./doc/deployment.pt-BR.md) |
 | Catálogo completo de middlewares com descrições estendidas | [Ecossistema de Middlewares](./doc/middleware-ecosystem.pt-BR.md) |
+| Observabilidade, rastreamento (OpenTelemetry) e coleta de métricas (Prometheus) | [Observabilidade e Telemetria](./doc/telemetry.pt-BR.md) |
+| Testes de integração automatizados, resiliência (Access Violation) e limites de Stack | [Testes de Integridade](./doc/integrity-testing.pt-BR.md) |
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
+| Planejamento arquitetural de longo prazo e backlog técnico | [Roadmap](./doc/roadmap/README.md) |
+
+### 🤖 AI Coding Skills
+Para ajudar seu agente de IA (como Antigravity, GitHub Copilot ou Claude) a entender e escrever código Horse idiomático, thread-safe e livre de vazamento de memória, fornecemos arquivos de instrução pré-empacotados em [`doc/skills/`](./doc/skills/README.pt-BR.md).
+
+Para utilizá-los:
+* **Copilot / Claude / IAs Customizadas:** Mencione os arquivos em [`doc/skills/`](./doc/skills/README.pt-BR.md) para alimentar o contexto do seu agente.
+* **Antigravity IDE:** Adicione o caminho do diretório `doc/` do repositório do Horse no arquivo `.agents/skills.json` do seu projeto para carregar todas as skills automaticamente:
+  ```json
+  {
+    "entries": [
+      { "path": "caminho/para/horse/doc" }
+    ]
+  }
+  ```
+  Ou copie as pastas das skills diretamente para o diretório `.agents/skills/` do seu projeto.
 
 ## 🔌 Providers (camada de transporte)
 
@@ -90,6 +109,8 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 | 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 | 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** _(driver de modo kernel do Windows para ultra-baixa latência)_ | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[epoll](./doc/epoll.pt-BR.md)** _(event loop assíncrono nativo do Linux)_                  | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+| 🆕 **[IOCP](./doc/iocp.pt-BR.md)** _(portas de conclusão de E/S assíncronas nativas do Windows)_ | `HORSE_PROVIDER_IOCP`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Nota** — Os tipos de aplicação Apache / ISAPI / CGI / FastCGI (abaixo) **não** usam nenhum desses Providers. O processo host (Apache, IIS, o webserver) é dono do socket; o Horse roda in-process. Veja [Providers e Tipos de aplicação](./doc/providers.pt-BR.md) para o modelo completo.
 
@@ -98,6 +119,8 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 > **Instalação do OverbyteICS** — o Provider ICS requer o [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Instale o ICS seguindo as instruções oficiais do ICS** — baixe/clone o ICS e adicione a pasta `Source/` ao _search path_ do seu projeto (o ICS não é instalável via Boss). Para TLS, as bibliotecas OpenSSL acompanham o ICS (DLLs no Windows, `.so` no Linux). O Provider ICS é **somente Delphi — Windows e POSIX (Linux64 / macOS)** via o pump de mensagens próprio do ICS (`Ics.Posix.*`) (no Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); um port para **Lazarus/FPC não é viável** — a camada POSIX do ICS usa a RTL POSIX do Delphi e o ICS desativa o OpenSSL no FPC. Seu diferencial é a pilha OpenSSL 3.x / 4.x do ICS (TLS 1.3, SNI, mTLS). Veja [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) para configuração, a suíte de testes A–K e limitações conhecidas.
 
 > **HttpSys** — **sem instalação**: a unit `Horse.Provider.HttpSys` acompanha o Horse e usa diretamente a `httpapi.dll` do Windows (http.sys), portanto não há biblioteca externa. Defina `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi ou Lazarus). Como o http.sys é uma pilha HTTP em modo kernel e de escopo da máquina, vincular um host diferente de `localhost` ou uma porta privilegiada exige uma reserva de URL única (`netsh http add urlacl url=http://+:9000/ user=Everyone`) ou direitos de Administrador; o HTTPS usa o repositório de certificados do Windows via `netsh http add sslcert`. É mutuamente exclusivo com os Providers CrossSocket / mORMot / ICS (um transporte por build).
+
+> **IOCP** — **sem instalação**: a unit `Horse.Provider.IOCP` acompanha o Horse e se vincula diretamente às portas de conclusão de E/S (Input/Output Completion Ports) do Windows utilizando a API Winsock2 para altíssimo desempenho e escalabilidade em tipos de aplicação self-hosted no Windows. Defina `HORSE_PROVIDER_IOCP` (Windows; Delphi ou Lazarus). É mutuamente exclusivo com Indy, HttpSys e outros providers de socket (um transporte por build).
 
 ## 🎯 Tipos de aplicação
 
@@ -171,9 +194,22 @@ Esta é uma lista de middlewares criados pela comunidade Horse — abra um PR se
 |  [isaquepinheiro/horse-jsonbr](https://github.com/HashLoad/JSONBr)                                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [IagooCesaar/Horse-JsonInterceptor](https://github.com/IagooCesaar/Horse-JsonInterceptor)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger)                                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+
+
+## 📊 Telemetria
+
+Estes são middlewares focados em observabilidade, métricas e rastreamento de aplicações:
+
+| Middleware | Delphi | Lazarus |
+| ---------------------------------------------------------------------------------------------------------- | -------------------- | --------------------------- |
+|  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 ## Versões do Delphi
 

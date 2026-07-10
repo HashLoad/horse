@@ -3,9 +3,9 @@ unit Tests.Integration.HttpMethods;
 interface
 
 uses
-  DUnitX.TestFramework, Horse, Horse.Commons, System.SysUtils, System.Classes,
-  System.Threading, System.Net.HttpClient, Tests.CleanupHelper,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
+  DUnitX.TestFramework, Horse, System.SysUtils, System.Classes,
+  System.Threading, System.Net.HttpClient, System.Net.URLClient, Tests.CleanupHelper,
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
   [TestFixture]
@@ -22,6 +22,8 @@ type
     procedure TestOptionsMethodInterceptedByMiddleware;
     [Test]
     procedure TestTraceMethodInterceptedByMiddleware;
+    [Test]
+    procedure TestMethodNotAllowedAllowHeader;
   end;
 
 implementation
@@ -34,7 +36,7 @@ begin
   THorse.Use(
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
-      if Req.MethodType = Web.HTTPApp.mtAny then
+      if Req.MethodType = mtAny then
       begin
         if Req.RawWebRequest.Method = 'OPTIONS' then
         begin
@@ -57,19 +59,26 @@ begin
       Res.Send('get-ok');
     end);
 
+  // Rota POST normal usando TNextProc
+  THorse.Post('/resource',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      Res.Send('post-ok');
+    end);
+
   TThread.CreateAnonymousThread(
     procedure
     begin
       THorse.Listen(TEST_PORT);
     end).Start;
 
-  Sleep(500);
+  Sleep(1500);
 end;
 
 procedure TTestIntegrationHttpMethods.TearDownFixture;
 begin
   ClearGlobalState;
-  Sleep(100);
+  Sleep(500);
 end;
 
 procedure TTestIntegrationHttpMethods.TestOptionsMethodInterceptedByMiddleware;
@@ -94,10 +103,31 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LRes := LClient.Execute('TRACE', Format('http://localhost:%d/resource', [TEST_PORT])) as IHTTPResponse;
+    LRes := LClient.Trace(Format('http://localhost:%d/resource', [TEST_PORT]));
     Assert.AreEqual(200, LRes.StatusCode);
     Assert.AreEqual('trace-interceptor-ok', LRes.ContentAsString);
   finally
+    LClient.Free;
+  end;
+end;
+
+procedure TTestIntegrationHttpMethods.TestMethodNotAllowedAllowHeader;
+var
+  LClient: THTTPClient;
+  LRes: IHTTPResponse;
+  LAllow: string;
+  LSource: TStringStream;
+begin
+  LClient := THTTPClient.Create;
+  LSource := TStringStream.Create('');
+  try
+    LRes := LClient.Put(Format('http://localhost:%d/resource', [TEST_PORT]), LSource);
+    Assert.AreEqual(405, LRes.StatusCode);
+    LAllow := LRes.HeaderValue['Allow'];
+    Assert.IsTrue(LAllow.Contains('GET'));
+    Assert.IsTrue(LAllow.Contains('POST'));
+  finally
+    LSource.Free;
     LClient.Free;
   end;
 end;

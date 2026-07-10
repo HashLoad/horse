@@ -85,9 +85,26 @@ These are not maintained by HashLoad but are listed here because they're commonl
 | [isaquepinheiro/horse-jsonbr](https://github.com/HashLoad/JSONBr) | JSON helpers | ✔️ | ❌ |
 | [IagooCesaar/Horse-JsonInterceptor](https://github.com/IagooCesaar/Horse-JsonInterceptor) | JSON request/response interceptor | ✔️ | ❌ |
 | [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger) | Structured data logger | ✔️ | ❌ |
-| [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | Prometheus metrics endpoint | ✔️ | ❌ |
 | [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation) | Auto-generated API docs | ✔️ | ❌ |
 | [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator) | Request payload validation | ✔️ | ❌ |
+| [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Rate limiting control with support for multiple backends and storages | ✔️ | ✔️ |
+| [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | High-performance response compression with Gzip, Deflate, and Brotli support | ✔️ | ✔️ |
+| [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | High-performance static file serving with Range, Cache, and SPA Fallback support | ✔️ | ✔️ |
+
+
+---
+
+## Telemetry
+
+These are middlewares focused on application observability, metrics, and tracing:
+
+| Middleware | Description | Delphi | Lazarus |
+|---|---|:---:|:---:|
+| [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | Prometheus metrics endpoint | ✔️ | ❌ |
+| [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry) | OpenTelemetry integration for distributed tracing | ✔️ | ✔️ |
+| [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus) | Prometheus integration for metrics collection | ✔️ | ✔️ |
+
+---
 
 ## Third-party transport Providers
 

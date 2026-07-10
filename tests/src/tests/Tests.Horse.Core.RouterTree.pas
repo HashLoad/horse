@@ -4,8 +4,8 @@ interface
 
 uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
-  Horse.Commons, System.SysUtils, System.Generics.Collections,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF};
+  System.SysUtils, System.Generics.Collections,
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
   [TestFixture]
@@ -60,6 +60,10 @@ type
     procedure ExecuteRouteWithCoringaoMiddlePath;
     [Test]
     procedure ExecuteRouteWithTwoConsecutiveCoringao;
+    [Test]
+    procedure ExecuteRouteWithCoringaoPriority;
+    [Test]
+    procedure ExecuteRouteWithMethodNotAllowedAllowHeader;
   end;
 
 implementation
@@ -90,6 +94,7 @@ begin
     begin
       LCalled := True;
       Assert.AreEqual('123', Req.Params.Items['id']);
+      Assert.AreEqual('/users/:id', Req.MatchedRoute);
     end);
 
   FRequest.Populate('GET', mtGet, '/users/123', '', '');
@@ -412,6 +417,93 @@ begin
   FRequest.Populate('GET', mtGet, '/users/any/random', '', '');
   Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
   Assert.IsTrue(LCalled);
+end;
+
+procedure TTestHorseCoreRouterTree.ExecuteRouteWithCoringaoPriority;
+var
+  LClientesCalled: Boolean;
+  LPessoasCalled: Boolean;
+  LCoringaoCalled: Boolean;
+begin
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+
+  FRouterTree.RegisterRoute(mtGet, '/clientes',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LClientesCalled := True;
+    end);
+
+  FRouterTree.RegisterRoute(mtGet, '/pessoas',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LPessoasCalled := True;
+    end);
+
+  FRouterTree.RegisterRoute(mtGet, '*',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCoringaoCalled := True;
+    end);
+
+  // Testando rota exata /clientes
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/clientes', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(LClientesCalled);
+  Assert.IsFalse(LPessoasCalled);
+  Assert.IsFalse(LCoringaoCalled);
+
+  // Testando rota exata /pessoas
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/pessoas', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsFalse(LClientesCalled);
+  Assert.IsTrue(LPessoasCalled);
+  Assert.IsFalse(LCoringaoCalled);
+
+  // Testando rota genérica (wildcard)
+  LClientesCalled := False;
+  LPessoasCalled := False;
+  LCoringaoCalled := False;
+  FRequest.Populate('GET', mtGet, '/qualquercoisa', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsFalse(LClientesCalled);
+  Assert.IsFalse(LPessoasCalled);
+  Assert.IsTrue(LCoringaoCalled);
+end;
+
+procedure TTestHorseCoreRouterTree.ExecuteRouteWithMethodNotAllowedAllowHeader;
+var
+  LAllow: string;
+begin
+  FRouterTree.RegisterRoute(mtGet, '/users',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+    end);
+
+  FRouterTree.RegisterRoute(mtPost, '/users',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+    end);
+
+  FRequest.Populate('PUT', mtPut, '/users', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.AreEqual(405, FResponse.Status);
+
+  {$IF DEFINED(FPC)}
+  LAllow := FResponse.CustomHeaders.Values['Allow'];
+  {$ELSE}
+  LAllow := FResponse.CustomHeaders.Items['Allow'];
+  {$ENDIF}
+
+  Assert.IsTrue(LAllow.Contains('GET'));
+  Assert.IsTrue(LAllow.Contains('POST'));
 end;
 
 initialization

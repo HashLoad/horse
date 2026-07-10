@@ -1,6 +1,6 @@
 unit Horse.Provider.VCL;
 
-{ PATCH-VCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
+{ PATCH-VCL-1: ListenWithConfig override â€” same root cause as PATCH-CONSOLE-1. }
 
 interface
 
@@ -12,6 +12,7 @@ uses
   Horse.Provider.IOHandleSSL.Contract,
   IdHTTPWebBrokerBridge,
   IdSSLOpenSSL,
+  IdSchedulerOfThreadPool,
   IdContext,
   Horse.Provider.IOHandleSSL,
   System.Classes,
@@ -79,7 +80,8 @@ implementation
 uses
   Web.WebReq,
   Horse.WebModule,
-  IdCustomTCPServer;
+  IdCustomTCPServer,
+  System.Classes;
 
 class function THorseProvider.IsRunning: Boolean;
 begin
@@ -91,6 +93,7 @@ begin
   if HTTPWebBrokerIsNil then
   begin
     FIdHTTPWebBrokerBridge := TIdHTTPWebBrokerBridge.Create(nil);
+    FIdHTTPWebBrokerBridge.Scheduler := TIdSchedulerOfThreadPool.Create(FIdHTTPWebBrokerBridge);
     FIdHTTPWebBrokerBridge.OnParseAuthentication := OnAuthentication;
     FIdHTTPWebBrokerBridge.OnQuerySSLPort := OnQuerySSLPort;
     FIdHTTPWebBrokerBridge.OnConnect := OnConnect;
@@ -121,10 +124,13 @@ end;
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
   loopback the keep-alive request/response ping-pong collides with the ~40 ms
   delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
-  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+  Harmless (beneficial) on Windows. See bench-analysis-report.md Â§7.5. }
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
+  AContext.Binding.SetKeepAliveValues(True, 60000, 1000);
+  if THorseProviderAbstract.ReadTimeout > 0 then
+    AContext.Connection.Socket.ReadTimeout := THorseProviderAbstract.ReadTimeout;
 end;
 
 class function THorseProvider.GetDefaultHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL;
@@ -230,13 +236,31 @@ begin
 end;
 
 class procedure THorseProvider.InternalStopListen;
+var
+  LContexts: TList;
+  I: Integer;
 begin
   if not HTTPWebBrokerIsNil then
   begin
+    GetDefaultHTTPWebBroker.StopListening;
+    try
+      LContexts := GetDefaultHTTPWebBroker.Contexts.LockList;
+      try
+        for I := LContexts.Count - 1 downto 0 do
+        begin
+          try
+            TIdContext(LContexts[I]).Connection.Disconnect;
+          except
+          end;
+        end;
+      finally
+        GetDefaultHTTPWebBroker.Contexts.UnlockList;
+      end;
+    except
+    end;
     GetDefaultHTTPWebBroker.Active := False;
     FRunning := False;
     DoOnStopListen;
-    GetDefaultHTTPWebBroker.StopListening;
   end
   else
     raise Exception.Create('Horse not listen');

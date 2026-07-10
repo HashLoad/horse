@@ -52,28 +52,32 @@ The `try / finally` pattern is the canonical way to wrap the entire request — 
 
 ## Registration
 
-`THorse.Use(...)` accepts:
+You can register middlewares at different scopes in Horse:
+
+1. **Global**: Registered via `THorse.Use(...)` affecting all routes (or wildcard paths).
+2. **Group-level**: Registered via `.Use(...)` inside a route group (`THorse.Group`).
+3. **Route-level (Local)**: Passed as an array (`array of THorseCallback`) directly into the HTTP verb of the route.
 
 ```delphi
-THorse.Use(MyMiddleware);              // applies to every request
-THorse.Use('/api', MyMiddleware);      // applies only to /api/*
+THorse.Use(MyGlobalMiddleware);        // Global
+
 THorse.Group.Prefix('/admin')
-  .Use(RequireAuth)                    // applies only to /admin/*
-  .Get('/users', ListUsers);
+  .Use(MyGroupMiddleware)              // Group-level
+  .Get('/users', [MyRouteMiddleware], ListUsers); // Route-level (local)
 ```
 
-**Registration order matters.** Middleware runs in the order it was registered, in a nested onion model:
+**Registration order matters.** Middleware runs in the order it was registered/mapped, in a nested onion model:
 
 ```
-THorse.Use(A);                         // outermost
-THorse.Use(B);
-THorse.Use(C);                         // innermost
-THorse.Get('/x', Handler);
+THorse.Use(A);                         // Global (outermost)
+THorse.Group.Prefix('/admin')
+  .Use(B)                              // Group-level
+  .Get('/x', [C], Handler);            // Route-level (innermost)
 ```
 
 Request flow:
 ```
-A → B → C → Handler → C → B → A
+A (Global) → B (Group) → C (Route) → Handler → C → B → A
 ```
 
 …where the right-hand side of each arrow is the code that runs after `Next()` returns. So `A` runs first and gets the last word; `C` wraps the handler most tightly.
@@ -219,6 +223,44 @@ THorse.Listen(9000);
 ```
 
 (For production use, refresh the buckets every `FResetEvery` seconds; this skeleton omits the timer thread for brevity.)
+
+## Global Error Handler (OnError)
+
+Horse provides a global error handling pipeline to catch all unhandled exceptions occurring during the request lifecycle (such as exceptions thrown in global middlewares, route groups, or final handlers).
+
+To register a global error handler, use the `THorse.OnError` method:
+
+```delphi
+procedure MyGlobalErrorHandler(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+begin
+  // Log the exception details to a file or external service
+  WriteLn('Internal error detected: ' + AException.Message);
+
+  // Return a standardized error response to the client
+  AResponse
+    .Send('{"error": "' + AException.Message + '"}')
+    .Status(THTTPStatus.InternalServerError);
+end;
+
+begin
+  // Register the callback during framework startup
+  THorse.OnError(MyGlobalErrorHandler);
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      raise Exception.Create('Something went wrong unexpectedly!');
+    end);
+
+  THorse.Listen(9000);
+end.
+```
+
+### Characteristics of OnError
+- **Backward Compatibility**: The callback signature uses the classic `procedure(...)` pointer type, ensuring complete support for older Delphi versions (XE7+) and Lazarus/FPC.
+- **Control Exceptions Handling**: Framework control exceptions such as `EHorseCallbackInterrupted` and `EHorseException` are processed internally by Horse and **do not** trigger the global `OnError` callback.
+- **Fail-Safe Mechanism (Safety)**: If your custom `OnError` callback itself throws an exception, Horse intercepts it safely and returns a `500 Internal Server Error` containing the details of the crash, preventing socket leaks or server crashes.
+- **Default Behavior (Without Registration)**: If no `OnError` callback is registered, the framework works **exactly as before**: exceptions will continue to propagate up to the HTTP server provider's traditional flow. The only improvement is that the default HTTP 500 body response now details the message of the thrown exception (e.g., `Internal Application Error: Message`), instead of displaying a generic hardcoded string.
 
 ## When to write middleware vs put logic in a handler
 

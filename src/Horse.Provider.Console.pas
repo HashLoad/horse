@@ -1,13 +1,13 @@
 unit Horse.Provider.Console;
 
 { ===========================================================================
-  PATCH-CONSOLE-1 — ListenWithConfig override
+  PATCH-CONSOLE-1 â€” ListenWithConfig override
   Without this, THorseProviderAbstract.ListenWithConfig just calls the no-arg
   Listen, which enters InternalListen with FPort = 0 and falls back to
   DEFAULT_PORT (9000), silently ignoring the caller-supplied APort.
   Fix: override ListenWithConfig in THorseProvider (Console) so that it sets
   Console's own FPort via SetPort before calling InternalListen.
-  AConfig is intentionally ignored — Console/Indy has no use for
+  AConfig is intentionally ignored â€” Console/Indy has no use for
   THorseCrossSocketConfig; only CrossSocket overrides ListenWithConfig fully.
   =========================================================================== }
 
@@ -75,7 +75,7 @@ type
     class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
 { ===========================================================================
-  PATCH-CONSOLE-1 — ListenWithConfig declaration
+  PATCH-CONSOLE-1 â€” ListenWithConfig declaration
   =========================================================================== }
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); override;
@@ -94,13 +94,16 @@ uses
   IdCustomTCPServer,
   Horse.Constants,
   Horse.Provider.IOHandleSSL,
-  IdSSLOpenSSL;
+  IdSSLOpenSSL,
+  IdSchedulerOfThreadPool,
+  System.Classes;
 
 class function THorseProvider.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
   if HTTPWebBrokerIsNil then
   begin
     FIdHTTPWebBrokerBridge := TIdHTTPWebBrokerBridge.Create(nil);
+    FIdHTTPWebBrokerBridge.Scheduler := TIdSchedulerOfThreadPool.Create(FIdHTTPWebBrokerBridge);
     FIdHTTPWebBrokerBridge.OnParseAuthentication := OnAuthentication;
     FIdHTTPWebBrokerBridge.OnQuerySSLPort := OnQuerySSLPort;
     FIdHTTPWebBrokerBridge.OnConnect := OnConnect;
@@ -121,10 +124,13 @@ end;
 { Disable Nagle (TCP_NODELAY) on each accepted connection. Without it, on Linux
   loopback the keep-alive request/response ping-pong collides with the ~40 ms
   delayed-ACK timer -> a flat ~44 ms/request floor that cripples throughput.
-  Harmless (beneficial) on Windows. See bench-analysis-report.md §7.5. }
+  Harmless (beneficial) on Windows. See bench-analysis-report.md Â§7.5. }
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
+  AContext.Binding.SetKeepAliveValues(True, 60000, 1000);
+  if THorseProviderAbstract.ReadTimeout > 0 then
+    AContext.Connection.Socket.ReadTimeout := THorseProviderAbstract.ReadTimeout;
 end;
 
 class function THorseProvider.GetDefaultEvent: TEvent;
@@ -268,10 +274,28 @@ begin
 end;
 
 class procedure THorseProvider.InternalStopListen;
+var
+  LContexts: TList;
+  I: Integer;
 begin
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
+    try
+      LContexts := GetDefaultHTTPWebBroker.Contexts.LockList;
+      try
+        for I := LContexts.Count - 1 downto 0 do
+        begin
+          try
+            TIdContext(LContexts[I]).Connection.Disconnect;
+          except
+          end;
+        end;
+      finally
+        GetDefaultHTTPWebBroker.Contexts.UnlockList;
+      end;
+    except
+    end;
     GetDefaultHTTPWebBroker.Active := False;
     DoOnStopListen;
     FRunning := False;
@@ -317,10 +341,10 @@ begin
 end;
 
 { ===========================================================================
-  PATCH-CONSOLE-1 — ListenWithConfig implementation
+  PATCH-CONSOLE-1 â€” ListenWithConfig implementation
   Sets Console's own FPort before starting, so the port is honoured even when
   the caller goes through the abstract ListenWithConfig entry point.
-  AConfig is intentionally ignored — Indy/Console has no use for CrossSocket
+  AConfig is intentionally ignored â€” Indy/Console has no use for CrossSocket
   configuration. CrossSocket overrides ListenWithConfig completely.
   =========================================================================== }
 class procedure THorseProvider.ListenWithConfig(const APort: Integer;

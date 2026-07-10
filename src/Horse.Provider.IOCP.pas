@@ -132,7 +132,7 @@ type
     {$ENDIF}
 
     function GetFieldByName(const AName: string): string;
-    procedure PopulateHeaders(ADict: TDictionary<string, string>);
+    procedure PopulateHeaders(ADest: TStrings);
     procedure PopulateQueryFields(ADest: TStrings);
     procedure PopulateContentFields(ADest: TStrings);
     procedure PopulateCookieFields(ADest: TStrings);
@@ -198,6 +198,7 @@ type
     IsKeepAlive: Boolean;
     Processing: Boolean;
     Closed: Integer;
+    RefCount: Integer;
     LastActive: Int64;
     ClientIP: string;
     ClientPort: Integer;
@@ -625,18 +626,18 @@ begin
   Result := ResolveHeader(AName);
 end;
 
-procedure TIocpRawRequest.PopulateHeaders(ADict: TDictionary<string, string>);
+procedure TIocpRawRequest.PopulateHeaders(ADest: TStrings);
 var
   I: Integer;
   Seg: THeaderSegment;
-  K, V: string;
+  K, V: AnsiString;
 begin
   for I := 0 to Length(FHeaders) - 1 do
   begin
     Seg := FHeaders[I];
-    K := TEncoding.UTF8.GetString(FBuffer, Seg.KeyStart, Seg.KeyLen).Trim;
-    V := TEncoding.UTF8.GetString(FBuffer, Seg.ValueStart, Seg.ValueLen).Trim;
-    ADict.AddOrSetValue(K, V);
+    SetString(K, PAnsiChar(@FBuffer[Seg.KeyStart]), Seg.KeyLen);
+    SetString(V, PAnsiChar(@FBuffer[Seg.ValueStart]), Seg.ValueLen);
+    ADest.Add(string(Trim(K)) + ADest.NameValueSeparator + string(Trim(V)));
   end;
 end;
 
@@ -925,10 +926,19 @@ begin
   begin
     SendStreamResponse(ARes.ContentStream, ARes.CustomHeaders);
     Exit;
+  end
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).ContentStream <> nil) then
+  begin
+    SendStreamResponse(TInterfacedWebResponse(ARes.RawWebResponse).ContentStream, ARes.CustomHeaders);
+    Exit;
   end;
 
-  if ARes.BodyText <> '' then
-    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText);
+  if Length(ARes.BodyBytes) > 0 then
+    LBodyBytes := ARes.BodyBytes
+  else if ARes.BodyText <> '' then
+    LBodyBytes := TEncoding.UTF8.GetBytes(ARes.BodyText)
+  else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).Content <> '') then
+    LBodyBytes := TEncoding.UTF8.GetBytes(TInterfacedWebResponse(ARes.RawWebResponse).Content);
 
   if Length(LBodyBytes) > 0 then
     FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)))
@@ -970,6 +980,7 @@ begin
   IsKeepAlive := True;
   Processing := False;
   Closed := 0;
+  RefCount := 1;
   LastActive := GetTickCount64;
 end;
 
@@ -988,6 +999,7 @@ end;
 function IocpWorkItemCallback(LPParameter: Pointer): DWORD; stdcall;
 var
   LData: PWorkItemData;
+  LContext: TIocpConnectionContext;
 begin
   Result := 0;
   LData := PWorkItemData(LPParameter);
@@ -1010,12 +1022,20 @@ begin
       end;
     end;
   finally
+    if LData.RawRes <> nil then
+      LContext := LData.RawRes.FContext
+    else
+      LContext := nil;
+
     LData.Req.Free;
     LData.Res.Free;
     {$IFNDEF FPC}
     LData.WebRequest.Free;
     {$ENDIF}
     Dispose(LData);
+
+    if (LContext <> nil) and (InterlockedDecrement(LContext.RefCount) = 0) then
+      LContext.Free;
   end;
 end;
 
@@ -1032,7 +1052,30 @@ begin
 end;
 
 destructor THorseIocpWorker.Destroy;
+var
+  I: Integer;
+  LContext: TIocpConnectionContext;
 begin
+  FConnectionsSync.Enter;
+  try
+    for I := 0 to FConnections.Count - 1 do
+    begin
+      LContext := FConnections[I];
+      if LContext <> nil then
+      begin
+        if LContext.Socket <> INVALID_SOCKET then
+        begin
+          closesocket(LContext.Socket);
+          LContext.Socket := INVALID_SOCKET;
+        end;
+        if InterlockedDecrement(LContext.RefCount) = 0 then
+          LContext.Free;
+      end;
+    end;
+    FConnections.Clear;
+  finally
+    FConnectionsSync.Leave;
+  end;
   FConnections.Free;
   FConnectionsSync.Free;
   inherited;
@@ -1044,6 +1087,8 @@ begin
 end;
 
 procedure THorseIocpWorker.CloseConnection(AContext: TIocpConnectionContext);
+var
+  LSocketToClose: TSocket;
 begin
   if AContext = nil then Exit;
   if InterlockedExchange(AContext.Closed, 1) = 0 then
@@ -1054,7 +1099,14 @@ begin
     finally
       FConnectionsSync.Leave;
     end;
-    AContext.Free;
+    
+    LSocketToClose := AContext.Socket;
+    AContext.Socket := INVALID_SOCKET;
+    if LSocketToClose <> INVALID_SOCKET then
+      closesocket(LSocketToClose);
+
+    if InterlockedDecrement(AContext.RefCount) = 0 then
+      AContext.Free;
   end;
 end;
 
@@ -1139,6 +1191,14 @@ begin
   
   // Copia dados recebidos para o buffer de acumulação da conexão
   LNewLen := AContext.BytesReceived + Integer(ABytesTransferred);
+  
+  // Limitação de tamanho de Headers para proteção DoS (Buffer Overflow)
+  if (not AContext.Processing) and (LNewLen > 16384) then
+  begin
+    CloseConnection(AContext);
+    Exit;
+  end;
+
   if LNewLen > Length(AContext.Buffer) then
     SetLength(AContext.Buffer, LNewLen * 2);
 
@@ -1197,9 +1257,13 @@ begin
     LData.WebRequest := LWebRequest;
     {$ENDIF}
 
+    // Incrementa a referência do contexto antes de enfileirar no pool
+    InterlockedIncrement(AContext.RefCount);
+
     // Despacha para o pool de threads assíncronas do Windows nativo
     if not QueueUserWorkItem(@IocpWorkItemCallback, LData, WT_EXECUTEDEFAULT) then
     begin
+      InterlockedDecrement(AContext.RefCount);
       LReq.Free;
       LRes.Free;
       {$IFNDEF FPC}
@@ -1225,6 +1289,7 @@ var
   LOverlap: PIocpOverlapped;
   LResult: BOOL;
   LCurrentTime, LLastTimeoutCheck: Int64;
+  LOptVal: Integer;
 begin
   LLastTimeoutCheck := GetTickCount64;
 
@@ -1243,6 +1308,14 @@ begin
         // Atualiza o contexto do soquete aceito com as propriedades do soquete de escuta
         setsockopt(LOverlap.Socket, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, PAnsiChar(@FListenSocket), SizeOf(FListenSocket));
         
+        // Desativa Algoritmo de Nagle (TCP_NODELAY) para latência ultra-baixa em APIs
+        LOptVal := 1;
+        setsockopt(LOverlap.Socket, IPPROTO_TCP, TCP_NODELAY, PAnsiChar(@LOptVal), SizeOf(LOptVal));
+        
+        // Ativa TCP Keep-Alive em nível de SO para evitar soquetes órfãos/zumbis
+        LOptVal := 1;
+        setsockopt(LOverlap.Socket, SOL_SOCKET, SO_KEEPALIVE, PAnsiChar(@LOptVal), SizeOf(LOptVal));
+
         // Associa o soquete do cliente aceito ao Completion Port
         CreateIoCompletionPort(LOverlap.Socket, FIocpHandle, ULONG_PTR(LContext), 0);
         

@@ -1,4 +1,4 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{090D8F0A-88C5-4ED1-BF6B-7D62B658AA0C}</ProjectGuid>
         <ProjectVersion>20.1</ProjectVersion>
@@ -68,7 +68,7 @@
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
-        <DCC_UnitSearchPath>$(DUnitX);..\modules\.dcp;..\modules\.dcu;..\modules;..\modules\dataset-serialize\src;..\modules\horse\src;..\modules\jhonson\src;..\modules\restrequest4delphi\src\core;..\modules\restrequest4delphi\src\interfaces;..\modules\restrequest4delphi\src;$(DCC_UnitSearchPath);modules\.dcp;modules\.dcu;modules;modules\horse\src;modules\jhonson\src;modules\restrequest4delphi\src</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>$(DUnitX);..\..\src;..\modules\.dcp;..\modules\.dcu;..\modules;..\modules\dataset-serialize\src;..\modules\jhonson\src;..\modules\restrequest4delphi\src\core;..\modules\restrequest4delphi\src\interfaces;..\modules\restrequest4delphi\src;$(DCC_UnitSearchPath);modules\.dcp;modules\.dcu;modules;modules\jhonson\src;modules\restrequest4delphi\src</DCC_UnitSearchPath>
         <SanitizedProjectName>VCL</SanitizedProjectName>
         <VerInfo_Locale>1046</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>

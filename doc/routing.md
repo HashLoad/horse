@@ -93,6 +93,26 @@ THorse.Group
   .Post('/audit', WriteAudit);
 ```
 
+## Route-level Middlewares (Local)
+
+You can pass an array of route-specific middlewares (`array of THorseCallback`) to apply checks only to a single endpoint:
+
+```delphi
+// Static Syntax with array of middlewares
+THorse.Get('/admin/dashboard', [AuthMiddleware, LoggerMiddleware],
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Admin Dashboard');
+  end);
+
+// Fluent Route Syntax with array of middlewares
+THorse.Route('/reports')
+  .Get([AuthMiddleware, LoggerMiddleware], GetReportsHandler)
+  .Post([AuthMiddleware], PostReportHandler);
+```
+
+Route-level middlewares execute after global middlewares and after any group-level middlewares, but right before the final route callback (handler) executes.
+
 ## Wildcard middleware
 
 `THorse.Use(...)` registers middleware that runs on every request, regardless of path:
@@ -160,6 +180,30 @@ end;
 ```
 
 For non-trivial apps, keep the route registration centralised in one unit so the layout is obvious from a single file.
+
+## Radix Router (Optional - Extreme Performance)
+
+For large-scale applications or high-performance APIs with hundreds of routes, Horse optionally includes a routing engine based on a **Prefix Tree (Radix Tree)**.
+
+Unlike the default linear router which performs path resolution in $O(N)$ (scanning routes sequentially), the Radix router resolves URLs in $O(K)$, where $K$ is the path string length. This guarantees extreme throughput and constant-time routing performance, regardless of the amount of registered routes in your application.
+
+### Activating the Radix Router
+
+Simply invoke the static class procedure `THorse.UseRadixRouter` at the very beginning of your application setup, before registering any route handlers:
+
+```delphi
+begin
+  THorse.UseRadixRouter;
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+
+  THorse.Listen(9000);
+end.
+```
 
 ## See also
 

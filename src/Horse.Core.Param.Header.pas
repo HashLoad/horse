@@ -13,9 +13,11 @@ uses
   fphttpserver,
   httpprotocol,
   HTTPDefs,
+  Generics.Defaults,
 {$ELSE}
   System.Classes,
   System.Generics.Collections,
+  System.Generics.Defaults,
   Web.HTTPApp,
   Horse.Rtti.Helper,
   {$IF DEFINED(HORSE_APACHE)}
@@ -29,6 +31,14 @@ uses
   Horse.Core.Param;
 
 type
+{$IF DEFINED(FPC)}
+  THorseHeaderComparer = class(TInterfacedObject, IEqualityComparer<string>)
+  public
+    function Equals(constref A, B: string): Boolean;
+    function GetHashCode(constref Value: string): DWord;
+  end;
+{$ENDIF}
+
   THorseCoreParamHeader = class
   private
 {$IF DEFINED(FPC)}
@@ -52,7 +62,34 @@ uses
   IdCustomHTTPServer,
   System.SysUtils,
 {$ENDIF}
+  Horse.Provider.RawAdapters,
   Horse.Rtti;
+
+{$IF DEFINED(FPC)}
+function THorseHeaderComparer.Equals(constref A, B: string): Boolean;
+begin
+  Result := SameText(A, B);
+end;
+
+{ O algoritmo de hashing DJB2 foi implementado caractere-por-caractere de forma
+  zero-allocation para evitar a alocacao temporaria gerada por LowerCase no FPC.
+  Isso otimiza o hot path de busca de headers e resolve problemas de link de
+  comparadores nativos sob FPC. }
+function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
+var
+  I: Integer;
+  LChar: Char;
+begin
+  Result := 5381;
+  for I := 1 to Length(Value) do
+  begin
+    LChar := Value[I];
+    if LChar in ['A'..'Z'] then
+      Inc(LChar, 32);
+    Result := ((Result shl 5) + Result) + Ord(LChar);
+  end;
+end;
+{$ENDIF}
 
 class function THorseCoreParamHeader.GetHeaders(const AWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}): THorseList;
 var
@@ -60,7 +97,7 @@ var
   LName, LValue: string;
   LHeaders: TStrings;
 begin
-  Result := THorseList.create;
+  Result := THorseList.Create({$IFDEF FPC}THorseHeaderComparer.Create{$ELSE}TIStringComparer.Ordinal{$ENDIF});
   try
     LHeaders := GetHeadersList(AWebRequest);
     try
@@ -97,7 +134,12 @@ var
 begin
   Result := TStringList.create;
   try
-    if AWebRequest is TFPHTTPConnectionRequest then
+    if AWebRequest is TInterfacedWebRequest then
+    begin
+      Result.NameValueSeparator := '=';
+      TInterfacedWebRequest(AWebRequest).RawReq.PopulateHeaders(Result);
+    end
+    else if AWebRequest is TFPHTTPConnectionRequest then
     begin
       LRequest := TFPHTTPConnectionRequest(AWebRequest);
       Result.NameValueSeparator := '=';
@@ -133,6 +175,12 @@ begin
   Result := TStringList.create;
   try
     Result.NameValueSeparator := ':';
+
+    if AWebRequest is TInterfacedWebRequest then
+    begin
+      TInterfacedWebRequest(AWebRequest).RawReq.PopulateHeaders(Result);
+      Exit;
+    end;
 
 {$IF DEFINED(HORSE_ISAPI)}
     Result.Text := AWebRequest.GetFieldByName('ALL_RAW');

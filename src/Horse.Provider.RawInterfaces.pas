@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.RawInterfaces;
+unit Horse.Provider.RawInterfaces;
 
 {
   Horse Provider Raw Interfaces
@@ -64,8 +64,7 @@ type
 {$IFEND}
     function GetFieldByName(const AName: string): string;
 
-    { Populate the inherited TStrings collections in TWebRequest.
-      Called once by the adapter constructor. }
+    procedure PopulateHeaders(ADest: TStrings);
     procedure PopulateQueryFields(ADest: TStrings);
     procedure PopulateContentFields(ADest: TStrings);
     procedure PopulateCookieFields(ADest: TStrings);

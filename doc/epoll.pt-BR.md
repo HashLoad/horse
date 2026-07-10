@@ -35,6 +35,27 @@ ulimit -n
 ulimit -n 65535
 ```
 
+## 🚀 Tuning do Linux para Produção
+
+Para extrair o máximo de desempenho sob carga de trabalho intensa, configure o kernel do Linux com os seguintes parâmetros no arquivo `/etc/sysctl.conf`:
+
+```ini
+# Aumenta a fila de conexões TCP pendentes (backlog)
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+
+# Permite a reutilização rápida de conexões em estado TIME_WAIT
+net.ipv4.tcp_tw_reuse = 1
+
+# Aumenta a faixa de portas efêmeras disponíveis
+net.ipv4.ip_local_port_range = 1024 65535
+
+# Aumenta o limite máximo de descritores de arquivos abertos globalmente
+fs.file-max = 2097152
+```
+
+Execute `sysctl -p` para aplicar as configurações de kernel imediatamente.
+
 ---
 
 ## ⚡ Início Rápido (Quick Start)

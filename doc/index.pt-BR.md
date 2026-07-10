@@ -6,6 +6,23 @@ Bem-vindo. Este é o índice da documentação do [Horse](https://github.com/Has
 
 Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR.md). Se já tem um servidor rodando e quer fazer uma alteração específica, vá direto ao tópico relevante abaixo.
 
+## Fluxo de Execução de Middlewares
+
+Quando uma requisição HTTP chega ao servidor Horse, ela passa pelas camadas de middlewares na seguinte ordem de precedência:
+
+```mermaid
+graph TD
+    A[Requisição HTTP] --> B[Middlewares Globais<br>ex: CORS, Johnson]
+    B --> C{Pertence a um Grupo?}
+    C -- Sim --> D[Middlewares de Grupo<br>ex: Auth Restrita]
+    C -- Não --> E{Tem Middlewares na Rota?}
+    D --> E
+    E -- Sim --> F[Middlewares Locais da Rota<br>ex: Log, Validações]
+    E -- Não --> G[Handler Final da Rota<br>Executa a Lógica]
+    F --> G
+    G --> H[Resposta HTTP]
+```
+
 ---
 
 ## Ordem de leitura para iniciantes
@@ -14,7 +31,7 @@ Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR
 2. **[Roteamento](./routing.pt-BR.md)** — declarar endpoints, parâmetros de caminho, grupos de rotas, query strings.
 3. **[Request e Response](./request-response.pt-BR.md)** — ler a requisição, escrever a resposta, headers, cookies, sessões, upload/download de arquivos.
 4. **[Middleware](./middleware.pt-BR.md)** — encadear handlers, ordem de registro, criar o seu. Para publicar middleware reutilizável, veja **[Criando um Middleware](./writing-middleware.pt-BR.md)**.
-5. **[Providers e Tipos de aplicação](./providers.pt-BR.md)** — escolher o Provider de transporte (Indy padrão; CrossSocket, mORMot2 e ICS opcionais; HttpSys nativo, Windows) e o Tipo de aplicação (Console padrão, VCL, Daemon, LCL, HTTPApplication) — ou um tipo de aplicação host-managed (Apache, ISAPI, CGI, FastCGI).
+5. **[Providers e Tipos de aplicação](./providers.pt-BR.md)** — escolher o Provider de transporte (Indy padrão; CrossSocket, mORMot2 e ICS opcionais; HttpSys, epoll e IOCP embutidos) e o Tipo de aplicação (Console padrão, VCL, Daemon, LCL, HTTPApplication) — ou um tipo de aplicação host-managed (Apache, ISAPI, CGI, FastCGI).
 
 ## Referência
 
@@ -24,11 +41,14 @@ Se você é novo por aqui, comece por [Primeiros passos](./getting-started.pt-BR
 | [Roteamento](./routing.pt-BR.md) | `THorse.Get` / `Post` / `Put` / `Delete` / `Patch` / `Head` / `Use`; parâmetros de caminho; grupos de rotas; wildcards; enum de método HTTP. |
 | [Request e Response](./request-response.pt-BR.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
 | [Middleware](./middleware.pt-BR.md) | O modelo `Next` proc; built-in vs custom; ordem de registro; por-rota vs global. |
+| [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
 | [Criando um Middleware](./writing-middleware.pt-BR.md) | Criando um middleware de qualidade de produção: esqueleto, padrões de configuração, thread safety, código neutro a Provider, armadilhas entre compiladores, matriz de testes, empacotamento Boss, publicação. |
-| [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys nativo, Windows) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
+| [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys, epoll e IOCP embutidos) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
+| [Observabilidade e Telemetria](./telemetry.pt-BR.md) | Configuração de rastreamento distribuído (OpenTelemetry) e coleta de métricas (Prometheus). |
 | [Suporte de Compilador](./compiler-support.pt-BR.md) | Versões testadas do Delphi, versões do FPC, plataformas-alvo, guards de versão de compilador. |
 | [Cheatsheet de Deploy](./deployment.pt-BR.md) | Referência de uma página pra entregar um binário CrossSocket ou mORMot2 como qualquer um dos sete formatos de Aplicação (Console / VCL / Daemon / Serviço Windows / daemon FPC / LCL / HTTPApplication FPC). |
+| [Testes de Integridade](./integrity-testing.pt-BR.md) | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack. |
 
 ## Como a documentação está organizada
 
@@ -40,8 +60,13 @@ doc/
 ├── routing.*.md               ← ligação URL → handler
 ├── request-response.*.md      ← API de THorseRequest e THorseResponse
 ├── middleware.*.md            ← encadeamento de handlers
+├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── providers.*.md             ← escolha de transporte
+├── iocp.*.md                  ← portas de conclusão assíncronas (Windows)
+├── epoll.*.md                 ← laço de eventos assíncronos (Linux)
+├── telemetry.*.md             ← integração com OpenTelemetry e Prometheus
 ├── middleware-ecosystem.*.md  ← catálogo de pacotes
+├── integrity-testing.*.md     ← testes de integridade e resiliência
 └── compiler-support.*.md      ← versões / plataformas
 ```
 

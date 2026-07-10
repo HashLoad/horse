@@ -52,28 +52,32 @@ O padrão `try / finally` é a forma canônica de envolver a requisição inteir
 
 ## Registro
 
-`THorse.Use(...)` aceita:
+Você pode registrar middlewares em diferentes escopos no Horse:
+
+1. **Globais**: Registrados via `THorse.Use(...)` afetando todas as rotas (ou caminhos wildcard).
+2. **De Grupo**: Registrados via `.Use(...)` dentro de um grupo de rotas (`THorse.Group`).
+3. **Locais**: Passados como um array (`array of THorseCallback`) diretamente no verbo HTTP da rota.
 
 ```delphi
-THorse.Use(MyMiddleware);              // aplica a toda requisição
-THorse.Use('/api', MyMiddleware);      // aplica apenas a /api/*
+THorse.Use(MyGlobalMiddleware);        // Global
+
 THorse.Group.Prefix('/admin')
-  .Use(RequireAuth)                    // aplica apenas a /admin/*
-  .Get('/users', ListUsers);
+  .Use(MyGroupMiddleware)              // De Grupo
+  .Get('/users', [MyRouteMiddleware], ListUsers); // Local (de rota)
 ```
 
-**A ordem de registro importa.** O middleware roda na ordem em que foi registrado, num modelo cebola aninhado:
+**A ordem de registro importa.** O middleware roda na ordem em que foi registrado/mapeado, num modelo cebola aninhado:
 
 ```
-THorse.Use(A);                         // mais externo
-THorse.Use(B);
-THorse.Use(C);                         // mais interno
-THorse.Get('/x', Handler);
+THorse.Use(A);                         // Global (mais externo)
+THorse.Group.Prefix('/admin')
+  .Use(B)                              // De Grupo
+  .Get('/x', [C], Handler);            // Local de Rota (mais interno)
 ```
 
 Fluxo da requisição:
 ```
-A → B → C → Handler → C → B → A
+A (Global) → B (Grupo) → C (Rota) → Handler → C → B → A
 ```
 
 …onde o lado direito de cada seta é o código que roda após o `Next()` retornar. Então `A` roda primeiro e tem a última palavra; `C` envolve o handler mais de perto.
@@ -219,6 +223,44 @@ THorse.Listen(9000);
 ```
 
 (Em produção, atualize os buckets a cada `FResetEvery` segundos; este esqueleto omite a thread de timer.)
+
+## Manipulador Global de Erros (OnError)
+
+O Horse disponibiliza um pipeline global para capturar todas as exceções não tratadas que ocorrem durante o ciclo de vida das requisições (como erros em middlewares globais, grupos ou handlers de rota). 
+
+Para registrar um manipulador de erro global, utilize o método `THorse.OnError`:
+
+```delphi
+procedure MyGlobalErrorHandler(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+begin
+  // Logue a exceção em um arquivo de log ou serviço externo
+  WriteLn('Erro interno detectado: ' + AException.Message);
+
+  // Retorne uma resposta padronizada para o cliente
+  AResponse
+    .Send('{"error": "' + AException.Message + '"}')
+    .Status(THTTPStatus.InternalServerError);
+end;
+
+begin
+  // Registre o callback no startup do framework
+  THorse.OnError(MyGlobalErrorHandler);
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      raise Exception.Create('Um erro inesperado aconteceu!');
+    end);
+
+  THorse.Listen(9000);
+end.
+```
+
+### Características do OnError
+- **Retrocompatibilidade**: A assinatura do callback usa o formato clássico `procedure(...)` garantindo total suporte a compiladores mais antigos do Delphi (XE7+) e Lazarus/FPC.
+- **Tratamento de Exceções de Controle**: Exceções de controle internas do framework, como `EHorseCallbackInterrupted` e `EHorseException`, são processadas automaticamente pelo fluxo interno e **não** acionam o `OnError` global.
+- **Segurança contra Falhas (Safety)**: Se o próprio callback do seu manipulador `OnError` lançar uma exceção de forma inesperada, o framework intercepta o erro de forma segura e responde com `HTTP 500` contendo a causa detalhada, impedindo vazamentos ou travamentos.
+- **Comportamento Padrão (Sem Registro)**: Se nenhum callback `OnError` for registrado, o framework funcionará **exatamente como antes**: as exceções continuam se propagando até o provedor do servidor HTTP para o fluxo tradicional de retorno. A única melhoria é que a resposta default `HTTP 500` agora detalha a mensagem da exceção disparada (ex: `Internal Application Error: Message`), em vez de exibir apenas o texto genérico fixo.
 
 ## Quando escrever middleware vs colocar lógica no handler
 

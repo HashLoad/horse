@@ -1,0 +1,21 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    fpc fp-units-rtl fp-units-fcl fp-units-misc git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clona o DUnitX não é mais necessário para o teste de integração simples
+WORKDIR /usr/src/app
+
+COPY . .
+
+# Compila o IntegrationServer usando FPC no Ubuntu com diretório de units isolado
+RUN mkdir -p tests/lib && cd tests/src && \
+    fpc -Mdelphi -Sh -FE.. -FU../lib -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src:/usr/lib/x86_64-linux-gnu/fpc/3.2.2/units/x86_64-linux/rtl-objpas" "-dHORSE_CONSOLE" "-dHORSE_PROVIDER_EPOLL" IntegrationServer.dpr
+
+WORKDIR /usr/src/app/tests
+
+# Executa o servidor de integração que valida as rotas e finaliza autonomamente
+CMD ["./IntegrationServer"]

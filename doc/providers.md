@@ -39,8 +39,9 @@ The **default Provider depends on the compiler**:
 | **horse-provider-crosssocket** | `HORSE_CROSSSOCKET` | Optional, external package | ✔ | ✔ |
 | **horse-provider-mormot** | `HORSE_PROVIDER_MORMOT` | Optional, external package | ✔ | ✔ |
 | **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Optional, external package (Delphi: Windows + Linux64/macOS) | ✔ | ❌ |
-| **[HTTP.sys](./httpsys.md)** | `HORSE_PROVIDER_HTTPSYS` | Optional, built-in (Windows kernel mode) | ✔ | ✔ |
-| **[epoll](./epoll.md)** | `HORSE_PROVIDER_EPOLL` | Optional, built-in (Linux async event loop) | ✔ | ✔ |
+| **[HTTP.sys](./httpsys.md)** _(`Horse.Provider.HttpSys`)_ | `HORSE_PROVIDER_HTTPSYS` | Built into Horse (Windows kernel-mode) | ✔ | ✔ |
+| **[epoll](./epoll.md)** _(`Horse.Provider.Epoll`)_ | `HORSE_PROVIDER_EPOLL` | Built into Horse (Linux async event loop) | ✔ | ✔ |
+| **[IOCP](./iocp.md)** _(`Horse.Provider.IOCP`)_ | `HORSE_PROVIDER_IOCP` | Built into Horse (Windows async I/O completion ports) | ✔ | ✔ |
 
 > **What library does the HTTP work, per Application type?** This is the deciding question — and it's *not* always Indy. The unifying abstraction across every row is `Web.HTTPApp.TWebRequest` on Delphi or `fpHTTP.TRequest` on FPC; below that, the concrete library differs.
 >
@@ -51,8 +52,9 @@ The **default Provider depends on the compiler**:
 > | Any self-hosted + `HORSE_CROSSSOCKET` | Either | **`Delphi-Cross-Socket`** | ✘ |
 > | Any self-hosted + `HORSE_PROVIDER_MORMOT` | Either | **`mORMot2`** (`THttpServer` / `THttpApiServer`) | ✘ |
 > | Self-hosted + `HORSE_PROVIDER_ICS` | Delphi (Windows / Linux64 / macOS) | **`OverbyteICS`** (`THttpServer` / `TSslHttpServer`) | ✘ |
-> | Any self-hosted + `HORSE_PROVIDER_HTTPSYS` | Either | **`HTTP.sys`** (Windows Kernel Driver) | ✘ |
-> | Any self-hosted + `HORSE_PROVIDER_EPOLL` | Either | **`epoll`** (Linux kernel epoll API) | ✘ |
+> | Self-hosted + `HORSE_PROVIDER_HTTPSYS` | Windows (Delphi / FPC) | **Windows http.sys** (`httpapi.dll`, kernel-mode) | ✘ |
+> | Self-hosted + `HORSE_PROVIDER_EPOLL` | Either | **`epoll`** (Linux kernel epoll API) | ✘ |
+> | Self-hosted + `HORSE_PROVIDER_IOCP` | Windows (Delphi / FPC) | **Windows IOCP** (Winsock2 Completion Ports) | ✘ |
 > | Apache module | Either | **Apache httpd** (via `Web.HTTPApp.TApacheRequest` / `mod_horse`) | ✘ |
 > | ISAPI | Delphi | **IIS** (via `Web.HTTPApp.TISAPIRequest`) | ✘ |
 > | CGI | Delphi | **Web server's CGI runner** (via `Web.HTTPApp.TCGIRequest`) | ✘ |
@@ -331,6 +333,7 @@ Provider × Application type — which combinations are currently expressible (a
 | **ICS** (`HORSE_PROVIDER_ICS`) _(Delphi; Windows + Linux64/macOS)_ | ✔ | ✔ | ✔ | n/a | n/a | n/a | ❌ | ❌ | ❌ | ❌ |
 | **HttpSys** (`HORSE_PROVIDER_HTTPSYS`) _(Windows; built-in)_ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ❌ | ❌ | ❌ | ❌ |
 | _Host-managed_ (Apache/ISAPI/CGI/FCGI) | n/a | n/a | n/a | n/a | n/a | n/a | ✔ | ✔ | ✔ | ✔ |
+| **ICS** (`HORSE_PROVIDER_ICS`) _(Delphi; Windows + Linux64/macOS)_ | ✔ | ✔ | ✔ | n/a | n/a | n/a | ❌ | ❌ | ❌ | ❌ |
 
 Legend:
 - **✔** — supported and expressible with the current defines. Since PATCH-HORSE-2, every CrossSocket × Application-type cell is supported via the cross-product convenience units in `horse-provider-crosssocket` (e.g. `Horse.Provider.CrossSocket.VCL`, `…Daemon`, `…FPC.Daemon`, `…FPC.LCL`, `…FPC.HTTPApplication`). mORMot2 ships the matching cross-product set in `horse-provider-mormot`: `Horse.Provider.Mormot` (Console default), `…Mormot.VCL`, `…Mormot.Daemon` (Windows TService + POSIX runner in one unit), `…Mormot.FPC.Daemon`, `…Mormot.FPC.LCL`, `…Mormot.FPC.HTTPApplication`.
@@ -934,18 +937,19 @@ The classic downside of `TCP_NODELAY` — many tiny per-response socket writes b
 
 > The FPC `fphttpserver` family and host-managed types (Apache / ISAPI / CGI / FastCGI) are **not** changed: `fphttpserver` exposes no clean per-connection hook, and host-managed deployments don't own the HTTP accept socket — the front web server's own Nagle policy applies.
 
-### 10.2 Indy provider connection defaults — `MaxConnections` & `ListenQueue`
+### 10.2 Indy provider connection defaults — `MaxConnections`, `ListenQueue` & `ReadTimeout`
 
-The Indy self-hosted providers (Console / Daemon / VCL) now apply two **safe defaults** when you
+The Indy self-hosted providers (Console / Daemon / VCL) now apply safe defaults when you
 don't set them explicitly:
 
 | Property | Old effective default | New default | Why |
 |---|---|---|---|
 | `THorse.MaxConnections` | **32** (WebBroker's `Web.WebReq.TWebRequestHandler` module-pool cap) | **1024** | The 32 cap returns **~60 % HTTP 500** (`EWebBrokerException: "Maximum number of concurrent connections exceeded"`) under **keep-alive + response-header middleware + concurrency ≥ ~40**. Raising the module-pool ceiling makes the out-of-the-box build safe. |
 | `THorse.ListenQueue` | **15** (Indy's `IdListenQueueDefault`) | **511** | 15 is too small for concurrent connection bursts → dropped/refused connections. 511 mirrors nginx's backlog (the OS clamps it to `net.core.somaxconn` / `SOMAXCONN`). |
+| `THorse.ReadTimeout` | **0** (no timeout, blocks indefinitely) | **0** | The timeout in milliseconds for socket read operations on accepted connections. Setting this (e.g. to `10000` for 10 seconds) prevents slow or hung clients from holding server sockets and threads open indefinitely. (Indy only). |
 
 **Behaviour & compatibility.** These are applied **only when the value is left unset** — if you
-already call `THorse.MaxConnections := N` or `THorse.ListenQueue := N` before `Listen`, your value
+already call `THorse.MaxConnections := N`, `THorse.ListenQueue := N` or `THorse.ReadTimeout := N` before `Listen`, your value
 wins, unchanged. The `MaxConnections` default raises **only** the WebBroker module-pool ceiling
 (the thing that produced the 500s); it does **not** impose an Indy TCP connection cap unless you set
 one. Tune both up for very high concurrency (e.g. `1000`+ at c≈500).
@@ -953,14 +957,14 @@ one. Tune both up for very high concurrency (e.g. `1000`+ at c≈500).
 ```pascal
 THorse.MaxConnections := 4096;   // optional — overrides the 1024 default
 THorse.ListenQueue    := 1024;   // optional — overrides the 511 default
+THorse.ReadTimeout    := 10000;  // optional — sets connection read timeout to 10 seconds
 THorse.Listen(9000);
 ```
 
-> **Provider scope:** this applies to the **Indy** providers only — they're the ones backed by
-> WebBroker. CrossSocket and mORMot have no WebBroker module pool (they never produced these 500s);
-> CrossSocket connection limits live in `THorseCrossSocketConfig.MaxConnections`, and mORMot sizes
-> its own fixed thread pool (`THorseMormotConfig.ThreadPool`, default 32). The constants live in
-> `Horse.Provider.Config` (`DEFAULT_MAX_CONNECTIONS`, `DEFAULT_LISTEN_QUEUE`).
+> **Provider scope:** connection settings like `MaxConnections`, `ListenQueue`, and `ReadTimeout` apply to the self-hosted **Indy** providers only (Console / Daemon / VCL). 
+> - **Host-managed types** (Apache, ISAPI, CGI, FastCGI) delegate connection lifecycle and timeouts to the host web server configuration (IIS/Apache). 
+> - **HttpSys** configures connection timeouts at the Windows kernel level (via registry or `netsh`). 
+> - **CrossSocket and mORMot** manage their own thread pools and network I/O; CrossSocket connection limits live in `THorseCrossSocketConfig.MaxConnections`, and mORMot sizes its own fixed thread pool (`THorseMormotConfig.ThreadPool`, default 32). The constants live in `Horse.Provider.Config` (`DEFAULT_MAX_CONNECTIONS`, `DEFAULT_LISTEN_QUEUE`).
 
 #### How to size them — and why they're **not** derived from CPU count
 

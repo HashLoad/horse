@@ -53,6 +53,7 @@ uses
   Horse.Core.Param.Field.Brackets in '..\..\src\Horse.Core.Param.Field.Brackets.pas',
   Horse.Core.Files in '..\..\src\Horse.Core.Files.pas',
   Tests.Horse.Core.Files in 'tests\Tests.Horse.Core.Files.pas',
+  Tests.Horse.Core.Group in 'tests\Tests.Horse.Core.Group.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
   Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';

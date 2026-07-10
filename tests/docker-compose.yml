@@ -1,0 +1,14 @@
+services:
+  tests-lazarus:
+    build:
+      context: ../
+      dockerfile: tests/Dockerfile.tests-lazarus
+    container_name: horse-tests-lazarus
+
+  paserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.paserver
+    container_name: horse-paserver
+    ports:
+      - "64211:64211"
