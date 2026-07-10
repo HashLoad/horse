@@ -122,6 +122,90 @@ end;
 
 
 
+{$IFDEF FPC}
+threadvar
+  GCurrentTreeExecutor: Pointer;
+
+type
+  TRouterTreeExecutor = class
+  private
+    FRouter: THorseRouterTree;
+    FRequest: THorseRequest;
+    FResponse: THorseResponse;
+    FResult: Boolean;
+    procedure DoExecuteInternal;
+  public
+    constructor Create(ARouter: THorseRouterTree; AReq: THorseRequest; ARes: THorseResponse);
+    function Run: Boolean;
+  end;
+
+procedure RouterTreeExecutorDoExecuteRoute;
+begin
+  TRouterTreeExecutor(GCurrentTreeExecutor).DoExecuteInternal;
+end;
+
+procedure RouterTreeExecutorDoPreParsing;
+begin
+  THorse.ExecutePreParsing(TRouterTreeExecutor(GCurrentTreeExecutor).FRequest, TRouterTreeExecutor(GCurrentTreeExecutor).FResponse, RouterTreeExecutorDoExecuteRoute);
+end;
+
+constructor TRouterTreeExecutor.Create(ARouter: THorseRouterTree; AReq: THorseRequest; ARes: THorseResponse);
+begin
+  FRouter := ARouter;
+  FRequest := AReq;
+  FResponse := ARes;
+  FResult := False;
+end;
+
+function TRouterTreeExecutor.Run: Boolean;
+begin
+  FResponse.Request := FRequest;
+  GCurrentTreeExecutor := Self;
+  try
+    try
+      THorse.ExecuteOnRequest(FRequest, FResponse, RouterTreeExecutorDoPreParsing);
+      Result := FResult;
+    except
+      on E: Exception do
+      begin
+        Result := False;
+        raise;
+      end;
+    end;
+  finally
+    THorse.ExecuteOnResponse(FRequest, FResponse);
+  end;
+end;
+
+procedure TRouterTreeExecutor.DoExecuteInternal;
+var
+  LSegments, LSegmentsNotFound: TArray<THorseBufferSlice>;
+  LMethodType: TMethodType;
+  LRawWebRequest: TRequest;
+  LBufferNotFound: TBytes;
+begin
+  LRawWebRequest := FRequest.RawWebRequest;
+  if not Assigned(LRawWebRequest) then
+    LMethodType := FRequest.MethodType
+  else
+    LMethodType := TMethodType.FromString(LRawWebRequest.Method);
+
+  LSegments := FRequest.GetPathSegments;
+  FResult := FRouter.ExecuteInternal(LSegments, 0, LMethodType, FRequest, FResponse);
+  if not FResult then
+  begin
+    SetLength(LSegmentsNotFound, 2);
+    LBufferNotFound := TEncoding.UTF8.GetBytes('/*');
+    LSegmentsNotFound[0] := THorseBufferSlice.Create(LBufferNotFound, 0, 0);
+    LSegmentsNotFound[1] := THorseBufferSlice.Create(LBufferNotFound, 1, 1);
+    
+    FResult := FRouter.ExecuteInternal(LSegmentsNotFound, 0, LMethodType, FRequest, FResponse);
+    if FResult and (FResponse.Status = THTTPStatus.MethodNotAllowed.ToInteger) then
+      FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+  end;
+end;
+{$ENDIF}
+
 class function THorseRouterTree.NormalizeParamKey(const APart: string): string;
 begin
   if APart.StartsWith(':') then
@@ -259,6 +343,18 @@ begin
 end;
 
 function THorseRouterTree.Execute(const ARequest: THorseRequest; const AResponse: THorseResponse): Boolean;
+{$IF DEFINED(FPC)}
+var
+  LExecutor: TRouterTreeExecutor;
+begin
+  LExecutor := TRouterTreeExecutor.Create(Self, ARequest, AResponse);
+  try
+    Result := LExecutor.Run;
+  finally
+    LExecutor.Free;
+  end;
+end;
+{$ELSE}
 var
   LSegments, LSegmentsNotFound: TArray<THorseBufferSlice>;
   LMethodType: TMethodType;
@@ -328,6 +424,7 @@ begin
     THorse.ExecuteOnResponse(ARequest, AResponse);
   end;
 end;
+{$ENDIF}
 
 function THorseRouterTree.ExecuteInternal(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest;
   const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;

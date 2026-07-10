@@ -44,6 +44,7 @@ graph TD
 | [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
 | [Injeção de Dependência](./dependency-injection.pt-BR.md) | Gerenciamento de ciclo de vida e IoC no request scope (injetores direct e lazy). |
 | [Desligamento Suave](./graceful-shutdown.pt-BR.md) | Encerramento coordenado de conexões em ambientes produtivos (nuvem/Kubernetes); propriedades de telemetria `ActiveRequests` e flag `IsShuttingDown`. |
+| [Multi-Instance](./multi-instance.pt-BR.md) | Executa e isola múltiplos servidores HTTP independentes, tabelas de rotas e middlewares em portas diferentes simultaneamente no mesmo processo. |
 | [Criando um Middleware](./writing-middleware.pt-BR.md) | Criando um middleware de qualidade de produção: esqueleto, padrões de configuração, thread safety, código neutro a Provider, armadilhas entre compiladores, matriz de testes, empacotamento Boss, publicação. |
 | [Providers e Tipos de aplicação](./providers.pt-BR.md) | O modelo de dois eixos: **Provider** (transporte — Indy padrão; CrossSocket, mORMot2, ICS opcionais; HttpSys, epoll e IOCP embutidos) × **Tipo de aplicação** (Console / VCL / Daemon / LCL / HTTPApplication, mais host-managed Apache / ISAPI / CGI / FCGI). Matriz de compatibilidade e guia de escolha. |
 | [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md) | Pacotes oficiais `HashLoad/*` e a lista mantida pela comunidade. |
@@ -65,6 +66,7 @@ doc/
 ├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── dependency-injection.*.md  ← injeção de dependências no request scope
 ├── graceful-shutdown.*.md     ← desligamento suave em produção
+├── multi-instance.*.md        ← execução de múltiplos servidores concorrentes
 ├── providers.*.md             ← escolha de transporte
 ├── iocp.*.md                  ← portas de conclusão assíncronas (Windows)
 ├── epoll.*.md                 ← laço de eventos assíncronos (Linux)

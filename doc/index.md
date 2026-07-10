@@ -44,6 +44,7 @@ graph TD
 | [Lifecycle Hooks](./lifecycle-hooks.md) | Request lifecycle hooks (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) to extend and intercept request/response pipelines. |
 | [Dependency Injection](./dependency-injection.md) | Lifecycle management and IoC on request scope (direct and lazy injectors). |
 | [Graceful Shutdown](./graceful-shutdown.md) | Coordinated connection shutdown in production environments (cloud/Kubernetes); telemetry properties `ActiveRequests` and flag `IsShuttingDown`. |
+| [Multi-Instance](./multi-instance.md) | Run and isolate multiple independent HTTP servers, routing tables, and middlewares on different ports concurrently within the same process. |
 | [Writing a Middleware](./writing-middleware.md) | Authoring a production-quality middleware: skeleton, configuration patterns, thread safety, Provider-neutral coding, cross-compiler pitfalls, testing matrix, Boss packaging, publishing. |
 | [Providers & Application types](./providers.md) | The two-axis model: **Provider** (transport — Indy default; CrossSocket, mORMot2, ICS optional; HttpSys, epoll and IOCP built-in) × **Application type** (Console / VCL / Daemon / LCL / HTTPApplication, plus host-managed Apache / ISAPI / CGI / FCGI). Compatibility matrix and selection guidance. |
 | [Middleware Ecosystem](./middleware-ecosystem.md) | Official `HashLoad/*` packages and the community-maintained list. |
@@ -65,6 +66,7 @@ doc/
 ├── lifecycle-hooks.md         ← request lifecycle hooks (onRequest, etc.)
 ├── dependency-injection.md    ← contextual dependency injection on request scope
 ├── graceful-shutdown.md       ← graceful connection shutdown in production
+├── multi-instance.md          ← running multiple concurrent servers
 ├── providers.md               ← choosing a transport
 ├── iocp.md                    ← Windows async I/O completion ports
 ├── epoll.md                   ← Linux async event loop
