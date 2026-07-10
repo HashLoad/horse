@@ -87,6 +87,9 @@ These are not maintained by HashLoad but are listed here because they're commonl
 | [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger) | Structured data logger | ✔️ | ❌ |
 | [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation) | Auto-generated API docs | ✔️ | ❌ |
 | [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator) | Request payload validation | ✔️ | ❌ |
+| [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Rate limiting control with support for multiple backends and storages | ✔️ | ✔️ |
+| [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | High-performance response compression with Gzip, Deflate, and Brotli support | ✔️ | ✔️ |
+
 
 ---
 

@@ -87,6 +87,9 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger) | Logger de dados estruturado | ✔️ | ❌ |
 | [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation) | Geração automática de docs de API | ✔️ | ❌ |
 | [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator) | Validação de payload de requisição | ✔️ | ❌ |
+| [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Controle de limite de requisições (Rate Limiting) com suporte a múltiplos storages | ✔️ | ✔️ |
+| [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | Compressão de alta performance com suporte a Gzip, Deflate e Brotli | ✔️ | ✔️ |
+
 
 ---
 

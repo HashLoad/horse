@@ -54,10 +54,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Ganhos:**
   * Facilidade na gerência de concorrência com encerramento e liberação automática de recursos após o fim da requisição.
 
-### 11. Middleware Oficial de Compressão de Resposta (Gzip/Deflate/Brotli)
-* **Descrição:** Middleware oficial de alta performance integrado ao core para compressão dinâmica dos corpos de resposta HTTP.
-* **Ganhos:**
-  * Otimização de consumo de banda e redução no tempo de transferência de dados sem depender de proxies externos.
 
 ### 13. Servidor de Arquivos Estáticos Otimizado com Suporte a Range (*Static File Streaming*)
 * **Descrição:** Middleware robusto e otimizado para entrega de arquivos físicos locais, incluindo cabeçalhos de controle de cache (`Cache-Control`, `ETags`) e suporte a requisições parciais (HTTP 206 para streaming de mídia).
@@ -76,6 +72,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 3. Middleware de Limitação de Requisições (*Rate Limiting*)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Disponibilizada a biblioteca externa oficial e integrada de limitação e controle de tráfego baseada em chaves (como IP de origem ou Tokens) em memória ou integrada ([horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit)), fornecendo proteção contra força bruta e sobrecargas no servidor de forma compatível com Delphi e Lazarus.
+
+### 4. Middleware de Compressão de Resposta (Gzip/Deflate/Brotli)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvido o middleware de compressão de alta performance e *zero-allocation*, com suporte a Gzip, Deflate e Brotli, disponível no repositório de comunidade [horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2).
 
 ---
 
