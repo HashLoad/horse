@@ -32,7 +32,7 @@ Write-Host " -> Usando compilador em: $RsvarsPath" -ForegroundColor Gray
 Write-Host " -> Compilando ConsoleAdvancedRouting.dpr..." -ForegroundColor Gray
 if (Test-Path $ExePath) { Remove-Item $ExePath -Force }
 
-$BuildCommand = "call `"{0}`" && cd /d `"{1}`" && dcc32.exe -I`"{2}\src`" -U`"{2}\src`" ConsoleAdvancedRouting.dpr" -f $RsvarsPath, $ScriptDir, $ProjectDir
+$BuildCommand = "call `"{0}`" && cd /d `"{1}`" && dcc32.exe -I`"{2}\src`" -U`"{2}\src`" -NS`"System;System.Win;Winapi;Data;Web`" ConsoleAdvancedRouting.dpr" -f $RsvarsPath, $ScriptDir, $ProjectDir
 $BuildOutput = cmd.exe /c $BuildCommand 2>&1
 $BuildExitCode = $LASTEXITCODE
 
