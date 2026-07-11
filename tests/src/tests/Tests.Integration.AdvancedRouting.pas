@@ -11,6 +11,8 @@ type
   TTestIntegrationAdvancedRouting = class
   private
     const TEST_PORT = 9095;
+    FMatchedRoute: string;
+    FParamId: string;
     procedure RunRoutingTest(const AUseRadix: Boolean);
   public
     [TearDown]
@@ -51,11 +53,9 @@ var
   LClient: THTTPClient;
   LRes: IHTTPResponse;
   LThread: TThread;
-  LMatchedRoute: string;
-  LParamId: string;
 begin
-  LMatchedRoute := '';
-  LParamId := '';
+  FMatchedRoute := '';
+  FParamId := '';
 
   // 1. Chaveia o Roteador sob teste
   if AUseRadix then
@@ -69,8 +69,8 @@ begin
   THorse.Get('/users/new',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      LMatchedRoute := 'static-new';
-      LParamId := '';
+      FMatchedRoute := 'static-new';
+      FParamId := '';
       Res.Send('new-user');
     end);
 
@@ -78,8 +78,8 @@ begin
   THorse.Get('/users/:id(\d+)',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      LMatchedRoute := 'regex-id';
-      LParamId := Req.Params.Items['id'];
+      FMatchedRoute := 'regex-id';
+      FParamId := Req.Params.Items['id'];
       Res.Send('user-numeric');
     end);
 
@@ -87,8 +87,8 @@ begin
   THorse.Get('/users/:id?',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
-      LMatchedRoute := 'optional-id';
-      LParamId := Req.Params.Items['id'];
+      FMatchedRoute := 'optional-id';
+      FParamId := Req.Params.Items['id'];
       Res.Send('user-optional');
     end);
 
@@ -108,31 +108,31 @@ begin
       LRes := LClient.Get(Format('http://localhost:%d/users/new', [TEST_PORT]));
       Assert.AreEqual(200, LRes.StatusCode);
       Assert.AreEqual('new-user', LRes.ContentAsString);
-      Assert.AreEqual('static-new', LMatchedRoute);
+      Assert.AreEqual('static-new', FMatchedRoute);
 
       // Caso 2: Rota Paramétrica Numérica com Regex (/users/123)
       LRes := LClient.Get(Format('http://localhost:%d/users/123', [TEST_PORT]));
       Assert.AreEqual(200, LRes.StatusCode);
       Assert.AreEqual('user-numeric', LRes.ContentAsString);
-      Assert.AreEqual('regex-id', LMatchedRoute);
-      Assert.AreEqual('123', LParamId);
+      Assert.AreEqual('regex-id', FMatchedRoute);
+      Assert.AreEqual('123', FParamId);
 
       // Caso 3: Rota com Parâmetro Opcional Texto (/users/abc)
       LRes := LClient.Get(Format('http://localhost:%d/users/abc', [TEST_PORT]));
       Assert.AreEqual(200, LRes.StatusCode);
       Assert.AreEqual('user-optional', LRes.ContentAsString);
-      Assert.AreEqual('optional-id', LMatchedRoute);
-      Assert.AreEqual('abc', LParamId);
+      Assert.AreEqual('optional-id', FMatchedRoute);
+      Assert.AreEqual('abc', FParamId);
 
       // Caso 4: Rota com Parâmetro Opcional Vazio (/users)
       LRes := LClient.Get(Format('http://localhost:%d/users', [TEST_PORT]));
       Assert.AreEqual(200, LRes.StatusCode);
       Assert.AreEqual('user-optional', LRes.ContentAsString);
-      Assert.AreEqual('optional-id', LMatchedRoute);
-      Assert.AreEqual('', LParamId);
+      Assert.AreEqual('optional-id', FMatchedRoute);
+      Assert.AreEqual('', FParamId);
 
       // Caso 5: Roteamento de Regex que não deve coincidir se houver outras restrições
-      // Por exemplo, /users/123/edit não deve dar match em nenhuma destas rotas (deve dar 404)
+      // Por exemplo, /users/123/edit não deve dar match in nenhuma destas rotas (deve dar 404)
       LRes := LClient.Get(Format('http://localhost:%d/users/123/edit', [TEST_PORT]));
       Assert.AreEqual(404, LRes.StatusCode);
 
