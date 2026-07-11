@@ -1518,11 +1518,7 @@ end;
 
 class procedure THorseProviderIOCP.InternalListenLoop(const ACallbackListen, ACallbackStopListen: Horse.Proc.TProc);
 begin
-  try
-    InternalListen;
-  except
-    Exit;
-  end;
+  InternalListen;
   DoOnListen;
   while FRunning do
     Sleep(100);
