@@ -145,4 +145,7 @@ begin
   end;
 end;
 
+initialization
+  TDUnitX.RegisterTestFixture(TTestIntegrationAdvancedRouting);
+
 end.
