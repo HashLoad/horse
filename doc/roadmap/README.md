@@ -8,17 +8,12 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
 
 
-### 6. DTO Auto-Binding e Validação Declarativa
-* **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
-* **Ganhos:**
-  * Grande ganho em DX (*Developer Experience*), reduzindo boilerplate nos controllers.
-
-### 7. Ganchos de Telemetria Padronizados (Observabilidade / OpenTelemetry)
+### 6. Ganchos de Telemetria Padronizados (Observabilidade / OpenTelemetry)
 * **Descrição:** Disponibilizar ganchos internos no Core para extração de latência, volumetria de requests e status HTTP sem perdas de performance.
 * **Ganhos:**
   * Integração nativa facilitada com coletores de métricas do ecossistema APM (como Prometheus e Jaeger).
 
-### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
+### 7. Roteamento Avançado (Regex e Parâmetros Opcionais)
 * **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
 
 
@@ -71,6 +66,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 12. Centralização de Pool de Buffers de Memória (`IMemoryBufferPool`)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvida a unit `Horse.Core.MemoryBufferPool.pas` contendo o pool global thread-safe e a classe `THorsePooledStream` (que herda de `TStream`). O mecanismo intercepta a destruição de streams de resposta no core (`THorseResponse`) e de leitura em provedores assíncronos (`HttpSys`, `Epoll`), reciclando os arrays de bytes subjacentes de volta para o pool sem alocações dinâmicas de heap.
+
+### 13. Middleware de DTO Auto-Binding e Validação Declarativa (`horse-dto`)
+* **Status:** 🟢 **Concluído e Liberado como Middleware**
+* **Implementação:** Desenvolvido o middleware oficial [horse-dto](https://github.com/regyssilveira/horse-dto) para realizar a desserialização automática de payloads de requisições (JSON, Query params, Route params e Form fields) diretamente para classes DTO em Delphi e Lazarus, executando validações declarativas robustas baseadas em atributos customizados (como `[Required]`, `[Email]`, `[Range]`, `[CustomValidator]`) antes que a requisição seja entregue aos controllers lógicos da aplicação, eliminando código repetitivo (boilerplate) de forma isolada e elegante.
 
 ---
 
