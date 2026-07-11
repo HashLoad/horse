@@ -18,7 +18,7 @@ if (Test-Path $StudioPath) {
             $RsvarsPath = $Bat
             break
         }
-    end
+    }
 }
 
 if (-not $RsvarsPath) {
@@ -129,7 +129,7 @@ function Run-TestScenario($UseRadix) {
         # Finaliza o processo
         $ServerProcess | Stop-Process -Force -ErrorAction SilentlyContinue
         Start-Sleep -Milliseconds 500
-    end
+    }
 
     if ($Failed) {
         Write-Error "Cenário de teste de integridade falhou para o $RouterName!"
