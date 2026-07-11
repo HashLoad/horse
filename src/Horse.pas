@@ -522,6 +522,7 @@ type
     class function AddOnAfterListen(const ACallback: THorseServerLifecycleMethod): THorse; overload;
     class function AddOnBeforeStop(const ACallback: THorseServerLifecycleMethod): THorse; overload;
     class function AddOnAfterStop(const ACallback: THorseServerLifecycleMethod): THorse; overload;
+    class function AddOnTelemetry(const ACallback: THorseOnTelemetry): THorse;
   end;
 
 implementation
@@ -653,6 +654,18 @@ begin
     THorseInstance(LInstance).AddOnAfterStop(ACallback)
   else
     THorseProviderAbstract.AddOnAfterStop(ACallback);
+end;
+
+class function THorse.AddOnTelemetry(const ACallback: THorseOnTelemetry): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnTelemetry(ACallback)
+  else
+    THorseCore.AddOnTelemetry(ACallback);
 end;
 
 end.

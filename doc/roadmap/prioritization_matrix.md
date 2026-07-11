@@ -24,7 +24,7 @@ Esta tabela classifica as 13 melhorias pendentes do roadmap técnico do Horse co
 | 1 | **Refatoração Multi-Instance** | Arquitetura | 5 | 4 | **1.25** | ⚙️ **Transparente** (Mantém retrocompatibilidade) | 🟢 **Concluído** (Implementado e Liberado) |
 | 6 | **DTO Auto-Binding & Validação** | DX / Produtividade | 5 | 4 | **1.25** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado como Middleware) |
 | 2 | **Pool de Buffers (MemoryBufferPool)** | Otimização | 4 | 4 | **1.00** | ⚙️ **Transparente** (Performance por baixo dos panos) | 🟢 **Concluído** (Implementado e Liberado) |
-| 7 | **Ganchos OpenTelemetry/APM** | Observabilidade | 3 | 3 | **1.00** | ⚙️ **Transparente / Opcional** | ⏳ **Segunda prioridade** |
+| 7 | **Ganchos OpenTelemetry/APM** | Observabilidade | 3 | 3 | **1.00** | ⚙️ **Transparente / Opcional** | 🟢 **Concluído** (Implementado e Liberado) |
 | 8 | **Roteamento Regex e Opcionais** | Recursos | 4 | 5 | **0.80** | ➕ **Novo Recurso** (Opcional) | 🔬 **Alta Complexidade** (Exige reescrever árvore Radix) |
 
 ---

@@ -85,6 +85,7 @@ uses
   Tests.Integration.DependencyInjection in 'tests\Tests.Integration.DependencyInjection.pas',
   Tests.Integration.MultiInstance in 'tests\Tests.Integration.MultiInstance.pas',
   Tests.Integration.ServerLifecycle in 'tests\Tests.Integration.ServerLifecycle.pas',
+  Tests.Integration.Telemetry in 'tests\Tests.Integration.Telemetry.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',

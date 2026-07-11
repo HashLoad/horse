@@ -81,8 +81,84 @@ begin
 
   // Metrics scraper endpoint on a private port
   // Note: Running multiple Horse instances is supported.
+end;
+```
+
+---
+
+## Native Telemetry Hooks
+
+Horse introduces a native telemetry hook of extremely high precision and *Zero-Allocation*, based on `TStopwatch` (stack-allocated).
+
+This feature allows you to monitor and measure the latency of all processed HTTP requests with millisecond precision, enabling easy integration with logging, APM (Application Performance Monitoring) tools, and custom observability collectors.
+
+### Callback Signature
+
+The telemetry callback type is defined as follows:
+
+```delphi
+THorseOnTelemetry = {$IF DEFINED(FPC)}procedure{$ELSE}reference to procedure{$ENDIF}(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
+```
+
+### Setting Up the Hook Globally
+
+You can register a global callback that will be triggered at the end of all HTTP requests in the application:
+
+```delphi
+uses
+  Horse, System.SysUtils;
+
+begin
+  THorse.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Telemetry] %s %s - Status: %d - Latency: %.2f ms', 
+        [Req.Method, Req.PathInfo, Res.Status, ExecutionTimeMS]));
+    end);
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+
+  THorse.Listen(9000);
 end.
 ```
+
+### Instance Isolation (Multi-Instance)
+
+If your application uses the Multi-Instance architecture (`THorseInstance`), you can register telemetry hooks isolated by port/instance. Horse polymorphically resolves the correct instance associated with the active request:
+
+```delphi
+uses
+  Horse, System.SysUtils;
+
+var
+  LInstance1, LInstance2: THorseInstance;
+begin
+  LInstance1 := THorseInstance.Create;
+  LInstance1.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Instance 1 - Port %d] Latency: %.2f ms', [Req.RawWebRequest.ServerPort, ExecutionTimeMS]));
+    end);
+  LInstance1.Get('/service1', ...);
+
+  LInstance2 := THorseInstance.Create;
+  LInstance2.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Instance 2 - Port %d] Latency: %.2f ms', [Req.RawWebRequest.ServerPort, ExecutionTimeMS]));
+    end);
+  LInstance2.Get('/service2', ...);
+end.
+```
+
+### Performance Guarantee
+
+* **Zero-Allocation:** Time tracking utilizes `TStopwatch` allocated directly on the thread stack, generating no pressure on the Garbage Collector (FPC/Lazarus) or memory heap allocation stress in Delphi.
+* **Security & Isolation:** The telemetry hook is triggered synchronously within the `finally` block of the physical routing, ensuring that the total time captures middlewares, route processing, and any error generated in the pipeline.
 
 ---
 

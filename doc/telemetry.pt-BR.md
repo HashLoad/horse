@@ -86,6 +86,82 @@ end.
 
 ---
 
+## Ganchos de Telemetria Nativos (Native Telemetry Hooks)
+
+O Horse introduz um gancho de telemetria nativo de altíssima precisão e sem alocação de memória (*Zero-Allocation*), baseado em `TStopwatch` (stack-allocated).
+
+Este recurso permite monitorar e medir com precisão milimétrica a latência de todas as requisições HTTP processadas, permitindo a fácil integração de logs, ferramentas APM (Application Performance Monitoring) e coletores customizados de observabilidade.
+
+### Assinatura do Callback
+
+O tipo do callback de telemetria é definido da seguinte forma:
+
+```delphi
+THorseOnTelemetry = {$IF DEFINED(FPC)}procedure{$ELSE}reference to procedure{$ENDIF}(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
+```
+
+### Configurando o Gancho Globalmente
+
+Você pode registrar um callback global que será disparado ao término de todas as requisições HTTP da aplicação:
+
+```delphi
+uses
+  Horse, System.SysUtils;
+
+begin
+  THorse.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Telemetry] %s %s - Status: %d - Latency: %.2f ms', 
+        [Req.Method, Req.PathInfo, Res.Status, ExecutionTimeMS]));
+    end);
+
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+
+  THorse.Listen(9000);
+end.
+```
+
+### Isolamento por Instância (Multi-Instance)
+
+Se sua aplicação utiliza a arquitetura Multi-Instance (`THorseInstance`), você pode registrar ganchos de telemetria isolados por porta/instância. O Horse resolve polimorficamente a instância correta associada à requisição ativa:
+
+```delphi
+uses
+  Horse, System.SysUtils;
+
+var
+  LInstance1, LInstance2: THorseInstance;
+begin
+  LInstance1 := THorseInstance.Create;
+  LInstance1.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Instance 1 - Port %d] Latency: %.2f ms', [Req.RawWebRequest.ServerPort, ExecutionTimeMS]));
+    end);
+  LInstance1.Get('/service1', ...);
+
+  LInstance2 := THorseInstance.Create;
+  LInstance2.AddOnTelemetry(
+    procedure(const Req: THorseRequest; const Res: THorseResponse; const ExecutionTimeMS: Double)
+    begin
+      Writeln(Format('[Instance 2 - Port %d] Latency: %.2f ms', [Req.RawWebRequest.ServerPort, ExecutionTimeMS]));
+    end);
+  LInstance2.Get('/service2', ...);
+end.
+```
+
+### Garantia de Performance
+
+* **Zero-Allocation:** O controle de tempo utiliza `TStopwatch` alocado diretamente na stack da thread, não gerando pressão no Garbage Collector (FPC/Lazarus) ou estresse de heap/alocação de memória no Delphi.
+* **Segurança e Isolamento:** O gancho de telemetria é acionado de forma síncrona dentro da seção `finally` do roteamento físico, garantindo que o tempo total capture middlewares, processamento da rota e qualquer erro gerado no pipeline.
+
+---
+
 ## Veja Também
 - [Ecossistema de Middlewares](./middleware-ecosystem.pt-BR.md)
 - [Criando um Middleware](./writing-middleware.pt-BR.md)

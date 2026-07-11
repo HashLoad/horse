@@ -33,9 +33,11 @@ type
   {$IF DEFINED(FPC)}
   THorseOnSendString = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
   THorseOnSendBytes = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
+  THorseOnTelemetry = procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
   {$ELSE}
   THorseOnSendString = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
   THorseOnSendBytes = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
+  THorseOnTelemetry = reference to procedure(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
   {$ENDIF}
 
   THorseCore = class;
@@ -65,6 +67,7 @@ type
     class var FOnSendString: TList<THorseOnSendString>;
     class var FOnSendBytes: TList<THorseOnSendBytes>;
     class var FOnResponse: TList<THorseCallback>;
+    class var FOnTelemetry: TList<THorseOnTelemetry>;
     class function TrimPath(const APath: string): string;
     class function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
     class function RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseCore;
@@ -117,7 +120,10 @@ type
     class procedure AddOnSend(const ACallback: THorseOnSendString); overload; static;
     class procedure AddOnSend(const ACallback: THorseOnSendBytes); overload; static;
     class procedure AddOnResponse(const ACallback: THorseCallback); static;
+    class procedure AddOnTelemetry(const ACallback: THorseOnTelemetry); static;
     class procedure ResetHooks; static;
+
+    class procedure ExecuteOnTelemetry(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double); static;
 
     class function GetActiveRequests: Integer; static;
     class procedure IncrementActiveRequests; static;
@@ -325,7 +331,8 @@ implementation
 uses
   Horse.Core.Route,
   Horse.Core.Group,
-  Horse.Constants
+  Horse.Constants,
+  Horse.Instance
   {$IFNDEF FPC}
   , Horse.Core.Factory
   {$ENDIF}
@@ -592,6 +599,8 @@ begin
     FreeAndNil(FOnSendBytes);
   if FOnResponse <> nil then
     FreeAndNil(FOnResponse);
+  if FOnTelemetry <> nil then
+    FreeAndNil(FOnTelemetry);
 end;
 {$IF (defined(fpc) or (CompilerVersion > 27.0))}
 
@@ -1364,22 +1373,63 @@ begin
 end;
 
 class function THorseCore.HasOnError: Boolean;
+var
+  LInstance: THorseCoreBase;
 begin
   Result := Assigned(FOnError);
+  if not Result then
+  begin
+    GInstancesLock.Enter;
+    try
+      for LInstance in GInstances.Values do
+      begin
+        if (LInstance is THorseInstance) and THorseInstance(LInstance).HasOnError then
+        begin
+          Result := True;
+          Break;
+        end;
+      end;
+    finally
+      GInstancesLock.Leave;
+    end;
+  end;
 end;
 
 class procedure THorseCore.ExecuteOnError(const ARequest: THorseRequest; const AResponse: THorseResponse; const AException: Exception);
+var
+  LInstance: THorseCoreBase;
+  LPort: Integer;
+  LHandler: THorseOnError;
 begin
-  if Assigned(FOnError) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  LHandler := nil;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+  begin
+    if THorseInstance(LInstance).HasOnError then
+      LHandler := THorseInstance(LInstance).ErrorHandler;
+  end;
+
+  if not Assigned(LHandler) then
+    LHandler := FOnError;
+
+  if Assigned(LHandler) then
   begin
     try
-      FOnError(ARequest, AResponse, AException);
+      LHandler(ARequest, AResponse, AException);
     except
       on E: Exception do
       begin
         AResponse.Send('Internal Application Error in OnError: ' + E.Message).Status(THTTPStatus.InternalServerError);
       end;
     end;
+  end
+  else
+  begin
+    raise AException;
   end;
 end;
 
@@ -1425,6 +1475,13 @@ begin
   FOnResponse.Add(ACallback);
 end;
 
+class procedure THorseCore.AddOnTelemetry(const ACallback: THorseOnTelemetry);
+begin
+  if FOnTelemetry = nil then
+    FOnTelemetry := TList<THorseOnTelemetry>.Create;
+  FOnTelemetry.Add(ACallback);
+end;
+
 class procedure THorseCore.ResetHooks;
 begin
   if FOnRequest <> nil then
@@ -1439,6 +1496,8 @@ begin
     FOnSendBytes.Clear;
   if FOnResponse <> nil then
     FOnResponse.Clear;
+  if FOnTelemetry <> nil then
+    FOnTelemetry.Clear;
 end;
 
 class function THorseCore.GetActiveRequests: Integer;
@@ -1477,80 +1536,195 @@ end;
 class procedure THorseCore.ExecuteOnRequest(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
 var
   LExecutor: IHorseLifecycleExecutor;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FOnRequest <> nil) and (FOnRequest.Count > 0) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    LExecutor := THorseLifecycleExecutor.Create(FOnRequest, ARequest, AResponse, AOnComplete);
-    LExecutor.Next;
+    THorseInstance(LInstance).ExecuteOnRequest(ARequest, AResponse, AOnComplete);
   end
   else
-    AOnComplete();
+  begin
+    if Assigned(ARequest) and (FOnRequest <> nil) and (FOnRequest.Count > 0) then
+    begin
+      LExecutor := THorseLifecycleExecutor.Create(FOnRequest, ARequest, AResponse, AOnComplete);
+      LExecutor.Next;
+    end
+    else
+      AOnComplete();
+  end;
 end;
 
 class procedure THorseCore.ExecutePreParsing(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
 var
   LExecutor: IHorseLifecycleExecutor;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FPreParsing <> nil) and (FPreParsing.Count > 0) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    LExecutor := THorseLifecycleExecutor.Create(FPreParsing, ARequest, AResponse, AOnComplete);
-    LExecutor.Next;
+    THorseInstance(LInstance).ExecutePreParsing(ARequest, AResponse, AOnComplete);
   end
   else
-    AOnComplete();
+  begin
+    if Assigned(ARequest) and (FPreParsing <> nil) and (FPreParsing.Count > 0) then
+    begin
+      LExecutor := THorseLifecycleExecutor.Create(FPreParsing, ARequest, AResponse, AOnComplete);
+      LExecutor.Next;
+    end
+    else
+      AOnComplete();
+  end;
 end;
 
 class procedure THorseCore.ExecutePreValidation(const ARequest: THorseRequest; const AResponse: THorseResponse; const AOnComplete: TProc);
 var
   LExecutor: IHorseLifecycleExecutor;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FPreValidation <> nil) and (FPreValidation.Count > 0) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    LExecutor := THorseLifecycleExecutor.Create(FPreValidation, ARequest, AResponse, AOnComplete);
-    LExecutor.Next;
+    THorseInstance(LInstance).ExecutePreValidation(ARequest, AResponse, AOnComplete);
   end
   else
-    AOnComplete();
+  begin
+    if Assigned(ARequest) and (FPreValidation <> nil) and (FPreValidation.Count > 0) then
+    begin
+      LExecutor := THorseLifecycleExecutor.Create(FPreValidation, ARequest, AResponse, AOnComplete);
+      LExecutor.Next;
+    end
+    else
+      AOnComplete();
+  end;
 end;
 
 class procedure THorseCore.ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string);
 var
   LHook: THorseOnSendString;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FOnSendString <> nil) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    for LHook in FOnSendString do
-      LHook(ARequest, AResponse, AContent);
+    THorseInstance(LInstance).ExecuteOnSend(ARequest, AResponse, AContent);
+  end
+  else
+  begin
+    if Assigned(ARequest) and (FOnSendString <> nil) then
+    begin
+      for LHook in FOnSendString do
+        LHook(ARequest, AResponse, AContent);
+    end;
   end;
 end;
 
 class procedure THorseCore.ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes);
 var
   LHook: THorseOnSendBytes;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FOnSendBytes <> nil) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    for LHook in FOnSendBytes do
-      LHook(ARequest, AResponse, AContent);
+    THorseInstance(LInstance).ExecuteOnSend(ARequest, AResponse, AContent);
+  end
+  else
+  begin
+    if Assigned(ARequest) and (FOnSendBytes <> nil) then
+    begin
+      for LHook in FOnSendBytes do
+        LHook(ARequest, AResponse, AContent);
+    end;
   end;
 end;
 
 class procedure THorseCore.ExecuteOnResponse(const ARequest: THorseRequest; const AResponse: THorseResponse);
 var
   LCallback: THorseCallback;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
 begin
-  if Assigned(ARequest) and (FOnResponse <> nil) then
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
   begin
-    for LCallback in FOnResponse do
+    THorseInstance(LInstance).ExecuteOnResponse(ARequest, AResponse);
+  end
+  else
+  begin
+    if Assigned(ARequest) and (FOnResponse <> nil) then
     begin
-      try
-        {$IF DEFINED(FPC)}
-        THorseCallbackProc(LCallback)(ARequest, AResponse, GetInstance.EmptyNext);
-        {$ELSE}
-        LCallback(ARequest, AResponse, procedure begin end);
-        {$ENDIF}
-      except
-        // Abafar exceções no onResponse para não crashar a finalização da thread de socket
+      for LCallback in FOnResponse do
+      begin
+        try
+          {$IF DEFINED(FPC)}
+          THorseCallbackProc(LCallback)(ARequest, AResponse, GetInstance.EmptyNext);
+          {$ELSE}
+          LCallback(ARequest, AResponse, procedure begin end);
+          {$ENDIF}
+        except
+          // Abafar exceções no onResponse para não crashar a finalização da thread de socket
+        end;
+      end;
+    end;
+  end;
+end;
+
+class procedure THorseCore.ExecuteOnTelemetry(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
+var
+  LCallback: THorseOnTelemetry;
+  LInstance: THorseCoreBase;
+  LPort: Integer;
+begin
+  LPort := 9000;
+  if Assigned(ARequest) and (ARequest.RawWebRequest <> nil) then
+    LPort := ARequest.RawWebRequest.ServerPort;
+
+  LInstance := GetHorseInstanceByPort(LPort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+  begin
+    THorseInstance(LInstance).ExecuteOnTelemetry(ARequest, AResponse, AExecutionTimeMS);
+  end
+  else
+  begin
+    if Assigned(ARequest) and (FOnTelemetry <> nil) then
+    begin
+      for LCallback in FOnTelemetry do
+      begin
+        try
+          LCallback(ARequest, AResponse, AExecutionTimeMS);
+        except
+          // Abafar exceções no OnTelemetry para não crashar a requisição ou o socket
+        end;
       end;
     end;
   end;

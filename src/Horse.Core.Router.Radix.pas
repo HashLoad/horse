@@ -95,11 +95,11 @@ implementation
 
 uses
   {$IF DEFINED(FPC)}
-  Classes,
+  Classes, Diagnostics,
   {$ELSE}
-  System.SysUtils, System.Classes,
+  System.SysUtils, System.Classes, System.Diagnostics,
   {$ENDIF}
-  Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils, Horse;
+  Horse.Exception, Horse.Exception.Interrupted, Horse.Proc, Horse.Utils, Horse, Horse.Core;
 
 {$IFDEF FPC}
 function StringToBytes(const AStr: string): TBytes;
@@ -167,7 +167,10 @@ begin
 end;
 
 function TRadixExecutor.Run: Boolean;
+var
+  LStopwatch: TStopwatch;
 begin
+  LStopwatch := TStopwatch.StartNew;
   FResponse.Request := FRequest;
   GCurrentExecutor := Self;
   try
@@ -182,6 +185,8 @@ begin
       end;
     end;
   finally
+    LStopwatch.Stop;
+    THorseCore.ExecuteOnTelemetry(FRequest, FResponse, LStopwatch.Elapsed.TotalMilliseconds);
     THorse.ExecuteOnResponse(FRequest, FResponse);
   end;
 end;
@@ -700,7 +705,9 @@ var
   LResult: Boolean;
   LRoot: TRadixNode;
   LGlobalMiddlewares: TList<THorseCallback>;
+  LStopwatch: TStopwatch;
 begin
+  LStopwatch := TStopwatch.StartNew;
   LResult := False;
   AResponse.Request := ARequest;
   LRoot := FRoot;
@@ -857,6 +864,8 @@ begin
       end;
     end;
   finally
+    LStopwatch.Stop;
+    THorseCore.ExecuteOnTelemetry(ARequest, AResponse, LStopwatch.Elapsed.TotalMilliseconds);
     THorse.ExecuteOnResponse(ARequest, AResponse);
   end;
 end;
