@@ -70,6 +70,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Implementado suporte nativo a ganchos de ciclo de vida do servidor físico (`BeforeListen`, `AfterListen`, `BeforeStop`, `AfterStop`) de forma thread-safe tanto para o modo Multi-Instance (`THorseInstance`) quanto para o facade clássico (`THorse`). Garantido alinhamento polimórfico de portas de escuta e prevenção de travamentos não interativos de console, com testes de integração e concorrência 100% livres de memory leak e Access Violations.
 
+### 11. Inicialização Estruturada (*UseStartup*)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvido o suporte ao padrão de inicialização estruturada (bootstrapping corporativo) através do método `UseStartup` e da interface `IHorseStartup`. Permite isolar toda a configuração lógica de middlewares, hooks e rotas em uma classe dedicada, mantendo o arquivo principal do projeto (`.dpr`) limpo e focado apenas no controle de execução e escuta.
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
