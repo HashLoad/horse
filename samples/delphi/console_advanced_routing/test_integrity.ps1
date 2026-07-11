@@ -54,7 +54,7 @@ function Run-TestScenario($UseRadix) {
 
     # Inicia o servidor em background
     $ServerProcess = if ($UseRadix) {
-        Start-Process -FilePath $ExePath -ArgumentList "--radix" -NoNewWindow -PassThru
+        Start-Process -FilePath $ExePath -ArgumentList "-radix" -NoNewWindow -PassThru
     } else {
         Start-Process -FilePath $ExePath -NoNewWindow -PassThru
     }
