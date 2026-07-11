@@ -70,7 +70,24 @@ Write-Host " -> Executando servidor Multi-Instance em background..." -Foreground
 $SampleProcess = Start-Process -FilePath $SampleExe -ArgumentList "--delay" -NoNewWindow -PassThru
 
 # Aguarda inicialização física das portas
-Sleep 2
+$TimeoutSeconds = 10
+$Start = Get-Date
+$Ready = $false
+while (((Get-Date) - $Start).TotalSeconds -lt $TimeoutSeconds) {
+    try {
+        $Res1 = Invoke-RestMethod -Uri "http://127.0.0.1:9001/api/v1/ping" -Method Get
+        $Res2 = Invoke-RestMethod -Uri "http://127.0.0.1:9002/admin/ping" -Method Get
+        if (($Res1 -eq "Pong da API Publica (Instancia 1)") -and ($Res2 -eq "Pong da Area Admin (Instancia 2)")) {
+            $Ready = $true
+            Break
+        }
+    } catch {
+        Sleep -Milliseconds 200
+    }
+}
+if (-not $Ready) {
+    throw "Servidores não inicializaram a tempo na porta 9001/9002"
+}
 
 try {
     # 5. Faz chamadas HTTP E2E
@@ -120,7 +137,7 @@ $ServerExe = Join-Path $ScriptDir "IntegrationServer.exe"
 if (Test-Path $ServerExe) { Remove-Item -Path $ServerExe -Force }
 
 # 2. Configurações de compilação do IntegrationServer
-$SearchPath = '..\..\src;modules;modules\jhonson\src;modules\restrequest4delphi\src;modules\restrequest4delphi\src\core;modules\restrequest4delphi\src\interfaces'
+$SearchPath = '..\..\src;modules;modules\jhonson\src;modules\restrequest4delphi\src;modules\restrequest4delphi\src\core;modules\restrequest4delphi\src\interfaces;modules\cors\src;modules\basic-auth\src'
 $CfgPath = Join-Path $ServerSrcDir "IntegrationServer.cfg"
 $CfgContent = @(
     "-B",
@@ -153,7 +170,27 @@ Write-Host " -> Executando servidor clássico em background..." -ForegroundColor
 $ServerProcess = Start-Process -FilePath $ServerExe -NoNewWindow -PassThru
 
 # Aguarda inicialização física da porta
-Sleep 2
+$TimeoutSeconds = 10
+$Start = Get-Date
+$Ready = $false
+# Aguarda inicialização física da porta
+$TimeoutSeconds = 10
+$Start = Get-Date
+$Ready = $false
+while (((Get-Date) - $Start).TotalSeconds -lt $TimeoutSeconds) {
+    try {
+        $ResPing = Invoke-RestMethod -Uri "http://127.0.0.1:9999/ping" -Method Get
+        if ($ResPing.message -eq "pong") {
+            $Ready = $true
+            Break
+        }
+    } catch {
+        Sleep -Milliseconds 200
+    }
+}
+if (-not $Ready) {
+    throw "Servidor clássico não inicializou a tempo na porta 9999"
+}
 
 try {
     # 5. Faz chamadas HTTP E2E

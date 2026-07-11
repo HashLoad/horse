@@ -15,6 +15,7 @@ Esta tabela classifica as 13 melhorias pendentes do roadmap técnico do Horse co
 | 3 | **Cadeia de Middlewares por Rota** | DX / Legibilidade | 5 | 2 | **2.50** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 5 | **Pipeline Global de Erros (OnError)** | DX / Robustez | 4 | 2 | **2.00** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 12 | **Middleware de Rate Limiting** | Segurança | 4 | 2 | **2.00** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
+| 14 | **Ganchos de Ciclo de Vida do Servidor** | DX / Robustez | 4 | 2 | **2.00** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 11 | **Middleware de Compressão (Gzip/Deflate/Brotli)** | Otimização | 4 | 3 | **1.33** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 13 | **Static File Server com Range/Cache** | DX / Recursos | 4 | 3 | **1.33** | ➕ **Novo Middleware** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |
 | 9 | **Ganchos de Ciclo de Vida (Hooks)** | Ecossistema | 4 | 3 | **1.33** | ➕ **Novo Recurso** (Opcional) | 🟢 **Concluído** (Implementado e Liberado) |

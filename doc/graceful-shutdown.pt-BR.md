@@ -54,6 +54,14 @@ Para facilitar o monitoramento e a integração nativa em nuvem, expusemos no fa
 
 Para realizar o desligamento suave no Horse, chame o método `StopListenGraceful(const ATimeoutMS: Integer = 5000)` passando o tempo limite máximo em milissegundos para forçar o encerramento.
 
+### Provedores Suportados
+O protocolo de desligamento suave e o ciclo de escoamento de requisições ativas estão implementados de forma nativa nos seguintes provedores:
+* **Console Provider** (`Horse.Provider.Console`)
+* **VCL Provider** (`Horse.Provider.VCL`)
+* **Daemon Provider** (`Horse.Provider.Daemon`)
+* **Lazarus/LCL Provider** (`Horse.Provider.FPC.LCL`)
+* **Lazarus Daemon Provider** (`Horse.Provider.FPC.Daemon`)
+
 ### Exemplo Completo:
 
 ```delphi

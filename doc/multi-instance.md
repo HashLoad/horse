@@ -135,15 +135,22 @@ The `THorseWebModule` processes the request and resolves the execution context:
    ```
 3. If no instance is registered on that port, the execution falls back to the static `THorseCore` global routes.
 
-### 🌐 Standalone Sockets vs. Managed Web Servers (ISAPI, Apache, CGI, FastCGI)
+### 🌐 Provider and Router Compatibility Matrix
 
-> [!NOTE]
-> Under standalone local providers (like Indy, IOCP, or HttpSys), physical socket listeners are managed as global singletons. Trying to run multiple physical socket listeners *concurrently* within the same standalone process will cause socket binding collisions because those providers are not designed to host multiple parallel local listeners.
->
-> However, `THorseInstance` shines in production when deployed under **Managed Web Servers** (like **IIS** via ISAPI, **Apache** via mod_delphi, **CGI**, or **FastCGI**):
-> - In these environments, the external web server (IIS/Apache) handles the physical socket listening on multiple ports (e.g., port `80` for public API and `8080` for admin dashboard) and forwards all HTTP requests to the Horse DLL or process.
-> - The incoming request arrives at `THorseWebModule` containing the correct `Request.ServerPort` header.
-> - Horse successfully resolves and routes the request to the correct `THorseInstance` logical route tree, providing complete isolation without any socket conflicts.
+The Multi-Instance architecture is fully compatible with all official routers and transport providers in the Horse ecosystem. However, depending on the network transport, physical behavior varies:
+
+#### 1. Routers (Radix Router vs. Classic Router)
+**Compatibility: 100% (Agnostic)**
+The logical routing pipeline (both the default linear router and the high-performance Radix Tree router — `HORSE_RADIX_ROUTER`) is decoupled from the physical transport layer. Each `THorseInstance` manages its own isolated route tree in memory.
+
+#### 2. Physical Providers (Standalone Sockets vs. Managed Web Servers)
+The following matrix highlights the multi-port concurrent listening behavior across transport providers:
+
+| Category | Providers | Listens on Distinct Physical Ports concurrently? | Architectural Behavior |
+| :--- | :--- | :---: | :--- |
+| **High Performance / Async** | `CrossSocket`, `mORMot2`, `HttpSys` | ✔️ Yes | Each `THorseInstance` spawns and manages its own isolated OS-level socket. |
+| **Classic / Monolithic** | `Indy` (Console/VCL/Daemon), `fphttpserver` (LCL/Daemon/HTTPApplication) | ✔️ Yes | A global shared listener manages multiple network bindings transparently for all registered logical instances. |
+| **Hosted / Managed** | `IIS` (ISAPI), `Apache` (Module), `CGI` / `FastCGI` | Not applicable | The external host server (IIS/Apache) owns the physical sockets and ports, forwarding incoming requests to `THorseWebModule` with the correct `Request.ServerPort` header. Horse routes them logically to the corresponding instance perfectly. |
 
 ---
 

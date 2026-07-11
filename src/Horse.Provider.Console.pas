@@ -69,6 +69,11 @@ type
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
+    class function GetActivePort: Integer; override;
+    class procedure TriggerBeforeListen; override;
+    class procedure TriggerAfterListen; override;
+    class procedure TriggerBeforeStop; override;
+    class procedure TriggerAfterStop; override;
     class procedure StopListen; override;
     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
@@ -98,7 +103,10 @@ uses
   Horse.Provider.IOHandleSSL,
   IdSSLOpenSSL,
   IdSchedulerOfThreadPool,
-  System.Classes;
+  System.Classes,
+  IdSocketHandle,
+  Horse.Core.Base,
+  Horse.Instance;
 
 class function THorseProvider.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
@@ -194,6 +202,31 @@ begin
   Result := FPort;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
+class procedure THorseProvider.TriggerBeforeListen;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerAfterListen;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerBeforeStop;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerAfterStop;
+begin
+  inherited;
+end;
+
 class procedure THorseProvider.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
 var
   LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;
@@ -214,6 +247,9 @@ class procedure THorseProvider.InternalListen;
 var
   LAttach: string;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
+  LPortKey: Integer;
+  LInstance: THorseInstance;
+  LBinding: TIdSocketHandle;
 begin
   if FPort <= 0 then
     FPort := GetDefaultPort;
@@ -238,15 +274,39 @@ begin
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
 
     LIdHTTPWebBrokerBridge.Bindings.Clear;
-    if FHost <> GetDefaultHost then
+    if (GInstances <> nil) and (GInstances.Count > 0) then
     begin
-      LIdHTTPWebBrokerBridge.Bindings.Add;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+      GInstancesLock.Enter;
+      try
+        for LPortKey in GInstances.Keys do
+        begin
+          LBinding := LIdHTTPWebBrokerBridge.Bindings.Add;
+          LInstance := THorseInstance(GInstances.Items[LPortKey]);
+          if LInstance.Host.IsEmpty then
+            LBinding.IP := '127.0.0.1'
+          else
+            LBinding.IP := LInstance.Host;
+          LBinding.Port := LPortKey;
+        end;
+      finally
+        GInstancesLock.Leave;
+      end;
+    end
+    else
+    begin
+      LBinding := LIdHTTPWebBrokerBridge.Bindings.Add;
+      if FHost.IsEmpty then
+        LBinding.IP := '127.0.0.1'
+      else
+        LBinding.IP := FHost;
+      LBinding.Port := FPort;
     end;
 
+    TriggerBeforeListen;
     LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
+    if LIdHTTPWebBrokerBridge.Active then
+      LIdHTTPWebBrokerBridge.Active := False;
     LIdHTTPWebBrokerBridge.Active := True;
     LIdHTTPWebBrokerBridge.StartListening;
     FRunning := True;
@@ -260,17 +320,13 @@ begin
   except
     on E: Exception do
     begin
-      if IsConsole then
+      if IsConsole and (GetEnvironmentVariable('HORSE_TEST_SILENCE') <> '1') and not FindCmdLineSwitch('silence', True) and not FindCmdLineSwitch('non-interactive', True) then
       begin
         Writeln(E.ClassName, ': ', E.Message);
         Read(LAttach);
       end
       else
-{$IF CompilerVersion >= 32.0}
-        raise AcquireExceptionObject;
-{$ELSE}
         raise;
-{$ENDIF}
     end;
   end;
 end;
@@ -280,6 +336,7 @@ var
   LContexts: TList;
   I: Integer;
 begin
+  TriggerBeforeStop;
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
@@ -319,6 +376,7 @@ var
   LContexts: TList;
   LCount: Integer;
 begin
+  TriggerBeforeStop;
   if not HTTPWebBrokerIsNil then
   begin
     THorseCore.SetIsShuttingDown(True);

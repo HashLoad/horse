@@ -94,6 +94,8 @@ type
 
 var
   GetHorseCoreInstance: function: THorseCoreBase = nil;
+  GInstances: TDictionary<Integer, THorseCoreBase> = nil;
+  GInstancesLock: TCriticalSection = nil;
 
 procedure RegisterHorseInstance(const APort: Integer; const AInstance: THorseCoreBase);
 procedure UnregisterHorseInstance(const APort: Integer);
@@ -103,10 +105,6 @@ implementation
 
 uses
   SysUtils;
-
-var
-  GInstances: TDictionary<Integer, THorseCoreBase> = nil;
-  GInstancesLock: TCriticalSection = nil;
 
 procedure RegisterHorseInstance(const APort: Integer; const AInstance: THorseCoreBase);
 begin

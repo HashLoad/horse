@@ -1,6 +1,6 @@
-unit Horse.Provider.FPC.Daemon;
+﻿unit Horse.Provider.FPC.Daemon;
 
-{ PATCH-FPCDAEMON-1: ListenWithConfig override � same root cause as PATCH-CONSOLE-1. }
+{ PATCH-FPCDAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -77,7 +77,9 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
+    class function GetActivePort: Integer; override;
     class procedure StopListen; override;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
     class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0';
       const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
@@ -211,6 +213,35 @@ begin
   InternalStopListen;
 end;
 
+class procedure THorseProvider.StopListenGraceful(const ATimeoutMS: Integer);
+var
+  LStart: Int64;
+begin
+  TriggerBeforeStop;
+  if not HTTPServerThreadIsNil then
+  begin
+    THorseCore.SetIsShuttingDown(True);
+    try
+      LStart := TThread.GetTickCount;
+      while (TThread.GetTickCount - LStart < ATimeoutMS) do
+      begin
+        if THorseCore.GetActiveRequests = 0 then
+          Break;
+        TThread.Sleep(50);
+      end;
+
+      FRunning := False;
+      DoOnStopListen;
+      THTTPServerShutdownThread.Create(FHTTPServerThread);
+      FHTTPServerThread := nil;
+    finally
+      THorseCore.SetIsShuttingDown(False);
+    end;
+  end
+  else
+    raise Exception.Create('Horse not listen');
+end;
+
 class function THorseProvider.GetDefaultHost: string;
 begin
   Result := DEFAULT_HOST;
@@ -236,8 +267,14 @@ begin
   Result := FPort;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
 class procedure THorseProvider.InternalListen;
 begin
+  TriggerBeforeListen;
   inherited;
   if FRunning then
     Exit;
@@ -265,6 +302,7 @@ end;
 
 class procedure THorseProvider.InternalStopListen;
 begin
+  TriggerBeforeStop;
   if HTTPServerThreadIsNil then
     Exit;
   FRunning := False;

@@ -135,15 +135,22 @@ O módulo de controle central `THorseWebModule` intercepta a requisição e exec
    ```
 3. Caso contrário, o fluxo é desviado para a árvore de roteamento e middlewares legados e estáticos da fachada principal `THorseCore`.
 
-### 🌐 Sockets Standalone vs. Servidores Web Gerenciados (ISAPI, Apache, CGI, FastCGI)
+### 🌐 Compatibilidade de Provedores (Sockets) e Roteadores
 
-> [!NOTE]
-> Sob provedores locais standalone (como Indy, IOCP ou HttpSys), os listeners de sockets físicos são gerenciados como singletons globais do processo. Tentar iniciar múltiplos listeners físicos de sockets *concorrentemente* dentro do mesmo processo standalone causará colisões de bindings de portas, pois estes provedores não foram projetados para gerenciar múltiplos loops de sockets locais paralelos.
->
-> Contudo, a arquitetura de `THorseInstance` brilha em produção quando implantada sob **Servidores Web Gerenciados** (como **IIS** via ISAPI, **Apache** via mod_delphi, **CGI** ou **FastCGI**):
-> - Nesses ambientes, o servidor externo (IIS/Apache) é quem gerencia fisicamente as escutas das portas (ex: porta `80` para API pública e `8080` para painel administrativo) e repassa os requests para o processo ou DLL do Horse.
-> - A requisição chega ao `THorseWebModule` contendo o cabeçalho correto `Request.ServerPort`.
-> - O Horse resolve e direciona a requisição perfeitamente para a árvore de rotas lógicas da `THorseInstance` correspondente, provendo isolamento completo sem conflitos de socket.
+A arquitetura Multi-Instance é compatível com os roteadores e provedores físicos do ecossistema do Horse. Porém, dependendo da natureza do transporte de rede, o comportamento físico varia:
+
+#### 1. Roteadores (Radix Router vs. Classic Router)
+**Compatibilidade: 100% (Agnóstico)**
+O roteamento lógico (tanto o roteador linear padrão quanto o roteador assíncrono baseado em Radix Tree — `HORSE_RADIX_ROUTER`) é totalmente desacoplado da camada física de transporte. Cada instância de `THorseInstance` possui sua própria árvore de rotas isolada em memória.
+
+#### 2. Provedores Físicos (Sockets Standalone vs. Servidores Web Gerenciados)
+A tabela a seguir apresenta o comportamento e suporte de escuta simultânea para cada Provedor de transporte:
+
+| Categoria | Provedores | Escuta Portas Físicas Distintas no Mesmo Processo? | Comportamento Arquitetural |
+| :--- | :--- | :---: | :--- |
+| **Alta Performance / Async** | `CrossSocket`, `mORMot2`, `HttpSys` | ✔️ Sim | Cada `THorseInstance` gerencia seu próprio socket físico isolado no sistema operacional. |
+| **Clássicos / Monolíticos** | `Indy` (Console/VCL/Daemon), `fphttpserver` (LCL/Daemon/HTTPApplication) | ✔️ Sim | O servidor físico global compartilha o listener, mas gerencia múltiplos bindings de rede de forma transparente para todas as instâncias lógicas registradas. |
+| **Hospedados / Acoplados** | `IIS` (ISAPI), `Apache` (Module), `CGI` / `FastCGI` | Não se aplica | O servidor externo (IIS/Apache) é dono dos sockets de rede físicos e gerencia as portas de entrada, repassando o request de forma lógica ao `THorseWebModule` com o cabeçalho `Request.ServerPort` correto. O Horse faz o roteamento lógico isolado de instâncias perfeitamente. |
 
 ---
 

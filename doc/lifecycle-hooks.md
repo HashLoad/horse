@@ -174,6 +174,56 @@ Since Horse handles HTTP requests concurrently using multiple worker threads (in
 
 ---
 
+---
+
+## 🌐 Server Lifecycle Hooks (Server Phase)
+
+Server Lifecycle Hooks allow intercepting startup and shutdown operations of the physical HTTP socket server. 
+
+They are registered globally on the `THorse` facade or locally on a `THorseInstance`. These hooks always receive the **physical port** (`APort: Integer`) resolved by the active transport provider.
+
+* **Signatures:**
+  * `THorseServerLifecycleProc = reference to procedure(APort: Integer);`
+  * `THorseServerLifecycleMethod = procedure(APort: Integer) of object;`
+
+### Available Hooks
+
+| Hook | Phase | Usage / Intent |
+|---|---|---|
+| `BeforeListen` | Right before the socket listener starts | Validating host configuration, starting DB pools, pre-warming caches. |
+| `AfterListen` | Right after the server starts listening | Logging startup success, announcing port to registry/discovery services. |
+| `BeforeStop` | Right before the socket listener closes | Initiating shutdown sequences, signaling load-balancers to remove the node. |
+| `AfterStop` | Right after the server has fully stopped | Cleaning up global DB pools, releasing memory or IPC locks. |
+
+### Example:
+```delphi
+THorse.AddBeforeListen(
+  procedure(APort: Integer)
+  begin
+    Writeln('Server is starting up on port ' + APort.ToString);
+  end);
+
+THorse.AddAfterListen(
+  procedure(APort: Integer)
+  begin
+    Writeln('Server physical socket is listening. Accepting connections...');
+  end);
+
+THorse.AddBeforeStop(
+  procedure(APort: Integer)
+  begin
+    Writeln('Initiating shutdown sequence for port ' + APort.ToString);
+  end);
+
+THorse.AddAfterStop(
+  procedure(APort: Integer)
+  begin
+    Writeln('Physical server has stopped. Socket released.');
+  end);
+```
+
+---
+
 ## 🚀 Executable Samples
 
 You can find ready-to-run audit projects to see hooks executing in real-time (compatible with Windows, Linux, and macOS):

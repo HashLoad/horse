@@ -6,10 +6,15 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * O Horse possui suporte nativo e thread-safe a ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend` e `onResponse`) em cascata cooperativa (CPS).
 * Ao criar novos middlewares ou funcionalidades de tratamento, utilize a infraestrutura de ganchos em vez de interceptores ad-hoc nas rotas para manter a conformidade arquitetural.
 
-## 🟢 Desligamento Suave (Graceful Shutdown)
-* O Horse gerencia o escoamento lógico de requisições ativas através das propriedades de telemetria `ActiveRequests` e `IsShuttingDown` no core (`THorseCore`).
-* Para encerramentos coordenados e seguros (probes de saúde no Kubernetes/Load Balancers), use sempre `THorse.StopListenGraceful(TimeoutMS)`.
+## 🟢 Ciclo de Vida do Servidor e Desligamento Suave (Server Lifecycle & Graceful Shutdown)
+* O Horse gerencia o escoamento lógico de requisições ativas através das propriedades de telemetria `ActiveRequests` e `IsShuttingDown` no core (`THorseCore`) e nas instâncias locais (`THorseInstance`).
+* Para encerramentos coordenados e seguros (probes de saúde no Kubernetes/Load Balancers), use sempre `THorse.StopListenGraceful(TimeoutMS)` ou `LInstance.StopListenGraceful(TimeoutMS)`.
 * As propriedades `ActiveRequests` e `IsShuttingDown` estão expostas estaticamente no facade `THorse` e devem ser usadas em endpoints de `/health` ou monitoramento de observabilidade APM.
+* **Providers Físicos de Rede**: Ao criar ou atualizar qualquer provedor físico de transporte no ecossistema do Horse:
+  * Deve-se obrigatoriamente sobrescrever a função `GetActivePort` retornando a porta física ativa (`FPort` ou `0` para acoplados externos como CGI/Apache/ISAPI) para viabilizar a resolução de instâncias no Multi-Instance.
+  * Deve-se acionar explicitamente `TriggerBeforeListen` no topo das rotinas de inicialização física (`InternalListen` / `Listen`).
+  * Deve-se acionar explicitamente `TriggerBeforeStop` no topo das rotinas de encerramento físico (`InternalStopListen` / `StopListen`).
+  * Deve-se sobrescrever e implementar `StopListenGraceful(const ATimeoutMS: Integer)` para suportar o escoamento de requisições ativas daquele provedor físico se o mesmo gerenciar o socket TCP.
 
 ## 🟢 Gerenciamento e Injeção de Dependências (Request Scope)
 * O Horse expõe a propriedade `Services` na classe de requisição `THorseRequest`, provendo um container IoC local e thread-safe para o escopo do request.

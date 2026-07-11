@@ -1,6 +1,6 @@
-unit Horse.Provider.FPC.LCL;
+﻿unit Horse.Provider.FPC.LCL;
 
-{ PATCH-FPCLCL-1: ListenWithConfig override � same root cause as PATCH-CONSOLE-1. }
+{ PATCH-FPCLCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -70,7 +70,9 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
+    class function GetActivePort: Integer; override;
     class procedure StopListen; override;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
     class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
@@ -128,10 +130,16 @@ begin
   Result := FPort;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
 class procedure THorseProvider.InternalListen;
 var
   LHTTPServerThread: THTTPServerThread;
 begin
+  TriggerBeforeListen;
   inherited;
   if FPort <= 0 then
     FPort := GetDefaultPort;
@@ -150,6 +158,7 @@ end;
 
 class procedure THorseProvider.InternalStopListen;
 begin
+  TriggerBeforeStop;
   if not HTTPServerThreadIsNil then
   begin
     GetDefaultHTTPServerThread.StopServer;
@@ -163,6 +172,34 @@ end;
 class procedure THorseProvider.StopListen;
 begin
   InternalStopListen;
+end;
+
+class procedure THorseProvider.StopListenGraceful(const ATimeoutMS: Integer);
+var
+  LStart: Int64;
+begin
+  TriggerBeforeStop;
+  if not HTTPServerThreadIsNil then
+  begin
+    THorseCore.SetIsShuttingDown(True);
+    try
+      LStart := TThread.GetTickCount;
+      while (TThread.GetTickCount - LStart < ATimeoutMS) do
+      begin
+        if THorseCore.GetActiveRequests = 0 then
+          Break;
+        TThread.Sleep(50);
+      end;
+
+      GetDefaultHTTPServerThread.StopServer;
+      FRunning := False;
+      DoOnStopListen;
+    finally
+      THorseCore.SetIsShuttingDown(False);
+    end;
+  end
+  else
+    raise Exception.Create('Horse not listen');
 end;
 
 class function THorseProvider.IsRunning: Boolean;
