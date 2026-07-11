@@ -179,9 +179,9 @@ begin
   end;
   FIndex := -1;
   FIndexCallback := -1;
-  if FIsParamsKey and (LCurrentStr <> '') then
+  if FIsParamsKey then
   begin
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
+    FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
   end;
 end;
 
@@ -303,25 +303,29 @@ begin
     end
     else
     begin
-      if FCallBack.Count > 0 then
+      FFound^ := FCallNextPath(FSegments, FIndexSegment, FHTTPType, FRequest, FResponse);
+      if not FFound^ then
       begin
-        FFound^ := True;
-        LAllow := '';
-        for LKey in FCallBack.Keys do
+        if FCallBack.Count > 0 then
         begin
-          if LKey <> TMethodType.mtAny then
+          FFound^ := True;
+          LAllow := '';
+          for LKey in FCallBack.Keys do
           begin
-            if LAllow <> '' then
-              LAllow := LAllow + ', ';
-            LAllow := LAllow + UpperCase(LKey.ToString);
+            if LKey <> TMethodType.mtAny then
+            begin
+              if LAllow <> '' then
+                LAllow := LAllow + ', ';
+              LAllow := LAllow + UpperCase(LKey.ToString);
+            end;
           end;
-        end;
-        if LAllow <> '' then
-          FResponse.AddHeader('Allow', LAllow);
-        FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
-      end
-      else
-        FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+          if LAllow <> '' then
+            FResponse.AddHeader('Allow', LAllow);
+          FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+        end
+        else
+          FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+      end;
     end;
   end
   else
