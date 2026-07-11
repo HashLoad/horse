@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$ProjectDir = (Get-Item $ScriptDir).Parent.Parent.FullName
+$ProjectDir = (Get-Item $ScriptDir).Parent.Parent.Parent.FullName
 $DprPath = Join-Path $ScriptDir "ConsoleAdvancedRouting.dpr"
 $ExePath = Join-Path $ScriptDir "ConsoleAdvancedRouting.exe"
 
