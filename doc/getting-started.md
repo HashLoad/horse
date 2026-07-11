@@ -162,7 +162,43 @@ The two Providers are mutually exclusive (one transport per build). The legacy a
 
 Concrete recipes (project type, code skeleton, install commands) for each shape: [Deployment Cheatsheet](./deployment.md), or the longer-form [Providers & Application types §8 (CrossSocket)](./providers.md#8-running-crosssocket-as-each-application-type) / [§9 (mORMot2)](./providers.md#9-running-mormot2-as-each-application-type).
 
-## 7. Where to next
+## 7. Structured Bootstrapping (UseStartup)
+
+For larger corporate projects, Horse supports a structured bootstrapping pattern (similar to ASP.NET Core's *Startup* class). This allows isolating the configuration of middlewares, hooks, and routes in a dedicated class that implements the `IHorseStartup` interface:
+
+```delphi
+type
+  THorseStartup = class(TInterfacedObject, IHorseStartup)
+  public
+    procedure Configure(const AInstance: THorseInstance);
+  end;
+
+procedure THorseStartup.Configure(const AInstance: THorseInstance);
+begin
+  // Local configuration of the instance
+  AInstance.Use(Jhonson);
+  AInstance.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+end;
+```
+
+To inject this configuration class into the server, invoke the `UseStartup` method:
+
+```delphi
+var
+  LStartup: IHorseStartup;
+begin
+  LStartup := THorseStartup.Create;
+  THorse.UseStartup(LStartup).Listen(9000);
+end.
+```
+
+A complete executable example project is available in [samples/delphi/console_use_startup/ConsoleUseStartup.dpr](../samples/delphi/console_use_startup/ConsoleUseStartup.dpr).
+
+## 8. Where to next
 
 - [Routing](./routing.md) — declare endpoints, path parameters, route groups.
 - [Request & Response](./request-response.md) — read input, write output.

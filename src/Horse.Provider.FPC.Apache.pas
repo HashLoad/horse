@@ -1,4 +1,4 @@
-unit Horse.Provider.FPC.Apache;
+﻿unit Horse.Provider.FPC.Apache;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -42,6 +42,7 @@ type
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property ModuleName: string read GetModuleName write SetModuleName;
     class property DefaultModule: pmodule read GetDefaultModule write SetDefaultModule;
+    class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
@@ -85,10 +86,16 @@ begin
   Result := FApacheApplication = nil;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := 0;
+end;
+
 class procedure THorseProvider.InternalListen;
 var
   LApacheApplication: TCustomApacheApplication;
 begin
+  TriggerBeforeListen;
   inherited;
   LApacheApplication := GetDefaultApacheApplication;
   LApacheApplication.ModuleName := FModuleName;

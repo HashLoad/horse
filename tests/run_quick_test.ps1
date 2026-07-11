@@ -46,8 +46,10 @@ if ($BuildExitCode -eq 0 -and (Test-Path $OutputExe)) {
 
 # 4. Execução dos testes
 Write-Host " -> Executando suíte de testes unitários..." -ForegroundColor Gray
-$TestOutput = "" | & $OutputExe 2>&1
+$env:HORSE_TEST_SILENCE = "1"
+$TestOutput = cmd.exe /c "echo. | `"$OutputExe`"" 2>&1
 $TestExitCode = $LASTEXITCODE
+$env:HORSE_TEST_SILENCE = $null
 
 # 5. Limpeza de configs temporários
 if (Test-Path $CfgPath) { Remove-Item -Path $CfgPath -Force }

@@ -69,6 +69,11 @@ type
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
+    class function GetActivePort: Integer; override;
+    class procedure TriggerBeforeListen; override;
+    class procedure TriggerAfterListen; override;
+    class procedure TriggerBeforeStop; override;
+    class procedure TriggerAfterStop; override;
     class procedure StopListen; override;
     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
@@ -194,6 +199,31 @@ begin
   Result := FPort;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
+class procedure THorseProvider.TriggerBeforeListen;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerAfterListen;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerBeforeStop;
+begin
+  inherited;
+end;
+
+class procedure THorseProvider.TriggerAfterStop;
+begin
+  inherited;
+end;
+
 class procedure THorseProvider.InitServerIOHandlerSSLOpenSSL(const AIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge; const AHorseProviderIOHandleSSL: IHorseProviderIOHandleSSL);
 var
   LIOHandleSSL: TIdServerIOHandlerSSLOpenSSL;
@@ -245,6 +275,7 @@ begin
       LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
     end;
 
+    TriggerBeforeListen;
     LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
     LIdHTTPWebBrokerBridge.Active := True;
@@ -260,17 +291,13 @@ begin
   except
     on E: Exception do
     begin
-      if IsConsole then
+      if IsConsole and (GetEnvironmentVariable('HORSE_TEST_SILENCE') <> '1') and not FindCmdLineSwitch('silence', True) and not FindCmdLineSwitch('non-interactive', True) then
       begin
         Writeln(E.ClassName, ': ', E.Message);
         Read(LAttach);
       end
       else
-{$IF CompilerVersion >= 32.0}
-        raise AcquireExceptionObject;
-{$ELSE}
         raise;
-{$ENDIF}
     end;
   end;
 end;
@@ -280,6 +307,7 @@ var
   LContexts: TList;
   I: Integer;
 begin
+  TriggerBeforeStop;
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
@@ -319,6 +347,7 @@ var
   LContexts: TList;
   LCount: Integer;
 begin
+  TriggerBeforeStop;
   if not HTTPWebBrokerIsNil then
   begin
     THorseCore.SetIsShuttingDown(True);

@@ -66,6 +66,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desacoplado o estado estático global de roteamento, ganchos de ciclo de vida e middlewares para objetos de instância independentes de `THorseInstance`. Adicionado suporte à escuta simultânea de múltiplos servidores HTTP concorrentes em portas diferentes de forma thread-safe e com 100% de retrocompatibilidade mantendo a fachada `THorse` clássica.
 
+### 10. Ganchos de Ciclo de Vida do Servidor (*Server Lifecycle Hooks*)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Implementado suporte nativo a ganchos de ciclo de vida do servidor físico (`BeforeListen`, `AfterListen`, `BeforeStop`, `AfterStop`) de forma thread-safe tanto para o modo Multi-Instance (`THorseInstance`) quanto para o facade clássico (`THorse`). Garantido alinhamento polimórfico de portas de escuta e prevenção de travamentos não interativos de console, com testes de integração e concorrência 100% livres de memory leak e Access Violations.
+
 ---
 
 ## ✅ Entregas Recentes de Testes & CI/CD (Concluído)

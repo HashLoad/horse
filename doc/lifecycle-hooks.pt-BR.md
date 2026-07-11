@@ -174,6 +174,56 @@ Como o Horse processa conexões de forma concorrente em múltiplos sockets ou lo
 
 ---
 
+---
+
+## 🌐 Ganchos de Ciclo de Vida do Servidor (Server Phase)
+
+Os Ganchos de Ciclo de Vida do Servidor (*Server Lifecycle Hooks*) permitem interceptar as operações físicas de inicialização (startup) e desligamento (shutdown) do servidor de sockets HTTP.
+
+Eles podem ser registrados globalmente na fachada `THorse` ou localmente em uma `THorseInstance` específica. Esses hooks sempre recebem a **porta física ativa** (`APort: Integer`) resolvida pelo provedor de transporte em execução.
+
+* **Assinaturas:**
+  * `THorseServerLifecycleProc = reference to procedure(APort: Integer);`
+  * `THorseServerLifecycleMethod = procedure(APort: Integer) of object;`
+
+### Ganchos Disponíveis
+
+| Hook | Fase do Servidor | Uso Sugerido / Intenção |
+|---|---|---|
+| `BeforeListen` | Instantes antes da abertura do socket físico | Validar configurações de host/porta, iniciar pools globais de conexão de banco de dados, pré-aquecer caches de memória. |
+| `AfterListen` | Imediatamente após o início da escuta | Logar sucesso de inicialização na telemetria, anunciar a porta resolvida a serviços de Service Registry / Service Discovery. |
+| `BeforeStop` | Instantes antes do fechamento do socket físico | Iniciar sequências de encerramento interno, enviar sinalizadores a Load Balancers para remover o nó da rota de tráfego. |
+| `AfterStop` | Imediatamente após a liberação do socket | Destruir pools de banco de dados, liberar trancas de IPC ou recursos de memória compartilhada do processo. |
+
+### Exemplo de Uso:
+```delphi
+THorse.AddBeforeListen(
+  procedure(APort: Integer)
+  begin
+    Writeln('Servidor iniciando na porta ' + APort.ToString);
+  end);
+
+THorse.AddAfterListen(
+  procedure(APort: Integer)
+  begin
+    Writeln('Servidor ativo e aceitando conexoes na porta ' + APort.ToString);
+  end);
+
+THorse.AddBeforeStop(
+  procedure(APort: Integer)
+  begin
+    Writeln('Iniciando encerramento suave na porta ' + APort.ToString);
+  end);
+
+THorse.AddAfterStop(
+  procedure(APort: Integer)
+  begin
+    Writeln('Servidor parado fisicamente e porta liberada.');
+  end);
+```
+
+---
+
 ## 🚀 Exemplos Práticos Executáveis
 
 Você pode encontrar projetos prontos e auditáveis para executar e ver os hooks rodando no console em tempo real (compatíveis com Windows, Linux e macOS):

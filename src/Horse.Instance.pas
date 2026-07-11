@@ -24,6 +24,16 @@ uses
   Horse.Core;
 
 type
+  THorseInstance = class;
+
+  THorseServerLifecycleProc = reference to procedure(const AInstance: THorseInstance);
+  THorseServerLifecycleMethod = procedure(const AInstance: THorseInstance) of object;
+
+  IHorseStartup = interface
+    ['{8A9C128B-0B8A-4217-BA0E-A8FA98642289}']
+    procedure Configure(const AInstance: THorseInstance);
+  end;
+
   THorseInstance = class(THorseCoreBase)
   private
     FRoutes: IHorseRouter;
@@ -37,6 +47,16 @@ type
     FOnError: THorseOnError;
     FActiveRequests: Integer;
     FIsShuttingDown: Boolean;
+
+    FOnBeforeListen: TList<THorseServerLifecycleProc>;
+    FOnAfterListen: TList<THorseServerLifecycleProc>;
+    FOnBeforeStop: TList<THorseServerLifecycleProc>;
+    FOnAfterStop: TList<THorseServerLifecycleProc>;
+
+    FOnBeforeListenMethod: TList<THorseServerLifecycleMethod>;
+    FOnAfterListenMethod: TList<THorseServerLifecycleMethod>;
+    FOnBeforeStopMethod: TList<THorseServerLifecycleMethod>;
+    FOnAfterStopMethod: TList<THorseServerLifecycleMethod>;
 
     FPort: Integer;
     FHost: string;
@@ -62,6 +82,11 @@ type
   public
     constructor Create; virtual;
     destructor Destroy; override;
+
+    procedure TriggerBeforeListen;
+    procedure TriggerAfterListen;
+    procedure TriggerBeforeStop;
+    procedure TriggerAfterStop;
 
     function GetRoutes: IHorseRouter; override;
 
@@ -231,6 +256,18 @@ type
     function BasePatch(const APath: string; const ACallback: THorseCallbackResponse): THorseCoreBase; override;
     {$ENDIF}
 
+    // Ganchos de Ciclo de Vida do Servidor & UseStartup
+    function UseStartup(const AStartup: IHorseStartup): THorseInstance;
+    function AddOnBeforeListen(const ACallback: THorseServerLifecycleProc): THorseInstance; overload;
+    function AddOnAfterListen(const ACallback: THorseServerLifecycleProc): THorseInstance; overload;
+    function AddOnBeforeStop(const ACallback: THorseServerLifecycleProc): THorseInstance; overload;
+    function AddOnAfterStop(const ACallback: THorseServerLifecycleProc): THorseInstance; overload;
+
+    function AddOnBeforeListen(const ACallback: THorseServerLifecycleMethod): THorseInstance; overload;
+    function AddOnAfterListen(const ACallback: THorseServerLifecycleMethod): THorseInstance; overload;
+    function AddOnBeforeStop(const ACallback: THorseServerLifecycleMethod): THorseInstance; overload;
+    function AddOnAfterStop(const ACallback: THorseServerLifecycleMethod): THorseInstance; overload;
+
     // Controle do ciclo de escuta física delegada
     procedure Listen(const APort: Integer = 9000; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); overload;
     procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); overload;
@@ -244,6 +281,11 @@ type
     property Running: Boolean read FRunning write FRunning;
   end;
 
+threadvar
+  GCurrentBuildingInstance: THorseCoreBase;
+
+function ResolveBuildingInstance: THorseCoreBase;
+
 implementation
 
 uses
@@ -251,9 +293,6 @@ uses
   Horse.Core.Group,
   Horse.Core.Route,
   Horse;
-
-threadvar
-  GCurrentBuildingInstance: THorseCoreBase;
 
 function ResolveBuildingInstance: THorseCoreBase;
 begin
@@ -329,6 +368,7 @@ end;
 
 destructor THorseInstance.Destroy;
 begin
+  UnregisterHorseInstance(FPort);
   if FCallbacks <> nil then
     FreeAndNil(FCallbacks);
   if FOnRequest <> nil then
@@ -343,6 +383,25 @@ begin
     FreeAndNil(FOnSendBytes);
   if FOnResponse <> nil then
     FreeAndNil(FOnResponse);
+
+  if FOnBeforeListen <> nil then
+    FreeAndNil(FOnBeforeListen);
+  if FOnAfterListen <> nil then
+    FreeAndNil(FOnAfterListen);
+  if FOnBeforeStop <> nil then
+    FreeAndNil(FOnBeforeStop);
+  if FOnAfterStop <> nil then
+    FreeAndNil(FOnAfterStop);
+
+  if FOnBeforeListenMethod <> nil then
+    FreeAndNil(FOnBeforeListenMethod);
+  if FOnAfterListenMethod <> nil then
+    FreeAndNil(FOnAfterListenMethod);
+  if FOnBeforeStopMethod <> nil then
+    FreeAndNil(FOnBeforeStopMethod);
+  if FOnAfterStopMethod <> nil then
+    FreeAndNil(FOnAfterStopMethod);
+
   inherited;
 end;
 
@@ -1168,6 +1227,145 @@ begin
 end;
 {$ENDIF}
 
+function THorseInstance.UseStartup(const AStartup: IHorseStartup): THorseInstance;
+begin
+  Result := Self;
+  if AStartup <> nil then
+    AStartup.Configure(Self);
+end;
+
+function THorseInstance.AddOnBeforeListen(const ACallback: THorseServerLifecycleProc): THorseInstance;
+begin
+  Result := Self;
+  if FOnBeforeListen = nil then
+    FOnBeforeListen := TList<THorseServerLifecycleProc>.Create;
+  FOnBeforeListen.Add(ACallback);
+end;
+
+function THorseInstance.AddOnAfterListen(const ACallback: THorseServerLifecycleProc): THorseInstance;
+begin
+  Result := Self;
+  if FOnAfterListen = nil then
+    FOnAfterListen := TList<THorseServerLifecycleProc>.Create;
+  FOnAfterListen.Add(ACallback);
+end;
+
+function THorseInstance.AddOnBeforeStop(const ACallback: THorseServerLifecycleProc): THorseInstance;
+begin
+  Result := Self;
+  if FOnBeforeStop = nil then
+    FOnBeforeStop := TList<THorseServerLifecycleProc>.Create;
+  FOnBeforeStop.Add(ACallback);
+end;
+
+function THorseInstance.AddOnAfterStop(const ACallback: THorseServerLifecycleProc): THorseInstance;
+begin
+  Result := Self;
+  if FOnAfterStop = nil then
+    FOnAfterStop := TList<THorseServerLifecycleProc>.Create;
+  FOnAfterStop.Add(ACallback);
+end;
+
+function THorseInstance.AddOnBeforeListen(const ACallback: THorseServerLifecycleMethod): THorseInstance;
+begin
+  Result := Self;
+  if FOnBeforeListenMethod = nil then
+    FOnBeforeListenMethod := TList<THorseServerLifecycleMethod>.Create;
+  FOnBeforeListenMethod.Add(ACallback);
+end;
+
+function THorseInstance.AddOnAfterListen(const ACallback: THorseServerLifecycleMethod): THorseInstance;
+begin
+  Result := Self;
+  if FOnAfterListenMethod = nil then
+    FOnAfterListenMethod := TList<THorseServerLifecycleMethod>.Create;
+  FOnAfterListenMethod.Add(ACallback);
+end;
+
+function THorseInstance.AddOnBeforeStop(const ACallback: THorseServerLifecycleMethod): THorseInstance;
+begin
+  Result := Self;
+  if FOnBeforeStopMethod = nil then
+    FOnBeforeStopMethod := TList<THorseServerLifecycleMethod>.Create;
+  FOnBeforeStopMethod.Add(ACallback);
+end;
+
+function THorseInstance.AddOnAfterStop(const ACallback: THorseServerLifecycleMethod): THorseInstance;
+begin
+  Result := Self;
+  if FOnAfterStopMethod = nil then
+    FOnAfterStopMethod := TList<THorseServerLifecycleMethod>.Create;
+  FOnAfterStopMethod.Add(ACallback);
+end;
+
+procedure THorseInstance.TriggerBeforeListen;
+var
+  LCallback: THorseServerLifecycleProc;
+  LMethod: THorseServerLifecycleMethod;
+begin
+  if FOnBeforeListen <> nil then
+  begin
+    for LCallback in FOnBeforeListen do
+      LCallback(Self);
+  end;
+  if FOnBeforeListenMethod <> nil then
+  begin
+    for LMethod in FOnBeforeListenMethod do
+      LMethod(Self);
+  end;
+end;
+
+procedure THorseInstance.TriggerAfterListen;
+var
+  LCallback: THorseServerLifecycleProc;
+  LMethod: THorseServerLifecycleMethod;
+begin
+  if FOnAfterListen <> nil then
+  begin
+    for LCallback in FOnAfterListen do
+      LCallback(Self);
+  end;
+  if FOnAfterListenMethod <> nil then
+  begin
+    for LMethod in FOnAfterListenMethod do
+      LMethod(Self);
+  end;
+end;
+
+procedure THorseInstance.TriggerBeforeStop;
+var
+  LCallback: THorseServerLifecycleProc;
+  LMethod: THorseServerLifecycleMethod;
+begin
+  if FOnBeforeStop <> nil then
+  begin
+    for LCallback in FOnBeforeStop do
+      LCallback(Self);
+  end;
+  if FOnBeforeStopMethod <> nil then
+  begin
+    for LMethod in FOnBeforeStopMethod do
+      LMethod(Self);
+  end;
+end;
+
+procedure THorseInstance.TriggerAfterStop;
+var
+  LCallback: THorseServerLifecycleProc;
+  LMethod: THorseServerLifecycleMethod;
+begin
+  if FOnAfterStop <> nil then
+  begin
+    for LCallback in FOnAfterStop do
+      LCallback(Self);
+  end;
+  if FOnAfterStopMethod <> nil then
+  begin
+    for LMethod in FOnAfterStopMethod do
+      LMethod(Self);
+  end;
+end;
+
 // Callback converters
 {$IF DEFINED(FPC)}
 function THorseInstance.GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
@@ -1214,8 +1412,13 @@ begin
   FPort := APort;
   FHost := AHost;
   RegisterHorseInstance(APort, Self);
-  THorse.Listen(APort, AHost, ACallbackListen, ACallbackStopListen);
   FRunning := True;
+  try
+    THorseProvider.Listen(APort, AHost, ACallbackListen, ACallbackStopListen);
+  except
+    FRunning := False;
+    raise;
+  end;
 end;
 
 procedure THorseInstance.Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc);
@@ -1235,7 +1438,7 @@ end;
 
 procedure THorseInstance.StopListen;
 begin
-  THorse.StopListen;
+  THorseProvider.StopListen;
   UnregisterHorseInstance(FPort);
   FRunning := False;
 end;
