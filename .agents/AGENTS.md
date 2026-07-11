@@ -32,3 +32,8 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * Ao projetar ou atualizar middlewares do ecossistema, garanta que eles não dependam de dados em variáveis globais ou estáticas (`class var` singletons) do core, permitindo que cada instância de `THorseInstance` configure isoladamente suas dependências, rotas e manipuladores.
 * Para preservar a compatibilidade de compilação cruzada multiplataforma FPC/Lazarus, evite o uso de closures ou procedimentos anônimos inline (`procedure begin end`) em manipuladores de ciclo de vida e rotas lógicas locais das instâncias do Horse, preferindo procedimentos regulares e delegados de objetos.
 
+## 🟢 Observabilidade e Ganchos de Telemetria (Telemetry Hooks)
+* O Horse possui infraestrutura nativa e de baixíssimo overhead baseada em `TStopwatch` para rastreamento de latência em requisições.
+* Ao estender o ecossistema ou criar novos middlewares de APM/observabilidade (como Prometheus, OpenTelemetry, logging), use sempre o gancho nativo `AddOnTelemetry` (`THorse.AddOnTelemetry` ou `LInstance.AddOnTelemetry`) em vez de introduzir wrappers customizados nos blocos de execução de rotas ou temporizadores ad-hoc que geram overhead de heap.
+* Garanta que os callbacks registrados em `AddOnTelemetry` sejam protegidos internamente com blocos `try-except` individuais (silenciando exceções) para assegurar que falhas na coleta de telemetria nunca causem interrupções no fluxo principal de retorno HTTP do cliente ou derrubem a thread de execução do socket.
+

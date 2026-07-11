@@ -8,12 +8,7 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
 
 
-### 6. Ganchos de Telemetria Padronizados (Observabilidade / OpenTelemetry)
-* **Descrição:** Disponibilizar ganchos internos no Core para extração de latência, volumetria de requests e status HTTP sem perdas de performance.
-* **Ganhos:**
-  * Integração nativa facilitada com coletores de métricas do ecossistema APM (como Prometheus e Jaeger).
-
-### 7. Roteamento Avançado (Regex e Parâmetros Opcionais)
+### 6. Roteamento Avançado (Regex e Parâmetros Opcionais)
 * **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
 
 
@@ -70,6 +65,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 13. Middleware de DTO Auto-Binding e Validação Declarativa (`horse-dto`)
 * **Status:** 🟢 **Concluído e Liberado como Middleware**
 * **Implementação:** Desenvolvido o middleware oficial [horse-dto](https://github.com/regyssilveira/horse-dto) para realizar a desserialização automática de payloads de requisições (JSON, Query params, Route params e Form fields) diretamente para classes DTO em Delphi e Lazarus, executando validações declarativas robustas baseadas em atributos customizados (como `[Required]`, `[Email]`, `[Range]`, `[CustomValidator]`) antes que a requisição seja entregue aos controllers lógicos da aplicação, eliminando código repetitivo (boilerplate) de forma isolada e elegante.
+
+### 14. Ganchos de Telemetria Padronizados (Observabilidade Nativa)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Disponibilizada a infraestrutura nativa e de baixíssimo overhead (`THorse.AddOnTelemetry` e `LInstance.AddOnTelemetry`) para interceptação automática e medição de latência baseada em `TStopwatch` (stack-allocated / zero-allocation). Totalmente integrado de forma fail-safe ao pipeline de roteamento (`Radix` e `Tree`), provendo suporte polimórfico a ganchos isolados no Multi-Instance e mantendo 100% de retrocompatibilidade com o ecossistema de middlewares.
 
 ---
 

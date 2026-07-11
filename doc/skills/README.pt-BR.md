@@ -27,6 +27,7 @@
 | **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Desenvolvimento rápido de microsserviços focados, mocks e APIs de arquivo único estruturadas com baixo boilerplate. |
 | **horse-dependency-injection** | [`horse-dependency-injection/SKILL.md`](./horse-dependency-injection/SKILL.md) | Gerenciamento de ciclo de vida e IoC no request scope (injeção de dependência) em Delphi e Lazarus. |
 | **horse-multi-instance** | [`horse-multi-instance/SKILL.md`](./horse-multi-instance/SKILL.md) | Execução ou configuração de múltiplos servidores de instâncias independentes (THorseInstance) concorrentemente dentro do mesmo processo. |
+| **horse-telemetry-observability** | [`horse-telemetry-observability/SKILL.md`](./horse-telemetry-observability/SKILL.md) | Registro, configuração e otimização de ganchos nativos de telemetria (AddOnTelemetry) para ferramentas APM e logs. |
 
 ---
 

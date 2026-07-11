@@ -45,12 +45,12 @@ $FriendlyVersions = @{
 
 # Cenários de defines a serem testados (injetados no arquivo .inc antes do build)
 $DefinesToTest = @(
-    @{ Name = "Default";       Flags = '{$DEFINE CI}' },
-    @{ Name = "Default+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' },
-    @{ Name = "HttpSys";       Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' },
-    @{ Name = "HttpSys+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' },
-    @{ Name = "IOCP";          Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}' },
-    @{ Name = "IOCP+Radix";    Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}' }
+    @{ Name = "Default";       Flags = '{$DEFINE CI}'; DccFlags = "CI" },
+    @{ Name = "Default+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}'; DccFlags = "CI;HORSE_RADIX_ROUTER" },
+    @{ Name = "HttpSys";       Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}'; DccFlags = "CI;HORSE_PROVIDER_HTTPSYS" },
+    @{ Name = "HttpSys+Radix"; Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_HTTPSYS}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}'; DccFlags = "CI;HORSE_PROVIDER_HTTPSYS;HORSE_RADIX_ROUTER" },
+    @{ Name = "IOCP";          Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}'; DccFlags = "CI;HORSE_PROVIDER_IOCP" },
+    @{ Name = "IOCP+Radix";    Flags = '{$DEFINE CI}' + "`r`n" + '{$DEFINE HORSE_PROVIDER_IOCP}' + "`r`n" + '{$DEFINE HORSE_RADIX_ROUTER}'; DccFlags = "CI;HORSE_PROVIDER_IOCP;HORSE_RADIX_ROUTER" }
 )
 
 # Verifica se o diretório do Studio existe
@@ -132,7 +132,7 @@ foreach ($Inst in $Installations) {
         # 4. Compilação direta usando dcc32.exe a partir da pasta tests/src/
         Write-Host " -> Compilando diretamente com dcc32.exe..." -ForegroundColor Gray
         
-        $BuildCommand = "call `"{0}`" && cd /d `"{1}\src`" && dcc32.exe Console.dpr" -f $RsvarsPath, $ScriptDir
+        $BuildCommand = "call `"{0}`" && cd /d `"{1}\src`" && dcc32.exe -D{2} Console.dpr" -f $RsvarsPath, $ScriptDir, $Def.DccFlags
         $BuildOutput = cmd.exe /c $BuildCommand 2>&1
         $BuildExitCode = $LASTEXITCODE
         
@@ -161,8 +161,10 @@ foreach ($Inst in $Installations) {
             Write-Host " -> Executando suíte de testes..." -ForegroundColor Gray
             
             # Executa o executável DUnitX enviando uma entrada vazia via pipe para evitar qualquer Readln bloqueante
+            $env:HORSE_TEST_SILENCE = "1"
             $TestOutput = "" | & $OutputExe 2>&1
             $TestExitCode = $LASTEXITCODE
+            $env:HORSE_TEST_SILENCE = $null
             
             if ($TestExitCode -eq 0) {
                 $TestsPassed = $true

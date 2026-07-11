@@ -82,13 +82,15 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   SyncObjs,
+  Diagnostics,
 {$ELSE}
   System.SysUtils,
   System.RegularExpressions,
   System.SyncObjs,
+  System.Diagnostics,
 {$ENDIF}
   Horse.Core.RouterTree.NextCaller,
-  Horse;
+  Horse, Horse.Core;
 
 threadvar
   TlsNextCaller: TNextCaller;
@@ -158,7 +160,10 @@ begin
 end;
 
 function TRouterTreeExecutor.Run: Boolean;
+var
+  LStopwatch: TStopwatch;
 begin
+  LStopwatch := TStopwatch.StartNew;
   FResponse.Request := FRequest;
   GCurrentTreeExecutor := Self;
   try
@@ -173,6 +178,8 @@ begin
       end;
     end;
   finally
+    LStopwatch.Stop;
+    THorseCore.ExecuteOnTelemetry(FRequest, FResponse, LStopwatch.Elapsed.TotalMilliseconds);
     THorse.ExecuteOnResponse(FRequest, FResponse);
   end;
 end;
@@ -361,7 +368,9 @@ var
   LRawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF};
   LBufferNotFound: TBytes;
   LResult: Boolean;
+  LStopwatch: TStopwatch;
 begin
+  LStopwatch := TStopwatch.StartNew;
   LResult := False;
   AResponse.Request := ARequest;
   try
@@ -421,6 +430,8 @@ begin
     end;
     AResponse.FlushCookiesToWebResponse;
   finally
+    LStopwatch.Stop;
+    THorseCore.ExecuteOnTelemetry(ARequest, AResponse, LStopwatch.Elapsed.TotalMilliseconds);
     THorse.ExecuteOnResponse(ARequest, AResponse);
   end;
 end;

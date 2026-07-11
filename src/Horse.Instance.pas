@@ -48,6 +48,7 @@ type
     FOnSendString: TList<THorseOnSendString>;
     FOnSendBytes: TList<THorseOnSendBytes>;
     FOnResponse: TList<THorseCallback>;
+    FOnTelemetry: TList<THorseOnTelemetry>;
     FOnError: THorseOnError;
     FActiveRequests: Integer;
     FIsShuttingDown: Boolean;
@@ -115,6 +116,7 @@ type
     procedure AddOnSend(const ACallback: THorseOnSendString); overload;
     procedure AddOnSend(const ACallback: THorseOnSendBytes); overload;
     procedure AddOnResponse(const ACallback: THorseCallback);
+    procedure AddOnTelemetry(const ACallback: THorseOnTelemetry);
     procedure ResetHooks;
 
     function GetActiveRequests: Integer;
@@ -131,6 +133,7 @@ type
     procedure ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: string); overload;
     procedure ExecuteOnSend(const ARequest: THorseRequest; const AResponse: THorseResponse; var AContent: TBytes); overload;
     procedure ExecuteOnResponse(const ARequest: THorseRequest; const AResponse: THorseResponse);
+    procedure ExecuteOnTelemetry(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
 
     // Roteamento
     function Use(const APath: string; const ACallback: THorseCallback): THorseInstance; overload;
@@ -283,6 +286,7 @@ type
     property Host: string read FHost write FHost;
     property Port: Integer read FPort write FPort;
     property Running: Boolean read FRunning write FRunning;
+    property ErrorHandler: THorseOnError read FOnError;
   end;
 
 threadvar
@@ -387,6 +391,8 @@ begin
     FreeAndNil(FOnSendBytes);
   if FOnResponse <> nil then
     FreeAndNil(FOnResponse);
+  if FOnTelemetry <> nil then
+    FreeAndNil(FOnTelemetry);
 
   if FOnBeforeListen <> nil then
     FreeAndNil(FOnBeforeListen);
@@ -592,6 +598,13 @@ begin
   FOnResponse.Add(ACallback);
 end;
 
+procedure THorseInstance.AddOnTelemetry(const ACallback: THorseOnTelemetry);
+begin
+  if FOnTelemetry = nil then
+    FOnTelemetry := TList<THorseOnTelemetry>.Create;
+  FOnTelemetry.Add(ACallback);
+end;
+
 procedure THorseInstance.ResetHooks;
 begin
   if FOnRequest <> nil then
@@ -606,6 +619,8 @@ begin
     FOnSendBytes.Clear;
   if FOnResponse <> nil then
     FOnResponse.Clear;
+  if FOnTelemetry <> nil then
+    FOnTelemetry.Clear;
   FOnError := nil;
 end;
 
@@ -728,6 +743,23 @@ begin
         LCallback(ARequest, AResponse, procedure begin end);
         {$ENDIF}
       except
+      end;
+    end;
+  end;
+end;
+
+procedure THorseInstance.ExecuteOnTelemetry(const ARequest: THorseRequest; const AResponse: THorseResponse; const AExecutionTimeMS: Double);
+var
+  LCallback: THorseOnTelemetry;
+begin
+  if Assigned(ARequest) and (FOnTelemetry <> nil) then
+  begin
+    for LCallback in FOnTelemetry do
+    begin
+      try
+        LCallback(ARequest, AResponse, AExecutionTimeMS);
+      except
+        // Abafar exceções no OnTelemetry para não quebrar o fluxo
       end;
     end;
   end;
