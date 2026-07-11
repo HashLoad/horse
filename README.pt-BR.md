@@ -214,6 +214,13 @@ Estes são middlewares focados em observabilidade, métricas e rastreamento de a
 |  [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
+## 🤖 Habilidades de IA (Agent Skills)
+
+Este repositório possui suporte nativo para agentes de inteligência artificial (como Gemini, Claude, ChatGPT e GitHub Copilot) por meio de regras locais e guias de modelagem (skills).
+
+* **Diretrizes de IA:** Veja [.agents/AGENTS.md](./.agents/AGENTS.md) contendo os padrões arquiteturais de injeção de dependência, lifecycle hooks, concorrência e telemetria.
+* **Skills de IA:** Veja [doc/skills/README.pt-BR.md](./doc/skills/README.pt-BR.md) para a lista completa de habilidades de IA (Agent Skills) e guias de desenvolvimento assistido.
+
 ## Versões do Delphi
 
 O `Horse` funciona com Delphi 13 Florence, Delphi 12 Athens, Delphi 11 Alexandria, Delphi 10.4 Sydney, Delphi 10.3 Rio, Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, Delphi XE8 e Delphi XE7.

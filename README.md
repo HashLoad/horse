@@ -214,6 +214,13 @@ These are middlewares focused on application observability, metrics, and tracing
 |  [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
+## 🤖 AI Agent Skills
+
+This repository includes native instructions and model skills designed to guide AI agents (such as Gemini, Claude, ChatGPT, and GitHub Copilot) during development.
+
+* **AI Guidelines:** See [.agents/AGENTS.md](./.agents/AGENTS.md) for core architectural rules on dependency injection, lifecycle hooks, concurrency, and telemetry.
+* **Agent Skills:** See [doc/skills/README.md](./doc/skills/README.md) for the complete directory of optimized AI skills and development guides.
+
 ## Delphi Versions
 
 `Horse` works with Delphi 13 Florence, Delphi 12 Athens, Delphi 11 Alexandria, Delphi 10.4 Sydney, Delphi 10.3 Rio, Delphi 10.2 Tokyo, Delphi 10.1 Berlin, Delphi 10 Seattle, Delphi XE8 and Delphi XE7.
