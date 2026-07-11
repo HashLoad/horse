@@ -37,3 +37,9 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * Ao estender o ecossistema ou criar novos middlewares de APM/observabilidade (como Prometheus, OpenTelemetry, logging), use sempre o gancho nativo `AddOnTelemetry` (`THorse.AddOnTelemetry` ou `LInstance.AddOnTelemetry`) em vez de introduzir wrappers customizados nos blocos de execução de rotas ou temporizadores ad-hoc que geram overhead de heap.
 * Garanta que os callbacks registrados em `AddOnTelemetry` sejam protegidos internamente com blocos `try-except` individuais (silenciando exceções) para assegurar que falhas na coleta de telemetria nunca causem interrupções no fluxo principal de retorno HTTP do cliente ou derrubem a thread de execução do socket.
 
+## 🟢 Roteamento Avançado (Regex e Parâmetros Opcionais)
+* Ao criar rotas com restrições Regex, utilize a sintaxe parametrizada `:paramName(regexPattern)` (ex: `:id(\d+)`). Evite Regex isolado de segmento inteiro do tipo `(regexPattern)` para novas implementações, preferindo o padrão parametrizado compatível com FPC e Delphi.
+* Ao manipular parâmetros opcionais de rota `:paramName?` nos roteadores ou middlewares, garanta que o dicionário de parâmetros `Params` da requisição sempre receba a chave correspondente mesmo quando o parâmetro for omitido (nesse caso com valor vazio `''`), para assegurar determinismo no acesso das chaves em runtime.
+* Para qualquer novo utilitário de Regex ou validação de rotas, utilize e estenda a unit unificada `Horse.Core.Regex.pas` (que abstrai `System.RegularExpressions` e `RegExpr` de forma compatível e multiplataforma), nunca importando bibliotecas brutas de Regex diretamente nos roteadores para preservar a compilação no Lazarus/FPC.
+
+
