@@ -10,9 +10,9 @@ type
   [TestFixture]
   TTestIntegrationAdvancedRouting = class
   private
-    const TEST_PORT = 9095;
     FMatchedRoute: string;
     FParamId: string;
+    const TEST_PORT = 9095;
     procedure RunRoutingTest(const AUseRadix: Boolean);
   public
     [TearDown]
@@ -132,7 +132,7 @@ begin
       Assert.AreEqual('', FParamId);
 
       // Caso 5: Roteamento de Regex que não deve coincidir se houver outras restrições
-      // Por exemplo, /users/123/edit não deve dar match in nenhuma destas rotas (deve dar 404)
+      // Por exemplo, /users/123/edit não deve dar match em nenhuma destas rotas (deve dar 404)
       LRes := LClient.Get(Format('http://localhost:%d/users/123/edit', [TEST_PORT]));
       Assert.AreEqual(404, LRes.StatusCode);
 
