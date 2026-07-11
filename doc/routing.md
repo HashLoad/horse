@@ -205,6 +205,50 @@ begin
 end.
 ```
 
+## Advanced Routing (Optional Parameters & Regex)
+
+Starting from this version, Horse natively supports URL path routing restrictions based on Regular Expressions and optional path parameters across all routers (`THorseRouterTree` and `THorseRadixRouter`).
+
+### 1. Optional Parameters
+By adding a question mark `?` at the end of a path parameter (e.g., `:id?`), you instruct Horse that this parameter might be missing in the requested URL:
+
+```delphi
+THorse.Get('/users/:id?',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    if Req.Params.Items['id'].IsEmpty then
+      Res.Send('Listing all users')
+    else
+      Res.Send('Retrieving user ' + Req.Params.Items['id']);
+  end);
+```
+
+* Requesting `GET /users/123` -> Match! Returns `Retrieving user 123` (`Req.Params.Items['id'] = '123'`)
+* Requesting `GET /users` -> Match! Returns `Listing all users` (`Req.Params.Items['id'] = ''`)
+
+### 2. Regular Expressions Restrictions (Regex)
+You can restrict parameter matching by passing a Regex pattern enclosed in parentheses right after the parameter name:
+
+```delphi
+// This route will only match if the 'id' parameter contains only decimal digits
+THorse.Get('/users/:id(\d+)',
+  procedure(Req: THorseRequest; Res: THorseResponse)
+  begin
+    Res.Send('Numeric user: ' + Req.Params.Items['id']);
+  end);
+```
+
+* Requesting `GET /users/456` -> Match! Returns `Numeric user: 456`
+* Requesting `GET /users/john` -> Does not match the Regex constraint (continues matching other paths or returns `404 Not Found`).
+
+### 3. Route Precedence & Resolution
+The routing engine resolves route ambiguities by matching routes in order of specificity (from most specific to most generic):
+1. **Exact Static Route:** e.g., `GET /users/new`
+2. **Regex Parametric Route:** e.g., `GET /users/:id(\d+)`
+3. **Optional / General Parametric Route:** e.g., `GET /users/:id?`
+
+---
+
 ## See also
 
 - [Request & Response](./request-response.md) — what you do inside the callback.
