@@ -61,8 +61,8 @@ begin
     end);
 
   // 3. Inicializando as escutas físicas (ambas ativam e retornam instantaneamente)
-  FInstance1.Listen(9001, DoListen1);
-  FInstance2.Listen(9002, DoListen2);
+  FInstance1.Listen(9001, '127.0.0.1', DoListen1);
+  FInstance2.Listen(9002, '127.0.0.1', DoListen2);
 
   Writeln('Servidores inicializados.');
   

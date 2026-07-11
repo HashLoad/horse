@@ -103,7 +103,10 @@ uses
   Horse.Provider.IOHandleSSL,
   IdSSLOpenSSL,
   IdSchedulerOfThreadPool,
-  System.Classes;
+  System.Classes,
+  IdSocketHandle,
+  Horse.Core.Base,
+  Horse.Instance;
 
 class function THorseProvider.GetDefaultHTTPWebBroker: TIdHTTPWebBrokerBridge;
 begin
@@ -244,6 +247,9 @@ class procedure THorseProvider.InternalListen;
 var
   LAttach: string;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
+  LPortKey: Integer;
+  LInstance: THorseInstance;
+  LBinding: TIdSocketHandle;
 begin
   if FPort <= 0 then
     FPort := GetDefaultPort;
@@ -268,16 +274,39 @@ begin
     LIdHTTPWebBrokerBridge.ListenQueue := FListenQueue;
 
     LIdHTTPWebBrokerBridge.Bindings.Clear;
-    if FHost <> GetDefaultHost then
+    if (GInstances <> nil) and (GInstances.Count > 0) then
     begin
-      LIdHTTPWebBrokerBridge.Bindings.Add;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].IP := FHost;
-      LIdHTTPWebBrokerBridge.Bindings.Items[0].Port := FPort;
+      GInstancesLock.Enter;
+      try
+        for LPortKey in GInstances.Keys do
+        begin
+          LBinding := LIdHTTPWebBrokerBridge.Bindings.Add;
+          LInstance := THorseInstance(GInstances.Items[LPortKey]);
+          if LInstance.Host.IsEmpty then
+            LBinding.IP := '127.0.0.1'
+          else
+            LBinding.IP := LInstance.Host;
+          LBinding.Port := LPortKey;
+        end;
+      finally
+        GInstancesLock.Leave;
+      end;
+    end
+    else
+    begin
+      LBinding := LIdHTTPWebBrokerBridge.Bindings.Add;
+      if FHost.IsEmpty then
+        LBinding.IP := '127.0.0.1'
+      else
+        LBinding.IP := FHost;
+      LBinding.Port := FPort;
     end;
 
     TriggerBeforeListen;
     LIdHTTPWebBrokerBridge.KeepAlive := FKeepConnectionAlive;
     LIdHTTPWebBrokerBridge.DefaultPort := FPort;
+    if LIdHTTPWebBrokerBridge.Active then
+      LIdHTTPWebBrokerBridge.Active := False;
     LIdHTTPWebBrokerBridge.Active := True;
     LIdHTTPWebBrokerBridge.StartListening;
     FRunning := True;

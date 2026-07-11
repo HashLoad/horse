@@ -26,7 +26,11 @@ uses
 type
   THorseInstance = class;
 
+  {$IF DEFINED(FPC)}
+  THorseServerLifecycleProc = procedure(const AInstance: THorseInstance);
+  {$ELSE}
   THorseServerLifecycleProc = reference to procedure(const AInstance: THorseInstance);
+  {$ENDIF}
   THorseServerLifecycleMethod = procedure(const AInstance: THorseInstance) of object;
 
   IHorseStartup = interface
