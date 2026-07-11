@@ -88,7 +88,9 @@ uses
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
-  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';
+  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas',
+  Horse.Core.MemoryBufferPool in '..\..\src\Horse.Core.MemoryBufferPool.pas',
+  Tests.Horse.Core.MemoryBufferPool in 'tests\Tests.Horse.Core.MemoryBufferPool.pas';
 
 var
   Runner: ITestRunner;

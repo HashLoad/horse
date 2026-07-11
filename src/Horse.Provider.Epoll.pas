@@ -315,6 +315,9 @@ implementation
 
 {$IFDEF LINUX}
 
+uses
+  Horse.Core.MemoryBufferPool;
+
 function FastFindHeaderEndAndContentLength(const ABuffer: TBytes; ABytesReceived: Integer; out ABodyOffset: Integer; out AContentLength: Int64): Boolean;
 var
   I, J: Integer;
@@ -1022,11 +1025,11 @@ begin
     end
     else
     begin
-      FBodyStream := TMemoryStream.Create;
+      FBodyStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
     end;
   end;
 
-  if (FBodyStream is TMemoryStream) and (FBodyStream.Size + ALength >= 2097152) then
+  if not (FBodyStream is TFileStream) and (FBodyStream.Size + ALength >= 2097152) then
   begin
     LTempPath := '/tmp/';
     LTempFile := LTempPath + 'horse_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(Socket) + '.tmp';
@@ -1035,7 +1038,7 @@ begin
     try
       if FBodyStream.Size > 0 then
       begin
-        TMemoryStream(FBodyStream).Position := 0;
+        FBodyStream.Position := 0;
         LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
       end;
       FBodyStream.Free;
@@ -2480,7 +2483,7 @@ begin
   if LRequestComplete then
   begin
     if (AContext.FBodyStream = nil) and (AContext.FTempFileName <> '') then
-      AContext.FBodyStream := TMemoryStream.Create;
+      AContext.FBodyStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
 
     if AContext.FBodyStream <> nil then
       AContext.FBodyStream.Position := 0;

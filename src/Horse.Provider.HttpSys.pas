@@ -489,6 +489,9 @@ type
 
 implementation
 
+uses
+  Horse.Core.MemoryBufferPool;
+
 {$IFDEF MSWINDOWS}
 
 type
@@ -872,7 +875,7 @@ begin
   end
   else
   begin
-    FBodyStream := TMemoryStream.Create;
+    FBodyStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
   end;
 
   try
@@ -888,7 +891,7 @@ begin
           begin
             LChunkLength := PChunk.BufferLength;
 
-            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
+            if not (FBodyStream is TFileStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
               LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
@@ -897,7 +900,7 @@ begin
               try
                 if FBodyStream.Size > 0 then
                 begin
-                  TMemoryStream(FBodyStream).Position := 0;
+                  FBodyStream.Position := 0;
                   LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
                 end;
                 FBodyStream.Free;
@@ -937,7 +940,7 @@ begin
         begin
           if BytesReceived > 0 then
           begin
-            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
+            if not (FBodyStream is TFileStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
               LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
@@ -946,7 +949,7 @@ begin
               try
                 if FBodyStream.Size > 0 then
                 begin
-                  TMemoryStream(FBodyStream).Position := 0;
+                  FBodyStream.Position := 0;
                   LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
                 end;
                 FBodyStream.Free;

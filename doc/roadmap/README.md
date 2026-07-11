@@ -7,12 +7,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
 
-### 2. Centralização de Pool de Buffers de Memória (`IMemoryBufferPool`)
-* **Descrição:** Unificar a alocação e reciclagem de streams e buffers de leitura/escrita no Core do framework.
-* **Ganhos:**
-  * Redução geral de alocação de memória no heap (*zero-allocation response mapping*).
-  * Todos os providers do ecossistema (incluindo Indy legado) passariam a se beneficiar de envio zero-copy automaticamente, sem precisar reimplementar essa lógica individualmente.
-
 
 ### 6. DTO Auto-Binding e Validação Declarativa
 * **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
@@ -73,6 +67,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 11. Inicialização Estruturada (*UseStartup*)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Desenvolvido o suporte ao padrão de inicialização estruturada (bootstrapping corporativo) através do método `UseStartup` e da interface `IHorseStartup`. Permite isolar toda a configuração lógica de middlewares, hooks e rotas em uma classe dedicada, mantendo o arquivo principal do projeto (`.dpr`) limpo e focado apenas no controle de execução e escuta.
+
+### 12. Centralização de Pool de Buffers de Memória (`IMemoryBufferPool`)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Desenvolvida a unit `Horse.Core.MemoryBufferPool.pas` contendo o pool global thread-safe e a classe `THorsePooledStream` (que herda de `TStream`). O mecanismo intercepta a destruição de streams de resposta no core (`THorseResponse`) e de leitura em provedores assíncronos (`HttpSys`, `Epoll`), reciclando os arrays de bytes subjacentes de volta para o pool sem alocações dinâmicas de heap.
 
 ---
 

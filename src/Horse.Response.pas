@@ -193,7 +193,8 @@ uses
   Horse.Core.Files,
   Horse.Mime,
   Horse.Request,
-  Horse.Core;
+  Horse.Core,
+  Horse.Core.MemoryBufferPool;
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
@@ -366,6 +367,7 @@ end;
 function THorseResponse.Send(const AContent: TBytes): THorseResponse;
 var
   LContent: TBytes;
+  LStream: TStream;
 begin
   LContent := AContent;
   THorseCore.ExecuteOnSend(THorseRequest(FRequest), Self, LContent);
@@ -376,11 +378,14 @@ begin
   end;
   if Length(LContent) = 0 then
   begin
-    FWebResponse.ContentStream := TMemoryStream.Create;
+    FWebResponse.ContentStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
     FWebResponse.ContentLength := 0;
     Exit(Self);
   end;
-  FWebResponse.ContentStream := TBytesStream.Create(LContent);
+  LStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
+  LStream.WriteBuffer(LContent[0], Length(LContent));
+  LStream.Position := 0;
+  FWebResponse.ContentStream := LStream;
   Result := Self;
 end;
 
@@ -406,7 +411,7 @@ begin
   owns and frees the stream. }
   if LContent = '' then
   begin
-    FWebResponse.ContentStream := TMemoryStream.Create;
+    FWebResponse.ContentStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
     FWebResponse.ContentLength := 0;
     Exit(Self);
   end;
