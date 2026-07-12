@@ -2,6 +2,8 @@ unit Tests.Horse.Core.Middleware;
 
 interface
 
+{$X+}
+
 uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
   System.SysUtils, System.Generics.Collections,
@@ -59,39 +61,40 @@ end;
 procedure TTestHorseCoreMiddleware.TestMiddlewareNormalExecutionChain;
 var
   LTrace: TList<string>;
+  LCallback: THorseCallback;
 begin
   LTrace := TList<string>.Create;
   try
     // Registramos middleware 1
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M1_START');
         Next();
         LTrace.Add('M1_END');
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
     // Registramos middleware 2
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M2_START');
         Next();
         LTrace.Add('M2_END');
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
     // Registramos a rota final
-    FRouterTree.RegisterRoute(mtGet, '/test',
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('ROUTE');
-      end);
+      end;
+    FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
 
     FRequest.Populate('GET', mtGet, '/test', '', '');
     Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
 
     // Validamos se a ordem de execução da pilha seguiu o modelo FIFO/LIFO correto
-    Assert.AreEqual(5, LTrace.Count);
+    Assert.IsTrue(LTrace.Count = 5);
     Assert.AreEqual('M1_START', LTrace[0]);
     Assert.AreEqual('M2_START', LTrace[1]);
     Assert.AreEqual('ROUTE', LTrace[2]);
@@ -105,43 +108,46 @@ end;
 procedure TTestHorseCoreMiddleware.TestMiddlewareEarlyInterruption;
 var
   LTrace: TList<string>;
+  LCallback: THorseCallback;
+  LMethod: TProc;
 begin
   LTrace := TList<string>.Create;
   try
     // Middleware 1 interrompe o fluxo lancando EHorseCallbackInterrupted
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M1_INTERRUPT');
         raise EHorseCallbackInterrupted.Create;
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
     // Middleware 2 que nunca deve rodar
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M2');
         Next();
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
     // Rota que nunca deve rodar
-    FRouterTree.RegisterRoute(mtGet, '/test',
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('ROUTE');
-      end);
+      end;
+    FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
 
     FRequest.Populate('GET', mtGet, '/test', '', '');
 
-    Assert.WillRaise(
-      procedure
+    LMethod := procedure
+      var
+        LRet: Boolean;
       begin
-        FRouterTree.Execute(FRequest, FResponse);
-      end,
-      EHorseCallbackInterrupted);
+        LRet := FRouterTree.Execute(FRequest, FResponse);
+      end;
+    Assert.WillRaise(LMethod, EHorseCallbackInterrupted);
 
     // Apenas o Middleware 1 deve ter executado
-    Assert.AreEqual(1, LTrace.Count);
+    Assert.IsTrue(LTrace.Count = 1);
     Assert.AreEqual('M1_INTERRUPT', LTrace[0]);
   finally
     LTrace.Free;
@@ -149,59 +155,64 @@ begin
 end;
 
 procedure TTestHorseCoreMiddleware.TestMiddlewareExceptionPropagation;
+var
+  LCallback: THorseCallback;
+  LMethod: TProc;
 begin
   // Middleware lança exceção
-  FRouterTree.RegisterMiddleware(
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
       raise EOSError.Create('Database connection error');
-    end);
+    end;
+  FRouterTree.RegisterMiddleware(LCallback);
 
-  FRouterTree.RegisterRoute(mtGet, '/test',
-    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
       // Rota final
-    end);
+    end;
+  FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
 
   FRequest.Populate('GET', mtGet, '/test', '', '');
 
   // A exceção deve propagar para fora do Execute
-  Assert.WillRaise(
-    procedure
+  LMethod := procedure
+    var
+      LRet: Boolean;
     begin
-      FRouterTree.Execute(FRequest, FResponse);
-    end,
-    EOSError);
+      LRet := FRouterTree.Execute(FRequest, FResponse);
+    end;
+  Assert.WillRaise(LMethod, EOSError);
 end;
 
 procedure TTestHorseCoreMiddleware.TestMultipleMiddlewaresInRouterTree;
 var
   I: Integer;
   LTrace: TList<Integer>;
+  LCallback: THorseCallback;
 begin
   LTrace := TList<Integer>.Create;
   try
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        LTrace.Add(1);
+        Next();
+        LTrace.Add(-1);
+      end;
     for I := 1 to 15 do
     begin
-      FRouterTree.RegisterMiddleware(
-        procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
-        begin
-          LTrace.Add(1);
-          Next();
-          LTrace.Add(-1);
-        end);
+      FRouterTree.RegisterMiddleware(LCallback);
     end;
 
-    FRouterTree.RegisterRoute(mtGet, '/test',
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add(100);
-      end);
+      end;
+    FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
 
     FRequest.Populate('GET', mtGet, '/test', '', '');
     Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
 
-    Assert.AreEqual(31, LTrace.Count);
+    Assert.IsTrue(LTrace.Count = 31);
     for I := 0 to 14 do
       Assert.AreEqual(1, LTrace[I]);
     
@@ -237,34 +248,35 @@ end;
 procedure TTestHorseCoreMiddleware.TestMiddlewareExceptionFreeAbort;
 var
   LTrace: TList<string>;
+  LCallback: THorseCallback;
 begin
   LTrace := TList<string>.Create;
   try
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M1_START');
         Res.Status(THTTPStatus.BadRequest).Abort;
         LTrace.Add('M1_ABORTED');
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
-    FRouterTree.RegisterMiddleware(
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('M2');
         Next();
-      end);
+      end;
+    FRouterTree.RegisterMiddleware(LCallback);
 
-    FRouterTree.RegisterRoute(mtGet, '/test',
-      procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
       begin
         LTrace.Add('ROUTE');
-      end);
+      end;
+    FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
 
     FRequest.Populate('GET', mtGet, '/test', '', '');
     Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
 
-    Assert.AreEqual(2, LTrace.Count);
+    Assert.IsTrue(LTrace.Count = 2);
     Assert.AreEqual('M1_START', LTrace[0]);
     Assert.AreEqual('M1_ABORTED', LTrace[1]);
     Assert.IsTrue(FResponse.Aborted);
