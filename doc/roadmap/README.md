@@ -8,8 +8,6 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
 
 
-### 6. Roteamento Avançado (Regex e Parâmetros Opcionais)
-* **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
 
 
 ## ✅ Evolução Arquitetural Entregue (Concluído)
@@ -69,6 +67,10 @@ Este documento detalha o planejamento de melhorias arquiteturais de longo prazo 
 ### 14. Ganchos de Telemetria Padronizados (Observabilidade Nativa)
 * **Status:** 🟢 **Concluído e Liberado**
 * **Implementação:** Disponibilizada a infraestrutura nativa e de baixíssimo overhead (`THorse.AddOnTelemetry` e `LInstance.AddOnTelemetry`) para interceptação automática e medição de latência baseada em `TStopwatch` (stack-allocated / zero-allocation). Totalmente integrado de forma fail-safe ao pipeline de roteamento (`Radix` e `Tree`), provendo suporte polimórfico a ganchos isolados no Multi-Instance e mantendo 100% de retrocompatibilidade com o ecossistema de middlewares.
+
+### 15. Roteamento Avançado (Regex e Parâmetros Opcionais)
+* **Status:** 🟢 **Concluído e Liberado**
+* **Implementação:** Implementado suporte nativo a restrições de rotas baseadas em Expressões Regulares (Regex) e parâmetros opcionais de caminho de URL em todos os roteadores (`THorseRouterTree` e `THorseRadixRouter`) sob todas as plataformas (Windows/Linux) e compiladores (Delphi XE7+ e Lazarus/FPC). Inclui a criação da unit multiplataforma `Horse.Core.Regex` (encapsulando a API nativa de expressões regulares de cada compilador de forma abstrata), suíte de testes de integração dedicados e exemplo prático de uso.
 
 ---
 

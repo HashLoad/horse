@@ -86,11 +86,13 @@ uses
   Tests.Integration.MultiInstance in 'tests\Tests.Integration.MultiInstance.pas',
   Tests.Integration.ServerLifecycle in 'tests\Tests.Integration.ServerLifecycle.pas',
   Tests.Integration.Telemetry in 'tests\Tests.Integration.Telemetry.pas',
+  Tests.Integration.AdvancedRouting in 'tests\Tests.Integration.AdvancedRouting.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
   Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas',
   Horse.Core.MemoryBufferPool in '..\..\src\Horse.Core.MemoryBufferPool.pas',
+  Horse.Core.Regex in '..\..\src\Horse.Core.Regex.pas',
   Tests.Horse.Core.MemoryBufferPool in 'tests\Tests.Horse.Core.MemoryBufferPool.pas';
 
 var

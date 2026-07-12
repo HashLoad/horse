@@ -17,7 +17,7 @@ uses
     System.Generics.Collections,
   {$ENDIF}
   Horse.Commons, Horse.Callback, Horse.Request, Horse.Response,
-  Horse.Core.Router.Contract;
+  Horse.Core.Router.Contract, Horse.Core.Regex;
 
 type
   { Contexto de fluxo plano de execução de middlewares e rotas }
@@ -40,6 +40,10 @@ type
     Part: string;
     IsParam: Boolean;
     ParamName: string;
+    IsOptional: Boolean;
+    IsRegex: Boolean;
+    RegexPattern: string;
+    RegexMatcher: THorseRegex;
     FullPath: string;
     Children: TObjectList<TRadixNode>;
     Callbacks: TDictionary<TMethodType, TArray<THorseCallback>>;
@@ -374,16 +378,52 @@ end;
 { TRadixNode }
 
 constructor TRadixNode.Create(const APart: string);
+var
+  LPartClean: string;
+  LOpenParenthesis: Integer;
+  LCloseParenthesis: Integer;
 begin
   Part := APart;
-  IsParam := APart.StartsWith(':');
-  if IsParam then
-    ParamName := APart.Substring(1)
-  else
-    ParamName := '';
   Children := TObjectList<TRadixNode>.Create(True);
   Callbacks := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
   Middlewares := TList<THorseCallback>.Create;
+
+  IsOptional := False;
+  IsRegex := False;
+  RegexPattern := '';
+  RegexMatcher := nil;
+
+  IsParam := APart.StartsWith(':');
+  if IsParam then
+  begin
+    LPartClean := APart.Substring(1);
+
+    if LPartClean.EndsWith('?') then
+    begin
+      IsOptional := True;
+      LPartClean := LPartClean.Substring(0, LPartClean.Length - 1);
+    end;
+
+    LOpenParenthesis := LPartClean.IndexOf('(');
+    if LOpenParenthesis >= 0 then
+    begin
+      LCloseParenthesis := LPartClean.IndexOf(')');
+      if LCloseParenthesis > LOpenParenthesis then
+      begin
+        IsRegex := True;
+        ParamName := LPartClean.Substring(0, LOpenParenthesis);
+        RegexPattern := LPartClean.Substring(LOpenParenthesis + 1, LCloseParenthesis - LOpenParenthesis - 1);
+        RegexMatcher := THorseRegex.Create(RegexPattern);
+      end;
+    end;
+
+    if not IsRegex then
+      ParamName := LPartClean;
+  end
+  else
+  begin
+    ParamName := '';
+  end;
 end;
 
 destructor TRadixNode.Destroy;
@@ -391,6 +431,8 @@ begin
   Children.Free;
   Callbacks.Free;
   Middlewares.Free;
+  if Assigned(RegexMatcher) then
+    RegexMatcher.Free;
   inherited;
 end;
 
@@ -645,7 +687,25 @@ begin
     AMiddlewares.AddRange(ANode.Middlewares);
 
   if AIndex >= Length(ASegments) then
+  begin
+    for LChild in ANode.Children do
+    begin
+      if LChild.IsParam and LChild.IsOptional then
+      begin
+        if AParams = nil then
+          AParams := TDictionary<string, string>.Create;
+        AParams.AddOrSetValue(LChild.ParamName, '');
+
+        LTempNode := LChild;
+        LBestMatch := FindNode(ASegments, AIndex, LTempNode, AHTTPType, AMiddlewares, AParams);
+        if (LBestMatch <> nil) and (LBestMatch.Callbacks.ContainsKey(AHTTPType) or LBestMatch.Callbacks.ContainsKey(mtAny)) then
+          Exit(LBestMatch)
+        else
+          AParams.Remove(LChild.ParamName);
+      end;
+    end;
     Exit(ANode);
+  end;
 
   LCurrentSlice := ASegments[AIndex];
 
@@ -666,13 +726,21 @@ begin
   begin
     if LChild.IsParam then
     begin
+      if LChild.IsRegex then
+      begin
+        if not LChild.RegexMatcher.Match(LCurrentSlice.ToString) then
+          Continue;
+      end;
+
       if AParams = nil then
         AParams := TDictionary<string, string>.Create;
       AParams.AddOrSetValue(LChild.ParamName, LCurrentSlice.ToString);
       LTempNode := LChild;
       LBestMatch := FindNode(ASegments, AIndex + 1, LTempNode, AHTTPType, AMiddlewares, AParams);
       if LBestMatch <> nil then
-        Exit(LBestMatch);
+        Exit(LBestMatch)
+      else
+        AParams.Remove(LChild.ParamName);
     end;
   end;
 
