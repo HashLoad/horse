@@ -19,14 +19,14 @@ object FrmMain: TFrmMain
     Top = 16
     Width = 117
     Height = 15
-    Caption = 'DiretÃ³rio dos arquivos .proto:'
+    Caption = 'Diretorio dos arquivos .proto:'
   end
   object lblOutput: TLabel
     Left = 16
     Top = 76
     Width = 115
     Height = 15
-    Caption = 'DiretÃ³rio de destino (.pas):'
+    Caption = 'Diretorio de destino (.pas):'
   end
   object edtInput: TEdit
     Left = 16
