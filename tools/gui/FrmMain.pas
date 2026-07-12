@@ -120,7 +120,7 @@ begin
     end;
   end;
 
-  Log(Format('Concluído! Sucesso: %d | Falhas: %d', [SuccessCount, ErrorCount]));
+  Log(Format('Concluido! Sucesso: %d | Falhas: %d', [SuccessCount, ErrorCount]));
 end;
 
 procedure TFrmMain.btnCompileClick(Sender: TObject);
@@ -133,13 +133,13 @@ begin
 
   if (InputFolder = '') or (OutputFolder = '') then
   begin
-    ShowMessage('Por favor, preencha os diretórios de entrada e saída.');
+    ShowMessage('Por favor, preencha os diretorios de entrada e saida.');
     Exit;
   end;
 
   if not TDirectory.Exists(InputFolder) then
   begin
-    ShowMessage('Diretório de entrada não existe.');
+    ShowMessage('Diretorio de entrada nao existe.');
     Exit;
   end;
 
