@@ -67,6 +67,27 @@ By running `horse-pb-compiler.exe users.proto users.pas`, the corresponding Pasc
 
 ---
 
+## 🖥️ GUI Compiler (`HorsePbCompilerGui`)
+
+For batch compilations containing multiple Protobuf schema files across a directory tree, the repository provides a visual (GUI) VCL utility for Windows.
+
+### How to Compile the GUI Tool
+From the repository root, compile the visual utility using Delphi's `dcc32`:
+
+```bash
+dcc32.exe -Utools/compiler tools/gui/HorsePbCompilerGui.dpr
+```
+This generates the `HorsePbCompilerGui.exe` executable inside the `tools/gui/` folder.
+
+### How to Use the GUI
+1. Launch `HorsePbCompilerGui.exe`.
+2. In the **Diretório dos arquivos .proto** field, select the source folder containing the schemas.
+3. In the **Diretório de destino (.pas)** field, select the target folder where the generated Pascal units will be saved.
+4. Check **Incluir subpastas de forma recursiva** if you wish to process subdirectories, preserving the original folder structure in the target location.
+5. Click **Compilar em Lote**. The log memo will show the real-time conversion status for each file.
+
+---
+
 ## 📝 Service Definition (Code-First)
 
 To declare your service, create a unit with the message schema and interfaces decorated with Horse gRPC attributes.

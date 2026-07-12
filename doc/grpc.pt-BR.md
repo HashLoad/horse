@@ -67,6 +67,27 @@ Ao executar `horse-pb-compiler.exe users.proto users.pas`, a unit Pascal corresp
 
 ---
 
+## 🖥️ Compilador GUI (`HorsePbCompilerGui`)
+
+Para compilações em massa (em lote) contendo múltiplos arquivos de esquema Protobuf em uma árvore de diretórios, o repositório fornece um utilitário visual (interface gráfica) VCL para Windows.
+
+### Como Compilar a Ferramenta Visual
+Na raiz do repositório, compile o utilitário visual usando o `dcc32` do Delphi:
+
+```bash
+dcc32.exe -Utools/compiler tools/gui/HorsePbCompilerGui.dpr
+```
+Isso gerará o executável `HorsePbCompilerGui.exe` na pasta `tools/gui/`.
+
+### Como Utilizar a GUI
+1. Execute o arquivo `HorsePbCompilerGui.exe`.
+2. No campo **Diretório dos arquivos .proto**, selecione a pasta de origem contendo os esquemas.
+3. No campo **Diretório de destino (.pas)**, selecione a pasta onde as units Pascal geradas serão salvas.
+4. Marque a opção **Incluir subpastas de forma recursiva** se desejar processar subdiretórios preservando a estrutura de pastas original no destino.
+5. Clique em **Compilar em Lote**. A janela exibirá no log em tempo real o status individual de cada conversão de arquivo.
+
+---
+
 ## 📝 Definição do Serviço (Code-First)
 
 Para declarar o seu serviço, crie uma unit com o esquema de mensagens e interfaces anotadas com os atributos do Horse gRPC. 
