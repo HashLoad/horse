@@ -14,12 +14,12 @@ O provedor realiza toda a decodificação de frames HTTP/2 (HEADERS e DATA), pro
 
 A infraestrutura nativa do provedor gRPC é dividida em units modulares com responsabilidades isoladas (SOLID):
 
-* **[Horse.Provider.Grpc.pas](file:///d:/Delphi/horse/src/Horse.Provider.Grpc.pas)**: O core do provedor. Gerencia o socket TCP HTTP/2 Cleartext (`h2c`), escuta as conexões ativas concorrentes e despacha as chamadas gRPC RTTI para as instâncias de serviços.
-* **[Horse.Grpc.Attributes.pas](file:///d:/Delphi/horse/src/Horse.Grpc.Attributes.pas)**: Define os atributos e metadados customizados (`[GrpcMessage]`, `[GrpcService]`, `[GrpcMethod]`, `[ProtoMember]`) usados na anotação de interfaces e classes Delphi.
-* **[Horse.Grpc.Codec.pas](file:///d:/Delphi/horse/src/Horse.Grpc.Codec.pas)**: Implementa o framing LPM (*Length-Prefixed Message*) de 5 bytes exigido pelo protocolo gRPC (1 byte de status de compressão + 4 bytes para o tamanho do payload).
-* **[Horse.Core.Protobuf.Serializer.pas](file:///d:/Delphi/horse/src/Horse.Core.Protobuf.Serializer.pas)**: Motor de serialização de baixo nível responsável por ler e escrever o fluxo binário no padrão oficial do Google Protobuf.
-* **[Horse.Core.Protobuf.Rtti.pas](file:///d:/Delphi/horse/src/Horse.Core.Protobuf.Rtti.pas)**: Abstração de RTTI híbrida e thread-safe para Delphi e Lazarus, que converte dados da heap e propriedades de classes para payloads binários.
-* **[horse-pb-compiler.dpr](file:///d:/Delphi/horse/tools/compiler/horse-pb-compiler.dpr)**: Ferramenta de linha de comando para compilar arquivos `.proto` legados gerando automaticamente as units Pascal mapeadas.
+* **[Horse.Provider.Grpc.pas](../src/Horse.Provider.Grpc.pas)**: O core do provedor. Gerencia o socket TCP HTTP/2 Cleartext (`h2c`), escuta as conexões ativas concorrentes e despacha as chamadas gRPC RTTI para as instâncias de serviços.
+* **[Horse.Grpc.Attributes.pas](../src/Horse.Grpc.Attributes.pas)**: Define os atributos e metadados customizados (`[GrpcMessage]`, `[GrpcService]`, `[GrpcMethod]`, `[ProtoMember]`) usados na anotação de interfaces e classes Delphi.
+* **[Horse.Grpc.Codec.pas](../src/Horse.Grpc.Codec.pas)**: Implementa o framing LPM (*Length-Prefixed Message*) de 5 bytes exigido pelo protocolo gRPC (1 byte de status de compressão + 4 bytes para o tamanho do payload).
+* **[Horse.Core.Protobuf.Serializer.pas](../src/Horse.Core.Protobuf.Serializer.pas)**: Motor de serialização de baixo nível responsável por ler e escrever o fluxo binário no padrão oficial do Google Protobuf.
+* **[Horse.Core.Protobuf.Rtti.pas](../src/Horse.Core.Protobuf.Rtti.pas)**: Abstração de RTTI híbrida e thread-safe para Delphi e Lazarus, que converte dados da heap e propriedades de classes para payloads binários.
+* **[horse-pb-compiler.dpr](../tools/compiler/horse-pb-compiler.dpr)**: Ferramenta de linha de comando para compilar arquivos `.proto` legados gerando automaticamente as units Pascal mapeadas.
 
 ---
 
