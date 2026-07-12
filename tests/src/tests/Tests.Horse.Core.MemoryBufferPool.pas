@@ -107,7 +107,7 @@ begin
 
     LStream := LPool.AcquireStream;
     try
-      Assert.AreEqual(512, Length(LStream.InternalBuffer), 'O buffer reciclado não deve ser o superdimensionado.');
+      Assert.IsTrue(Length(LStream.InternalBuffer) = 512, 'O buffer reciclado não deve ser o superdimensionado.');
     finally
       LStream.Free;
     end;
