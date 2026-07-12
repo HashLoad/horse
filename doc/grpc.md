@@ -10,6 +10,19 @@ The provider handles the full HTTP/2 frame parsing (HEADERS and DATA), manages P
 
 ---
 
+## 🧬 Internal Architecture (File Structure)
+
+The native gRPC provider infrastructure is split into modular units with isolated responsibilities (SOLID):
+
+* **[Horse.Provider.Grpc.pas](file:///d:/Delphi/horse/src/Horse.Provider.Grpc.pas)**: The core provider unit. Manages the HTTP/2 Cleartext (`h2c`) TCP socket, monitors concurrent connections, and dispatches dynamic gRPC calls.
+* **[Horse.Grpc.Attributes.pas](file:///d:/Delphi/horse/src/Horse.Grpc.Attributes.pas)**: Defines custom metadata attributes (`[GrpcMessage]`, `[GrpcService]`, `[GrpcMethod]`, `[ProtoMember]`) used for decorating Pascal classes and interfaces.
+* **[Horse.Grpc.Codec.pas](file:///d:/Delphi/horse/src/Horse.Grpc.Codec.pas)**: Implements the gRPC-standard 5-byte LPM (*Length-Prefixed Message*) framing (1 compression flag byte + 4 payload length bytes).
+* **[Horse.Core.Protobuf.Serializer.pas](file:///d:/Delphi/horse/src/Horse.Core.Protobuf.Serializer.pas)**: Low-level serialization engine responsible for parsing and writing Google Protobuf binary streams.
+* **[Horse.Core.Protobuf.Rtti.pas](file:///d:/Delphi/horse/src/Horse.Core.Protobuf.Rtti.pas)**: Thread-safe, hybrid RTTI helper abstraction compatible with Delphi and Lazarus for mapping dynamic class fields to binary buffers.
+* **[horse-pb-compiler.dpr](file:///d:/Delphi/horse/tools/compiler/horse-pb-compiler.dpr)**: Utility CLI compiler tool that parses standard `.proto` schema files and outputs ready-to-use annotated Pascal units.
+
+---
+
 ## 📝 Service Definition (Code-First)
 
 To declare your service, create a unit with the message schema and interfaces decorated with Horse gRPC attributes.
