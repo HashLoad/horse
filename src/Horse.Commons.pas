@@ -24,6 +24,22 @@ type
   THorseServiceFactory<T: class> = {$IF DEFINED(FPC)}function: T{$ELSE}reference to function: T{$ENDIF};
   THorseServiceFactory = {$IF DEFINED(FPC)}function: TObject{$ELSE}reference to function: TObject{$ENDIF};
 
+  {$IF DEFINED(FPC)}
+  TStopwatch = record
+  private
+    FStart: Int64;
+    FStop: Int64;
+    FRunning: Boolean;
+    function GetElapsedMilliseconds: Int64;
+    function GetTotalMilliseconds: Double;
+  public
+    class function StartNew: TStopwatch; static;
+    procedure Stop;
+    function Elapsed: TStopwatch;
+    property TotalMilliseconds: Double read GetTotalMilliseconds;
+  end;
+  {$ENDIF}
+
 {$SCOPEDENUMS ON}
   THTTPStatus = (
     Continue = 100,
@@ -687,5 +703,41 @@ begin
     FRegisteredObjects.Clear;
   end;
 end;
+
+{$IF DEFINED(FPC)}
+class function TStopwatch.StartNew: TStopwatch;
+begin
+  Result.FStart := GetTickCount64;
+  Result.FStop := 0;
+  Result.FRunning := True;
+end;
+
+procedure TStopwatch.Stop;
+begin
+  if FRunning then
+  begin
+    FStop := GetTickCount64;
+    FRunning := False;
+  end;
+end;
+
+function TStopwatch.GetElapsedMilliseconds: Int64;
+begin
+  if FRunning then
+    Result := GetTickCount64 - FStart
+  else
+    Result := FStop - FStart;
+end;
+
+function TStopwatch.Elapsed: TStopwatch;
+begin
+  Result := Self;
+end;
+
+function TStopwatch.GetTotalMilliseconds: Double;
+begin
+  Result := Double(GetElapsedMilliseconds);
+end;
+{$ENDIF}
 
 end.

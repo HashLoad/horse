@@ -99,7 +99,7 @@ implementation
 
 uses
   {$IF DEFINED(FPC)}
-  Classes, Diagnostics,
+  Classes,
   {$ELSE}
   System.SysUtils, System.Classes, System.Diagnostics,
   {$ENDIF}

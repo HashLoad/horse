@@ -85,7 +85,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   SyncObjs,
-  Diagnostics,
 {$ELSE}
   System.SysUtils,
   System.RegularExpressions,
