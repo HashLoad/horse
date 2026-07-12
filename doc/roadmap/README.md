@@ -21,7 +21,6 @@ timeline
     section Próximos Middlewares (Backlog)
         Segurança & Redes : "horse-helmet (Security Headers)" : "Adoção Recomendada do gbswagger"
         Protocolos Avançados : "horse-websocket (WebSocket Puro)" : "horse-grpc (Provider RPC)"
-        Transporte : "Suporte a HTTP/2 e HTTP/3 nos adaptadores físicos"
 ```
 
 ---
@@ -33,7 +32,7 @@ Abaixo está o status detalhado das evoluções do framework e de seus middlewar
 | 🟥 A Fazer (Backlog) | 🟨 Em Progresso (Planejamento) | 🟩 Concluído (Entregue) |
 |---|---|---|
 | **`horse-helmet`** (Middleware)<br>Configuração de cabeçalhos de segurança HTTP de forma simples. | **Adoção do `gbswagger`** (Comunidade)<br>Integração e recomendação oficial para documentação OpenAPI. | **Roteamento Regex e Opcionais** (Core)<br>Suporte a rotas dinâmicas complexas no Radix e Tree. |
-| **`horse-websocket`** (Middleware)<br>Suporte a conexões bidirecionais e persistentes WebSockets puros. | **HTTP/2 e HTTP/3** (Infra)<br>Adaptação de transporte de baixo nível nos provedores físicos. | **Ganchos de Telemetria / APM** (Core)<br>Infraestrutura de rastreamento de latência fail-safe. |
+| **`horse-websocket`** (Middleware)<br>Suporte a conexões bidirecionais e persistentes WebSockets puros. | | **Ganchos de Telemetria / APM** (Core)<br>Infraestrutura de rastreamento de latência fail-safe. |
 | **`horse-grpc`** (Provedor)<br>Adaptador de transporte focado em RPC binário de alta performance. | | **Pool de Buffers de Memória** (Core)<br>Reciclagem de arrays de bytes sem alocações de heap. |
 | | | **Middleware `horse-dto`** (Middleware)<br>Desserialização automática e validação por atributos. |
 | | | **Multi-Instance e Server Hooks** (Core)<br>Múltiplos servidores no mesmo processo e hooks de inicialização. |
