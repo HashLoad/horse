@@ -130,4 +130,45 @@ begin
   WriteLn('Iniciando servidor gRPC na porta 9090...');
   THorseGrpcProvider.Listen(9090);
 end.
+
+---
+
+## ⚡ Coexistência de Servidores (HTTP e gRPC paralelos)
+
+Uma das maiores vantagens da arquitetura de isolamento de sockets do Horse é a possibilidade de rodar múltiplos provedores com propostas distintas (como um gateway HTTP/1.1 REST e um microsserviço gRPC de comunicação interna) de forma concorrente no mesmo processo.
+
+Para fazer isso, basta rodar o servidor HTTP tradicional em uma thread de background e o servidor gRPC na thread principal (ou vice-versa):
+
+```delphi
+uses
+  System.Classes,
+  System.SysUtils,
+  Horse,
+  Horse.Provider.Grpc,
+  users;
+
+begin
+  // 1. Configurar rotas REST tradicionais (HTTP/1.1 via Indy)
+  THorse.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+
+  // Inicializar o servidor HTTP REST na porta 8080 em background
+  TThread.CreateAnonymousThread(
+    procedure
+    begin
+      THorse.Listen(8080);
+    end).Start;
+
+  // 2. Registrar e inicializar o serviço gRPC (HTTP/2 h2c)
+  THorseGrpcProvider.RegisterService(IUserService, TUserServiceImpl.Create);
+
+  WriteLn('Servidor HTTP REST rodando na porta 8080...');
+  WriteLn('Servidor gRPC rodando na porta 9090...');
+  THorseGrpcProvider.Listen(9090);
+end.
+```
+
 ```
