@@ -1,0 +1,10 @@
+{
+  "name": "grpc-test-client",
+  "version": "1.0.0",
+  "description": "Test client for Horse gRPC provider",
+  "main": "client.js",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.0",
+    "@grpc/proto-loader": "^0.7.10"
+  }
+}

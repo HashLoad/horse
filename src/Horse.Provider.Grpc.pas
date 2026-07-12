@@ -1,0 +1,660 @@
+unit Horse.Provider.Grpc;
+
+{$IFDEF FPC}
+  {$MODE DELPHI}{$H+}
+{$ENDIF}
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.Generics.Collections,
+  {$IFNDEF FPC}
+  System.Rtti,
+  {$ELSE}
+  Rtti,
+  {$ENDIF}
+  {$IFDEF MSWINDOWS}
+    {$IFNDEF FPC}
+    Winapi.WinSock2, Winapi.Windows,
+    {$ELSE}
+    WinSock2, Windows,
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF FPC}
+    Sockets, BaseUnix,
+    {$ELSE}
+    Posix.SysSocket, Posix.Unistd, Posix.NetinetIn, Posix.ArpaInet,
+    {$ENDIF}
+  {$ENDIF}
+  Horse.Grpc.Attributes,
+  Horse.Core.Protobuf.Rtti,
+  Horse.Core.Protobuf.Serializer,
+  Horse.Grpc.Codec,
+  Horse.Core.Http2.Framing,
+  Horse.Core.Http2.Hpack,
+  Horse.Core.Http2.Stream,
+  Horse.Core.Http2.Connection;
+
+type
+  {$IFDEF MSWINDOWS}
+  THorseSocket = TSocket;
+  {$ELSE}
+  THorseSocket = Integer;
+  {$ENDIF}
+
+  TGrpcMethodMeta = record
+    MethodName: string;
+    RttiMethod: TRttiMethod;
+    RequestClass: TClass;
+    ResponseClass: TClass;
+  end;
+
+  TGrpcServiceMeta = class
+  public
+    ServiceName: string;
+    InterfaceGUID: TGUID;
+    ServiceImplClass: TClass;
+    Methods: TDictionary<string, TGrpcMethodMeta>;
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+  THorseGrpcConnectionThread = class(TThread)
+  private
+    FSocket: THorseSocket;
+    FHttp2Conn: THorseHttp2Connection;
+    procedure OnOutput(AData: PByte; ALen: Integer);
+    procedure OnRequest(AConnection: TObject; AStreamId: Cardinal;
+      const AHeaders: TNameValuePairs; const ABody: TBytes);
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(ASocket: THorseSocket; const AConnectionOptions: THorseHttp2ConnectionOptions);
+    destructor Destroy; override;
+  end;
+
+  THorseGrpcProvider = class
+  private
+    class var FServices: TDictionary<string, TGrpcServiceMeta>;
+    class var FActive: Boolean;
+    class var FPort: Integer;
+    class var FListenSocket: THorseSocket;
+    class var FListenThread: TThread;
+    class procedure OnHttp2Request(AConnection: TObject; AStreamId: Cardinal;
+      const AHeaders: TNameValuePairs; const ABody: TBytes); static;
+    class procedure ListenLoop; static;
+  public
+    class constructor CreateClass;
+    class destructor DestroyClass;
+    class procedure RegisterService(const AInterface: TGUID; const AServiceImplClass: TClass);
+    class procedure Start(APort: Integer = 9090); static;
+    class procedure Stop; static;
+    class function ExportProto: string; static;
+    class property Active: Boolean read FActive;
+    class property Port: Integer read FPort;
+  end;
+
+const
+  {$IFDEF MSWINDOWS}
+  InvalidSocketValue = INVALID_SOCKET;
+  {$ELSE}
+  InvalidSocketValue = -1;
+  {$ENDIF}
+
+function SocketRead(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
+function SocketWrite(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
+procedure CloseSocketHandle(ASocket: THorseSocket);
+function SocketBind(ASocket: THorseSocket; const APort: Integer): Boolean;
+function SocketAccept(ASocket: THorseSocket; out AClientSocket: THorseSocket): Boolean;
+
+implementation
+
+function SocketRead(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
+begin
+  {$IFDEF MSWINDOWS}
+  Result := recv(ASocket, ABuffer^, ALen, 0);
+  {$ELSE}
+    {$IFDEF FPC}
+    Result := fpRecv(ASocket, ABuffer, ALen, 0);
+    {$ELSE}
+    Result := recv(ASocket, ABuffer^, ALen, 0);
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function SocketWrite(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
+begin
+  {$IFDEF MSWINDOWS}
+  Result := send(ASocket, ABuffer^, ALen, 0);
+  {$ELSE}
+    {$IFDEF FPC}
+    Result := fpSend(ASocket, ABuffer, ALen, 0);
+    {$ELSE}
+    Result := send(ASocket, ABuffer^, ALen, 0);
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+procedure CloseSocketHandle(ASocket: THorseSocket);
+begin
+  {$IFDEF MSWINDOWS}
+  closesocket(ASocket);
+  {$ELSE}
+    {$IFDEF FPC}
+    CloseSocket(ASocket);
+    {$ELSE}
+    close(ASocket);
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function SocketBind(ASocket: THorseSocket; const APort: Integer): Boolean;
+var
+  ServerAddr: sockaddr_in;
+begin
+  FillChar(ServerAddr, SizeOf(ServerAddr), 0);
+  ServerAddr.sin_family := AF_INET;
+  ServerAddr.sin_port := htons(APort);
+  ServerAddr.sin_addr.s_addr := INADDR_ANY;
+
+  {$IFDEF MSWINDOWS}
+    {$IFNDEF FPC}
+    Result := bind(ASocket, TSockAddr(ServerAddr), SizeOf(ServerAddr)) = 0;
+    {$ELSE}
+    Result := WinSock2.bind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF FPC}
+    Result := fpBind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+    {$ELSE}
+    Result := bind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function SocketAccept(ASocket: THorseSocket; out AClientSocket: THorseSocket): Boolean;
+var
+  Addr: sockaddr_in;
+  AddrLen: Integer;
+begin
+  AddrLen := SizeOf(Addr);
+  {$IFDEF MSWINDOWS}
+    {$IFNDEF FPC}
+    AClientSocket := accept(ASocket, PSockAddr(@Addr), @AddrLen);
+    {$ELSE}
+    AClientSocket := WinSock2.accept(ASocket, @Addr, @AddrLen);
+    {$ENDIF}
+    Result := AClientSocket <> INVALID_SOCKET;
+  {$ELSE}
+    {$IFDEF FPC}
+    AClientSocket := fpAccept(ASocket, @Addr, @AddrLen);
+    {$ELSE}
+    AClientSocket := accept(ASocket, @Addr, @AddrLen);
+    {$ENDIF}
+    Result := AClientSocket <> -1;
+  {$ENDIF}
+end;
+
+{ TGrpcServiceMeta }
+
+constructor TGrpcServiceMeta.Create;
+begin
+  inherited Create;
+  Methods := TDictionary<string, TGrpcMethodMeta>.Create;
+end;
+
+destructor TGrpcServiceMeta.Destroy;
+begin
+  Methods.Free;
+  inherited;
+end;
+
+{ THorseGrpcConnectionThread }
+
+constructor THorseGrpcConnectionThread.Create(ASocket: THorseSocket;
+  const AConnectionOptions: THorseHttp2ConnectionOptions);
+begin
+  inherited Create(True);
+  FSocket := ASocket;
+  FHttp2Conn := THorseHttp2Connection.Create(AConnectionOptions);
+  FHttp2Conn.OnOutput := OnOutput;
+  FHttp2Conn.OnRequest := OnRequest;
+  FreeOnTerminate := True;
+end;
+
+destructor THorseGrpcConnectionThread.Destroy;
+begin
+  FHttp2Conn.Free;
+  inherited;
+end;
+
+procedure THorseGrpcConnectionThread.OnRequest(AConnection: TObject; AStreamId: Cardinal;
+  const AHeaders: TNameValuePairs; const ABody: TBytes);
+begin
+  THorseGrpcProvider.OnHttp2Request(AConnection, AStreamId, AHeaders, ABody);
+end;
+
+procedure THorseGrpcConnectionThread.OnOutput(AData: PByte; ALen: Integer);
+begin
+  try
+    SocketWrite(FSocket, AData, ALen);
+  except
+    on E: Exception do
+      WriteLn('OnOutput Exception: ', E.Message);
+  end;
+end;
+
+procedure THorseGrpcConnectionThread.Execute;
+var
+  Buffer: array[0..65535] of Byte;
+  BytesRead: Integer;
+begin
+  try
+    try
+      while not Terminated do
+      begin
+        BytesRead := SocketRead(FSocket, @Buffer[0], Length(Buffer));
+        if BytesRead <= 0 then
+          Break;
+        if not Assigned(FHttp2Conn) then
+        begin
+          WriteLn('Error: FHttp2Conn is NIL in Execute loop!');
+          Flush(Output);
+          Break;
+        end;
+        FHttp2Conn.Feed(@Buffer[0], BytesRead);
+      end;
+    except
+      on E: Exception do
+      begin
+        WriteLn('Execute Loop Exception: ', E.Message);
+        Flush(Output);
+      end;
+    end;
+  finally
+    CloseSocketHandle(FSocket);
+  end;
+end;
+
+{ THorseGrpcProvider }
+
+class constructor THorseGrpcProvider.CreateClass;
+begin
+  FServices := TDictionary<string, TGrpcServiceMeta>.Create;
+  FActive := False;
+  FPort := 0;
+  FListenSocket := InvalidSocketValue;
+end;
+
+class destructor THorseGrpcProvider.DestroyClass;
+var
+  Meta: TGrpcServiceMeta;
+begin
+  for Meta in FServices.Values do
+    Meta.Free;
+  FServices.Free;
+end;
+
+class procedure THorseGrpcProvider.RegisterService(const AInterface: TGUID;
+  const AServiceImplClass: TClass);
+var
+  Context: TRttiContext;
+  RttiType: TRttiType;
+  IntfType: TRttiInterfaceType;
+  Attr: TCustomAttribute;
+  ServiceName: string;
+  ServiceMeta: TGrpcServiceMeta;
+  Method: TRttiMethod;
+  MethodMeta: TGrpcMethodMeta;
+  Params: TArray<TRttiParameter>;
+  T: TRttiType;
+begin
+  Context := TRttiContext.Create;
+  IntfType := nil;
+  for T in Context.GetTypes do
+  begin
+    if (T.TypeKind = tkInterface) and (TRttiInterfaceType(T).GUID = AInterface) then
+    begin
+      IntfType := TRttiInterfaceType(T);
+      Break;
+    end;
+  end;
+
+  if not Assigned(IntfType) then
+    raise Exception.Create('Interface not found in RTTI. Make sure to define it with GUID and {$M+} enabled.');
+
+  ServiceName := '';
+  for Attr in IntfType.GetAttributes do
+  begin
+    if Attr is GrpcServiceAttribute then
+    begin
+      ServiceName := GrpcServiceAttribute(Attr).ServiceName;
+      Break;
+    end;
+  end;
+
+  if ServiceName = '' then
+    ServiceName := IntfType.Name;
+
+  ServiceMeta := TGrpcServiceMeta.Create;
+  ServiceMeta.ServiceName := ServiceName;
+  ServiceMeta.InterfaceGUID := AInterface;
+  ServiceMeta.ServiceImplClass := AServiceImplClass;
+
+  RttiType := Context.GetType(AServiceImplClass);
+  if Assigned(RttiType) then
+  begin
+    for Method in IntfType.GetMethods do
+    begin
+      for Attr in Method.GetAttributes do
+      begin
+        if Attr is GrpcMethodAttribute then
+        begin
+          Params := Method.GetParameters;
+          if Length(Params) = 1 then
+          begin
+            MethodMeta.MethodName := GrpcMethodAttribute(Attr).GrpcMethodName;
+            MethodMeta.RttiMethod := RttiType.GetMethod(Method.Name);
+            if not Assigned(MethodMeta.RttiMethod) then
+              raise Exception.CreateFmt('Method "%s" has no RTTI on implementer class "%s". Ensure it is public/published and compiled with RTTI enabled.', [Method.Name, AServiceImplClass.ClassName]);
+            
+            if Params[0].ParamType is TRttiInstanceType then
+              MethodMeta.RequestClass := TRttiInstanceType(Params[0].ParamType).MetaclassType
+            else
+              raise Exception.CreateFmt('Request parameter type "%s" is not a class in RTTI. Make sure it is registered/used.', [Params[0].ParamType.Name]);
+              
+            if Method.ReturnType is TRttiInstanceType then
+              MethodMeta.ResponseClass := TRttiInstanceType(Method.ReturnType).MetaclassType
+            else
+              raise Exception.CreateFmt('Response return type "%s" is not a class in RTTI. Make sure it is registered/used.', [Method.ReturnType.Name]);
+
+            ServiceMeta.Methods.Add(MethodMeta.MethodName.ToLower, MethodMeta);
+          end;
+          Break;
+        end;
+      end;
+    end;
+  end;
+
+  FServices.Add(ServiceName.ToLower, ServiceMeta);
+end;
+
+class procedure THorseGrpcProvider.Start(APort: Integer);
+var
+  {$IFDEF MSWINDOWS}
+  WData: TWSAData;
+  {$ENDIF}
+  Res: Integer;
+begin
+  if FActive then Exit;
+  FPort := APort;
+
+  {$IFDEF MSWINDOWS}
+  Res := WSAStartup($202, WData);
+  if Res <> 0 then
+    raise Exception.Create('WSAStartup failed');
+  {$ENDIF}
+
+  FListenSocket := socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if FListenSocket = InvalidSocketValue then
+    raise Exception.Create('Failed to create listen socket');
+
+  if not SocketBind(FListenSocket, APort) then
+  begin
+    CloseSocketHandle(FListenSocket);
+    raise Exception.CreateFmt('Failed to bind to port %d', [APort]);
+  end;
+
+  Res := listen(FListenSocket, SOMAXCONN);
+  if Res = -1 then
+  begin
+    CloseSocketHandle(FListenSocket);
+    raise Exception.CreateFmt('Failed to bind to port %d', [APort]);
+  end;
+
+  Res := listen(FListenSocket, SOMAXCONN);
+  if Res = -1 then
+  begin
+    CloseSocketHandle(FListenSocket);
+    raise Exception.Create('Failed to listen on socket');
+  end;
+
+  FActive := True;
+  FListenThread := TThread.CreateAnonymousThread(
+    procedure
+    begin
+      ListenLoop;
+    end);
+  FListenThread.FreeOnTerminate := False;
+  FListenThread.Start;
+end;
+
+class procedure THorseGrpcProvider.Stop;
+begin
+  if not FActive then Exit;
+  FActive := False;
+  CloseSocketHandle(FListenSocket);
+  FListenThread.WaitFor;
+  FListenThread.Free;
+  FListenThread := nil;
+  {$IFDEF MSWINDOWS}
+  WSACleanup;
+  {$ENDIF}
+end;
+
+class procedure THorseGrpcProvider.ListenLoop;
+var
+  ClientSocket: THorseSocket;
+  Opts: THorseHttp2ConnectionOptions;
+begin
+  Opts := THorseHttp2ConnectionOptions.Default;
+  while FActive do
+  begin
+    if SocketAccept(FListenSocket, ClientSocket) then
+    begin
+      THorseGrpcConnectionThread.Create(ClientSocket, Opts).Start;
+    end;
+  end;
+end;
+
+class procedure THorseGrpcProvider.OnHttp2Request(AConnection: TObject; AStreamId: Cardinal;
+  const AHeaders: TNameValuePairs; const ABody: TBytes);
+var
+  Path: string;
+  Parts: TArray<string>;
+  ServiceName: string;
+  MethodName: string;
+  Svc: TGrpcServiceMeta;
+  Method: TGrpcMethodMeta;
+  Offset: Integer;
+  Compressed: Boolean;
+  MsgBytes: TBytes;
+  ReqObj: TObject;
+  ReqVal: TValue;
+  ResObj: TObject;
+  ResVal: TValue;
+  ServiceInstance: TObject;
+  Serialized: TBytes;
+  Framed: TBytes;
+  ResHeaders: TNameValuePairs;
+  Trailers: TNameValuePairs;
+  Http2Conn: THorseHttp2Connection;
+begin
+  Http2Conn := THorseHttp2Connection(AConnection);
+
+  Path := '';
+  for Offset := 0 to High(AHeaders) do
+  begin
+    if AHeaders[Offset].Name = ':path' then
+    begin
+      Path := AHeaders[Offset].Value;
+      Break;
+    end;
+  end;
+
+  Parts := Path.Split(['/']);
+  if Length(Parts) < 3 then
+  begin
+    SetLength(ResHeaders, 2);
+    ResHeaders[0].Name := ':status'; ResHeaders[0].Value := '200';
+    ResHeaders[1].Name := 'content-type'; ResHeaders[1].Value := 'application/grpc';
+
+    SetLength(Trailers, 2);
+    Trailers[0].Name := 'grpc-status'; Trailers[0].Value := '12';
+    Trailers[1].Name := 'grpc-message'; Trailers[1].Value := 'Unimplemented';
+
+    Http2Conn.SendResponse(AStreamId, ResHeaders, nil, False);
+    Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+    Exit;
+  end;
+
+  ServiceName := Parts[1].ToLower;
+  MethodName := Parts[2].ToLower;
+
+  if FServices.TryGetValue(ServiceName, Svc) and Svc.Methods.TryGetValue(MethodName, Method) then
+  begin
+    Offset := 0;
+    if THorseGrpcMessageCodec.TryDecode(ABody, Offset, Compressed, MsgBytes) then
+    begin
+      ReqObj := Method.RequestClass.Create;
+      try
+        THorseProtobufSerializer.Deserialize(MsgBytes, ReqObj);
+
+        ServiceInstance := Svc.ServiceImplClass.Create;
+        try
+          TValue.Make(@ReqObj, Method.RequestClass.ClassInfo, ReqVal);
+          ResVal := Method.RttiMethod.Invoke(ServiceInstance, [ReqVal]);
+          ResObj := ResVal.AsObject;
+          try
+            Serialized := THorseProtobufSerializer.Serialize(ResObj);
+            Framed := THorseGrpcMessageCodec.Encode(Serialized);
+
+            SetLength(ResHeaders, 3);
+            ResHeaders[0].Name := ':status'; ResHeaders[0].Value := '200';
+            ResHeaders[1].Name := 'content-type'; ResHeaders[1].Value := 'application/grpc';
+            ResHeaders[2].Name := 'grpc-accept-encoding'; ResHeaders[2].Value := 'identity';
+
+            SetLength(Trailers, 2);
+            Trailers[0].Name := 'grpc-status'; Trailers[0].Value := '0';
+            Trailers[1].Name := 'grpc-message'; Trailers[1].Value := '';
+
+            Http2Conn.SendResponse(AStreamId, ResHeaders, Framed, False);
+            Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+          finally
+            ResObj.Free;
+          end;
+        finally
+          ServiceInstance.Free;
+        end;
+      finally
+        ReqObj.Free;
+      end;
+    end;
+  end
+  else
+  begin
+    SetLength(ResHeaders, 2);
+    ResHeaders[0].Name := ':status'; ResHeaders[0].Value := '200';
+    ResHeaders[1].Name := 'content-type'; ResHeaders[1].Value := 'application/grpc';
+
+    SetLength(Trailers, 2);
+    Trailers[0].Name := 'grpc-status'; Trailers[0].Value := '12';
+    Trailers[1].Name := 'grpc-message'; Trailers[1].Value := 'Service or Method Unimplemented';
+
+    Http2Conn.SendResponse(AStreamId, ResHeaders, nil, False);
+    Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+  end;
+end;
+
+class function THorseGrpcProvider.ExportProto: string;
+var
+  Sb: TStringBuilder;
+  Svc: TGrpcServiceMeta;
+  Mtd: TGrpcMethodMeta;
+  Props: TArray<THorseProtobufProp>;
+  Prop: THorseProtobufProp;
+  MsgClasses: TList<TClass>;
+  C: TClass;
+
+  procedure AddMessage(AClass: TClass);
+  begin
+    if MsgClasses.Contains(AClass) then Exit;
+    MsgClasses.Add(AClass);
+  end;
+
+  function MapDelphiTypeToProto(hpt: THorsePropType; APropType: TRttiType): string;
+  begin
+    case hpt of
+      hptInt32: Result := 'int32';
+      hptInt64: Result := 'int64';
+      hptDouble: Result := 'double';
+      hptSingle: Result := 'float';
+      hptString: Result := 'string';
+      hptBool: Result := 'bool';
+      hptBytes: Result := 'bytes';
+      hptMessage:
+        begin
+          if APropType is TRttiInstanceType then
+            Result := TRttiInstanceType(APropType).MetaclassType.ClassName.Substring(1)
+          else
+            Result := APropType.Name;
+        end;
+      else Result := 'string';
+    end;
+  end;
+
+begin
+  Sb := TStringBuilder.Create;
+  MsgClasses := TList<TClass>.Create;
+  try
+    Sb.AppendLine('syntax = "proto3";');
+    Sb.AppendLine;
+
+    for Svc in FServices.Values do
+    begin
+      for Mtd in Svc.Methods.Values do
+      begin
+        AddMessage(Mtd.RequestClass);
+        AddMessage(Mtd.ResponseClass);
+      end;
+    end;
+
+    for Svc in FServices.Values do
+    begin
+      Sb.AppendLine('service ' + Svc.ServiceName + ' {');
+      for Mtd in Svc.Methods.Values do
+      begin
+        Sb.AppendLine(Format('  rpc %s (%s) returns (%s);', [
+          Mtd.MethodName,
+          Mtd.RequestClass.ClassName.Substring(1),
+          Mtd.ResponseClass.ClassName.Substring(1)
+        ]));
+      end;
+      Sb.AppendLine('}');
+      Sb.AppendLine;
+    end;
+
+    for C in MsgClasses do
+    begin
+      Sb.AppendLine('message ' + C.ClassName.Substring(1) + ' {');
+      Props := THorseProtobufRtti.GetProperties(C);
+      for Prop in Props do
+      begin
+        Sb.AppendLine(Format('  %s %s = %d;', [
+          MapDelphiTypeToProto(Prop.PropType, Prop.RttiType),
+          Prop.Name.ToLower,
+          Prop.Tag
+        ]));
+      end;
+      Sb.AppendLine('}');
+      Sb.AppendLine;
+    end;
+
+    Result := Sb.ToString;
+  finally
+    MsgClasses.Free;
+    Sb.Free;
+  end;
+end;
+
+end.
