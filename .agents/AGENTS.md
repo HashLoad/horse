@@ -42,4 +42,11 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * Ao manipular parâmetros opcionais de rota `:paramName?` nos roteadores ou middlewares, garanta que o dicionário de parâmetros `Params` da requisição sempre receba a chave correspondente mesmo quando o parâmetro for omitido (nesse caso com valor vazio `''`), para assegurar determinismo no acesso das chaves em runtime.
 * Para qualquer novo utilitário de Regex ou validação de rotas, utilize e estenda a unit unificada `Horse.Core.Regex.pas` (que abstrai `System.RegularExpressions` e `RegExpr` de forma compatível e multiplataforma), nunca importando bibliotecas brutas de Regex diretamente nos roteadores para preservar a compilação no Lazarus/FPC.
 
+## 🟢 Desenvolvimento com gRPC e RTTI
+* **Diretiva de Compilação RTTI (`{$M+}`)**: Ative sempre a diretiva `{$M+}` na unidade de mensagens gRPC (como `users.pas`) para garantir que os metadados RTTI sejam gerados de forma correta e completa em ambos os compiladores (Delphi e FPC/Lazarus).
+* **Visibilidade de Propriedades**: Declare todas as propriedades de classes de mensagens gRPC (Request e Response) na seção `published` em vez de `public` ou `private`. Isso garante a geração completa do metadado de escrita e leitura RTTI clássico e evita Access Violations no `TRttiProperty.SetValue` decorrentes de offsets de campos nulos.
+* **Ciclo de Vida do `TRttiContext`**: O tempo de vida dos objetos RTTI (como `TRttiProperty` ou `TRttiType`) está vinculado à instância de `TRttiContext` que os retornou. Para evitar referências pendentes (*dangling pointers*) e Access Violations na heap durante a serialização/deserialização concorrente, utilize uma instância de `TRttiContext` estática a nível de classe e global (ex: `THorseProtobufRtti.FContext`) em vez de variáveis locais temporárias.
+* **Gerenciamento de Instâncias de Serviço**: Ao implementar serviços baseados em interfaces (`IInvokable`), desative a contagem de referências implícita (ARC) no Delphi sobrescrevendo `_AddRef` e `_Release` para retornar `-1` na classe de serviço implementadora (como `TUserServiceImpl`). Isso evita a auto-destruição prematura do objeto de serviço quando ele for invocado via RTTI ou repassado na infraestrutura do provedor.
+
+
 
