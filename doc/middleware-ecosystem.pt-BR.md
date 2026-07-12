@@ -92,6 +92,9 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | Servidor de arquivos estáticos de alta performance com suporte a Range, Cache e SPA Fallback | ✔️ | ✔️ |
 | [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto) | Middleware de auto-binding e validação declarativa de dados | ✔️ | ✔️ |
 | [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac) | Controle de acesso baseado em funções (RBAC) e escopos (scopes) | ✔️ | ✔️ |
+| [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation) | Middleware de validação de esquemas (schemas) de payload de requisições | ✔️ | ✔️ |
+| [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart) | Middleware para processamento e parsing de corpos de requisição multipart/form-data | ✔️ | ✔️ |
+| [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet) | Middleware de segurança para proteção e configuração de cabeçalhos HTTP | ✔️ | ✔️ |
 
 
 ---

@@ -203,6 +203,9 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac)                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart)                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 
 ## 📊 Telemetry
