@@ -260,6 +260,7 @@ type
     class procedure Listen(const AHost: string; const ACallbackListen: Horse.Proc.TProc = nil; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc = nil); reintroduce; overload; static;
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
+    class function GetActivePort: Integer; override;
     class procedure StopListen; override;
     class function IsRunning: Boolean;
 
@@ -1442,6 +1443,11 @@ begin
   end;
 end;
 
+class function THorseProviderIOCP.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
 class procedure THorseProviderIOCP.InternalListen;
 const
   GuidAcceptEx: TGUID = '{B5367DF1-CBAC-11CF-95CA-00805F48A192}';
@@ -1451,6 +1457,7 @@ var
   LWorker: THorseIocpWorker;
   LPtr: Pointer;
 begin
+  TriggerBeforeListen;
   FListenSocket := CreateListenSocket(FPort, FHost);
   
   // Obtém ponteiros das extensões do Winsock
@@ -1487,6 +1494,7 @@ class procedure THorseProviderIOCP.InternalStopListen;
 var
   I: Integer;
 begin
+  TriggerBeforeStop;
   FRunning := False;
   
   for I := 0 to FWorkers.Count - 1 do
@@ -1510,21 +1518,11 @@ end;
 
 class procedure THorseProviderIOCP.InternalListenLoop(const ACallbackListen, ACallbackStopListen: Horse.Proc.TProc);
 begin
-  try
-    InternalListen;
-  except
-    Exit;
-  end;
-  if Assigned(ACallbackListen) then
-    ACallbackListen()
-  else
-    DoOnListen;
+  InternalListen;
+  DoOnListen;
   while FRunning do
     Sleep(100);
-  if Assigned(ACallbackStopListen) then
-    ACallbackStopListen()
-  else
-    DoOnStopListen;
+  DoOnStopListen;
 end;
 
 class procedure THorseProviderIOCP.PostReadConnection(AContext: TIocpConnectionContext);

@@ -12,6 +12,9 @@ uses
   {$ENDIF}
   System.Classes,
   System.SysUtils,
+  {$IFNDEF FPC}
+  Web.ReqMulti,
+  {$ENDIF}
   Horse,
   Horse.Commons;
 

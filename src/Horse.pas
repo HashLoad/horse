@@ -356,7 +356,8 @@ uses
   Horse.Core.Param.Config,
   Horse.Callback,
   Horse.Provider.Config,
-  Horse.Core.Router.Radix;
+  Horse.Core.Router.Radix,
+  Horse.Instance;
 
 type
   EHorseException = Horse.Exception.EHorseException;
@@ -381,6 +382,15 @@ type
   PHorseRouterTree = Horse.Core.RouterTree.PHorseRouterTree;
   THorseCrossSocketConfig = Horse.Provider.Config.THorseCrossSocketConfig;
   THorseRadixRouter = Horse.Core.Router.Radix.THorseRadixRouter;
+  THorseInstance = Horse.Instance.THorseInstance;
+  THorseServerLifecycleProc = Horse.Instance.THorseServerLifecycleProc;
+  THorseServerLifecycleMethod = Horse.Instance.THorseServerLifecycleMethod;
+  IHorseStartup = Horse.Instance.IHorseStartup;
+  {$IF DEFINED(FPC)}
+  THorseListenCallback = TProc;
+  {$ELSE}
+  THorseListenCallback = System.SysUtils.TProc;
+  {$ENDIF}
 
 { PATCH-HORSE-2 — THorseProvider resolution follows the same three-axis model
   as the uses clause above:
@@ -494,17 +504,168 @@ type
 {$ENDIF}
 
   THorse = class(THorseProvider)
+  private
+    class function GetActiveRequests: Integer; static; inline;
+    class function GetIsShuttingDown: Boolean; static; inline;
   public
     class procedure UseRadixRouter;
+    class property ActiveRequests: Integer read GetActiveRequests;
+    class property IsShuttingDown: Boolean read GetIsShuttingDown;
+
+    class function UseStartup(const AStartup: IHorseStartup): THorse;
+    class function AddOnBeforeListen(const ACallback: THorseServerLifecycleProc): THorse; overload;
+    class function AddOnAfterListen(const ACallback: THorseServerLifecycleProc): THorse; overload;
+    class function AddOnBeforeStop(const ACallback: THorseServerLifecycleProc): THorse; overload;
+    class function AddOnAfterStop(const ACallback: THorseServerLifecycleProc): THorse; overload;
+
+    class function AddOnBeforeListen(const ACallback: THorseServerLifecycleMethod): THorse; overload;
+    class function AddOnAfterListen(const ACallback: THorseServerLifecycleMethod): THorse; overload;
+    class function AddOnBeforeStop(const ACallback: THorseServerLifecycleMethod): THorse; overload;
+    class function AddOnAfterStop(const ACallback: THorseServerLifecycleMethod): THorse; overload;
+    class function AddOnTelemetry(const ACallback: THorseOnTelemetry): THorse;
   end;
 
 implementation
 
+uses
+  Horse.Core.Base,
+  Horse.Provider.Abstract;
+
 { THorse }
+
+class function THorse.GetActiveRequests: Integer;
+begin
+  Result := THorseCore.GetActiveRequests;
+end;
+
+class function THorse.GetIsShuttingDown: Boolean;
+begin
+  Result := THorseCore.GetIsShuttingDown;
+end;
 
 class procedure THorse.UseRadixRouter;
 begin
   THorse.Routes := THorseRadixRouter.Create;
+end;
+
+
+
+class function THorse.UseStartup(const AStartup: IHorseStartup): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).UseStartup(AStartup);
+end;
+
+class function THorse.AddOnBeforeListen(const ACallback: THorseServerLifecycleProc): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnBeforeListen(ACallback)
+  else
+    THorseProviderAbstract.AddOnBeforeListen(ACallback);
+end;
+
+class function THorse.AddOnAfterListen(const ACallback: THorseServerLifecycleProc): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnAfterListen(ACallback)
+  else
+    THorseProviderAbstract.AddOnAfterListen(ACallback);
+end;
+
+class function THorse.AddOnBeforeStop(const ACallback: THorseServerLifecycleProc): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnBeforeStop(ACallback)
+  else
+    THorseProviderAbstract.AddOnBeforeStop(ACallback);
+end;
+
+class function THorse.AddOnAfterStop(const ACallback: THorseServerLifecycleProc): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnAfterStop(ACallback)
+  else
+    THorseProviderAbstract.AddOnAfterStop(ACallback);
+end;
+
+class function THorse.AddOnBeforeListen(const ACallback: THorseServerLifecycleMethod): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnBeforeListen(ACallback)
+  else
+    THorseProviderAbstract.AddOnBeforeListen(ACallback);
+end;
+
+class function THorse.AddOnAfterListen(const ACallback: THorseServerLifecycleMethod): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnAfterListen(ACallback)
+  else
+    THorseProviderAbstract.AddOnAfterListen(ACallback);
+end;
+
+class function THorse.AddOnBeforeStop(const ACallback: THorseServerLifecycleMethod): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnBeforeStop(ACallback)
+  else
+    THorseProviderAbstract.AddOnBeforeStop(ACallback);
+end;
+
+class function THorse.AddOnAfterStop(const ACallback: THorseServerLifecycleMethod): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnAfterStop(ACallback)
+  else
+    THorseProviderAbstract.AddOnAfterStop(ACallback);
+end;
+
+class function THorse.AddOnTelemetry(const ACallback: THorseOnTelemetry): THorse;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorse(Self);
+  LInstance := ResolveBuildingInstance;
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    THorseInstance(LInstance).AddOnTelemetry(ACallback)
+  else
+    THorseCore.AddOnTelemetry(ACallback);
 end;
 
 end.

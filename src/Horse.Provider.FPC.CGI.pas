@@ -1,4 +1,4 @@
-unit Horse.Provider.FPC.CGI;
+﻿unit Horse.Provider.FPC.CGI;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -26,6 +26,7 @@ type
     class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
   public
     constructor Create; reintroduce; overload;
+    class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
@@ -57,10 +58,16 @@ begin
   inherited Create;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := 0;
+end;
+
 class procedure THorseProvider.InternalListen;
 var
   LCGIApplication: TCGIApplication;
 begin
+  TriggerBeforeListen;
   inherited;
   LCGIApplication := GetDefaultCGIApplication;
   LCGIApplication.AllowDefaultModule := True;

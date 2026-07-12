@@ -90,6 +90,8 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Controle de limite de requisições (Rate Limiting) com suporte a múltiplos storages | ✔️ | ✔️ |
 | [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | Compressão de alta performance com suporte a Gzip, Deflate e Brotli | ✔️ | ✔️ |
 | [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | Servidor de arquivos estáticos de alta performance com suporte a Range, Cache e SPA Fallback | ✔️ | ✔️ |
+| [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto) | Middleware de auto-binding e validação declarativa de dados | ✔️ | ✔️ |
+| [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac) | Controle de acesso baseado em funções (RBAC) e escopos (scopes) | ✔️ | ✔️ |
 
 
 ---

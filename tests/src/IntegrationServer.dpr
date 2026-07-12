@@ -58,7 +58,7 @@ type
 procedure TTestThread.Execute;
 begin
   try
-    THorse.Listen(PORT);
+    THorse.Listen(PORT, '127.0.0.1');
   except
     on E: Exception do
       Writeln('Server Exception: ', E.Message);

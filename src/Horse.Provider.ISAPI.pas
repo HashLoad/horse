@@ -34,6 +34,7 @@ exports
 
 class procedure THorseProvider.InternalListen;
 begin
+  TriggerBeforeListen;
   CoInitFlags := COINIT_MULTITHREADED;
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;

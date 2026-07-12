@@ -1,5 +1,7 @@
 # Script de Validacao de Integridade do Horse - Console Complete
 $ErrorActionPreference = "Stop"
+$script:totalErrors = 0
+
 
 function Run-IntegrityTest($RouterName, $Define) {
     Write-Host "==================================================" -ForegroundColor Cyan
@@ -27,7 +29,6 @@ function Run-IntegrityTest($RouterName, $Define) {
 
     # 3. Executando chamadas e validacoes
     Write-Host "[3/5] Executando chamadas HTTP..." -ForegroundColor Yellow
-    $errors = 0
 
     # Funcao helper de validacao
     function Assert-Response($TestName, $Actual, $Expected) {
@@ -37,7 +38,7 @@ function Run-IntegrityTest($RouterName, $Define) {
             Write-Host "  [FALHA] $TestName" -ForegroundColor Red
             Write-Host "    Esperado: $Expected" -ForegroundColor DarkRed
             Write-Host "    Obtido: $Actual" -ForegroundColor DarkRed
-            $global:errors++
+            $script:totalErrors++
         }
     }
 
@@ -84,7 +85,7 @@ function Run-IntegrityTest($RouterName, $Define) {
         } else {
             Write-Host "  [FALHA] GET /error-trigger (Clean JSON Exception)" -ForegroundColor Red
             Write-Host "    Obtido: $resErr" -ForegroundColor DarkRed
-            $errors++
+            $script:totalErrors++
         }
 
         # Testes do Roteamento de Wildcard (*) e prioridade de rotas
@@ -116,7 +117,7 @@ function Run-IntegrityTest($RouterName, $Define) {
             Assert-Response "PUT /api/teste3 (Group Route End Put)" $res "put3"
         } catch {
             Write-Host "  [FALHA] PUT /api/teste3 falhou com erro HTTP (esperado no bug #357)" -ForegroundColor Red
-            $global:errors++
+            $script:totalErrors++
         }
 
         # Teste de Resiliencia: Access Violation Simulado (esperamos HTTP 500 sem cair o servidor)
@@ -127,11 +128,11 @@ function Run-IntegrityTest($RouterName, $Define) {
             } else {
                 Write-Host "  [FALHA] GET /av-trigger (Access Violation Handled)" -ForegroundColor Red
                 Write-Host "    Obtido: $resErr" -ForegroundColor DarkRed
-                $errors++
+                $script:totalErrors++
             }
         } catch {
             Write-Host "  [FALHA] GET /av-trigger falhou ou causou excecao nao tratada no PowerShell: $_" -ForegroundColor Red
-            $errors++
+            $script:totalErrors++
         }
 
         # Teste de Resiliencia: Stack Overflow Simulado (estouro de limite de pilha)
@@ -148,7 +149,7 @@ function Run-IntegrityTest($RouterName, $Define) {
 
     } catch {
         Write-Host "Erro inesperado ao realizar chamadas HTTP: $_" -ForegroundColor Red
-        $errors++
+        $script:totalErrors++
     }
 
     # 4. Finalizando o Servidor
@@ -159,23 +160,18 @@ function Run-IntegrityTest($RouterName, $Define) {
     # 5. Limpeza de arquivos gerados
     Write-Host "[5/5] Limpando executavel e arquivos temporarios..." -ForegroundColor Yellow
     Remove-Item -Path "ConsoleComplete.exe", "ConsoleComplete.dcu" -Force -ErrorAction SilentlyContinue
-
-    return $errors
 }
 
 # Executando rodadas de teste
-$totalErrors = 0
-$errorsDefault = Run-IntegrityTest -RouterName "Default Router (RouterTree)" -Define ""
-$errorsRadix = Run-IntegrityTest -RouterName "Radix Router (RadixRouter)" -Define "HORSE_RADIX_ROUTER"
-
-$totalErrors = $errorsDefault + $errorsRadix
+Run-IntegrityTest -RouterName "Default Router (RouterTree)" -Define ""
+Run-IntegrityTest -RouterName "Radix Router (RadixRouter)" -Define "HORSE_RADIX_ROUTER"
 
 Write-Host "==================================================" -ForegroundColor Cyan
-if ($totalErrors -eq 0) {
+if ($script:totalErrors -eq 0) {
     Write-Host "      TODOS OS TESTES DE INTEGRIDADE PASSARAM!     " -ForegroundColor Green
     Write-Host "==================================================" -ForegroundColor Green
 } else {
-    Write-Host "      OCORRERAM $totalErrors FALHA(S) NO TOTAL DOS TESTES!  " -ForegroundColor Red
+    Write-Host "      OCORRERAM $script:totalErrors FALHA(S) NO TOTAL DOS TESTES!  " -ForegroundColor Red
     Write-Host "==================================================" -ForegroundColor Red
     exit 1
 }

@@ -90,6 +90,8 @@ These are not maintained by HashLoad but are listed here because they're commonl
 | [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit) | Rate limiting control with support for multiple backends and storages | ✔️ | ✔️ |
 | [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2) | High-performance response compression with Gzip, Deflate, and Brotli support | ✔️ | ✔️ |
 | [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | High-performance static file serving with Range, Cache, and SPA Fallback support | ✔️ | ✔️ |
+| [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto) | Auto-binding and declarative validation middleware | ✔️ | ✔️ |
+| [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac) | Role-Based Access Control (RBAC) and scopes middleware | ✔️ | ✔️ |
 
 
 ---

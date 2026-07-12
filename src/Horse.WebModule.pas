@@ -16,7 +16,8 @@ uses
   System.Classes,
   Web.HTTPApp,
 {$ENDIF}
-  Horse.Core;
+  Horse.Core,
+  Horse.Core.Base;
 
 type
 {$IF DEFINED(FPC)}
@@ -89,13 +90,34 @@ procedure THorseWebModule.HandlerAction(const Sender: TObject; const Request: {$
 var
   LRequest: THorseRequest;
   LResponse: THorseResponse;
+  LCore: THorseCoreBase;
+  LPort: Integer;
 begin
   Handled := True;
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
   try
     try
-      FHorse.Routes.Execute(LRequest, LResponse);
+      LPort := Request.ServerPort;
+      LCore := GetHorseInstanceByPort(LPort);
+      if LCore <> nil then
+      begin
+        LCore.DoIncrementActiveRequests;
+        try
+          LCore.GetRoutes.Execute(LRequest, LResponse);
+        finally
+          LCore.DoDecrementActiveRequests;
+        end;
+      end
+      else
+      begin
+        THorseCore.IncrementActiveRequests;
+        try
+          THorseCore.Routes.Execute(LRequest, LResponse);
+        finally
+          THorseCore.DecrementActiveRequests;
+        end;
+      end;
     except
       on E: Exception do
       begin

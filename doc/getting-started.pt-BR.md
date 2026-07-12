@@ -162,7 +162,43 @@ Os dois Providers são mutuamente exclusivos (um transporte por build). O alias 
 
 Receitas concretas (tipo de projeto, esqueleto de código, comandos de instalação) pra cada formato: [Cheatsheet de Deploy](./deployment.pt-BR.md), ou a forma mais longa em [Providers e Tipos de aplicação §8](./providers.pt-BR.md#8-rodando-o-crosssocket-em-cada-tipo-de-aplicação).
 
-## 7. Próximos passos
+## 7. Inicialização Estruturada (UseStartup)
+
+Para projetos corporativos maiores, o Horse suporta o padrão de inicialização estruturada (semelhante ao *Startup* do ASP.NET Core). Isso permite isolar a configuração de middlewares, ganchos e rotas em uma classe dedicada que implementa a interface `IHorseStartup`:
+
+```delphi
+type
+  THorseStartup = class(TInterfacedObject, IHorseStartup)
+  public
+    procedure Configure(const AInstance: THorseInstance);
+  end;
+
+procedure THorseStartup.Configure(const AInstance: THorseInstance);
+begin
+  // Configuração local da instância
+  AInstance.Use(Jhonson);
+  AInstance.Get('/ping',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('pong');
+    end);
+end;
+```
+
+Para injetar essa configuração no servidor, basta invocar o método `UseStartup`:
+
+```delphi
+var
+  LStartup: IHorseStartup;
+begin
+  LStartup := THorseStartup.Create;
+  THorse.UseStartup(LStartup).Listen(9000);
+end.
+```
+
+Um projeto de exemplo executável e completo está disponível em [samples/delphi/console_use_startup/ConsoleUseStartup.dpr](../samples/delphi/console_use_startup/ConsoleUseStartup.dpr).
+
+## 8. Próximos passos
 
 - [Roteamento](./routing.pt-BR.md) — declarar endpoints, parâmetros de caminho, grupos de rotas.
 - [Request e Response](./request-response.pt-BR.md) — ler entrada, escrever saída.

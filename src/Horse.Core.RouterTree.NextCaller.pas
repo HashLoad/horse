@@ -86,6 +86,46 @@ uses
 
 
 
+{$IF DEFINED(FPC)}
+threadvar
+  GCurrentNextCaller: Pointer;
+
+procedure NextCallerDoPreValidation;
+var
+  LCallback: TList<THorseCallback>;
+  LNextCaller: TNextCaller;
+begin
+  LNextCaller := TNextCaller(GCurrentNextCaller);
+  try
+    LNextCaller.FFound^ := True;
+    if LNextCaller.FCallBack.TryGetValue(LNextCaller.FHTTPType, LCallback) then
+    begin
+      THorseCallbackProc(LCallback.Items[LNextCaller.FIndexCallback])(LNextCaller.FRequest, LNextCaller.FResponse, LNextCaller.Next);
+    end;
+  except
+    on E: Exception do
+    begin
+      if E is EHorseCallbackInterrupted then
+        raise;
+      if E is EHorseException then
+      begin
+        LNextCaller.FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+        Exit;
+      end;
+      if THorse.HasOnError then
+      begin
+        THorse.ExecuteOnError(LNextCaller.FRequest, LNextCaller.FResponse, E);
+        Exit;
+      end;
+      if LNextCaller.FResponse.Status < Integer(THTTPStatus.BadRequest) then
+        LNextCaller.FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+      Exit;
+    end;
+  end;
+  LNextCaller.Next;
+end;
+{$ENDIF}
+
 procedure TNextCaller.Configure(
   {$IF DEFINED(FPC)}
   const ACallback: TObjectDictionary<TMethodType, TList<THorseCallback>>;
@@ -139,9 +179,9 @@ begin
   end;
   FIndex := -1;
   FIndexCallback := -1;
-  if FIsParamsKey and (LCurrentStr <> '') then
+  if FIsParamsKey then
   begin
-      FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
+    FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
   end;
 end;
 
@@ -190,6 +230,10 @@ begin
       begin
         if FIndexCallback = 0 then
         begin
+          {$IF DEFINED(FPC)}
+          GCurrentNextCaller := Self;
+          THorse.ExecutePreValidation(FRequest, FResponse, NextCallerDoPreValidation);
+          {$ELSE}
           THorse.ExecutePreValidation(FRequest, FResponse,
             procedure
             begin
@@ -222,6 +266,7 @@ begin
               end;
               Next;
             end);
+          {$ENDIF}
         end
         else
         begin
@@ -258,25 +303,29 @@ begin
     end
     else
     begin
-      if FCallBack.Count > 0 then
+      FFound^ := FCallNextPath(FSegments, FIndexSegment, FHTTPType, FRequest, FResponse);
+      if not FFound^ then
       begin
-        FFound^ := True;
-        LAllow := '';
-        for LKey in FCallBack.Keys do
+        if FCallBack.Count > 0 then
         begin
-          if LKey <> TMethodType.mtAny then
+          FFound^ := True;
+          LAllow := '';
+          for LKey in FCallBack.Keys do
           begin
-            if LAllow <> '' then
-              LAllow := LAllow + ', ';
-            LAllow := LAllow + UpperCase(LKey.ToString);
+            if LKey <> TMethodType.mtAny then
+            begin
+              if LAllow <> '' then
+                LAllow := LAllow + ', ';
+              LAllow := LAllow + UpperCase(LKey.ToString);
+            end;
           end;
-        end;
-        if LAllow <> '' then
-          FResponse.AddHeader('Allow', LAllow);
-        FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
-      end
-      else
-        FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+          if LAllow <> '' then
+            FResponse.AddHeader('Allow', LAllow);
+          FResponse.Send('Method Not Allowed').Status(THTTPStatus.MethodNotAllowed);
+        end
+        else
+          FResponse.Send('Not Found').Status(THTTPStatus.NotFound);
+      end;
     end;
   end
   else

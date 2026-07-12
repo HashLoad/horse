@@ -8,143 +8,131 @@ interface
 
 uses
   {$IF DEFINED(FPC)}
+    SysUtils,
     Generics.Collections,
-    SyncObjs,
   {$ELSE}
+    System.SysUtils,
     System.Generics.Collections,
-    System.SyncObjs,
   {$ENDIF}
   Horse.Commons;
 
 type
-  THorseContext = class
+  THorseServiceFactoryWrapper = class
   private
-    FRequest: TObject;
-    FResponse: TObject;
-    FArena: TObject;
+    FFactory: THorseServiceFactory;
+  public
+    constructor Create(const AFactory: THorseServiceFactory);
+    function CreateInstance: TObject;
+  end;
+
+  THorseRequestContext = class
+  private
+    FInstances: TObjectDictionary<string, TObject>;
+    FUnownedInstances: TDictionary<string, TObject>;
+    FFactories: TObjectDictionary<string, THorseServiceFactoryWrapper>;
+    function GetKey(const AClass: TClass): string;
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Reset;
-    property Request: TObject read FRequest;
-    property Response: TObject read FResponse;
-    property Arena: TObject read FArena;
-  end;
 
-  THorseContextPool = class
-  private
-    FList: TQueue<THorseContext>;
-    FLock: TCriticalSection;
-    FMaxCount: Integer;
-    FAllocatedCount: Integer;
-    class var FInstance: THorseContextPool;
-  public
-    constructor Create(const AMaxCount: Integer = 1024);
-    destructor Destroy; override;
-    function Acquire: THorseContext;
-    procedure Release(const AContext: THorseContext);
-    procedure WarmUp(const ACount: Integer);
-    class property Instance: THorseContextPool read FInstance;
+    procedure Add(const AClass: TClass; const AInstance: TObject; const AOwns: Boolean = True);
+    procedure AddFactory(const AClass: TClass; const AFactory: THorseServiceFactory);
+
+    function Resolve(const AClass: TClass): TObject;
   end;
 
 implementation
 
-uses
-  Horse.Request,
-  Horse.Response;
+{ THorseServiceFactoryWrapper }
 
-{ THorseContext }
-
-constructor THorseContext.Create;
+constructor THorseServiceFactoryWrapper.Create(const AFactory: THorseServiceFactory);
 begin
   inherited Create;
-  FRequest := THorseRequest.Create;
-  FResponse := THorseResponse.Create(nil);
-  FArena := THorseArenaAllocator.Create(65536);
-  THorseRequest(FRequest).Arena := THorseArenaAllocator(FArena);
+  FFactory := AFactory;
 end;
 
-destructor THorseContext.Destroy;
+function THorseServiceFactoryWrapper.CreateInstance: TObject;
 begin
-  FRequest.Free;
-  FResponse.Free;
-  FArena.Free;
-  inherited;
+  Result := FFactory();
 end;
 
-procedure THorseContext.Reset;
-begin
-  THorseRequest(FRequest).Clear;
-  THorseResponse(FResponse).Clear;
-  THorseArenaAllocator(FArena).Reset;
-end;
+{ THorseRequestContext }
 
-{ THorseContextPool }
-
-constructor THorseContextPool.Create(const AMaxCount: Integer);
+constructor THorseRequestContext.Create;
 begin
   inherited Create;
-  FList := TQueue<THorseContext>.Create;
-  FLock := TCriticalSection.Create;
-  FMaxCount := AMaxCount;
-  FAllocatedCount := 0;
+  FInstances := TObjectDictionary<string, TObject>.Create([doOwnsValues]);
+  FUnownedInstances := TDictionary<string, TObject>.Create;
+  FFactories := TObjectDictionary<string, THorseServiceFactoryWrapper>.Create([doOwnsValues]);
 end;
 
-destructor THorseContextPool.Destroy;
+destructor THorseRequestContext.Destroy;
+begin
+  FFactories.Free;
+  FUnownedInstances.Free;
+  FInstances.Free;
+  inherited Destroy;
+end;
+
+function THorseRequestContext.GetKey(const AClass: TClass): string;
+begin
+  if Assigned(AClass) then
+    Result := AClass.ClassName
+  else
+    Result := 'UnknownClass';
+end;
+
+procedure THorseRequestContext.Add(const AClass: TClass; const AInstance: TObject; const AOwns: Boolean);
 var
-  LContext: THorseContext;
+  LKey: string;
 begin
-  FLock.Enter;
-  try
-    while FList.Count > 0 do
-    begin
-      LContext := FList.Dequeue;
-      LContext.Free;
-    end;
-    FList.Free;
-  finally
-    FLock.Leave;
-  end;
-  FLock.Free;
-  inherited;
+  LKey := GetKey(AClass);
+  
+  if FInstances.ContainsKey(LKey) then
+    FInstances.Remove(LKey);
+  if FUnownedInstances.ContainsKey(LKey) then
+    FUnownedInstances.Remove(LKey);
+
+  if AOwns then
+    FInstances.Add(LKey, AInstance)
+  else
+    FUnownedInstances.Add(LKey, AInstance);
 end;
 
-function THorseContextPool.Acquire: THorseContext;
-begin
-  Result := THorseContext.Create;
-end;
-
-procedure THorseContextPool.Release(const AContext: THorseContext);
-begin
-  if AContext <> nil then
-    AContext.Free;
-end;
-
-procedure THorseContextPool.WarmUp(const ACount: Integer);
+procedure THorseRequestContext.AddFactory(const AClass: TClass; const AFactory: THorseServiceFactory);
 var
-  I: Integer;
-  LContext: THorseContext;
+  LKey: string;
+  LWrapper: THorseServiceFactoryWrapper;
 begin
-  FLock.Enter;
-  try
-    for I := 1 to ACount do
-    begin
-      if FAllocatedCount < FMaxCount then
-      begin
-        LContext := THorseContext.Create;
-        FList.Enqueue(LContext);
-        Inc(FAllocatedCount);
-      end;
-    end;
-  finally
-    FLock.Leave;
-  end;
+  LKey := GetKey(AClass);
+  if FFactories.TryGetValue(LKey, LWrapper) then
+    FFactories.Remove(LKey);
+  FFactories.Add(LKey, THorseServiceFactoryWrapper.Create(AFactory));
 end;
 
-initialization
-  THorseContextPool.FInstance := THorseContextPool.Create(1024);
+function THorseRequestContext.Resolve(const AClass: TClass): TObject;
+var
+  LKey: string;
+  LVal: TObject;
+  LWrapper: THorseServiceFactoryWrapper;
+begin
+  LKey := GetKey(AClass);
+  
+  if FInstances.TryGetValue(LKey, LVal) then
+    Exit(LVal);
 
-finalization
-  THorseContextPool.FInstance.Free;
+  if FUnownedInstances.TryGetValue(LKey, LVal) then
+    Exit(LVal);
+
+  if FFactories.TryGetValue(LKey, LWrapper) then
+  begin
+    LVal := LWrapper.CreateInstance;
+    FInstances.Add(LKey, LVal);
+    FFactories.Remove(LKey);
+    Exit(LVal);
+  end;
+
+  Result := nil;
+end;
 
 end.

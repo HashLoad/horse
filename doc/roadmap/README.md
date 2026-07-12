@@ -1,97 +1,74 @@
-# Roadmap & Backlog de Evolução Técnica: Horse Framework
+# Roadmap & Evolução Técnica: Horse Framework
 
-Este documento detalha o planejamento de melhorias arquiteturais de longo prazo no framework Horse.
+Este documento detalha o planejamento de melhorias e novas implementações no ecossistema do framework **Horse**.
 
-> [!TIP]
-> A matriz detalhada de priorização com cálculo de R.O.I. (Impacto vs. Dificuldade) para todos os itens pendentes está disponível em: [prioritization_matrix.md](prioritization_matrix.md).
-
----
-
-## 🗺️ Roadmap de Evolução Arquitetural (Pendente)
-
-### 1. Refatoração Multi-Instance (`THorseInstance`)
-* **Descrição:** Desacoplar o estado estático global de classe (`FRoutes`, `FCallbacks`, `FPort`, `FHost`) movendo-o para uma classe de instância chamada `THorseInstance`.
-* **Ganhos:**
-  * **Múltiplos Servidores no Mesmo Processo:** Possibilidade de rodar servidores de forma paralela (ex: um na porta `80` para a API de produção e outro na `8080` para métricas, telemetria e admin).
-  * **Isolamento de Middlewares:** Aplicação de middlewares pesados (como CORS ou JWT) apenas nas instâncias que de fato necessitam, mantendo outras instâncias ultraleves.
-  * **Testes Concorrentes Limpos:** Execução paralela da suíte de testes sem conflitos de estado no singleton global.
-* **Compatibilidade:** O `THorse` tradicional baseado em métodos estáticos de classe deve continuar existindo como um wrapper (*Facade*) apontando para uma instância default, garantindo **100% de retrocompatibilidade** com projetos e middlewares existentes.
-
-### 2. Centralização de Pool de Buffers de Memória (`IMemoryBufferPool`)
-* **Descrição:** Unificar a alocação e reciclagem de streams e buffers de leitura/escrita no Core do framework.
-* **Ganhos:**
-  * Redução geral de alocação de memória no heap (*zero-allocation response mapping*).
-  * Todos os providers do ecossistema (incluindo Indy legado) passariam a se beneficiar de envio zero-copy automaticamente, sem precisar reimplementar essa lógica individualmente.
-
-
-### 4. Desligamento Suave (*Graceful Shutdown*)
-* **Descrição:** Implementar encerramento coordenado de conexões. O servidor encerra a escuta de novos sockets mas conclui requisições ativas dentro de um tempo limite de segurança.
-* **Ganhos:**
-  * Resiliência a nível enterprise para orquestradores de contêiner (como Docker/Kubernetes).
-  * Evita a corrupção de dados ou interrupção de transações em andamento ao atualizar serviços.
-
-
-### 6. DTO Auto-Binding e Validação Declarativa
-* **Descrição:** Desserialização e validação automáticas de dados de requisição (Body/Query) para objetos Delphi de transferência (DTOs) com uso de Atributos customizados.
-* **Ganhos:**
-  * Grande ganho em DX (*Developer Experience*), reduzindo boilerplate nos controllers.
-
-### 7. Ganchos de Telemetria Padronizados (Observabilidade / OpenTelemetry)
-* **Descrição:** Disponibilizar ganchos internos no Core para extração de latência, volumetria de requests e status HTTP sem perdas de performance.
-* **Ganhos:**
-  * Integração nativa facilitada com coletores de métricas do ecossistema APM (como Prometheus e Jaeger).
-
-### 8. Roteamento Avançado (Regex e Parâmetros Opcionais)
-* **Descrição:** Permitir parâmetros opcionais (`/users/:id?`) e restrições de rotas baseadas em Expressões Regulares (`/users/:id(\d+)`) na árvore do Radix Router.
-### 10. Injeção de Dependência Contextual (*Request Scope / Context*)
-* **Descrição:** Prover um mecanismo estruturado para gerência de dependências cujo ciclo de vida está acoplado ao ciclo da requisição (ex: uma transação de banco de dados ou conexão FireDAC ativa).
-* **Ganhos:**
-  * Facilidade na gerência de concorrência com encerramento e liberação automática de recursos após o fim da requisição.
-
-
-## ✅ Evolução Arquitetural Entregue (Concluído)
-
-### 1. Cadeias de Middlewares por Rota (*Route-level Middleware Chains*)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Permitida a declaração de múltiplos middlewares locais de rotas via Open Arrays (`array of THorseCallback`) em formato estático e fluente. Compatibilidade total de retrocompatibilidade e compilação multiplataforma.
-
-### 2. Pipeline Global de Tratamento de Erros (*Error Handler Pipeline*)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Disponibilizado o método global `THorse.OnError(...)` que permite interceptar todas as exceções não tratadas ocorridas no ciclo de vida das requisições (middlewares globais, grupos ou handlers de rota). Totalmente integrado de forma segura (fail-safe) e com suporte a compiladores XE7+ e Lazarus/FPC.
-
-### 3. Middleware de Limitação de Requisições (*Rate Limiting*)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Disponibilizada a biblioteca externa oficial e integrada de limitação e controle de tráfego baseada em chaves (como IP de origem ou Tokens) em memória ou integrada ([horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit)), fornecendo proteção contra força bruta e sobrecargas no servidor de forma compatível com Delphi e Lazarus.
-
-### 4. Middleware de Compressão de Resposta (Gzip/Deflate/Brotli)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Desenvolvido o middleware de compressão de alta performance e *zero-allocation*, com suporte a Gzip, Deflate e Brotli, disponível no repositório de comunidade [horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2).
-
-### 5. Middleware de Servidor de Arquivos Estáticos (Static File Streaming)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Desenvolvido o middleware de alta performance e thread-safe para servir arquivos estáticos locais de forma totalmente provider-agnostic, com suporte a HTTP 206 (Range/Partial Content) e controle de cache por ETag fraca e Last-Modified ([horse-static](https://github.com/regyssilveira/horse-static)).
-
-### 6. Ganchos de Ciclo de Vida da Requisição (Lifecycle Hooks)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Adicionado suporte nativo e thread-safe a ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend` e `onResponse`) em cascata cooperativa (CPS) no Core e integrado a ambos os roteadores (`THorseRouterTree` e `THorseRadixRouter`), com testes de integração e exemplos documentados.
+> [!IMPORTANT]
+> **Filosofia de Design**: Em alinhamento com seu propósito minimalista e focado em alta performance (*Express-inspired*), o **Horse Core** é mantido o mais enxuto possível. Toda nova funcionalidade de alto nível é planejada e implementada prioritariamente na forma de **middlewares oficiais e extensões externas**, evitando o inchaço do núcleo do framework.
 
 ---
 
-## ✅ Entregas Recentes de Testes & CI/CD (Concluído)
+## 🗺️ Linha do Tempo de Evolução (Roadmap)
 
+O diagrama abaixo apresenta cronologicamente as grandes entregas de infraestrutura já consolidadas no núcleo do framework e os próximos pacotes oficiais de middlewares planejados para o ecossistema:
 
-### 1. Testes de Conexões Persistentes (HTTP Keep-Alive)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Desenvolvida a unit `Tests.Integration.KeepAlive.pas` validando a persistência e a conformidade dos cabeçalhos do protocolo HTTP/1.1 sob requisições sucessivas sobre o mesmo socket de conexão física.
+```mermaid
+timeline
+    title Evolução Arquitetural do Ecossistema Horse
+    section Entregas do Core
+        Consolidação e Infraestrutura : "Ganchos CPS (Lifecycle)" : "Desligamento Suave (Graceful)" : "Injeção de Dependências (Services)"
+        Performance : "Multi-Instance (THorseInstance)" : "Pool de Buffers (IMemoryBufferPool)" : "Telemetria & APM"
+        Roteamento : Roteamento Regex e Opcionais : "Core Unificado (IOCP / epoll)"
+    section Próximos Middlewares (Backlog)
+        Segurança & Redes : "horse-helmet (Security Headers)" : "Adoção Recomendada do gbswagger"
+        Protocolos Avançados : "horse-websocket (WebSocket Puro)" : "horse-grpc (Provider RPC)"
+```
 
-### 2. Testes de Payload Volumoso (Stress de Heap)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Desenvolvida a unit `Tests.Integration.LargePayload.pas` que realiza uploads de volumes pesados de dados (10MB) monitorando a variável de heap `AllocMemSize` para atestar a liberação e limpeza total de memória após o ciclo de vida.
+---
 
-### 3. Automação de CI/CD Multiplataforma Real (Linux / FPC / GitHub Actions)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Refatorado o arquivo `.github/workflows/tests.yml` do GitHub Actions para compilar de forma dinâmica a suíte de testes de console a partir das fontes usando o compilador FPC (Free Pascal Compiler) e executar em ambiente Linux (Ubuntu) real a cada push e pull request.
+## 📋 Quadro de Evolução do Backlog (Kanban)
 
-### 4. Correção e Unificação dos Provedores Assíncronos (epoll, IOCP e HttpSys)
-* **Status:** 🟢 **Concluído e Liberado**
-* **Implementação:** Padronizada a extração de cabeçalhos (`PopulateHeaders`) e o mapeamento de streams/textos de resposta no core e nos adaptadores assíncronos (`TInterfacedWebRequest` / `TInterfacedWebResponse`). Garantida compatibilidade completa entre Delphi (10 Seattle até 13 Florence) e Lazarus/FPC com testes automatizados rodando sob o loop `epoll` no Linux e todas as variações no Windows.
+Abaixo está o status detalhado das evoluções do framework e de seus middlewares:
+
+| 🟥 A Fazer (Backlog) | 🟨 Em Progresso (Planejamento) | 🟩 Concluído (Entregue) |
+|---|---|---|
+| **`horse-helmet`** (Middleware)<br>Configuração de cabeçalhos de segurança HTTP de forma simples. | **Adoção do `gbswagger`** (Comunidade)<br>Integração e recomendação oficial para documentação OpenAPI. | **Roteamento Regex e Opcionais** (Core)<br>Suporte a rotas dinâmicas complexas no Radix e Tree. |
+| **`horse-websocket`** (Middleware)<br>Suporte a conexões bidirecionais e persistentes WebSockets puros. | | **Ganchos de Telemetria / APM** (Core)<br>Infraestrutura de rastreamento de latência fail-safe. |
+| **`horse-grpc`** (Provedor)<br>Adaptador de transporte focado em RPC binário de alta performance. | | **Pool de Buffers de Memória** (Core)<br>Reciclagem de arrays de bytes sem alocações de heap. |
+| | | **Middleware `horse-dto`** (Middleware)<br>Desserialização automática e validação por atributos. |
+| | | **Multi-Instance e Server Hooks** (Core)<br>Múltiplos servidores no mesmo processo e hooks de inicialização. |
+| | | **Cadeia de Middlewares por Rota** (Core)<br>Registro sequencial de callbacks locais nas rotas. |
+
+---
+
+## 🔍 Detalhes das Próximas Evoluções (Backlog)
+
+### 1. `horse-helmet` (Middleware)
+*   **Tipo**: Middleware Oficial Independente
+*   **Propósito**: Aumentar a segurança da API Delphi ocultando cabeçalhos HTTP que vazam dados do servidor (como o provedor Indy ou IIS) e adicionando cabeçalhos de proteção moderna (como *Content-Security-Policy*, *X-Content-Type-Options*, *Strict-Transport-Security*).
+
+### 2. Adoção Recomendada do `gbswagger` (Swagger / OpenAPI)
+*   **Tipo**: Integração com Biblioteca de Terceiros (Comunidade)
+*   **Propósito**: Em vez de fragmentar o ecossistema recriando um novo gerador de documentação, o Horse adota oficialmente e recomenda o uso de **`gabrielbaltazar/gbswagger`** para geração de documentação de rotas automática no padrão OpenAPI. O foco das documentações oficiais será exemplificar a integração suave com este middleware.
+
+### 3. `horse-websocket` (Extensão)
+*   **Tipo**: Middleware de Comunicação
+*   **Propósito**: Permitir que servidores Horse estabeleçam canais de comunicação duplex persistentes (WebSockets) baseados em padrão puro (RFC 6455). Essencial para aplicações que necessitam de push de eventos em tempo real, com compatibilidade multiplataforma (Delphi e FPC/Lazarus).
+
+### 4. `horse-grpc` (Provedor)
+*   **Tipo**: Provedor de Transporte
+*   **Propósito**: Fornecer um provider alternativo focado no protocolo gRPC sobre HTTP/2. Permitirá que aplicações Delphi escritas em Horse atuem como microsserviços de altíssima performance para comunicação máquina-máquina.
+
+---
+
+## ✅ Histórico de Entregas Recentes e Consolidadas
+
+Consulte as especificações detalhadas das entregas que moldaram as versões recentes do Horse:
+
+*   **Roteamento Regex e Parâmetros Opcionais**: Implementado em ambos os roteadores (`Tree` e `Radix`) de forma nativa e multiplataforma.
+*   **Ganchos de Telemetria e APM**: Infraestrutura de baixíssimo overhead para monitoramento de latência e integração com OpenTelemetry.
+*   **Pool de Buffers de Memória (`IMemoryBufferPool`)**: Reciclagem de streams assíncronos e arrays, eliminando fragmentação de memória no heap.
+*   **Middleware `horse-dto`**: Processamento declarativo com DTOs e validação via atributos.
+*   **Refatoração Multi-Instance**: Isolamento lógico de servidores lógicos permitindo rodar em várias portas de forma concorrente no mesmo processo.
+*   **Desligamento Suave (Graceful Shutdown)**: Drenagem coordenada de conexões ativas antes do encerramento da porta.
+*   **Injeção de Dependências (`Req.Services`)**: Container IoC integrado no ciclo de vida do request.
+*   **Ganchos de Ciclo de Vida da Requisição e do Servidor**: Pontos de interceptação padronizados (`onRequest`, `preValidation`, `BeforeListen`, etc.).

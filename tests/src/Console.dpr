@@ -17,6 +17,7 @@ uses
   Horse.Core.Router.Radix in '..\..\src\Horse.Core.Router.Radix.pas',
   Horse.Exception in '..\..\src\Horse.Exception.pas',
   Horse in '..\..\src\Horse.pas',
+  Horse.Instance in '..\..\src\Horse.Instance.pas',
   Horse.Provider.Abstract in '..\..\src\Horse.Provider.Abstract.pas',
   Horse.Provider.Apache in '..\..\src\Horse.Provider.Apache.pas',
   Horse.Provider.CGI in '..\..\src\Horse.Provider.CGI.pas',
@@ -80,10 +81,19 @@ uses
   Tests.Integration.ReadTimeout in 'tests\Tests.Integration.ReadTimeout.pas',
   Tests.Integration.Query in 'tests\Tests.Integration.Query.pas',
   Tests.Integration.LifecycleHooks in 'tests\Tests.Integration.LifecycleHooks.pas',
+  Tests.Integration.GracefulShutdown in 'tests\Tests.Integration.GracefulShutdown.pas',
+  Tests.Integration.DependencyInjection in 'tests\Tests.Integration.DependencyInjection.pas',
+  Tests.Integration.MultiInstance in 'tests\Tests.Integration.MultiInstance.pas',
+  Tests.Integration.ServerLifecycle in 'tests\Tests.Integration.ServerLifecycle.pas',
+  Tests.Integration.Telemetry in 'tests\Tests.Integration.Telemetry.pas',
+  Tests.Integration.AdvancedRouting in 'tests\Tests.Integration.AdvancedRouting.pas',
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
-  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas';
+  Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas',
+  Horse.Core.MemoryBufferPool in '..\..\src\Horse.Core.MemoryBufferPool.pas',
+  Horse.Core.Regex in '..\..\src\Horse.Core.Regex.pas',
+  Tests.Horse.Core.MemoryBufferPool in 'tests\Tests.Horse.Core.MemoryBufferPool.pas';
 
 var
   Runner: ITestRunner;

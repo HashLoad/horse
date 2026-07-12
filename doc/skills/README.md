@@ -29,6 +29,9 @@
 | **horse-zero-allocation** | [`horse-zero-allocation/SKILL.md`](./horse-zero-allocation/SKILL.md) | Coding for Zero-Allocation, using stack buffers, string slices, object pooling, and avoiding thread lock contention. |
 | **horse-mvc-architecture** | [`horse-mvc-architecture/SKILL.md`](./horse-mvc-architecture/SKILL.md) | Structuring corporate APIs using Clean MVC principles, separating transport from business logic. |
 | **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Building rapid, low-boilerplate microservices and mock APIs inside single-file bootstrap models. |
+| **horse-dependency-injection** | [`horse-dependency-injection/SKILL.md`](./horse-dependency-injection/SKILL.md) | Managing request-scoped contextual services and IoC (dependency injection) in Delphi and Lazarus. |
+| **horse-multi-instance** | [`horse-multi-instance/SKILL.md`](./horse-multi-instance/SKILL.md) | Running or configuring multiple independent server instances (THorseInstance) concurrently inside the same application process. |
+| **horse-telemetry-observability** | [`horse-telemetry-observability/SKILL.md`](./horse-telemetry-observability/SKILL.md) | Registering, configuring, and optimizing native telemetry callbacks (AddOnTelemetry) for APM tools and logging. |
 
 ---
 
@@ -37,6 +40,6 @@
 1. **Middlewares Order**: The registration order is **critical**. Middlewares like `CORS` and `Jhonson` must be registered **before** defining any routes.
 2. **Johnson Memory Management**: The Johnson middleware takes ownership of any `TJSONObject` or `TJSONArray` sent via `Res.Send<T>`. **NEVER** call `.Free` on a JSON object after sending it through `Res.Send<T>` when Johnson is active.
 3. **Route Parameters**: Parameters are defined using the colon syntax (e.g., `/products/:id`), not curly braces (e.g., `/products/{id}`).
-4. **Thread-Safety**: Horse is inherently multithreaded. **NEVER** share physical database connections (`TFDConnection` or query components) globally across requests. Every route handler must instantiate its own database connection (preferably using connection pooling) or protect shared resources using locks (`TCriticalSection`).
+4. **Thread-Safety & IoC**: Horse is inherently multithreaded. **NEVER** share physical database connections (`TFDConnection`) or variables globally across requests. Use the request-scoped `Services` property (IoC) to register and resolve connection factories and scoped services to automate their lifecycle and avoid race conditions or RAM leaks.
 5. **Console Output**: Call `SetConsoleCharSet` in console mode endpoints if necessary to prevent character encoding issues.
 6. **Stream Management**: The `THorseResponse` object takes ownership of any stream passed to `SendFile`, `Download`, or `Render`. **NEVER** call `.Free` or `FreeAndNil` on a stream after sending it via these response methods.

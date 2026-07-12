@@ -12,6 +12,7 @@ type
   private
     class procedure InternalListen; static;
   public
+    class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
@@ -25,8 +26,14 @@ uses
   Web.CGIApp,
   Horse.WebModule;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := 0;
+end;
+
 class procedure THorseProvider.InternalListen;
 begin
+  TriggerBeforeListen;
   Application.Initialize;
   Application.WebModuleClass := WebModuleClass;
   DoOnListen;

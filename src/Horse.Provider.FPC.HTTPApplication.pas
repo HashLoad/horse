@@ -1,6 +1,6 @@
-unit Horse.Provider.FPC.HTTPApplication;
+﻿unit Horse.Provider.FPC.HTTPApplication;
 
-{ PATCH-FPCHTTP-1: ListenWithConfig override � same root cause as PATCH-CONSOLE-1. }
+{ PATCH-FPCHTTP-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
@@ -44,6 +44,7 @@ type
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
+    class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
     class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const APort: Integer; const ACallback: TProc); reintroduce; overload; static;
@@ -100,10 +101,16 @@ begin
   Result := FPort;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
 class procedure THorseProvider.InternalListen;
 var
   LHTTPApplication: THTTPApplication;
 begin
+  TriggerBeforeListen;
   inherited;
   if FPort <= 0 then
     FPort := GetDefaultPort;

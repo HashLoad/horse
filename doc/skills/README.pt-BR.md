@@ -25,6 +25,9 @@
 | **horse-zero-allocation** | [`horse-zero-allocation/SKILL.md`](./horse-zero-allocation/SKILL.md) | Técnicas avançadas de programação sem alocação (Zero-Allocation), fatiamento de string (slices), stack buffers e pools. |
 | **horse-mvc-architecture** | [`horse-mvc-architecture/SKILL.md`](./horse-mvc-architecture/SKILL.md) | Organização de APIs de grande porte no padrão MVC limpo, separando a camada HTTP de regras de negócio e persistência. |
 | **horse-minimal-api** | [`horse-minimal-api/SKILL.md`](./horse-minimal-api/SKILL.md) | Desenvolvimento rápido de microsserviços focados, mocks e APIs de arquivo único estruturadas com baixo boilerplate. |
+| **horse-dependency-injection** | [`horse-dependency-injection/SKILL.md`](./horse-dependency-injection/SKILL.md) | Gerenciamento de ciclo de vida e IoC no request scope (injeção de dependência) em Delphi e Lazarus. |
+| **horse-multi-instance** | [`horse-multi-instance/SKILL.md`](./horse-multi-instance/SKILL.md) | Execução ou configuração de múltiplos servidores de instâncias independentes (THorseInstance) concorrentemente dentro do mesmo processo. |
+| **horse-telemetry-observability** | [`horse-telemetry-observability/SKILL.md`](./horse-telemetry-observability/SKILL.md) | Registro, configuração e otimização de ganchos nativos de telemetria (AddOnTelemetry) para ferramentas APM e logs. |
 
 ---
 
@@ -33,6 +36,6 @@
 1. **Ordem dos Middlewares**: A ordem de registro é **crítica**. Middlewares globais como `CORS` e `Jhonson` devem ser registrados **antes** de definir qualquer rota.
 2. **Gerenciamento de Memória (Johnson)**: O middleware Johnson assume a propriedade de qualquer `TJSONObject` ou `TJSONArray` enviado via `Res.Send<T>`. **NUNCA** chame `.Free` ou `FreeAndNil` em um objeto JSON após enviá-lo pelo response caso o Johnson esteja ativo.
 3. **Parâmetros de Rota**: Os parâmetros são definidos usando a sintaxe de dois pontos (ex: `/products/:id`), e não chaves (ex: `/products/{id}`).
-4. **Thread-Safety**: O Horse é multithreaded por natureza. **NUNCA** compartilhe conexões de banco de dados globais (como `TFDConnection`) entre requisições concorrentes. Cada handler de rota deve obter/criar sua própria conexão (preferencialmente de um Connection Pool).
+4. **Thread-Safety e IoC**: O Horse é multithreaded por natureza. **NUNCA** compartilhe conexões de banco de dados (`TFDConnection`) ou variáveis globais entre requisições concorrentes. Use a propriedade `Services` (IoC) no escopo de request para registrar e resolver fábricas de conexões e serviços contextuais, automatizando o ciclo de vida deles e evitando race conditions ou vazamentos de RAM.
 5. **Console Output**: Chame `SetConsoleCharSet` em programas modo console para prevenir erros de codificação de caracteres se necessário.
 6. **Gerenciamento de Streams**: O objeto `THorseResponse` assume a propriedade de qualquer stream passado para `SendFile`, `Download` ou `Render`. **NUNCA** chame `.Free` ou `FreeAndNil` em um stream após enviá-lo por estes métodos.

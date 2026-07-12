@@ -63,7 +63,9 @@ type
     class property ListenQueue: Integer read GetListenQueue write SetListenQueue;
     class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
+    class function GetActivePort: Integer; override;
     class procedure StopListen; override;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
     class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
@@ -219,11 +221,17 @@ begin
   AIdHTTPWebBrokerBridge.IOHandler := LIOHandleSSL;
 end;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := FPort;
+end;
+
 class procedure THorseProvider.InternalListen;
 var
   LIdx: Integer;
   LIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
 begin
+  TriggerBeforeListen;
   inherited;
   FEvent := TEvent.Create;
   try
@@ -311,6 +319,7 @@ var
   LContexts: TList;
   I: Integer;
 begin
+  TriggerBeforeStop;
   if not HTTPWebBrokerIsNil then
   begin
     GetDefaultHTTPWebBroker.StopListening;
@@ -342,6 +351,54 @@ end;
 class procedure THorseProvider.StopListen;
 begin
   InternalStopListen;
+end;
+
+class procedure THorseProvider.StopListenGraceful(const ATimeoutMS: Integer);
+var
+  LStart: Int64;
+  LContexts: TList;
+  LCount: Integer;
+begin
+  TriggerBeforeStop;
+  if not HTTPWebBrokerIsNil then
+  begin
+    THorseCore.SetIsShuttingDown(True);
+    try
+      GetDefaultHTTPWebBroker.StopListening;
+      
+      LStart := TThread.GetTickCount;
+      while (TThread.GetTickCount - LStart < ATimeoutMS) do
+      begin
+        LCount := 0;
+        try
+          LContexts := GetDefaultHTTPWebBroker.Contexts.LockList;
+          try
+            LCount := LContexts.Count;
+          finally
+            GetDefaultHTTPWebBroker.Contexts.UnlockList;
+          end;
+        except
+        end;
+
+        if (THorseCore.GetActiveRequests = 0) and (LCount = 0) then
+          Break;
+
+        TThread.Sleep(50);
+      end;
+      
+      TThread.Sleep(100);
+      
+      GetDefaultHTTPWebBroker.Active := False;
+      DoOnStopListen;
+      FRunning := False;
+      if FEvent <> nil then
+        FEvent.SetEvent;
+    finally
+      THorseCore.SetIsShuttingDown(False);
+    end;
+  end
+  else
+    raise Exception.Create('Horse not listen');
 end;
 
 class procedure THorseProvider.Listen;

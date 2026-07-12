@@ -468,6 +468,7 @@ type
     class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
+    class function GetActivePort: Integer; override;
     class procedure StopListen; override;
     class function IsRunning: Boolean;
 
@@ -487,6 +488,9 @@ type
 {$ENDIF}
 
 implementation
+
+uses
+  Horse.Core.MemoryBufferPool;
 
 {$IFDEF MSWINDOWS}
 
@@ -871,7 +875,7 @@ begin
   end
   else
   begin
-    FBodyStream := TMemoryStream.Create;
+    FBodyStream := THorseMemoryBufferPool.DefaultPool.AcquireStream;
   end;
 
   try
@@ -887,7 +891,7 @@ begin
           begin
             LChunkLength := PChunk.BufferLength;
 
-            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
+            if not (FBodyStream is TFileStream) and (FBodyStream.Size + LChunkLength >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
               LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
@@ -896,7 +900,7 @@ begin
               try
                 if FBodyStream.Size > 0 then
                 begin
-                  TMemoryStream(FBodyStream).Position := 0;
+                  FBodyStream.Position := 0;
                   LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
                 end;
                 FBodyStream.Free;
@@ -936,7 +940,7 @@ begin
         begin
           if BytesReceived > 0 then
           begin
-            if (FBodyStream is TMemoryStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
+            if not (FBodyStream is TFileStream) and (FBodyStream.Size + BytesReceived >= 2097152) then
             begin
               LTempPath := GetWindowsTempPath;
               LTempFile := LTempPath + 'horse_httpsys_spool_' + IntToStr(GetTickCount64) + '_' + IntToStr(FRequest.RequestId) + '.tmp';
@@ -945,7 +949,7 @@ begin
               try
                 if FBodyStream.Size > 0 then
                 begin
-                  TMemoryStream(FBodyStream).Position := 0;
+                  FBodyStream.Position := 0;
                   LFileStream.CopyFrom(FBodyStream, FBodyStream.Size);
                 end;
                 FBodyStream.Free;
@@ -1876,6 +1880,7 @@ var
   LListener: THttpSysListenerThread;
   LHttpOver: PHttpSysOverlapped;
 begin
+  TriggerBeforeListen;
   if FRunning then Exit;
 
   if FPort <= 0 then
@@ -2004,6 +2009,7 @@ class procedure THorseProviderHttpSys.InternalStopListen;
 var
   LListener: THttpSysListenerThread;
 begin
+  TriggerBeforeStop;
   if not FRunning then Exit;
 
   FRunning := False;
@@ -2109,6 +2115,11 @@ end;
 class function THorseProviderHttpSys.IsRunning: Boolean;
 begin
   Result := FRunning;
+end;
+
+class function THorseProviderHttpSys.GetActivePort: Integer;
+begin
+  Result := FPort;
 end;
 
 {$ENDIF}

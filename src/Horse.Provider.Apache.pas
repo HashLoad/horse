@@ -26,6 +26,7 @@ type
     class property MaxConnections: Integer read GetMaxConnections write SetMaxConnections;
     class property HandlerName: string read GetHandlerName write SetHandlerName;
     class property DefaultModule: Pointer read GetDefaultModule write SetDefaultModule;
+    class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
     class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
   end;
@@ -43,8 +44,14 @@ uses
 {$ENDIF}
   Horse.WebModule;
 
+class function THorseProvider.GetActivePort: Integer;
+begin
+  Result := 0;
+end;
+
 class procedure THorseProvider.InternalListen;
 begin
+  TriggerBeforeListen;
 {$IFDEF MSWINDOWS}
   CoInitFlags := COINIT_MULTITHREADED;
 {$ENDIF}

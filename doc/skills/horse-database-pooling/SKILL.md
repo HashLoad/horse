@@ -109,6 +109,43 @@ begin
     LConnection.Free;
   end;
 end;
+
+---
+
+## 3.5. Automated Connection Management via Request Services (IoC)
+With Horse's native Request Scope IoC container, you can register a lazy factory for database connections. This ensures the connection is only opened if/when a route resolves it, and guarantees it is freed automatically when the request ends.
+
+```pascal
+// Setup connection factory inside a global middleware
+THorse.Use(procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  begin
+    Req.Services.AddFactory(TFDConnection,
+      function: TObject
+      begin
+        Result := TFDConnection.Create(nil);
+        TFDConnection(Result).ConnectionDefName := 'MyPooledPGDef';
+        TFDConnection(Result).Connected := True;
+      end);
+    Next();
+  end);
+
+// Usage in Route Handler (No manual connection free required!)
+THorse.Get('/users', procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+  var
+    LConnection: TFDConnection;
+    LQuery: TFDQuery;
+  begin
+    LConnection := TFDConnection(Req.Services.Resolve(TFDConnection));
+    LQuery := TFDQuery.Create(nil);
+    try
+      LQuery.Connection := LConnection;
+      LQuery.SQL.Text := 'SELECT id, name FROM users';
+      LQuery.Open;
+      Res.Send(LQuery.ToJSONArray);
+    finally
+      LQuery.Free;
+    end; // LConnection is freed automatically by Horse when the request finishes!
+  end);
 ```
 
 ---
