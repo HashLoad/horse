@@ -23,6 +23,50 @@ The native gRPC provider infrastructure is split into modular units with isolate
 
 ---
 
+## 🛠️ CLI Compiler (`horse-pb-compiler`)
+
+If you already have a standard gRPC `.proto` schema file and want to automatically generate the corresponding Delphi unit annotated with Horse attributes and interfaces, use the native compiler tool provided in the repository.
+
+### How to Compile the CLI Compiler
+Compile the command-line tool using the Delphi `dcc32` compiler (or `fpc` under Lazarus):
+
+```bash
+dcc32.exe tools/compiler/horse-pb-compiler.dpr
+```
+This generates the `horse-pb-compiler.exe` executable (or `horse-pb-compiler` on Linux).
+
+### How to Use the Compiler
+To compile a `.proto` schema file (for example, `users.proto`) to a Delphi/Lazarus unit (`users.pas`), run:
+
+```bash
+horse-pb-compiler.exe <input.proto> <output.pas>
+```
+
+#### Practical Example:
+Given the following `users.proto` schema:
+```protobuf
+syntax = "proto3";
+package users;
+
+message UserRequest {
+  int32 id = 1;
+}
+
+message UserResponse {
+  int32 id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+service UserService {
+  rpc GetUser (UserRequest) returns (UserResponse);
+}
+```
+
+By running `horse-pb-compiler.exe users.proto users.pas`, the corresponding Pascal unit will be generated automatically and decorated with all the necessary gRPC attributes required by Horse.
+
+---
+
 ## 📝 Service Definition (Code-First)
 
 To declare your service, create a unit with the message schema and interfaces decorated with Horse gRPC attributes.
