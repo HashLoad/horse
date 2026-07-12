@@ -43,6 +43,10 @@ graph TD
 | [Middleware](./middleware.pt-BR.md) | O modelo `Next` proc; built-in vs custom; ordem de registro; por-rota vs global. |
 | [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
 | [Injeção de Dependência](./dependency-injection.pt-BR.md) | Gerenciamento de ciclo de vida e IoC no request scope (injetores direct e lazy). |
+| [Pool de Banco de Dados](./database-pooling.pt-BR.md) | Configuração e boas práticas de pools de conexão thread-safe com FireDAC e UniDAC no Horse. |
+| [Segurança e Autenticação](./security-auth.pt-BR.md) | Utilização dos middlewares oficiais `horse-jwt` e `horse-basic-auth` com grupos de rotas. |
+| [Configuração SSL/TLS](./ssl-tls.pt-BR.md) | Como configurar comunicações HTTPS seguras nos provedores Indy, HTTP.sys, etc. |
+| [Padrões de Arquitetura](./architecture-patterns.pt-BR.md) | Estruturação de APIs Delphi usando MVC, injeção de dependência e desacoplamento. |
 | [Desligamento Suave](./graceful-shutdown.pt-BR.md) | Encerramento coordenado de conexões em ambientes produtivos (nuvem/Kubernetes); propriedades de telemetria `ActiveRequests` e flag `IsShuttingDown`. |
 | [Multi-Instance](./multi-instance.pt-BR.md) | Executa e isola múltiplos servidores HTTP independentes, tabelas de rotas e middlewares em portas diferentes simultaneamente no mesmo processo. |
 | [Pool de Buffers](./memory-buffer-pool.pt-BR.md) | Otimização de memória de alta performance usando reciclagem de buffers thread-safe para eliminar alocações de heap. |
@@ -66,6 +70,10 @@ doc/
 ├── middleware.*.md            ← encadeamento de handlers
 ├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── dependency-injection.*.md  ← injeção de dependências no request scope
+├── database-pooling.*.md      ← pool de conexões thread-safe (FireDAC/UniDAC)
+├── security-auth.*.md         ← autenticação via JWT e Basic-Auth oficiais
+├── ssl-tls.*.md               ← criptografia HTTPS nos providers
+├── architecture-patterns.*.md ← padrões de arquitetura de projetos e MVC
 ├── graceful-shutdown.*.md     ← desligamento suave em produção
 ├── multi-instance.*.md        ← execução de múltiplos servidores concorrentes
 ├── memory-buffer-pool.*.md    ← pool de buffers de memória e reciclagem
