@@ -310,73 +310,77 @@ var
   T: TRttiType;
 begin
   Context := TRttiContext.Create;
-  IntfType := nil;
-  for T in Context.GetTypes do
-  begin
-    if (T.TypeKind = tkInterface) and (TRttiInterfaceType(T).GUID = AInterface) then
+  try
+    IntfType := nil;
+    for T in Context.GetTypes do
     begin
-      IntfType := TRttiInterfaceType(T);
-      Break;
-    end;
-  end;
-
-  if not Assigned(IntfType) then
-    raise Exception.Create('Interface not found in RTTI. Make sure to define it with GUID and {$M+} enabled.');
-
-  ServiceName := '';
-  for Attr in IntfType.GetAttributes do
-  begin
-    if Attr is GrpcServiceAttribute then
-    begin
-      ServiceName := GrpcServiceAttribute(Attr).ServiceName;
-      Break;
-    end;
-  end;
-
-  if ServiceName = '' then
-    ServiceName := IntfType.Name;
-
-  ServiceMeta := TGrpcServiceMeta.Create;
-  ServiceMeta.ServiceName := ServiceName;
-  ServiceMeta.InterfaceGUID := AInterface;
-  ServiceMeta.ServiceImplClass := AServiceImplClass;
-
-  RttiType := Context.GetType(AServiceImplClass);
-  if Assigned(RttiType) then
-  begin
-    for Method in IntfType.GetMethods do
-    begin
-      for Attr in Method.GetAttributes do
+      if (T.TypeKind = tkInterface) and (TRttiInterfaceType(T).GUID = AInterface) then
       begin
-        if Attr is GrpcMethodAttribute then
-        begin
-          Params := Method.GetParameters;
-          if Length(Params) = 1 then
-          begin
-            MethodMeta.MethodName := GrpcMethodAttribute(Attr).GrpcMethodName;
-            MethodMeta.RttiMethod := RttiType.GetMethod(Method.Name);
-            if not Assigned(MethodMeta.RttiMethod) then
-              raise Exception.CreateFmt('Method "%s" has no RTTI on implementer class "%s". Ensure it is public/published and compiled with RTTI enabled.', [Method.Name, AServiceImplClass.ClassName]);
-            
-            if Params[0].ParamType is TRttiInstanceType then
-              MethodMeta.RequestClass := TRttiInstanceType(Params[0].ParamType).MetaclassType
-            else
-              raise Exception.CreateFmt('Request parameter type "%s" is not a class in RTTI. Make sure it is registered/used.', [Params[0].ParamType.Name]);
-              
-            if Method.ReturnType is TRttiInstanceType then
-              MethodMeta.ResponseClass := TRttiInstanceType(Method.ReturnType).MetaclassType
-            else
-              raise Exception.CreateFmt('Response return type "%s" is not a class in RTTI. Make sure it is registered/used.', [Method.ReturnType.Name]);
+        IntfType := TRttiInterfaceType(T);
+        Break;
+      end;
+    end;
 
-            ServiceMeta.Methods.Add(MethodMeta.MethodName.ToLower, MethodMeta);
+    if not Assigned(IntfType) then
+      raise Exception.Create('Interface not found in RTTI. Make sure to define it with GUID and {$M+} enabled.');
+
+    ServiceName := '';
+    for Attr in IntfType.GetAttributes do
+    begin
+      if Attr is GrpcServiceAttribute then
+      begin
+        ServiceName := GrpcServiceAttribute(Attr).ServiceName;
+        Break;
+      end;
+    end;
+
+    if ServiceName = '' then
+      ServiceName := IntfType.Name;
+
+    ServiceMeta := TGrpcServiceMeta.Create;
+    ServiceMeta.ServiceName := ServiceName;
+    ServiceMeta.InterfaceGUID := AInterface;
+    ServiceMeta.ServiceImplClass := AServiceImplClass;
+
+    RttiType := Context.GetType(AServiceImplClass);
+    if Assigned(RttiType) then
+    begin
+      for Method in IntfType.GetMethods do
+      begin
+        for Attr in Method.GetAttributes do
+        begin
+          if Attr is GrpcMethodAttribute then
+          begin
+            Params := Method.GetParameters;
+            if Length(Params) = 1 then
+            begin
+              MethodMeta.MethodName := GrpcMethodAttribute(Attr).GrpcMethodName;
+              MethodMeta.RttiMethod := RttiType.GetMethod(Method.Name);
+              if not Assigned(MethodMeta.RttiMethod) then
+                raise Exception.CreateFmt('Method "%s" has no RTTI on implementer class "%s". Ensure it is public/published and compiled with RTTI enabled.', [Method.Name, AServiceImplClass.ClassName]);
+              
+              if Params[0].ParamType is TRttiInstanceType then
+                MethodMeta.RequestClass := TRttiInstanceType(Params[0].ParamType).MetaclassType
+              else
+                raise Exception.CreateFmt('Request parameter type "%s" is not a class in RTTI. Make sure it is registered/used.', [Params[0].ParamType.Name]);
+                 
+              if Method.ReturnType is TRttiInstanceType then
+                MethodMeta.ResponseClass := TRttiInstanceType(Method.ReturnType).MetaclassType
+              else
+                raise Exception.CreateFmt('Response return type "%s" is not a class in RTTI. Make sure it is registered/used.', [Method.ReturnType.Name]);
+
+              ServiceMeta.Methods.Add(MethodMeta.MethodName.ToLower, MethodMeta);
+            end;
+            Break;
           end;
-          Break;
         end;
       end;
     end;
-  end;
 
-  FServices.Add(ServiceName.ToLower, ServiceMeta);
+    FServices.Add(ServiceName.ToLower, ServiceMeta);
+  finally
+    Context.Free;
+  end;
 end;
 
 class procedure THorseGrpcProvider.Start(APort: Integer);

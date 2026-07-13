@@ -246,20 +246,8 @@ end;
 { THorseProtobufSerializer }
 
 class function THorseProtobufSerializer.CreateInstance(AClass: TClass): TObject;
-var
-  Context: TRttiContext;
-  RttiType: TRttiType;
-  InstanceType: TRttiInstanceType;
 begin
-  Context := TRttiContext.Create;
-  RttiType := Context.GetType(AClass);
-  if Assigned(RttiType) and (RttiType is TRttiInstanceType) then
-  begin
-    InstanceType := TRttiInstanceType(RttiType);
-    Result := InstanceType.MetaclassType.Create;
-  end
-  else
-    Result := AClass.Create;
+  Result := THorseProtobufRtti.CreateInstance(AClass);
 end;
 
 class function THorseProtobufSerializer.Serialize(Obj: TObject): TBytes;

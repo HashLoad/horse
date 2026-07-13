@@ -38,6 +38,7 @@ type
     class function GetProperties(AClass: TClass): TArray<THorseProtobufProp>; static;
     class function GetPropValue(AObject: TObject; const AProp: THorseProtobufProp): TValue; static;
     class procedure SetPropValue(AObject: TObject; const AProp: THorseProtobufProp; const AValue: TValue); static;
+    class function CreateInstance(AClass: TClass): TObject; static;
   end;
 
 implementation
@@ -157,6 +158,21 @@ begin
   if not Assigned(AProp.RttiProperty) then
     raise Exception.CreateFmt('Property "%s" is not initialized in RTTI info.', [AProp.Name]);
   AProp.RttiProperty.SetValue(AObject, AValue);
+end;
+
+class function THorseProtobufRtti.CreateInstance(AClass: TClass): TObject;
+var
+  RttiType: TRttiType;
+  InstanceType: TRttiInstanceType;
+begin
+  RttiType := FContext.GetType(AClass);
+  if Assigned(RttiType) and (RttiType is TRttiInstanceType) then
+  begin
+    InstanceType := TRttiInstanceType(RttiType);
+    Result := InstanceType.MetaclassType.Create;
+  end
+  else
+    Result := AClass.Create;
 end;
 
 initialization
