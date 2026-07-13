@@ -7,7 +7,7 @@ unit Horse.Provider.Grpc;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Generics.Collections,
+  System.SysUtils, System.Classes, System.Generics.Collections, System.SyncObjs,
   {$IFNDEF FPC}
   System.Rtti,
   {$ELSE}
@@ -80,6 +80,9 @@ type
     class var FPort: Integer;
     class var FListenSocket: THorseSocket;
     class var FListenThread: TThread;
+    class var FConnectionQueue: TQueue<THorseSocket>;
+    class var FQueueSection: TCriticalSection;
+    class var FThreadPool: TList<TThread>;
     class procedure OnHttp2Request(AConnection: TObject; AStreamId: Cardinal;
       const AHeaders: TNameValuePairs; const ABody: TBytes); static;
     class procedure ListenLoop; static;
@@ -106,8 +109,65 @@ function SocketWrite(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): In
 procedure CloseSocketHandle(ASocket: THorseSocket);
 function SocketBind(ASocket: THorseSocket; const APort: Integer): Boolean;
 function SocketAccept(ASocket: THorseSocket; out AClientSocket: THorseSocket): Boolean;
+function SocketReadyToAccept(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
+function SocketReadyToRead(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
+procedure FDSetZero(var AFDSet: TFDSet);
+procedure FDSetAdd(ASocket: THorseSocket; var AFDSet: TFDSet);
 
 implementation
+
+function SocketReadyToAccept(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
+var
+  FDSet: TFDSet;
+  TimeVal: TTimeVal;
+begin
+  FDSetZero(FDSet);
+  FDSetAdd(ASocket, FDSet);
+  TimeVal.tv_sec := ATimeoutMS div 1000;
+  TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
+  
+  {$IFNDEF FPC}
+  Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
+  {$ELSE}
+  Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
+  {$ENDIF}
+end;
+
+function SocketReadyToRead(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
+var
+  FDSet: TFDSet;
+  TimeVal: TTimeVal;
+begin
+  FDSetZero(FDSet);
+  FDSetAdd(ASocket, FDSet);
+  TimeVal.tv_sec := ATimeoutMS div 1000;
+  TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
+  
+  {$IFNDEF FPC}
+  Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
+  {$ELSE}
+  Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
+  {$ENDIF}
+end;
+
+procedure FDSetZero(var AFDSet: TFDSet);
+begin
+  {$IFDEF MSWINDOWS}
+  AFDSet.fd_count := 0;
+  {$ELSE}
+  FD_ZERO(AFDSet);
+  {$ENDIF}
+end;
+
+procedure FDSetAdd(ASocket: THorseSocket; var AFDSet: TFDSet);
+begin
+  {$IFDEF MSWINDOWS}
+  AFDSet.fd_array[AFDSet.fd_count] := ASocket;
+  Inc(AFDSet.fd_count);
+  {$ELSE}
+  FD_SET(ASocket, AFDSet);
+  {$ENDIF}
+end;
 
 function SocketRead(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
 begin
@@ -216,15 +276,14 @@ constructor THorseGrpcConnectionThread.Create(ASocket: THorseSocket;
 begin
   inherited Create(True);
   FSocket := ASocket;
-  FHttp2Conn := THorseHttp2Connection.Create(AConnectionOptions);
-  FHttp2Conn.OnOutput := OnOutput;
-  FHttp2Conn.OnRequest := OnRequest;
-  FreeOnTerminate := True;
+  FHttp2Conn := nil;
+  FreeOnTerminate := False;
 end;
 
 destructor THorseGrpcConnectionThread.Destroy;
 begin
-  FHttp2Conn.Free;
+  if Assigned(FHttp2Conn) then
+    FHttp2Conn.Free;
   inherited;
 end;
 
@@ -248,31 +307,49 @@ procedure THorseGrpcConnectionThread.Execute;
 var
   Buffer: array[0..65535] of Byte;
   BytesRead: Integer;
+  LSocket: THorseSocket;
 begin
-  try
+  while not Terminated do
+  begin
+    LSocket := InvalidSocketValue;
+    THorseGrpcProvider.FQueueSection.Enter;
     try
-      while not Terminated do
-      begin
-        BytesRead := SocketRead(FSocket, @Buffer[0], Length(Buffer));
-        if BytesRead <= 0 then
-          Break;
-        if not Assigned(FHttp2Conn) then
-        begin
-          WriteLn('Error: FHttp2Conn is NIL in Execute loop!');
-          Flush(Output);
-          Break;
-        end;
-        FHttp2Conn.Feed(@Buffer[0], BytesRead);
-      end;
-    except
-      on E: Exception do
-      begin
-        WriteLn('Execute Loop Exception: ', E.Message);
-        Flush(Output);
-      end;
+      if THorseGrpcProvider.FConnectionQueue.Count > 0 then
+        LSocket := THorseGrpcProvider.FConnectionQueue.Dequeue;
+    finally
+      THorseGrpcProvider.FQueueSection.Leave;
     end;
-  finally
-    CloseSocketHandle(FSocket);
+
+    if LSocket = InvalidSocketValue then
+    begin
+      Sleep(5);
+      Continue;
+    end;
+
+    FSocket := LSocket;
+    try
+      FHttp2Conn := THorseHttp2Connection.Create(THorseHttp2ConnectionOptions.Default);
+      FHttp2Conn.OnOutput := OnOutput;
+      FHttp2Conn.OnRequest := OnRequest;
+      try
+        while not Terminated and (FHttp2Conn.State <> THorseHttp2ConnectionState.csClosed) do
+        begin
+          if SocketReadyToRead(FSocket, 50) then
+          begin
+            BytesRead := SocketRead(FSocket, @Buffer[0], Length(Buffer));
+            if BytesRead <= 0 then
+              Break;
+            FHttp2Conn.Feed(@Buffer[0], BytesRead);
+          end;
+        end;
+      finally
+        FHttp2Conn.Free;
+        FHttp2Conn := nil;
+      end;
+    finally
+      CloseSocketHandle(FSocket);
+      FSocket := InvalidSocketValue;
+    end;
   end;
 end;
 
@@ -389,6 +466,9 @@ var
   WData: TWSAData;
   {$ENDIF}
   Res: Integer;
+  LNumThreads: Integer;
+  LThread: TThread;
+  i: Integer;
 begin
   if FActive then Exit;
   FPort := APort;
@@ -413,17 +493,26 @@ begin
   if Res = -1 then
   begin
     CloseSocketHandle(FListenSocket);
-    raise Exception.CreateFmt('Failed to bind to port %d', [APort]);
-  end;
-
-  Res := listen(FListenSocket, SOMAXCONN);
-  if Res = -1 then
-  begin
-    CloseSocketHandle(FListenSocket);
     raise Exception.Create('Failed to listen on socket');
   end;
 
+  FConnectionQueue := TQueue<THorseSocket>.Create;
+  FQueueSection := TCriticalSection.Create;
+  FThreadPool := TList<TThread>.Create;
+
   FActive := True;
+
+  LNumThreads := CPUCount * 4;
+  if LNumThreads < 16 then
+    LNumThreads := 16;
+
+  for i := 1 to LNumThreads do
+  begin
+    LThread := THorseGrpcConnectionThread.Create(InvalidSocketValue, THorseHttp2ConnectionOptions.Default);
+    LThread.Start;
+    FThreadPool.Add(LThread);
+  end;
+
   FListenThread := TThread.CreateAnonymousThread(
     procedure
     begin
@@ -434,13 +523,45 @@ begin
 end;
 
 class procedure THorseGrpcProvider.Stop;
+var
+  LThread: TThread;
 begin
   if not FActive then Exit;
   FActive := False;
   CloseSocketHandle(FListenSocket);
-  FListenThread.WaitFor;
-  FListenThread.Free;
-  FListenThread := nil;
+
+  if Assigned(FThreadPool) then
+  begin
+    for LThread in FThreadPool do
+      LThread.Terminate;
+    for LThread in FThreadPool do
+    begin
+      LThread.WaitFor;
+      LThread.Free;
+    end;
+    FreeAndNil(FThreadPool);
+  end;
+
+  if Assigned(FConnectionQueue) then
+  begin
+    FQueueSection.Enter;
+    try
+      while FConnectionQueue.Count > 0 do
+        CloseSocketHandle(FConnectionQueue.Dequeue);
+    finally
+      FQueueSection.Leave;
+    end;
+    FreeAndNil(FConnectionQueue);
+  end;
+  FreeAndNil(FQueueSection);
+
+  if Assigned(FListenThread) then
+  begin
+    FListenThread.WaitFor;
+    FListenThread.Free;
+    FListenThread := nil;
+  end;
+
   {$IFDEF MSWINDOWS}
   WSACleanup;
   {$ENDIF}
@@ -449,14 +570,20 @@ end;
 class procedure THorseGrpcProvider.ListenLoop;
 var
   ClientSocket: THorseSocket;
-  Opts: THorseHttp2ConnectionOptions;
 begin
-  Opts := THorseHttp2ConnectionOptions.Default;
   while FActive do
   begin
-    if SocketAccept(FListenSocket, ClientSocket) then
+    if SocketReadyToAccept(FListenSocket, 50) then
     begin
-      THorseGrpcConnectionThread.Create(ClientSocket, Opts).Start;
+      if SocketAccept(FListenSocket, ClientSocket) then
+      begin
+        FQueueSection.Enter;
+        try
+          FConnectionQueue.Enqueue(ClientSocket);
+        finally
+          FQueueSection.Leave;
+        end;
+      end;
     end;
   end;
 end;

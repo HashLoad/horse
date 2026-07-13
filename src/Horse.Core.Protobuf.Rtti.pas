@@ -17,6 +17,11 @@ uses
   Horse.Grpc.Attributes;
 
 type
+  PBytes = ^TBytes;
+  PObject = ^TObject;
+  TSerializeMethod = procedure(AStream: TStream) of object;
+  TDeserializeMethod = procedure(AStream: TStream) of object;
+
   THorsePropType = (hptUnknown, hptInt32, hptInt64, hptDouble, hptSingle, hptString, hptBool, hptBytes, hptMessage);
 
   THorseProtobufProp = record
@@ -25,12 +30,18 @@ type
     PropType: THorsePropType;
     RttiProperty: TRttiProperty;
     RttiType: TRttiType;
+    {$IFNDEF FPC}
+    FieldOffset: Integer;
+    HasField: Boolean;
+    {$ENDIF}
   end;
 
   THorseProtobufRtti = class
   private
     class var FContext: TRttiContext;
     class var FCache: TDictionary<TClass, TArray<THorseProtobufProp>>;
+    class var FSerializeMethods: TDictionary<TClass, Pointer>;
+    class var FDeserializeMethods: TDictionary<TClass, Pointer>;
     class function MapType(AType: TRttiType): THorsePropType; static;
   public
     class procedure Init;
@@ -39,6 +50,8 @@ type
     class function GetPropValue(AObject: TObject; const AProp: THorseProtobufProp): TValue; static;
     class procedure SetPropValue(AObject: TObject; const AProp: THorseProtobufProp; const AValue: TValue); static;
     class function CreateInstance(AClass: TClass): TObject; static;
+    class function GetSerializeMethod(AClass: TClass): Pointer; static;
+    class function GetDeserializeMethod(AClass: TClass): Pointer; static;
   end;
 
 implementation
@@ -49,11 +62,15 @@ class procedure THorseProtobufRtti.Init;
 begin
   FContext := TRttiContext.Create;
   FCache := TDictionary<TClass, TArray<THorseProtobufProp>>.Create;
+  FSerializeMethods := TDictionary<TClass, Pointer>.Create;
+  FDeserializeMethods := TDictionary<TClass, Pointer>.Create;
 end;
 
 class procedure THorseProtobufRtti.Uninit;
 begin
   FCache.Free;
+  FSerializeMethods.Free;
+  FDeserializeMethods.Free;
   FContext.Free;
 end;
 
@@ -126,6 +143,24 @@ begin
             HProp.PropType := MapType(Prop.PropertyType);
             HProp.RttiProperty := Prop;
             HProp.RttiType := Prop.PropertyType;
+            {$IFNDEF FPC}
+            var LField: TRttiField;
+            LField := RttiType.GetField('F' + Prop.Name);
+            if not Assigned(LField) then
+              LField := RttiType.GetField('F' + Prop.Name.ToLower);
+            if not Assigned(LField) then
+              LField := RttiType.GetField('F' + Prop.Name.ToUpper);
+            if Assigned(LField) then
+            begin
+              HProp.FieldOffset := LField.Offset;
+              HProp.HasField := True;
+            end
+            else
+            begin
+              HProp.FieldOffset := 0;
+              HProp.HasField := False;
+            end;
+            {$ENDIF}
             List.Add(HProp);
             Break;
           end;
@@ -149,12 +184,85 @@ begin
 end;
 
 class function THorseProtobufRtti.GetPropValue(AObject: TObject; const AProp: THorseProtobufProp): TValue;
+{$IFNDEF FPC}
+var
+  Ptr: Pointer;
+{$ENDIF}
 begin
+  {$IFNDEF FPC}
+  if AProp.HasField then
+  begin
+    Ptr := Pointer(PByte(AObject) + AProp.FieldOffset);
+    case AProp.PropType of
+      hptInt32: Exit(TValue.From<Integer>(PInteger(Ptr)^));
+      hptInt64: Exit(TValue.From<Int64>(PInt64(Ptr)^));
+      hptDouble: Exit(TValue.From<Double>(PDouble(Ptr)^));
+      hptSingle: Exit(TValue.From<Single>(PSingle(Ptr)^));
+      hptString: Exit(TValue.From<string>(PString(Ptr)^));
+      hptBool: Exit(TValue.From<Boolean>(PBoolean(Ptr)^));
+      hptBytes: Exit(TValue.From<TBytes>(PBytes(Ptr)^));
+      hptMessage: Exit(TValue.From<TObject>(PObject(Ptr)^));
+    end;
+  end;
+  {$ENDIF}
   Result := AProp.RttiProperty.GetValue(AObject);
 end;
 
 class procedure THorseProtobufRtti.SetPropValue(AObject: TObject; const AProp: THorseProtobufProp; const AValue: TValue);
+{$IFNDEF FPC}
+var
+  Ptr: Pointer;
+{$ENDIF}
 begin
+  {$IFNDEF FPC}
+  if AProp.HasField then
+  begin
+    Ptr := Pointer(PByte(AObject) + AProp.FieldOffset);
+    case AProp.PropType of
+      hptInt32:
+        begin
+          PInteger(Ptr)^ := AValue.AsInteger;
+          Exit;
+        end;
+      hptInt64:
+        begin
+          PInt64(Ptr)^ := AValue.AsInt64;
+          Exit;
+        end;
+      hptDouble:
+        begin
+          PDouble(Ptr)^ := AValue.AsType<Double>;
+          Exit;
+        end;
+      hptSingle:
+        begin
+          PSingle(Ptr)^ := AValue.AsType<Single>;
+          Exit;
+        end;
+      hptString:
+        begin
+          PString(Ptr)^ := AValue.AsString;
+          Exit;
+        end;
+      hptBool:
+        begin
+          PBoolean(Ptr)^ := AValue.AsBoolean;
+          Exit;
+        end;
+      hptBytes:
+        begin
+          PBytes(Ptr)^ := AValue.AsType<TBytes>;
+          Exit;
+        end;
+      hptMessage:
+        begin
+          PObject(Ptr)^ := AValue.AsObject;
+          Exit;
+        end;
+    end;
+  end;
+  {$ENDIF}
+
   if not Assigned(AProp.RttiProperty) then
     raise Exception.CreateFmt('Property "%s" is not initialized in RTTI info.', [AProp.Name]);
   AProp.RttiProperty.SetValue(AObject, AValue);
@@ -173,6 +281,66 @@ begin
   end
   else
     Result := AClass.Create;
+end;
+
+class function THorseProtobufRtti.GetSerializeMethod(AClass: TClass): Pointer;
+var
+  RttiType: TRttiType;
+  Method: TRttiMethod;
+begin
+  System.TMonitor.Enter(FSerializeMethods);
+  try
+    if FSerializeMethods.TryGetValue(AClass, Result) then
+      Exit;
+  finally
+    System.TMonitor.Exit(FSerializeMethods);
+  end;
+
+  Result := nil;
+  RttiType := FContext.GetType(AClass);
+  if Assigned(RttiType) then
+  begin
+    Method := RttiType.GetMethod('Serialize');
+    if Assigned(Method) and (Length(Method.GetParameters) = 1) and (Method.GetParameters[0].ParamType.Name.ToLower = 'tstream') then
+      Result := Method.CodeAddress;
+  end;
+
+  System.TMonitor.Enter(FSerializeMethods);
+  try
+    FSerializeMethods.AddOrSetValue(AClass, Result);
+  finally
+    System.TMonitor.Exit(FSerializeMethods);
+  end;
+end;
+
+class function THorseProtobufRtti.GetDeserializeMethod(AClass: TClass): Pointer;
+var
+  RttiType: TRttiType;
+  Method: TRttiMethod;
+begin
+  System.TMonitor.Enter(FDeserializeMethods);
+  try
+    if FDeserializeMethods.TryGetValue(AClass, Result) then
+      Exit;
+  finally
+    System.TMonitor.Exit(FDeserializeMethods);
+  end;
+
+  Result := nil;
+  RttiType := FContext.GetType(AClass);
+  if Assigned(RttiType) then
+  begin
+    Method := RttiType.GetMethod('Deserialize');
+    if Assigned(Method) and (Length(Method.GetParameters) = 1) and (Method.GetParameters[0].ParamType.Name.ToLower = 'tstream') then
+      Result := Method.CodeAddress;
+  end;
+
+  System.TMonitor.Enter(FDeserializeMethods);
+  try
+    FDeserializeMethods.AddOrSetValue(AClass, Result);
+  finally
+    System.TMonitor.Exit(FDeserializeMethods);
+  end;
 end;
 
 initialization

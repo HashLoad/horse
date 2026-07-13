@@ -259,40 +259,52 @@ var
   Val: TValue;
   SubObj: TObject;
   SubBytes: TBytes;
+  SerializeAddr: Pointer;
+  StaticMethod: TSerializeMethod;
 begin
   if not Assigned(Obj) then Exit(nil);
 
   Stream := TBytesStream.Create(nil);
   try
-    Writer := TProtobufWriter.Create(Stream);
-    try
-      Props := THorseProtobufRtti.GetProperties(Obj.ClassType);
-      for Prop in Props do
-      begin
-        Val := THorseProtobufRtti.GetPropValue(Obj, Prop);
-        if Val.IsEmpty then Continue;
+    SerializeAddr := THorseProtobufRtti.GetSerializeMethod(Obj.ClassType);
+    if Assigned(SerializeAddr) then
+    begin
+      TMethod(StaticMethod).Code := SerializeAddr;
+      TMethod(StaticMethod).Data := Obj;
+      StaticMethod(Stream);
+    end
+    else
+    begin
+      Writer := TProtobufWriter.Create(Stream);
+      try
+        Props := THorseProtobufRtti.GetProperties(Obj.ClassType);
+        for Prop in Props do
+        begin
+          Val := THorseProtobufRtti.GetPropValue(Obj, Prop);
+          if Val.IsEmpty then Continue;
 
-        case Prop.PropType of
-          hptInt32: Writer.WriteInt32(Prop.Tag, Val.AsInteger);
-          hptInt64: Writer.WriteInt64(Prop.Tag, Val.AsInt64);
-          hptDouble: Writer.WriteDouble(Prop.Tag, Val.AsType<Double>);
-          hptSingle: Writer.WriteSingle(Prop.Tag, Val.AsType<Single>);
-          hptString: Writer.WriteString(Prop.Tag, Val.AsString);
-          hptBool: Writer.WriteBool(Prop.Tag, Val.AsBoolean);
-          hptBytes: Writer.WriteBytes(Prop.Tag, Val.AsType<TBytes>);
-          hptMessage:
-            begin
-              SubObj := Val.AsObject;
-              if Assigned(SubObj) then
+          case Prop.PropType of
+            hptInt32: Writer.WriteInt32(Prop.Tag, Val.AsInteger);
+            hptInt64: Writer.WriteInt64(Prop.Tag, Val.AsInt64);
+            hptDouble: Writer.WriteDouble(Prop.Tag, Val.AsType<Double>);
+            hptSingle: Writer.WriteSingle(Prop.Tag, Val.AsType<Single>);
+            hptString: Writer.WriteString(Prop.Tag, Val.AsString);
+            hptBool: Writer.WriteBool(Prop.Tag, Val.AsBoolean);
+            hptBytes: Writer.WriteBytes(Prop.Tag, Val.AsType<TBytes>);
+            hptMessage:
               begin
-                SubBytes := Serialize(SubObj);
-                Writer.WriteMessage(Prop.Tag, SubBytes);
+                SubObj := Val.AsObject;
+                if Assigned(SubObj) then
+                begin
+                  SubBytes := Serialize(SubObj);
+                  Writer.WriteMessage(Prop.Tag, SubBytes);
+                end;
               end;
-            end;
+          end;
         end;
+      finally
+        Writer.Free;
       end;
-    finally
-      Writer.Free;
     end;
     Result := Stream.Bytes;
     SetLength(Result, Stream.Size);
@@ -312,82 +324,94 @@ var
   SubObj: TObject;
   PropClass: TClass;
   LVal: TValue;
+  DeserializeAddr: Pointer;
+  StaticMethod: TDeserializeMethod;
 begin
   if (Length(Bytes) = 0) or not Assigned(Obj) then Exit;
 
-  Props := THorseProtobufRtti.GetProperties(Obj.ClassType);
   Stream := TBytesStream.Create(Bytes);
   try
-    Reader := TProtobufReader.Create(Stream);
-    try
-      while Reader.ReadField do
-      begin
-        Found := False;
-        for Prop in Props do
+    DeserializeAddr := THorseProtobufRtti.GetDeserializeMethod(Obj.ClassType);
+    if Assigned(DeserializeAddr) then
+    begin
+      TMethod(StaticMethod).Code := DeserializeAddr;
+      TMethod(StaticMethod).Data := Obj;
+      StaticMethod(Stream);
+    end
+    else
+    begin
+      Props := THorseProtobufRtti.GetProperties(Obj.ClassType);
+      Reader := TProtobufReader.Create(Stream);
+      try
+        while Reader.ReadField do
         begin
-          if Prop.Tag = Reader.Tag then
+          Found := False;
+          for Prop in Props do
           begin
-            Found := True;
-            case Prop.PropType of
-              hptInt32:
-                begin
-                  LVal := TValue.From<Integer>(Reader.ReadInt32);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptInt64:
-                begin
-                  LVal := TValue.From<Int64>(Reader.ReadInt64);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptDouble:
-                begin
-                  LVal := TValue.From<Double>(Reader.ReadDouble);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptSingle:
-                begin
-                  LVal := TValue.From<Single>(Reader.ReadSingle);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptString:
-                begin
-                  LVal := TValue.From<string>(Reader.ReadString);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptBool:
-                begin
-                  LVal := TValue.From<Boolean>(Reader.ReadBool);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptBytes:
-                begin
-                  LVal := TValue.From<TBytes>(Reader.ReadBytes);
-                  THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
-                end;
-              hptMessage:
-                begin
-                  SubBytes := Reader.ReadBytes;
-                  if Length(SubBytes) > 0 then
+            if Prop.Tag = Reader.Tag then
+            begin
+              Found := True;
+              case Prop.PropType of
+                hptInt32:
                   begin
-                    SubObj := THorseProtobufRtti.GetPropValue(Obj, Prop).AsObject;
-                    if not Assigned(SubObj) then
-                    begin
-                      PropClass := Prop.RttiType.AsInstance.MetaclassType;
-                      SubObj := CreateInstance(PropClass);
-                      THorseProtobufRtti.SetPropValue(Obj, Prop, SubObj);
-                    end;
-                    Deserialize(SubBytes, SubObj);
+                    LVal := TValue.From<Integer>(Reader.ReadInt32);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
                   end;
-                end;
+                hptInt64:
+                  begin
+                    LVal := TValue.From<Int64>(Reader.ReadInt64);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptDouble:
+                  begin
+                    LVal := TValue.From<Double>(Reader.ReadDouble);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptSingle:
+                  begin
+                    LVal := TValue.From<Single>(Reader.ReadSingle);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptString:
+                  begin
+                    LVal := TValue.From<string>(Reader.ReadString);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptBool:
+                  begin
+                    LVal := TValue.From<Boolean>(Reader.ReadBool);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptBytes:
+                  begin
+                    LVal := TValue.From<TBytes>(Reader.ReadBytes);
+                    THorseProtobufRtti.SetPropValue(Obj, Prop, LVal);
+                  end;
+                hptMessage:
+                  begin
+                    SubBytes := Reader.ReadBytes;
+                    if Length(SubBytes) > 0 then
+                    begin
+                      SubObj := THorseProtobufRtti.GetPropValue(Obj, Prop).AsObject;
+                      if not Assigned(SubObj) then
+                      begin
+                        PropClass := Prop.RttiType.AsInstance.MetaclassType;
+                        SubObj := CreateInstance(PropClass);
+                        THorseProtobufRtti.SetPropValue(Obj, Prop, SubObj);
+                      end;
+                      Deserialize(SubBytes, SubObj);
+                    end;
+                  end;
+              end;
+              Break;
             end;
-            Break;
           end;
+          if not Found then
+            Reader.SkipField;
         end;
-        if not Found then
-          Reader.SkipField;
+      finally
+        Reader.Free;
       end;
-    finally
-      Reader.Free;
     end;
   finally
     Stream.Free;

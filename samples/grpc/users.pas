@@ -7,12 +7,13 @@ unit users;
 
 {$IFDEF FPC}
   {$MODE DELPHI}{$H+}
+  {$M+}
 {$ENDIF}
-{$M+}
 
 interface
 
 uses
+  System.Classes,
   System.SysUtils,
   Horse.Grpc.Attributes;
 
@@ -24,9 +25,18 @@ type
   TUserRequest = class
   private
     Fid: Integer;
+  {$IFNDEF FPC}
+  public
+    [ProtoMember(1)]
+    property id: Integer read Fid write Fid;
+  {$ELSE}
   published
     [ProtoMember(1)]
     property id: Integer read Fid write Fid;
+  {$ENDIF}
+  public
+    procedure Serialize(AStream: TStream);
+    procedure Deserialize(AStream: TStream);
   end;
 
   [GrpcMessage]
@@ -35,6 +45,15 @@ type
     Fid: Integer;
     Fname: string;
     Femail: string;
+  {$IFNDEF FPC}
+  public
+    [ProtoMember(1)]
+    property id: Integer read Fid write Fid;
+    [ProtoMember(2)]
+    property name: string read Fname write Fname;
+    [ProtoMember(3)]
+    property email: string read Femail write Femail;
+  {$ELSE}
   published
     [ProtoMember(1)]
     property id: Integer read Fid write Fid;
@@ -42,15 +61,100 @@ type
     property name: string read Fname write Fname;
     [ProtoMember(3)]
     property email: string read Femail write Femail;
+  {$ENDIF}
+  public
+    procedure Serialize(AStream: TStream);
+    procedure Deserialize(AStream: TStream);
   end;
 
   [GrpcService('users.UserService')]
   IUserService = interface(IInvokable)
-    ['{1E4CA3E9-B5E3-4EF1-8B8C-29F869994C47}']
+    ['{DFB2844E-D44A-4721-9F06-1F73851FC1B5}']
     [GrpcMethod('GetUser')]
     function GetUser(const ARequest: TUserRequest): TUserResponse;
   end;
 
 implementation
+
+uses
+  Horse.Core.Protobuf.Serializer;
+
+procedure TUserRequest.Serialize(AStream: TStream);
+var
+  LWriter: TProtobufWriter;
+begin
+  LWriter := TProtobufWriter.Create(AStream);
+  try
+    LWriter.WriteInt32(1, Fid);
+  finally
+    LWriter.Free;
+  end;
+end;
+
+procedure TUserRequest.Deserialize(AStream: TStream);
+var
+  LReader: TProtobufReader;
+begin
+  LReader := TProtobufReader.Create(AStream);
+  try
+    while LReader.ReadField do
+    begin
+      case LReader.Tag of
+        1:
+          begin
+            Fid := LReader.ReadInt32;
+          end;
+      else
+        LReader.SkipField;
+      end;
+    end;
+  finally
+    LReader.Free;
+  end;
+end;
+
+procedure TUserResponse.Serialize(AStream: TStream);
+var
+  LWriter: TProtobufWriter;
+begin
+  LWriter := TProtobufWriter.Create(AStream);
+  try
+    LWriter.WriteInt32(1, Fid);
+    LWriter.WriteString(2, Fname);
+    LWriter.WriteString(3, Femail);
+  finally
+    LWriter.Free;
+  end;
+end;
+
+procedure TUserResponse.Deserialize(AStream: TStream);
+var
+  LReader: TProtobufReader;
+begin
+  LReader := TProtobufReader.Create(AStream);
+  try
+    while LReader.ReadField do
+    begin
+      case LReader.Tag of
+        1:
+          begin
+            Fid := LReader.ReadInt32;
+          end;
+        2:
+          begin
+            Fname := LReader.ReadString;
+          end;
+        3:
+          begin
+            Femail := LReader.ReadString;
+          end;
+      else
+        LReader.SkipField;
+      end;
+    end;
+  finally
+    LReader.Free;
+  end;
+end;
 
 end.

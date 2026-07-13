@@ -183,6 +183,7 @@ begin
     Output.Add('interface');
     Output.Add('');
     Output.Add('uses');
+    Output.Add('  System.Classes,');
     Output.Add('  System.SysUtils,');
     Output.Add('  Horse.Grpc.Attributes;');
     Output.Add('');
@@ -218,6 +219,9 @@ begin
         Output.Add('    property ' + Fld.Name + ': ' + Fld.DelphiType + ' read F' + Fld.Name + ' write F' + Fld.Name + ';');
       end;
       Output.Add('  {$ENDIF}');
+      Output.Add('  public');
+      Output.Add('    procedure Serialize(AStream: TStream);');
+      Output.Add('    procedure Deserialize(AStream: TStream);');
       Output.Add('  end;');
       Output.Add('');
     end;
@@ -244,6 +248,90 @@ begin
  
     Output.Add('implementation');
     Output.Add('');
+    Output.Add('uses');
+    Output.Add('  Horse.Core.Protobuf.Serializer;');
+    Output.Add('');
+    for Msg in Messages do
+    begin
+      Output.Add('procedure T' + Msg.Name + '.Serialize(AStream: TStream);');
+      Output.Add('var');
+      Output.Add('  LWriter: TProtobufWriter;');
+      Output.Add('begin');
+      Output.Add('  LWriter := TProtobufWriter.Create(AStream);');
+      Output.Add('  try');
+      for Fld in Msg.Fields do
+      begin
+        if Fld.DelphiType = 'Integer' then
+          Output.Add('    LWriter.WriteInt32(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'Int64' then
+          Output.Add('    LWriter.WriteInt64(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'Double' then
+          Output.Add('    LWriter.WriteDouble(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'Single' then
+          Output.Add('    LWriter.WriteSingle(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'string' then
+          Output.Add('    LWriter.WriteString(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'Boolean' then
+          Output.Add('    LWriter.WriteBool(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else if Fld.DelphiType = 'TBytes' then
+          Output.Add('    LWriter.WriteBytes(' + IntToStr(Fld.Tag) + ', F' + Fld.Name + ');')
+        else
+        begin
+          Output.Add('    if Assigned(F' + Fld.Name + ') then');
+          Output.Add('      LWriter.WriteMessage(' + IntToStr(Fld.Tag) + ', THorseProtobufSerializer.Serialize(F' + Fld.Name + '));');
+        end;
+      end;
+      Output.Add('  finally');
+      Output.Add('    LWriter.Free;');
+      Output.Add('  end;');
+      Output.Add('end;');
+      Output.Add('');
+
+      Output.Add('procedure T' + Msg.Name + '.Deserialize(AStream: TStream);');
+      Output.Add('var');
+      Output.Add('  LReader: TProtobufReader;');
+      Output.Add('begin');
+      Output.Add('  LReader := TProtobufReader.Create(AStream);');
+      Output.Add('  try');
+      Output.Add('    while LReader.ReadField do');
+      Output.Add('    begin');
+      Output.Add('      case LReader.Tag of');
+      for Fld in Msg.Fields do
+      begin
+        Output.Add('        ' + IntToStr(Fld.Tag) + ':');
+        Output.Add('          begin');
+        if Fld.DelphiType = 'Integer' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadInt32;')
+        else if Fld.DelphiType = 'Int64' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadInt64;')
+        else if Fld.DelphiType = 'Double' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadDouble;')
+        else if Fld.DelphiType = 'Single' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadSingle;')
+        else if Fld.DelphiType = 'string' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadString;')
+        else if Fld.DelphiType = 'Boolean' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadBool;')
+        else if Fld.DelphiType = 'TBytes' then
+          Output.Add('            F' + Fld.Name + ' := LReader.ReadBytes;')
+        else
+        begin
+          Output.Add('            if not Assigned(F' + Fld.Name + ') then');
+          Output.Add('              F' + Fld.Name + ' := ' + Fld.DelphiType + '.Create;');
+          Output.Add('            THorseProtobufSerializer.Deserialize(LReader.ReadBytes, F' + Fld.Name + ');');
+        end;
+        Output.Add('          end;');
+      end;
+      Output.Add('      else');
+      Output.Add('        LReader.SkipField;');
+      Output.Add('      end;');
+      Output.Add('    end;');
+      Output.Add('  finally');
+      Output.Add('    LReader.Free;');
+      Output.Add('  end;');
+      Output.Add('end;');
+      Output.Add('');
+    end;
     Output.Add('end.');
  
     Output.SaveToFile(OutputFile);
