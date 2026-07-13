@@ -82,6 +82,21 @@ type
     function GetDummy(const AReq: TTestUserRequest): TTestUserRequest;
   end;
 
+  [GrpcService('SingletonService')]
+  ISingletonService = interface(IInvokable)
+    ['{B9405BA7-B8C2-4B6A-B68C-28D8E387C102}']
+    [GrpcMethod('GetDummy')]
+    function GetDummy(const AReq: TTestUserRequest): TTestUserRequest;
+  end;
+
+  TSingletonServiceImpl = class(TInterfacedObject, ISingletonService)
+  protected
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
+  public
+    function GetDummy(const AReq: TTestUserRequest): TTestUserRequest;
+  end;
+
   [TestFixture]
   TTestsHorseCoreGrpc = class
   public
@@ -128,6 +143,23 @@ begin
 end;
 
 function TDummyServiceImpl.GetDummy(const AReq: TTestUserRequest): TTestUserRequest;
+begin
+  Result := AReq;
+end;
+
+{ TSingletonServiceImpl }
+
+function TSingletonServiceImpl._AddRef: Integer;
+begin
+  Result := -1;
+end;
+
+function TSingletonServiceImpl._Release: Integer;
+begin
+  Result := -1;
+end;
+
+function TSingletonServiceImpl.GetDummy(const AReq: TTestUserRequest): TTestUserRequest;
 begin
   Result := AReq;
 end;
@@ -497,22 +529,27 @@ end;
 
 procedure TTestsHorseCoreGrpc.TestGrpcSingletonRegistration;
 var
-  LServiceImpl: TDummyServiceImpl;
+  LServiceImpl: TSingletonServiceImpl;
   LServiceMeta: TGrpcServiceMeta;
 begin
-  LServiceImpl := TDummyServiceImpl.Create;
+  LServiceImpl := TSingletonServiceImpl.Create;
   try
-    THorseGrpcProvider.RegisterService(IDummyService, LServiceImpl);
+    THorseGrpcProvider.RegisterService(ISingletonService, LServiceImpl);
     
-    Assert.IsTrue(THorseGrpcProvider.Services.TryGetValue('dummyinterface', LServiceMeta) or
-                  THorseGrpcProvider.Services.TryGetValue('dummyservice', LServiceMeta),
-                  'Service should be registered under name dummyinterface or dummyservice');
+    Assert.IsTrue(THorseGrpcProvider.Services.TryGetValue('singletonservice', LServiceMeta) or
+                  THorseGrpcProvider.Services.TryGetValue('isingletonservice', LServiceMeta),
+                  'Service should be registered under name singletonservice or isingletonservice');
                   
     Assert.IsNotNull(LServiceMeta);
     Assert.IsTrue(LServiceMeta.IsSingleton, 'Service should be registered as Singleton');
     Assert.AreEqual(Pointer(LServiceImpl), Pointer(LServiceMeta.ServiceInstance), 'Service instance should match');
   finally
-    // A própria destruição da suite irá limpar o provedor ou manter o singleton.
+    if THorseGrpcProvider.Services.TryGetValue('singletonservice', LServiceMeta) or
+       THorseGrpcProvider.Services.TryGetValue('isingletonservice', LServiceMeta) then
+    begin
+      THorseGrpcProvider.Services.Remove(LServiceMeta.ServiceName.ToLower);
+      LServiceMeta.Free;
+    end;
   end;
 end;
 
