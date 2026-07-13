@@ -127,7 +127,7 @@ begin
   TimeVal.tv_sec := ATimeoutMS div 1000;
   TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
   
-  {$IFNDEF FPC}
+  {$IFDEF MSWINDOWS}
   Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
   {$ELSE}
   Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
@@ -144,7 +144,7 @@ begin
   TimeVal.tv_sec := ATimeoutMS div 1000;
   TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
   
-  {$IFNDEF FPC}
+  {$IFDEF MSWINDOWS}
   Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
   {$ELSE}
   Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
