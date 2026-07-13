@@ -9,10 +9,11 @@ interface
 uses
   {$IF DEFINED(FPC)}
   RegExpr,
+  SysUtils;
   {$ELSE}
   System.RegularExpressions,
-  {$ENDIF}
   System.SysUtils;
+  {$ENDIF}
 
 type
   THorseRegex = class

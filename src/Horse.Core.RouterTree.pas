@@ -85,7 +85,6 @@ uses
 {$IF DEFINED(FPC)}
   SysUtils,
   SyncObjs,
-  Diagnostics,
 {$ELSE}
   System.SysUtils,
   System.RegularExpressions,
@@ -369,6 +368,8 @@ begin
   FreeAndNil(FCallBack);
   {$ENDIF}
   FreeAndNil(FRoute);
+  if Assigned(FRegexMatcher) then
+    FRegexMatcher.Free;
   FRegexedKeys.Clear;
   FRegexedKeys.Free;
   FHandlerMethods.Clear;

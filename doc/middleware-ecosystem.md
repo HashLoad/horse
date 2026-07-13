@@ -92,6 +92,9 @@ These are not maintained by HashLoad but are listed here because they're commonl
 | [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static) | High-performance static file serving with Range, Cache, and SPA Fallback support | ✔️ | ✔️ |
 | [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto) | Auto-binding and declarative validation middleware | ✔️ | ✔️ |
 | [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac) | Role-Based Access Control (RBAC) and scopes middleware | ✔️ | ✔️ |
+| [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation) | Request payload schema validation middleware | ✔️ | ✔️ |
+| [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart) | Multipart/form-data request body parser middleware | ✔️ | ✔️ |
+| [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet) | Security headers middleware for HTTP response protection | ✔️ | ✔️ |
 
 
 ---

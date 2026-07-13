@@ -18,8 +18,10 @@ timeline
         Consolidação e Infraestrutura : "Ganchos CPS (Lifecycle)" : "Desligamento Suave (Graceful)" : "Injeção de Dependências (Services)"
         Performance : "Multi-Instance (THorseInstance)" : "Pool de Buffers (IMemoryBufferPool)" : "Telemetria & APM"
         Roteamento : Roteamento Regex e Opcionais : "Core Unificado (IOCP / epoll)"
+    section Entregas de Middlewares
+        Segurança e Validação : "horse-dto" : "horse-helmet (Security Headers)"
     section Próximos Middlewares (Backlog)
-        Segurança & Redes : "horse-helmet (Security Headers)" : "Adoção Recomendada do gbswagger"
+        Segurança & Redes : "Adoção Recomendada do gbswagger"
         Protocolos Avançados : "horse-websocket (WebSocket Puro)" : "horse-grpc (Provider RPC)"
 ```
 
@@ -31,10 +33,11 @@ Abaixo está o status detalhado das evoluções do framework e de seus middlewar
 
 | 🟥 A Fazer (Backlog) | 🟨 Em Progresso (Planejamento) | 🟩 Concluído (Entregue) |
 |---|---|---|
-| **`horse-helmet`** (Middleware)<br>Configuração de cabeçalhos de segurança HTTP de forma simples. | **Adoção do `gbswagger`** (Comunidade)<br>Integração e recomendação oficial para documentação OpenAPI. | **Roteamento Regex e Opcionais** (Core)<br>Suporte a rotas dinâmicas complexas no Radix e Tree. |
-| **`horse-websocket`** (Middleware)<br>Suporte a conexões bidirecionais e persistentes WebSockets puros. | | **Ganchos de Telemetria / APM** (Core)<br>Infraestrutura de rastreamento de latência fail-safe. |
-| **`horse-grpc`** (Provedor)<br>Adaptador de transporte focado em RPC binário de alta performance. | | **Pool de Buffers de Memória** (Core)<br>Reciclagem de arrays de bytes sem alocações de heap. |
+| **`horse-websocket`** (Middleware)<br>Suporte a conexões bidirecionais e persistentes WebSockets puros. | **Adoção do `gbswagger`** (Comunidade)<br>Integração e recomendação oficial para documentação OpenAPI. | **Roteamento Regex e Opcionais** (Core)<br>Suporte a rotas dinâmicas complexas no Radix e Tree. |
+| **`horse-grpc`** (Provedor)<br>Adaptador de transporte focado em RPC binário de alta performance. | | **Ganchos de Telemetria / APM** (Core)<br>Infraestrutura de rastreamento de latência fail-safe. |
+| | | **Pool de Buffers de Memória** (Core)<br>Reciclagem de arrays de bytes sem alocações de heap. |
 | | | **Middleware `horse-dto`** (Middleware)<br>Desserialização automática e validação por atributos. |
+| | | **Middleware `horse-helmet`** (Middleware)<br>Configuração de cabeçalhos de segurança HTTP de forma simples. |
 | | | **Multi-Instance e Server Hooks** (Core)<br>Múltiplos servidores no mesmo processo e hooks de inicialização. |
 | | | **Cadeia de Middlewares por Rota** (Core)<br>Registro sequencial de callbacks locais nas rotas. |
 
@@ -42,19 +45,15 @@ Abaixo está o status detalhado das evoluções do framework e de seus middlewar
 
 ## 🔍 Detalhes das Próximas Evoluções (Backlog)
 
-### 1. `horse-helmet` (Middleware)
-*   **Tipo**: Middleware Oficial Independente
-*   **Propósito**: Aumentar a segurança da API Delphi ocultando cabeçalhos HTTP que vazam dados do servidor (como o provedor Indy ou IIS) e adicionando cabeçalhos de proteção moderna (como *Content-Security-Policy*, *X-Content-Type-Options*, *Strict-Transport-Security*).
-
-### 2. Adoção Recomendada do `gbswagger` (Swagger / OpenAPI)
+### 1. Adoção Recomendada do `gbswagger` (Swagger / OpenAPI)
 *   **Tipo**: Integração com Biblioteca de Terceiros (Comunidade)
 *   **Propósito**: Em vez de fragmentar o ecossistema recriando um novo gerador de documentação, o Horse adota oficialmente e recomenda o uso de **`gabrielbaltazar/gbswagger`** para geração de documentação de rotas automática no padrão OpenAPI. O foco das documentações oficiais será exemplificar a integração suave com este middleware.
 
-### 3. `horse-websocket` (Extensão)
+### 2. `horse-websocket` (Extensão)
 *   **Tipo**: Middleware de Comunicação
 *   **Propósito**: Permitir que servidores Horse estabeleçam canais de comunicação duplex persistentes (WebSockets) baseados em padrão puro (RFC 6455). Essencial para aplicações que necessitam de push de eventos em tempo real, com compatibilidade multiplataforma (Delphi e FPC/Lazarus).
 
-### 4. `horse-grpc` (Provedor)
+### 3. `horse-grpc` (Provedor)
 *   **Tipo**: Provedor de Transporte
 *   **Propósito**: Fornecer um provider alternativo focado no protocolo gRPC sobre HTTP/2. Permitirá que aplicações Delphi escritas em Horse atuem como microsserviços de altíssima performance para comunicação máquina-máquina.
 
@@ -64,6 +63,7 @@ Abaixo está o status detalhado das evoluções do framework e de seus middlewar
 
 Consulte as especificações detalhadas das entregas que moldaram as versões recentes do Horse:
 
+*   **Middleware `horse-helmet`**: Configuração simplificada de cabeçalhos de segurança HTTP (como *Content-Security-Policy*, *X-Content-Type-Options*, *Strict-Transport-Security*) e ocultação de headers reveladores.
 *   **Roteamento Regex e Parâmetros Opcionais**: Implementado em ambos os roteadores (`Tree` e `Radix`) de forma nativa e multiplataforma.
 *   **Ganchos de Telemetria e APM**: Infraestrutura de baixíssimo overhead para monitoramento de latência e integração com OpenTelemetry.
 *   **Pool de Buffers de Memória (`IMemoryBufferPool`)**: Reciclagem de streams assíncronos e arrays, eliminando fragmentação de memória no heap.

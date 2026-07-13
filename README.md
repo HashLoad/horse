@@ -76,7 +76,7 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | Multi-Instance — running and isolating multiple independent HTTP servers concurrently inside the same process | [Multi-Instance](./doc/multi-instance.md) |
 | Memory Buffer Pool — high-performance thread-safe buffer recycling to eliminate heap allocation | [Memory Buffer Pool](./doc/memory-buffer-pool.md) |
 | **Writing & publishing your own middleware** — skeleton, thread safety, Provider neutrality, Boss packaging | [**Writing a Middleware**](./doc/writing-middleware.md) |
-| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
+| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, gRPC, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
 | **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |
 | Full middleware catalogue with extended descriptions | [Middleware Ecosystem](./doc/middleware-ecosystem.md) |
 | Observability, distributed tracing (OpenTelemetry) and metrics collection (Prometheus) | [Observability & Telemetry](./doc/telemetry.md) |
@@ -204,6 +204,9 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac)                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart)                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 
 ## 📊 Telemetry

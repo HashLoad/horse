@@ -203,7 +203,7 @@ begin
     Assert.AreEqual(1, FMethodAfterStopCount, 'MethodAfterStop should fire once');
 
     // 5. Valida sequencia de execucao dos eventos
-    Assert.AreEqual(8, FOrderList.Count, 'Should have 8 events logged in total');
+    Assert.IsTrue(FOrderList.Count = 8, 'Should have 8 events logged in total');
     
     // As chamadas multicast executam na ordem de registro: primeiro closure, depois metodo of object
     Assert.AreEqual('BeforeListen', FOrderList[0]);
@@ -233,6 +233,7 @@ var
   LThread: TThread;
   LMultiBefore1: Integer;
   LMultiBefore2: Integer;
+  LCallback: THorseServerLifecycleProc;
 begin
   LInstance := THorseInstance.Create;
   LThread := nil;
@@ -240,17 +241,17 @@ begin
     LMultiBefore1 := 0;
     LMultiBefore2 := 0;
 
-    LInstance
-      .AddOnBeforeListen(
-        procedure(const AInst: THorseInstance)
-        begin
-          Inc(LMultiBefore1);
-        end)
-      .AddOnBeforeListen(
-        procedure(const AInst: THorseInstance)
-        begin
-          Inc(LMultiBefore2);
-        end);
+    LCallback := procedure(const AInst: THorseInstance)
+      begin
+        Inc(LMultiBefore1);
+      end;
+    LInstance.AddOnBeforeListen(LCallback);
+
+    LCallback := procedure(const AInst: THorseInstance)
+      begin
+        Inc(LMultiBefore2);
+      end;
+    LInstance.AddOnBeforeListen(LCallback);
 
     LThread := TThread.CreateAnonymousThread(
       procedure
@@ -282,15 +283,16 @@ procedure TTestIntegrationServerLifecycle.TestBeforeListenExceptionAbortsStartup
 var
   LInstance: THorseInstance;
   LThread: TThread;
+  LCallback: THorseServerLifecycleProc;
 begin
   LInstance := THorseInstance.Create;
   LThread := nil;
   try
-    LInstance.AddOnBeforeListen(
-      procedure(const AInst: THorseInstance)
+    LCallback := procedure(const AInst: THorseInstance)
       begin
         raise Exception.Create('Simulated DB connection failure');
-      end);
+      end;
+    LInstance.AddOnBeforeListen(LCallback);
 
     LThread := TThread.CreateAnonymousThread(
       procedure
