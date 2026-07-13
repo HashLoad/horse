@@ -504,8 +504,8 @@ begin
   try
     THorseGrpcProvider.RegisterService(IDummyService, LServiceImpl);
     
-    Assert.IsTrue(THorseGrpcProvider.FServices.TryGetValue('dummyinterface', LServiceMeta) or
-                  THorseGrpcProvider.FServices.TryGetValue('dummyservice', LServiceMeta),
+    Assert.IsTrue(THorseGrpcProvider.Services.TryGetValue('dummyinterface', LServiceMeta) or
+                  THorseGrpcProvider.Services.TryGetValue('dummyservice', LServiceMeta),
                   'Service should be registered under name dummyinterface or dummyservice');
                   
     Assert.IsNotNull(LServiceMeta);

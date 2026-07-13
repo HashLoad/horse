@@ -111,6 +111,7 @@ type
     class function ExportProto: string; static;
     class property Active: Boolean read FActive;
     class property Port: Integer read FPort;
+    class property Services: TDictionary<string, TGrpcServiceMeta> read FServices;
   end;
 
 const
