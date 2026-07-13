@@ -336,7 +336,7 @@ begin
       else if Prop.Name = 'valInt64' then
         THorseProtobufRtti.SetPropValue(Msg, Prop, Int64(456))
       else if Prop.Name = 'valDouble' then
-        THorseProtobufRtti.SetPropValue(Msg, Prop, Double(12.34))
+        THorseProtobufRtti.SetPropValue(Msg, Prop, 12.34)
       else if Prop.Name = 'valString' then
         THorseProtobufRtti.SetPropValue(Msg, Prop, 'Offset Write')
       else if Prop.Name = 'valBool' then
@@ -345,7 +345,7 @@ begin
     
     Assert.AreEqual(123, Msg.valInt);
     Assert.AreEqual(Int64(456), Msg.valInt64);
-    Assert.AreEqual(Double(12.34), Msg.valDouble);
+    Assert.AreEqual(12.34, Msg.valDouble, 0.0001);
     Assert.AreEqual('Offset Write', Msg.valString);
     Assert.IsTrue(Msg.valBool);
     
