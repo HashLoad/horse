@@ -13,7 +13,8 @@ uses
   Horse.Grpc.Codec,
   Horse.Grpc.Attributes,
   Horse.Provider.Grpc,
-  Horse.Core.BufferPool;
+  Horse.Core.BufferPool,
+  Horse.Core.Channel;
 
 type
   [ProtoClass]
@@ -102,6 +103,14 @@ type
     procedure TestThreadPoolAndConcurrency;
     [Test]
     procedure TestBufferPoolConcurrency;
+    [Test]
+    procedure TestChannelSimpleWriteRead;
+    [Test]
+    procedure TestChannelTimeoutAndClose;
+    [Test]
+    procedure TestChannelConcurrency;
+    [Test]
+    procedure TestGrpcSingletonRegistration;
   end;
 
 implementation
@@ -391,6 +400,119 @@ begin
     end;
   finally
     THorseBufferPool.Release(Buf1);
+  end;
+end;
+
+procedure TTestsHorseCoreGrpc.TestChannelSimpleWriteRead;
+var
+  LChannel: THorseChannel<TTestUserRequest>;
+  LReq, LRead: TTestUserRequest;
+  LReadObj: TObject;
+begin
+  LChannel := THorseChannel<TTestUserRequest>.Create;
+  try
+    Assert.AreEqual(0, LChannel.Count);
+    LReq := TTestUserRequest.Create;
+    LReq.id := 999;
+    LReq.name := 'Channel Test';
+    LChannel.Write(LReq);
+    Assert.AreEqual(1, LChannel.Count);
+
+    Assert.IsTrue(LChannel.ReadObject(LReadObj));
+    try
+      Assert.IsNotNull(LReadObj);
+      Assert.IsTrue(LReadObj is TTestUserRequest);
+      LRead := TTestUserRequest(LReadObj);
+      Assert.AreEqual(999, LRead.id);
+      Assert.AreEqual('Channel Test', LRead.name);
+    finally
+      LReadObj.Free;
+    end;
+    Assert.AreEqual(0, LChannel.Count);
+  finally
+    LChannel.Free;
+  end;
+end;
+
+procedure TTestsHorseCoreGrpc.TestChannelTimeoutAndClose;
+var
+  LChannel: THorseChannel<TTestUserRequest>;
+  LReadObj: TObject;
+begin
+  LChannel := THorseChannel<TTestUserRequest>.Create;
+  try
+    Assert.IsFalse(LChannel.ReadObject(LReadObj, 10));
+    Assert.IsNull(LReadObj);
+
+    LChannel.Close;
+    Assert.IsTrue(LChannel.IsClosed);
+    Assert.IsFalse(LChannel.ReadObject(LReadObj));
+  finally
+    LChannel.Free;
+  end;
+end;
+
+procedure TTestsHorseCoreGrpc.TestChannelConcurrency;
+var
+  LChannel: THorseChannel<TTestUserRequest>;
+  LProducer: TThread;
+  LReadObj: TObject;
+  LCount: Integer;
+begin
+  LChannel := THorseChannel<TTestUserRequest>.Create;
+  try
+    LProducer := TThread.CreateAnonymousThread(
+      procedure
+      var
+        i: Integer;
+        LItem: TTestUserRequest;
+      begin
+        for i := 1 to 50 do
+        begin
+          LItem := TTestUserRequest.Create;
+          LItem.id := i;
+          LChannel.Write(LItem);
+          TThread.Sleep(1);
+        end;
+        LChannel.Close;
+      end);
+    LProducer.Start;
+
+    LCount := 0;
+    while LChannel.ReadObject(LReadObj) do
+    begin
+      try
+        Inc(LCount);
+        Assert.AreEqual(LCount, TTestUserRequest(LReadObj).id);
+      finally
+        LReadObj.Free;
+      end;
+    end;
+
+    Assert.AreEqual(50, LCount);
+  finally
+    LChannel.Free;
+  end;
+end;
+
+procedure TTestsHorseCoreGrpc.TestGrpcSingletonRegistration;
+var
+  LServiceImpl: TDummyServiceImpl;
+  LServiceMeta: TGrpcServiceMeta;
+begin
+  LServiceImpl := TDummyServiceImpl.Create;
+  try
+    THorseGrpcProvider.RegisterService(IDummyService, LServiceImpl);
+    
+    Assert.IsTrue(THorseGrpcProvider.FServices.TryGetValue('dummyinterface', LServiceMeta) or
+                  THorseGrpcProvider.FServices.TryGetValue('dummyservice', LServiceMeta),
+                  'Service should be registered under name dummyinterface or dummyservice');
+                  
+    Assert.IsNotNull(LServiceMeta);
+    Assert.IsTrue(LServiceMeta.IsSingleton, 'Service should be registered as Singleton');
+    Assert.AreEqual(Pointer(LServiceImpl), Pointer(LServiceMeta.ServiceInstance), 'Service instance should match');
+  finally
+    // A própria destruição da suite irá limpar o provedor ou manter o singleton.
   end;
 end;
 

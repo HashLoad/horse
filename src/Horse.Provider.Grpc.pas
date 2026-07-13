@@ -34,7 +34,8 @@ uses
   Horse.Core.Http2.Hpack,
   Horse.Core.Http2.Stream,
   Horse.Core.Http2.Connection,
-  Horse.Core.BufferPool;
+  Horse.Core.BufferPool,
+  Horse.Core.Channel;
 
 type
   {$IFDEF MSWINDOWS}
@@ -66,6 +67,8 @@ type
     ServiceName: string;
     InterfaceGUID: TGUID;
     ServiceImplClass: TClass;
+    ServiceInstance: TObject;
+    IsSingleton: Boolean;
     Methods: TDictionary<string, TGrpcMethodMeta>;
     constructor Create;
     destructor Destroy; override;
@@ -101,7 +104,8 @@ type
   public
     class constructor CreateClass;
     class destructor DestroyClass;
-    class procedure RegisterService(const AInterface: TGUID; const AServiceImplClass: TClass);
+    class procedure RegisterService(const AInterface: TGUID; const AServiceImplClass: TClass); overload; static;
+    class procedure RegisterService(const AInterface: TGUID; const AServiceInstance: TObject); overload; static;
     class procedure Start(APort: Integer = 9090); static;
     class procedure Stop; static;
     class function ExportProto: string; static;
@@ -289,11 +293,15 @@ constructor TGrpcServiceMeta.Create;
 begin
   inherited Create;
   Methods := TDictionary<string, TGrpcMethodMeta>.Create;
+  ServiceInstance := nil;
+  IsSingleton := False;
 end;
 
 destructor TGrpcServiceMeta.Destroy;
 begin
   Methods.Free;
+  if IsSingleton and Assigned(ServiceInstance) then
+    ServiceInstance.Free;
   inherited;
 end;
 
@@ -490,6 +498,96 @@ begin
   end;
 end;
 
+class procedure THorseGrpcProvider.RegisterService(const AInterface: TGUID;
+  const AServiceInstance: TObject);
+var
+  Context: TRttiContext;
+  RttiType: TRttiType;
+  IntfType: TRttiInterfaceType;
+  Attr: TCustomAttribute;
+  ServiceName: string;
+  ServiceMeta: TGrpcServiceMeta;
+  Method: TRttiMethod;
+  MethodMeta: TGrpcMethodMeta;
+  Params: TArray<TRttiParameter>;
+  T: TRttiType;
+begin
+  Context := TRttiContext.Create;
+  try
+    IntfType := nil;
+    for T in Context.GetTypes do
+    begin
+      if (T.TypeKind = tkInterface) and (TRttiInterfaceType(T).GUID = AInterface) then
+      begin
+        IntfType := TRttiInterfaceType(T);
+        Break;
+      end;
+    end;
+
+    if not Assigned(IntfType) then
+      raise Exception.Create('Interface not found in RTTI. Make sure to define it with GUID and {$M+} enabled.');
+
+    ServiceName := '';
+    for Attr in IntfType.GetAttributes do
+    begin
+      if Attr is GrpcServiceAttribute then
+      begin
+        ServiceName := GrpcServiceAttribute(Attr).ServiceName;
+        Break;
+      end;
+    end;
+
+    if ServiceName = '' then
+      ServiceName := IntfType.Name;
+
+    ServiceMeta := TGrpcServiceMeta.Create;
+    ServiceMeta.ServiceName := ServiceName;
+    ServiceMeta.InterfaceGUID := AInterface;
+    ServiceMeta.ServiceImplClass := AServiceInstance.ClassType;
+    ServiceMeta.ServiceInstance := AServiceInstance;
+    ServiceMeta.IsSingleton := True;
+
+    RttiType := Context.GetType(AServiceInstance.ClassType);
+    if Assigned(RttiType) then
+    begin
+      for Method in IntfType.GetMethods do
+      begin
+        for Attr in Method.GetAttributes do
+        begin
+          if Attr is GrpcMethodAttribute then
+          begin
+            Params := Method.GetParameters;
+            if Length(Params) = 1 then
+            begin
+              MethodMeta.MethodName := GrpcMethodAttribute(Attr).GrpcMethodName;
+              MethodMeta.RttiMethod := RttiType.GetMethod(Method.Name);
+              if not Assigned(MethodMeta.RttiMethod) then
+                raise Exception.CreateFmt('Method "%s" has no RTTI on implementer class "%s". Ensure it is public/published and compiled with RTTI enabled.', [Method.Name, AServiceInstance.ClassName]);
+              
+              if Params[0].ParamType is TRttiInstanceType then
+                MethodMeta.RequestClass := TRttiInstanceType(Params[0].ParamType).MetaclassType
+              else
+                raise Exception.CreateFmt('Request parameter type "%s" is not a class in RTTI. Make sure it is registered/used.', [Params[0].ParamType.Name]);
+                 
+              if Method.ReturnType is TRttiInstanceType then
+                MethodMeta.ResponseClass := TRttiInstanceType(Method.ReturnType).MetaclassType
+              else
+                raise Exception.CreateFmt('Response return type "%s" is not a class in RTTI. Make sure it is registered/used.', [Method.ReturnType.Name]);
+
+              ServiceMeta.Methods.Add(MethodMeta.MethodName.ToLower, MethodMeta);
+            end;
+            Break;
+          end;
+        end;
+      end;
+    end;
+
+    FServices.Add(ServiceName.ToLower, ServiceMeta);
+  finally
+    Context.Free;
+  end;
+end;
+
 class procedure THorseGrpcProvider.Start(APort: Integer);
 var
   {$IFDEF MSWINDOWS}
@@ -640,6 +738,8 @@ var
   ResHeaders: TNameValuePairs;
   Trailers: TNameValuePairs;
   Http2Conn: THorseHttp2Connection;
+  LChannel: THorseChannel;
+  LItem: TObject;
 begin
   Http2Conn := THorseHttp2Connection(AConnection);
 
@@ -681,15 +781,15 @@ begin
       try
         THorseProtobufSerializer.Deserialize(MsgBytes, ReqObj);
 
-        ServiceInstance := Svc.ServiceImplClass.Create;
+        if Svc.IsSingleton then
+          ServiceInstance := Svc.ServiceInstance
+        else
+          ServiceInstance := Svc.ServiceImplClass.Create;
         try
           TValue.Make(@ReqObj, Method.RequestClass.ClassInfo, ReqVal);
           ResVal := Method.RttiMethod.Invoke(ServiceInstance, [ReqVal]);
           ResObj := ResVal.AsObject;
           try
-            Serialized := THorseProtobufSerializer.Serialize(ResObj);
-            Framed := THorseGrpcMessageCodec.Encode(Serialized);
-
             SetLength(ResHeaders, 3);
             ResHeaders[0].Name := ':status'; ResHeaders[0].Value := '200';
             ResHeaders[1].Name := 'content-type'; ResHeaders[1].Value := 'application/grpc';
@@ -699,13 +799,40 @@ begin
             Trailers[0].Name := 'grpc-status'; Trailers[0].Value := '0';
             Trailers[1].Name := 'grpc-message'; Trailers[1].Value := '';
 
-            Http2Conn.SendResponse(AStreamId, ResHeaders, Framed, False);
-            Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+            if (ResObj <> nil) and (ResObj is THorseChannel) then
+            begin
+              Http2Conn.SendResponse(AStreamId, ResHeaders, nil, False);
+              LChannel := THorseChannel(ResObj);
+              try
+                while LChannel.ReadObject(LItem) do
+                begin
+                  try
+                    Serialized := THorseProtobufSerializer.Serialize(LItem);
+                    Framed := THorseGrpcMessageCodec.Encode(Serialized);
+                    Http2Conn.SendResponse(AStreamId, nil, Framed, False);
+                  finally
+                    LItem.Free;
+                  end;
+                end;
+              finally
+                LChannel.Free;
+              end;
+              Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+            end
+            else
+            begin
+              Serialized := THorseProtobufSerializer.Serialize(ResObj);
+              Framed := THorseGrpcMessageCodec.Encode(Serialized);
+              Http2Conn.SendResponse(AStreamId, ResHeaders, Framed, False);
+              Http2Conn.SendResponse(AStreamId, Trailers, nil, True);
+            end;
           finally
-            ResObj.Free;
+            if (ResObj <> nil) and (not (ResObj is THorseChannel)) then
+              ResObj.Free;
           end;
         finally
-          ServiceInstance.Free;
+          if not Svc.IsSingleton then
+            ServiceInstance.Free;
         end;
       finally
         ReqObj.Free;
