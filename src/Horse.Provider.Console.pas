@@ -320,13 +320,12 @@ begin
   except
     on E: Exception do
     begin
-      if IsConsole and (GetEnvironmentVariable('HORSE_TEST_SILENCE') <> '1') and not FindCmdLineSwitch('silence', True) and not FindCmdLineSwitch('non-interactive', True) then
+      if IsConsole and (Trim(GetEnvironmentVariable('HORSE_TEST_SILENCE')) <> '1') and not FindCmdLineSwitch('silence', True) and not FindCmdLineSwitch('non-interactive', True) then
       begin
         Writeln(E.ClassName, ': ', E.Message);
         Read(LAttach);
-      end
-      else
-        raise;
+      end;
+      raise;
     end;
   end;
 end;

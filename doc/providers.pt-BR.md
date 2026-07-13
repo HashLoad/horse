@@ -42,6 +42,7 @@ O **Provider padrão depende do compilador**:
 | **[epoll](./epoll.pt-BR.md)** | `HORSE_PROVIDER_EPOLL` | Opcional, embutido (event loop assíncrono Linux) | ✔ | ✔ |
 | **horse-provider-ics** | `HORSE_PROVIDER_ICS` | Opcional, pacote externo (Delphi: Windows + Linux64/macOS) | ✔ | ❌ |
 | **[IOCP](./iocp.pt-BR.md)** | `HORSE_PROVIDER_IOCP` | Opcional, embutido (portas de conclusão Windows) | ✔ | ✔ |
+| 🆕 **[gRPC](./grpc.pt-BR.md)** | `HORSE_GRPC` / Registro manual | Opcional, embutido (gRPC e HTTP/2 h2c nativo) | ✔ | ✔ |
 
 > **Qual biblioteca faz o trabalho de HTTP, por Tipo de aplicação?** Esta é a pergunta-chave — e a resposta *nem sempre* é Indy. A abstração unificadora em todas as linhas é `Web.HTTPApp.TWebRequest` no Delphi ou `fpHTTP.TRequest` no FPC; abaixo disso, a biblioteca concreta difere.
 >
@@ -1001,3 +1002,5 @@ accept (limitado pelo `somaxconn`). Deixe nos defaults até um teste de carga in
 - [`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot) — documentação própria do Provider mORMot2 assíncrono opcional.
 - [`horse-provider-ics`](https://github.com/freitasjca/horse-provider-ics) — o Provider OverbyteICS opcional (TLS OpenSSL 3.x/4.x), somente Delphi (Windows + POSIX/Linux64/macOS).
 - **HttpSys** (`Horse.Provider.HttpSys`, nativo do Horse) — transporte http.sys nativo do Windows em modo kernel; sem dependência externa, somente Windows.
+- [**gRPC**](./grpc.pt-BR.md) — Provedor de transporte gRPC nativo e HTTP/2 h2c (Code-First).
+

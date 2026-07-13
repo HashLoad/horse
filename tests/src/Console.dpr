@@ -93,7 +93,11 @@ uses
   Horse.Provider.IOHandleSSL.Contract in '..\..\src\Horse.Provider.IOHandleSSL.Contract.pas',
   Horse.Core.MemoryBufferPool in '..\..\src\Horse.Core.MemoryBufferPool.pas',
   Horse.Core.Regex in '..\..\src\Horse.Core.Regex.pas',
-  Tests.Horse.Core.MemoryBufferPool in 'tests\Tests.Horse.Core.MemoryBufferPool.pas';
+  Tests.Horse.Core.MemoryBufferPool in 'tests\Tests.Horse.Core.MemoryBufferPool.pas',
+  Horse.Core.Protobuf.Rtti in '..\..\src\Horse.Core.Protobuf.Rtti.pas',
+  Horse.Core.Protobuf.Serializer in '..\..\src\Horse.Core.Protobuf.Serializer.pas',
+  Horse.Grpc.Codec in '..\..\src\Horse.Grpc.Codec.pas',
+  Tests.Horse.Core.Grpc in 'tests\Tests.Horse.Core.Grpc.pas';
 
 var
   Runner: ITestRunner;
