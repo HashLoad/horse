@@ -95,6 +95,10 @@ These are not maintained by HashLoad but are listed here because they're commonl
 | [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation) | Request payload schema validation middleware | ✔️ | ✔️ |
 | [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart) | Multipart/form-data request body parser middleware | ✔️ | ✔️ |
 | [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet) | Security headers middleware for HTTP response protection | ✔️ | ✔️ |
+| [regyssilveira/horse-ssl-redirect](https://github.com/regyssilveira/horse-ssl-redirect) | Redirection of insecure HTTP requests to HTTPS with proxy and localhost bypass support | ✔️ | ✔️ |
+| [regyssilveira/horse-crud](https://github.com/regyssilveira/horse-crud) | Automatic and dynamic CRUD routes generation middleware for Horse framework from decorated entities | ✔️ | ✔️ |
+| [regyssilveira/horse-request-id](https://github.com/regyssilveira/horse-request-id) | Request ID (Correlation ID) generation and tracking middleware for the Horse framework ecosystem | ✔️ | ✔️ |
+| [regyssilveira/horse-sanitize](https://github.com/regyssilveira/horse-sanitize) | Middleware to sanitize request parameters from the Horse ecosystem against XSS and harmful injections | ✔️ | ✔️ |
 
 
 ---
