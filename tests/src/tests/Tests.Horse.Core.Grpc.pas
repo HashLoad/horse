@@ -12,7 +12,8 @@ uses
   Horse.Core.Protobuf.Rtti,
   Horse.Grpc.Codec,
   Horse.Grpc.Attributes,
-  Horse.Provider.Grpc;
+  Horse.Provider.Grpc,
+  Horse.Core.BufferPool;
 
 type
   [ProtoClass]
@@ -99,6 +100,8 @@ type
     procedure TestDirectHeapMemoryOffsets;
     [Test]
     procedure TestThreadPoolAndConcurrency;
+    [Test]
+    procedure TestBufferPoolConcurrency;
   end;
 
 implementation
@@ -371,6 +374,24 @@ begin
     THorseGrpcProvider.Stop;
   end;
   Assert.IsFalse(THorseGrpcProvider.Active);
+end;
+
+procedure TTestsHorseCoreGrpc.TestBufferPoolConcurrency;
+var
+  Buf1, Buf2: TBytes;
+begin
+  Buf1 := THorseBufferPool.Acquire;
+  try
+    Assert.AreEqual(65536, Length(Buf1), 'Acquired buffer should have default size of 64KB');
+    Buf2 := THorseBufferPool.Acquire;
+    try
+      Assert.AreNotEqual(Pointer(Buf1), Pointer(Buf2), 'Subsequent acquires should yield different physical buffers');
+    finally
+      THorseBufferPool.Release(Buf2);
+    end;
+  finally
+    THorseBufferPool.Release(Buf1);
+  end;
 end;
 
 initialization

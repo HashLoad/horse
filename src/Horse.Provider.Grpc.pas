@@ -33,7 +33,8 @@ uses
   Horse.Core.Http2.Framing,
   Horse.Core.Http2.Hpack,
   Horse.Core.Http2.Stream,
-  Horse.Core.Http2.Connection;
+  Horse.Core.Http2.Connection,
+  Horse.Core.BufferPool;
 
 type
   {$IFDEF MSWINDOWS}
@@ -305,51 +306,53 @@ end;
 
 procedure THorseGrpcConnectionThread.Execute;
 var
-  Buffer: array[0..65535] of Byte;
+  LBuffer: TBytes;
   BytesRead: Integer;
   LSocket: THorseSocket;
 begin
-  while not Terminated do
-  begin
-    LSocket := InvalidSocketValue;
-    THorseGrpcProvider.FQueueSection.Enter;
-    try
-      if THorseGrpcProvider.FConnectionQueue.Count > 0 then
-        LSocket := THorseGrpcProvider.FConnectionQueue.Dequeue;
-    finally
-      THorseGrpcProvider.FQueueSection.Leave;
-    end;
-
-    if LSocket = InvalidSocketValue then
+  LBuffer := THorseBufferPool.Acquire;
+  try
+    while not Terminated do
     begin
-      Sleep(5);
-      Continue;
-    end;
-
-    FSocket := LSocket;
-    try
-      FHttp2Conn := THorseHttp2Connection.Create(THorseHttp2ConnectionOptions.Default);
-      FHttp2Conn.OnOutput := OnOutput;
-      FHttp2Conn.OnRequest := OnRequest;
+      LSocket := InvalidSocketValue;
+      THorseGrpcProvider.FQueueSection.Enter;
       try
-        while not Terminated and (FHttp2Conn.State <> THorseHttp2ConnectionState.csClosed) do
-        begin
-          if SocketReadyToRead(FSocket, 50) then
+        if THorseGrpcProvider.FConnectionQueue.Count > 0 then
+          LSocket := THorseGrpcProvider.FConnectionQueue.Dequeue;
+      finally
+        THorseGrpcProvider.FQueueSection.Leave;
+      end;
+
+      if LSocket = InvalidSocketValue then
+      begin
+        Sleep(5);
+        Continue;
+      end;
+
+      FSocket := LSocket;
+      try
+        FHttp2Conn := THorseHttp2Connection.Create(THorseHttp2ConnectionOptions.Default);
+        FHttp2Conn.OnOutput := OnOutput;
+        FHttp2Conn.OnRequest := OnRequest;
+        try
+          while not Terminated and (FHttp2Conn.State <> THorseHttp2ConnectionState.csClosed) do
           begin
-            BytesRead := SocketRead(FSocket, @Buffer[0], Length(Buffer));
+            BytesRead := SocketRead(FSocket, @LBuffer[0], Length(LBuffer));
             if BytesRead <= 0 then
               Break;
-            FHttp2Conn.Feed(@Buffer[0], BytesRead);
+            FHttp2Conn.Feed(@LBuffer[0], BytesRead);
           end;
+        finally
+          FHttp2Conn.Free;
+          FHttp2Conn := nil;
         end;
       finally
-        FHttp2Conn.Free;
-        FHttp2Conn := nil;
+        CloseSocketHandle(FSocket);
+        FSocket := InvalidSocketValue;
       end;
-    finally
-      CloseSocketHandle(FSocket);
-      FSocket := InvalidSocketValue;
     end;
+  finally
+    THorseBufferPool.Release(LBuffer);
   end;
 end;
 
