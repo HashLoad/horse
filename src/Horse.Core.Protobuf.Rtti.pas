@@ -30,9 +30,11 @@ type
   THorseProtobufRtti = class
   private
     class var FContext: TRttiContext;
+    class var FCache: TDictionary<TClass, TArray<THorseProtobufProp>>;
     class function MapType(AType: TRttiType): THorsePropType; static;
   public
-    class constructor Create;
+    class procedure Init;
+    class procedure Uninit;
     class function GetProperties(AClass: TClass): TArray<THorseProtobufProp>; static;
     class function GetPropValue(AObject: TObject; const AProp: THorseProtobufProp): TValue; static;
     class procedure SetPropValue(AObject: TObject; const AProp: THorseProtobufProp; const AValue: TValue); static;
@@ -42,9 +44,16 @@ implementation
 
 { THorseProtobufRtti }
 
-class constructor THorseProtobufRtti.Create;
+class procedure THorseProtobufRtti.Init;
 begin
   FContext := TRttiContext.Create;
+  FCache := TDictionary<TClass, TArray<THorseProtobufProp>>.Create;
+end;
+
+class procedure THorseProtobufRtti.Uninit;
+begin
+  FCache.Free;
+  FContext.Free;
 end;
 
 class function THorseProtobufRtti.MapType(AType: TRttiType): THorsePropType;
@@ -92,6 +101,14 @@ var
   List: TList<THorseProtobufProp>;
   HProp: THorseProtobufProp;
 begin
+  System.TMonitor.Enter(FCache);
+  try
+    if FCache.TryGetValue(AClass, Result) then
+      Exit;
+  finally
+    System.TMonitor.Exit(FCache);
+  end;
+
   List := TList<THorseProtobufProp>.Create;
   try
     RttiType := FContext.GetType(AClass);
@@ -118,6 +135,16 @@ begin
   finally
     List.Free;
   end;
+
+  System.TMonitor.Enter(FCache);
+  try
+    if not FCache.ContainsKey(AClass) then
+      FCache.Add(AClass, Result)
+    else
+      Result := FCache[AClass];
+  finally
+    System.TMonitor.Exit(FCache);
+  end;
 end;
 
 class function THorseProtobufRtti.GetPropValue(AObject: TObject; const AProp: THorseProtobufProp): TValue;
@@ -131,5 +158,11 @@ begin
     raise Exception.CreateFmt('Property "%s" is not initialized in RTTI info.', [AProp.Name]);
   AProp.RttiProperty.SetValue(AObject, AValue);
 end;
+
+initialization
+  THorseProtobufRtti.Init;
+
+finalization
+  THorseProtobufRtti.Uninit;
 
 end.
