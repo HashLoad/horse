@@ -118,6 +118,9 @@ var
   Attr: TCustomAttribute;
   List: TList<THorseProtobufProp>;
   HProp: THorseProtobufProp;
+  {$IFNDEF FPC}
+  LField: TRttiField;
+  {$ENDIF}
 begin
   System.TMonitor.Enter(FCache);
   try
@@ -144,7 +147,6 @@ begin
             HProp.RttiProperty := Prop;
             HProp.RttiType := Prop.PropertyType;
             {$IFNDEF FPC}
-            var LField: TRttiField;
             LField := RttiType.GetField('F' + Prop.Name);
             if not Assigned(LField) then
               LField := RttiType.GetField('F' + Prop.Name.ToLower);
