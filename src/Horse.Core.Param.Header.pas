@@ -3,10 +3,10 @@ unit Horse.Core.Param.Header;
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
 {$MACRO ON}
-{$IFDEF CPU32}
-  {$DEFINE CONST_GENERIC := constref}
-{$ELSE}
+{$IF DEFINED(CPU64) AND DEFINED(WINDOWS)}
   {$DEFINE CONST_GENERIC := const}
+{$ELSE}
+  {$DEFINE CONST_GENERIC := constref}
 {$ENDIF}
 {$ENDIF}
 
