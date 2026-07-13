@@ -23,7 +23,7 @@ uses
     {$IFDEF FPC}
     Sockets, BaseUnix,
     {$ELSE}
-    Posix.SysSocket, Posix.Unistd, Posix.NetinetIn, Posix.ArpaInet,
+    Posix.SysSocket, Posix.Unistd, Posix.NetinetIn, Posix.ArpaInet, Posix.SysSelect, Posix.SysTime,
     {$ENDIF}
   {$ENDIF}
   Horse.Grpc.Attributes,
@@ -39,8 +39,19 @@ uses
 type
   {$IFDEF MSWINDOWS}
   THorseSocket = TSocket;
+    {$IFNDEF FPC}
+    TFDSet = Winapi.WinSock2.TFDSet;
+    TTimeVal = Winapi.WinSock2.TTimeVal;
+    {$ELSE}
+    TFDSet = WinSock2.TFDSet;
+    TTimeVal = WinSock2.TTimeVal;
+    {$ENDIF}
   {$ELSE}
   THorseSocket = Integer;
+    {$IFNDEF FPC}
+    TFDSet = Posix.SysSelect.fd_set;
+    TTimeVal = Posix.SysTime.timeval;
+    {$ENDIF}
   {$ENDIF}
 
   TGrpcMethodMeta = record
@@ -156,7 +167,11 @@ begin
   {$IFDEF MSWINDOWS}
   AFDSet.fd_count := 0;
   {$ELSE}
-  FD_ZERO(AFDSet);
+    {$IFDEF FPC}
+    FD_ZERO(AFDSet);
+    {$ELSE}
+    Posix.SysSelect.__FD_ZERO(AFDSet);
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -166,7 +181,11 @@ begin
   AFDSet.fd_array[AFDSet.fd_count] := ASocket;
   Inc(AFDSet.fd_count);
   {$ELSE}
-  FD_SET(ASocket, AFDSet);
+    {$IFDEF FPC}
+    FD_SET(ASocket, AFDSet);
+    {$ELSE}
+    Posix.SysSelect.__FD_SET(ASocket, AFDSet);
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -204,7 +223,7 @@ begin
     {$IFDEF FPC}
     CloseSocket(ASocket);
     {$ELSE}
-    close(ASocket);
+    Posix.Unistd.__close(ASocket);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -228,7 +247,7 @@ begin
     {$IFDEF FPC}
     Result := fpBind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
     {$ELSE}
-    Result := bind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+    Result := bind(ASocket, Posix.SysSocket.sockaddr(ServerAddr), SizeOf(ServerAddr)) = 0;
     {$ENDIF}
   {$ENDIF}
 end;
@@ -236,7 +255,15 @@ end;
 function SocketAccept(ASocket: THorseSocket; out AClientSocket: THorseSocket): Boolean;
 var
   Addr: sockaddr_in;
+  {$IFDEF MSWINDOWS}
   AddrLen: Integer;
+  {$ELSE}
+    {$IFDEF FPC}
+    AddrLen: Integer;
+    {$ELSE}
+    AddrLen: socklen_t;
+    {$ENDIF}
+  {$ENDIF}
 begin
   AddrLen := SizeOf(Addr);
   {$IFDEF MSWINDOWS}
@@ -250,7 +277,7 @@ begin
     {$IFDEF FPC}
     AClientSocket := fpAccept(ASocket, @Addr, @AddrLen);
     {$ELSE}
-    AClientSocket := accept(ASocket, @Addr, @AddrLen);
+    AClientSocket := accept(ASocket, Posix.SysSocket.sockaddr(Addr), AddrLen);
     {$ENDIF}
     Result := AClientSocket <> -1;
   {$ENDIF}

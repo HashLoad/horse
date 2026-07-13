@@ -196,13 +196,13 @@ begin
   Payload[3] := 4;
   
   Framed := THorseGrpcMessageCodec.Encode(Payload);
-  Assert.AreEqual(9, Length(Framed)); // 5 bytes header + 4 bytes payload
+  Assert.AreEqual(9, Integer(Length(Framed))); // 5 bytes header + 4 bytes payload
   Assert.AreEqual(0, Integer(Framed[0])); // compression flag = 0
   
   Offset := 0;
   Assert.IsTrue(THorseGrpcMessageCodec.TryDecode(Framed, Offset, Compressed, OutPayload));
   Assert.IsFalse(Compressed);
-  Assert.AreEqual(4, Length(OutPayload));
+  Assert.AreEqual(4, Integer(Length(OutPayload)));
   Assert.AreEqual(1, Integer(OutPayload[0]));
   Assert.AreEqual(4, Integer(OutPayload[3]));
 end;
@@ -319,7 +319,7 @@ begin
   Msg := TTestOffsetMessage.Create;
   try
     Props := THorseProtobufRtti.GetProperties(TTestOffsetMessage);
-    Assert.AreEqual(5, Length(Props));
+    Assert.AreEqual(5, Integer(Length(Props)));
     
     {$IFNDEF FPC}
     for Prop in Props do
@@ -382,7 +382,7 @@ var
 begin
   Buf1 := THorseBufferPool.Acquire;
   try
-    Assert.AreEqual(65536, Length(Buf1), 'Acquired buffer should have default size of 64KB');
+    Assert.AreEqual(65536, Integer(Length(Buf1)), 'Acquired buffer should have default size of 64KB');
     Buf2 := THorseBufferPool.Acquire;
     try
       Assert.AreNotEqual(Pointer(Buf1), Pointer(Buf2), 'Subsequent acquires should yield different physical buffers');
