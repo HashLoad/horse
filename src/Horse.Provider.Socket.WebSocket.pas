@@ -21,7 +21,11 @@ uses
 
 type
   {$IFDEF FPC}
-  TSocket = TSocket;
+    {$IFDEF MSWINDOWS}
+    TSocket = THandle;
+    {$ELSE}
+    TSocket = LongInt;
+    {$ENDIF}
   {$ELSE}
     {$IFNDEF MSWINDOWS}
     TSocket = Integer;
