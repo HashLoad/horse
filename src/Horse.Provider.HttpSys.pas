@@ -294,6 +294,14 @@ function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: THTT
 {$MINENUMSIZE 1}
 
 type
+  {$IFNDEF FPC}
+    {$IF CompilerVersion >= 31.0}
+    THttpSysString = string;
+    {$ELSE}
+    THttpSysString = AnsiString;
+    {$IFEND}
+  {$ENDIF}
+
   THttpSysBufferPool = class
   private
     FBuffers: TQueue<TBytes>;
@@ -386,15 +394,6 @@ type
     procedure SetCustomHeader(const AName, AValue: string);
     procedure SendResponse(const ARes: THorseResponse);
   end;
-
-  {$IFNDEF FPC}
-  type
-    {$IF CompilerVersion >= 31.0}
-    THttpSysString = string;
-    {$ELSE}
-    THttpSysString = AnsiString;
-    {$IFEND}
-  {$ENDIF}
 
   THttpSysWebResponse = class(TInterfacedWebResponse)
   {$IFNDEF FPC}
