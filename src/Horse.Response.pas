@@ -969,7 +969,7 @@ procedure THorseWebBrokerStreamWriter.SendRawHeaders;
 begin
   if FResponse.RawWebResponse <> nil then
   begin
-    if FResponse.RawWebResponse.ContentType.IsEmpty then
+    if FResponse.RawWebResponse.ContentType = '' then
       FResponse.RawWebResponse.ContentType := 'text/plain';
 
     {$IF NOT DEFINED(FPC)}
