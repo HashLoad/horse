@@ -36,6 +36,15 @@ uses
   Horse.Core,
   Horse.Core.Context;
 
+{$IFNDEF FPC}
+type
+  {$IF CompilerVersion >= 31.0}
+  THttpSysString = string;
+  {$ELSE}
+  THttpSysString = AnsiString;
+  {$IFEND}
+{$ENDIF}
+
 const
   HTTPAPI_DLL = 'httpapi.dll';
 
@@ -294,14 +303,6 @@ function HttpSetUrlGroupProperty(UrlGroupId: HTTP_URL_GROUP_ID; PropertyId: THTT
 {$MINENUMSIZE 1}
 
 type
-  {$IFNDEF FPC}
-    {$IF CompilerVersion >= 31.0}
-    THttpSysString = string;
-    {$ELSE}
-    THttpSysString = AnsiString;
-    {$IFEND}
-  {$ENDIF}
-
   THttpSysBufferPool = class
   private
     FBuffers: TQueue<TBytes>;
@@ -523,7 +524,6 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
-  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LCurrentBuf: TBytes;
 begin
@@ -539,20 +539,18 @@ begin
       LWebRequest := TInterfacedWebRequest.Create(LRawReq);
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
-        LContextObj := THorseContextPool.Instance.Acquire;
-        LReq := THorseRequest(LContextObj.Request);
-        LReq.SetCSRawWebRequest(LWebRequest);
-        LRes := THorseResponse(LContextObj.Response);
-        LRes.SetCSRawWebResponse(LWebResponse);
+        LReq := THorseRequest.Create(LWebRequest);
+        LRes := THorseResponse.Create(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
         finally
           LConcreteRes.SendResponse(LRes);
-          THorseContextPool.Instance.Release(LContextObj);
         end;
       finally
         LWebRequest.Free;
         LWebResponse.Free;
+        LReq.Free;
+        LRes.Free;
       end;
     except
       on E: Exception do
@@ -719,7 +717,6 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
-  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LHasItem: Boolean;
 begin
@@ -749,20 +746,18 @@ begin
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
-          LContextObj := THorseContextPool.Instance.Acquire;
-          LReq := THorseRequest(LContextObj.Request);
-          LReq.SetCSRawWebRequest(LWebRequest);
-          LRes := THorseResponse(LContextObj.Response);
-          LRes.SetCSRawWebResponse(LWebResponse);
+          LReq := THorseRequest.Create(LWebRequest);
+          LRes := THorseResponse.Create(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);
           finally
             LConcreteRes.SendResponse(LRes);
-            THorseContextPool.Instance.Release(LContextObj);
           end;
         finally
           LWebRequest.Free;
           LWebResponse.Free;
+          LReq.Free;
+          LRes.Free;
         end;
       except
         on E: Exception do
