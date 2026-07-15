@@ -284,6 +284,9 @@ const
   );
 
 // Windows Http.sys native APIs
+{$IFNDEF FPC}
+function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
+{$ENDIF}
 function HttpInitialize(Version: HTTPAPI_VERSION; Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpTerminate(Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpCreateServerSession(Version: HTTPAPI_VERSION; var ServerSessionId: HTTP_SERVER_SESSION_ID; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
