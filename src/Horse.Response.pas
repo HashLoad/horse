@@ -56,11 +56,11 @@ type
 
   THorseStreamWriterBase = class(TInterfacedObject, IHorseStreamWriter)
   private
-    FResponse: THorseResponse;
     FHeadersSent: Boolean;
     FUseChunked: Boolean;
     procedure SendHeaders;
   protected
+    FResponse: THorseResponse;
     procedure SendRawHeaders; virtual; abstract;
     procedure WriteRawBytes(const ABytes: TBytes); virtual; abstract;
   public

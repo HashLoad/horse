@@ -2140,11 +2140,13 @@ type
 constructor THttpSysStreamWriter.Create(const AResponse: THorseResponse);
 var
   LRawResponse: THttpSysRawResponse;
+  LRawWebResponse: TObject;
 begin
   inherited Create(AResponse);
   LRawResponse := nil;
-  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
-    LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+  LRawWebResponse := AResponse.RawWebResponse;
+  if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
+    LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
 
   if Assigned(LRawResponse) then
   begin

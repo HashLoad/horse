@@ -1624,10 +1624,13 @@ type
   end;
 
 constructor TIocpStreamWriter.Create(const AResponse: THorseResponse);
+var
+  LRawWebResponse: TObject;
 begin
   inherited Create(AResponse);
-  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
-    FRawRes := TIocpRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+  LRawWebResponse := AResponse.RawWebResponse;
+  if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
+    FRawRes := TIocpRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
 end;
 
 procedure TIocpStreamWriter.SendRawHeaders;

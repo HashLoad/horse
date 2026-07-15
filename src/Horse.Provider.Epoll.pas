@@ -3399,10 +3399,13 @@ type
   end;
 
 constructor TEpollStreamWriter.Create(const AResponse: THorseResponse);
+var
+  LRawWebResponse: TObject;
 begin
   inherited Create(AResponse);
-  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
-    FRawRes := TEpollRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+  LRawWebResponse := AResponse.RawWebResponse;
+  if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
+    FRawRes := TEpollRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
 end;
 
 procedure TEpollStreamWriter.SendRawHeaders;
