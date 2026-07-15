@@ -8,7 +8,7 @@ interface
 
 uses
   {$IF DEFINED(FPC)}
-    SysUtils, Classes, Generics.Collections, syncobjs, sha1, base64, fgl;
+    SysUtils, Classes, Generics.Collections, syncobjs, sha1, base64, fgl, strutils;
   {$ELSE}
     System.SysUtils, System.Classes, System.Generics.Collections, System.SyncObjs,
     {$IF CompilerVersion >= 29.0}

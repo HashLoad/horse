@@ -228,55 +228,44 @@ const
     '</body>' +
     '</html>';
 
-type
-  TWebSocketChatController = class
-  public
-    class procedure HandleGetIndex(Req: THorseRequest; Res: THorseResponse);
-    class procedure HandleGetWS(Req: THorseRequest; Res: THorseResponse);
-    class procedure OnWebSocketConnect(const AConn: IHorseWebSocketConnection);
-    class procedure OnWebSocketMessage(const AConnection: IHorseWebSocketConnection; const AText: string);
-    class procedure OnWebSocketDisconnect(const AConnection: IHorseWebSocketConnection);
-    class procedure OnWebSocketError(const AConnection: IHorseWebSocketConnection; const AException: Exception);
-  end;
-
-class procedure TWebSocketChatController.HandleGetIndex(Req: THorseRequest; Res: THorseResponse);
+procedure HandleGetIndex(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.ContentType('text/html').Send(HTML_CHAT);
 end;
 
-class procedure TWebSocketChatController.HandleGetWS(Req: THorseRequest; Res: THorseResponse);
+procedure OnWebSocketMessage(const AConnection: IHorseWebSocketConnection; const AText: string);
+begin
+  Writeln('Mensagem recebida de ', AConnection.GetClientIP, ': ', AText);
+  // Transmite a mensagem para todos os outros clientes na mesma rota (/ws)
+  THorseWebSocketManager.Broadcast('/ws', 'Anonimo (' + AConnection.GetClientIP + '): ' + AText);
+end;
+
+procedure OnWebSocketDisconnect(const AConnection: IHorseWebSocketConnection);
+begin
+  Writeln('Conexão WebSocket encerrada. IP: ', AConnection.GetClientIP);
+end;
+
+procedure OnWebSocketError(const AConnection: IHorseWebSocketConnection; const AException: Exception);
+begin
+  Writeln('Erro na conexão WebSocket (', AConnection.GetClientIP, '): ', AException.Message);
+end;
+
+procedure OnWebSocketConnect(const AConn: IHorseWebSocketConnection);
+begin
+  Writeln('Nova conexão WebSocket aberta. IP: ', AConn.GetClientIP);
+  AConn.SetOnMessage(OnWebSocketMessage);
+  AConn.SetOnDisconnect(OnWebSocketDisconnect);
+  AConn.SetOnError(OnWebSocketError);
+end;
+
+procedure HandleGetWS(Req: THorseRequest; Res: THorseResponse);
 begin
   Res.UpgradeToWebSocket(OnWebSocketConnect);
 end;
 
-class procedure TWebSocketChatController.OnWebSocketConnect(const AConn: IHorseWebSocketConnection);
 begin
-  Writeln('Nova conexão WebSocket aberta. IP: ', AConn.ClientIP);
-  AConn.OnMessage := OnWebSocketMessage;
-  AConn.OnDisconnect := OnWebSocketDisconnect;
-  AConn.OnError := OnWebSocketError;
-end;
-
-class procedure TWebSocketChatController.OnWebSocketMessage(const AConnection: IHorseWebSocketConnection; const AText: string);
-begin
-  Writeln('Mensagem recebida de ', AConnection.ClientIP, ': ', AText);
-  // Transmite a mensagem para todos os outros clientes na mesma rota (/ws)
-  THorseWebSocketManager.Broadcast('/ws', 'Anonimo (' + AConnection.ClientIP + '): ' + AText, AConnection);
-end;
-
-class procedure TWebSocketChatController.OnWebSocketDisconnect(const AConnection: IHorseWebSocketConnection);
-begin
-  Writeln('Conexão WebSocket encerrada. IP: ', AConnection.ClientIP);
-end;
-
-class procedure TWebSocketChatController.OnWebSocketError(const AConnection: IHorseWebSocketConnection; const AException: Exception);
-begin
-  Writeln('Erro na conexão WebSocket (', AConnection.ClientIP, '): ', AException.Message);
-end;
-
-begin
-  THorse.Get('/', TWebSocketChatController.HandleGetIndex);
-  THorse.Get('/ws', TWebSocketChatController.HandleGetWS);
+  THorse.Get('/', HandleGetIndex);
+  THorse.Get('/ws', HandleGetWS);
 
   Writeln('Servidor Horse WebSocket rodando em http://localhost:9000');
   THorse.Listen(9000);
