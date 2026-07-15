@@ -95,6 +95,10 @@ Estes não são mantidos pela HashLoad mas estão listados aqui por serem usados
 | [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation) | Middleware de validação de esquemas (schemas) de payload de requisições | ✔️ | ✔️ |
 | [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart) | Middleware para processamento e parsing de corpos de requisição multipart/form-data | ✔️ | ✔️ |
 | [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet) | Middleware de segurança para proteção e configuração de cabeçalhos HTTP | ✔️ | ✔️ |
+| [regyssilveira/horse-ssl-redirect](https://github.com/regyssilveira/horse-ssl-redirect) | Redirecionamento automático de requisições HTTP inseguras para HTTPS | ✔️ | ✔️ |
+| [regyssilveira/horse-crud](https://github.com/regyssilveira/horse-crud) | Middleware para o framework Horse voltado à geração automática e dinâmica de rotas CRUD a partir de entidades decoradas | ✔️ | ✔️ |
+| [regyssilveira/horse-request-id](https://github.com/regyssilveira/horse-request-id) | Middleware de geração e rastreamento de Request ID (Correlation ID) para o ecossistema do framework Horse | ✔️ | ✔️ |
+| [regyssilveira/horse-sanitize](https://github.com/regyssilveira/horse-sanitize) | Middleware para sanitizar parâmetros de requisições do ecossistema Horse contra XSS e injeções nocivas | ✔️ | ✔️ |
 
 
 ---

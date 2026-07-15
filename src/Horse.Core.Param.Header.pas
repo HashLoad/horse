@@ -2,6 +2,12 @@ unit Horse.Core.Param.Header;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
+{$MACRO ON}
+{$IF DEFINED(CPU64) AND DEFINED(WINDOWS)}
+  {$DEFINE CONST_GENERIC := const}
+{$ELSE}
+  {$DEFINE CONST_GENERIC := constref}
+{$ENDIF}
 {$ENDIF}
 
 interface
@@ -34,8 +40,8 @@ type
 {$IF DEFINED(FPC)}
   THorseHeaderComparer = class(TInterfacedObject, IEqualityComparer<string>)
   public
-    function Equals(constref A, B: string): Boolean;
-    function GetHashCode(constref Value: string): DWord;
+    function Equals(CONST_GENERIC A, B: string): Boolean;
+    function GetHashCode(CONST_GENERIC Value: string): DWord;
   end;
 {$ENDIF}
 
@@ -66,7 +72,7 @@ uses
   Horse.Rtti;
 
 {$IF DEFINED(FPC)}
-function THorseHeaderComparer.Equals(constref A, B: string): Boolean;
+function THorseHeaderComparer.Equals(CONST_GENERIC A, B: string): Boolean;
 begin
   Result := SameText(A, B);
 end;
@@ -75,7 +81,7 @@ end;
   zero-allocation para evitar a alocacao temporaria gerada por LowerCase no FPC.
   Isso otimiza o hot path de busca de headers e resolve problemas de link de
   comparadores nativos sob FPC. }
-function THorseHeaderComparer.GetHashCode(constref Value: string): DWord;
+function THorseHeaderComparer.GetHashCode(CONST_GENERIC Value: string): DWord;
 var
   I: Integer;
   LChar: Char;
