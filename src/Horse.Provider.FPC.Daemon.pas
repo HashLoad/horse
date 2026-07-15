@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.FPC.Daemon;
+unit Horse.Provider.FPC.Daemon;
 
 { PATCH-FPCDAEMON-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
@@ -23,7 +23,10 @@ uses
   Horse.Provider.Config,
   Horse.Constants,
   Horse.Proc,
-  Horse.Commons;
+  Horse.Commons,
+  Sockets,
+  Horse.Core.WebSocket,
+  Horse.Provider.Socket.WebSocket;
 
 type
   THTTPServerThread = class(TThread)
@@ -136,6 +139,17 @@ begin
   end;
 end;
 
+type
+  TFPHTTPConnectionRequestHelper = class helper for TFPHTTPConnectionRequest
+  public
+    function GetSocket: TSocket;
+  end;
+
+function TFPHTTPConnectionRequestHelper.GetSocket: TSocket;
+begin
+  Result := Self.Connection.FSocket.Handle;
+end;
+
 procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest;
   var AResponse: TFPHTTPConnectionResponse);
 var
@@ -144,6 +158,13 @@ var
 begin
   LRequest := THorseRequest.Create(ARequest);
   LResponse := THorseResponse.Create(AResponse);
+  LRequest.Services.Add(THorseWebSocketUpgrader,
+    THorseWebSocketSocketUpgrader.Create(
+      ARequest.GetSocket,
+      LRequest.WebSocketKey,
+      ARequest.RemoteAddr,
+      ARequest.ServerPort
+    ), True);
 
   try
     try

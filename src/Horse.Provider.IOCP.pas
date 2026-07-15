@@ -31,7 +31,9 @@ uses
   Horse.Provider.RawAdapters,
   Horse.Commons,
   Horse.Proc,
-  Horse.Exception.Interrupted;
+  Horse.Exception.Interrupted,
+  Horse.Core.WebSocket,
+  Horse.Provider.Socket.WebSocket;
 
 type
   TIocpConnectionContext = class;
@@ -289,6 +291,12 @@ const
 {$ENDIF}
 
 implementation
+
+{$IFNDEF FPC}
+  {$IF CompilerVersion < 31.0}
+  function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
+  {$IFEND}
+{$ENDIF}
 
 {$IFDEF MSWINDOWS}
 
@@ -1004,6 +1012,16 @@ var
 begin
   Result := 0;
   LData := PWorkItemData(LPParameter);
+  if (LData.Req <> nil) and (LData.RawRes <> nil) and (LData.RawRes.FContext <> nil) then
+  begin
+    LData.Req.Services.Add(THorseWebSocketUpgrader,
+      THorseWebSocketSocketUpgrader.Create(
+        LData.RawRes.FContext.Socket,
+        LData.Req.WebSocketKey,
+        LData.RawRes.FContext.ClientIP,
+        LData.RawRes.FContext.ClientPort
+      ), True);
+  end;
   try
     try
       THorseProviderIOCP.Execute(LData.Req, LData.Res);
