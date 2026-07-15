@@ -31,7 +31,8 @@ uses
 {$ENDIF}
 { =========================================================================== }
   Horse.Commons,
-  Horse.Core.Cookie;
+  Horse.Core.Cookie,
+  Horse.Core.WebSocket;
 
 type
   THorseResponse = class
@@ -139,6 +140,7 @@ type
     function Content(const AContent: TObject): THorseResponse; overload; virtual;
     function ContentType(const AContentType: string): THorseResponse; virtual;
     function RawWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF}; virtual;
+    function UpgradeToWebSocket(const AOnConnect: TOnWebSocketConnect): IHorseWebSocketConnection;
     constructor Create(const AWebResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}TWebResponse{$ENDIF});
 { ===========================================================================
   PATCH-RES-2 — added Clear procedure
@@ -194,6 +196,7 @@ uses
   Horse.Mime,
   Horse.Request,
   Horse.Core,
+  Horse.Exception.Interrupted,
   Horse.Core.MemoryBufferPool;
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
@@ -721,6 +724,47 @@ begin
 { end PATCH-RES-4 }
 {$IF DEFINED(FPC)}FWebResponse.Code{$ELSE}FWebResponse.StatusCode{$ENDIF} := AStatus;
   Result := Self;
+end;
+
+function THorseResponse.UpgradeToWebSocket(const AOnConnect: TOnWebSocketConnect): IHorseWebSocketConnection;
+var
+  LUpgraderObj: TObject;
+  LUpgrader: THorseWebSocketUpgrader;
+  LConnection: IHorseWebSocketConnection;
+  LRequest: THorseRequest;
+begin
+  LRequest := THorseRequest(FRequest);
+  if not LRequest.IsWebSocket then
+  begin
+    Status(400).Send('Request is not a WebSocket upgrade request.');
+    raise EHorseCallbackInterrupted.Create('Request is not a WebSocket upgrade request.');
+  end;
+
+  LUpgraderObj := LRequest.Services.Resolve(THorseWebSocketUpgrader);
+  if not Assigned(LUpgraderObj) then
+  begin
+    Status(501).Send('WebSockets are not supported by the active provider.');
+    raise EHorseCallbackInterrupted.Create('WebSockets are not supported by the active provider.');
+  end;
+
+  LUpgrader := THorseWebSocketUpgrader(LUpgraderObj);
+  LConnection := LUpgrader.Upgrade(LRequest.PathInfo, 30);
+  
+  if Assigned(AOnConnect) then
+  begin
+    try
+      AOnConnect(LConnection);
+    except
+      on E: Exception do
+      begin
+        LConnection.TriggerError(E);
+        LConnection.Close(1011, 'Internal Error');
+        raise;
+      end;
+    end;
+  end;
+  
+  Result := LConnection;
 end;
 
 end.

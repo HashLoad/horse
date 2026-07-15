@@ -122,6 +122,8 @@ type
 { =========================================================================== }
     function ContentType: string; virtual;
     function Host: string; virtual;
+    function IsWebSocket: Boolean; virtual;
+    function WebSocketKey: string; virtual;
     property Arena: THorseArenaAllocator read GetArena write FArena;
     function PathInfo: string; virtual;
     function RawWebRequest: {$IF DEFINED(FPC)}TRequest{$ELSE}TWebRequest{$ENDIF}; virtual;
@@ -957,6 +959,19 @@ end;
 procedure THorseRequest.SetBodyString(const AValue: string);
 begin
   FBodyString := AValue;
+end;
+{ =========================================================================== }
+
+function THorseRequest.IsWebSocket: Boolean;
+begin
+  Result := Headers.ContainsKey('upgrade') and (Pos('websocket', LowerCase(Headers['upgrade'])) > 0);
+end;
+
+function THorseRequest.WebSocketKey: string;
+begin
+  Result := '';
+  if Headers.ContainsKey('sec-websocket-key') then
+    Result := Headers['sec-websocket-key'];
 end;
 { =========================================================================== }
 

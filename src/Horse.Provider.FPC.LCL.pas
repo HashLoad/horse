@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.FPC.LCL;
+unit Horse.Provider.FPC.LCL;
 
 { PATCH-FPCLCL-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
@@ -23,7 +23,10 @@ uses
   Horse.Proc,
   fphttpserver,
   Horse.Core,
-  Horse.Commons;
+  Horse.Commons,
+  Sockets,
+  Horse.Core.WebSocket,
+  Horse.Provider.Socket.WebSocket;
 
 type
   THTTPServerThread = class(TThread)
@@ -319,6 +322,17 @@ begin
   FServer.Active := False;
 end;
 
+type
+  TFPHTTPConnectionRequestHelper = class helper for TFPHTTPConnectionRequest
+  public
+    function GetSocket: TSocket;
+  end;
+
+function TFPHTTPConnectionRequestHelper.GetSocket: TSocket;
+begin
+  Result := Self.Connection.FSocket.Handle;
+end;
+
 procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
 var
   LRequest: THorseRequest;
@@ -326,6 +340,13 @@ var
 begin
   LRequest := THorseRequest.Create(ARequest);
   LResponse := THorseResponse.Create(AResponse);
+  LRequest.Services.Add(THorseWebSocketUpgrader,
+    THorseWebSocketSocketUpgrader.Create(
+      ARequest.GetSocket,
+      LRequest.WebSocketKey,
+      ARequest.RemoteAddr,
+      ARequest.ServerPort
+    ), True);
   try
     try
       if not FHorse.Routes.Execute(LRequest, LResponse) then

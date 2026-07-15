@@ -48,5 +48,12 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * **Ciclo de Vida do `TRttiContext`**: O tempo de vida dos objetos RTTI (como `TRttiProperty` ou `TRttiType`) está vinculado à instância de `TRttiContext` que os retornou. Para evitar referências pendentes (*dangling pointers*) e Access Violations na heap durante a serialização/deserialização concorrente, utilize uma instância de `TRttiContext` estática a nível de classe e global (ex: `THorseProtobufRtti.FContext`) em vez de variáveis locais temporárias.
 * **Gerenciamento de Instâncias de Serviço**: Ao implementar serviços baseados em interfaces (`IInvokable`), desative a contagem de referências implícita (ARC) no Delphi sobrescrevendo `_AddRef` e `_Release` para retornar `-1` na classe de serviço implementadora (como `TUserServiceImpl`). Isso evita a auto-destruição prematura do objeto de serviço quando ele for invocado via RTTI ou repassado na infraestrutura do provedor.
 
+## 🟢 Desenvolvimento com WebSockets
+* **Upgrade de Conexão**: O upgrade do protocolo deve ser realizado chamando `Res.UpgradeToWebSocket(AOnConnectCallback)`.
+* **Ciclo de Vida do Contexto**: Não armazene nem faça referência a instâncias de `THorseRequest` ou `THorseResponse` dentro dos callbacks ou closures de eventos do WebSocket (como `OnMessage`, `OnDisconnect`, etc.). O ciclo de vida da requisição HTTP encerra-se com o upgrade, portanto use apenas a interface `IHorseWebSocketConnection`.
+* **Escrita Multithread**: Os métodos `SendText` e `SendBinary` da conexão são thread-safe por projeto (utilizando `TCriticalSection` interno). Não há necessidade de adicionar travas adicionais ao realizar envios concorrentes.
+* **Comportamento Fail-Fast**: Provedores incompatíveis (como `HttpSys` e servidores gerenciados/hospedados como `Apache`, `ISAPI`, `CGI`) devem retornar HTTP `501 Not Implemented` ou `400 Bad Request` e lançar `EHorseCallbackInterrupted` (da unit `Horse.Exception.Interrupted`) para abortar o processamento do pipeline do Horse de forma segura.
+* **Compatibilidade Lazarus/FPC**: Para manter a compatibilidade cruzada do código entre Delphi e FPC, evite o uso de closures/procedimentos anônimos inline nos callbacks de conexão do WebSocket do Lazarus, preferindo procedimentos regulares ou delegações de classe.
+
 
 

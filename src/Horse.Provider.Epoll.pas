@@ -49,7 +49,9 @@ uses
   Horse.Core,
   Horse.Core.Router.Radix,
   Horse.Callback,
-  Horse.Core.Router.Contract;
+  Horse.Core.Router.Contract,
+  Horse.Core.WebSocket,
+  Horse.Provider.Socket.WebSocket;
 
 type
   { Estrutura que representa os segmentos de cabeÃ§alhos indexados durante o
@@ -782,6 +784,16 @@ begin
             LHorseReq := THorseRequest.Create(LWebRequest);
             LHorseRes := THorseResponse.Create(nil);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
+            if LTask.Context <> nil then
+            begin
+              LHorseReq.Services.Add(THorseWebSocketUpgrader,
+                THorseWebSocketSocketUpgrader.Create(
+                  LTask.Context.Socket,
+                  LHorseReq.WebSocketKey,
+                  LTask.Context.ClientIP,
+                  LTask.Context.ClientPort
+                ), True);
+            end;
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
@@ -2570,6 +2582,16 @@ begin
             LHorseReq := THorseRequest.Create(LWebRequest);
             LHorseRes := THorseResponse.Create(nil);
             LHorseRes.SetCSRawWebResponse(LWebResponse);
+            if LLocalContext <> nil then
+            begin
+              LHorseReq.Services.Add(THorseWebSocketUpgrader,
+                THorseWebSocketSocketUpgrader.Create(
+                  LLocalContext.Socket,
+                  LHorseReq.WebSocketKey,
+                  LLocalContext.ClientIP,
+                  LLocalContext.ClientPort
+                ), True);
+            end;
             try
               THorseProviderEpoll.Execute(LHorseReq, LHorseRes);
             finally
@@ -2741,6 +2763,16 @@ begin
             LReq := THorseRequest.Create(LWebRequest);
             LRes := THorseResponse.Create(nil);
             LRes.SetCSRawWebResponse(LWebResponse);
+            if AContext <> nil then
+            begin
+              LReq.Services.Add(THorseWebSocketUpgrader,
+                THorseWebSocketSocketUpgrader.Create(
+                  AContext.Socket,
+                  LReq.WebSocketKey,
+                  AContext.ClientIP,
+                  AContext.ClientPort
+                ), True);
+            end;
             try
               THorseProviderEpoll.Execute(LReq, LRes);
             finally
