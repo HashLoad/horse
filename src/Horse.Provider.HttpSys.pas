@@ -387,16 +387,25 @@ type
     procedure SendResponse(const ARes: THorseResponse);
   end;
 
+  {$IFNDEF FPC}
+  type
+    {$IF CompilerVersion >= 31.0}
+    THttpSysString = string;
+    {$ELSE}
+    THttpSysString = AnsiString;
+    {$IFEND}
+  {$ENDIF}
+
   THttpSysWebResponse = class(TInterfacedWebResponse)
   {$IFNDEF FPC}
   private
     FStatusCode: Integer;
-    FContent: string;
-    FContentType: string;
-    FContentEncoding: string;
+    FContent: THttpSysString;
+    FContentType: THttpSysString;
+    FContentEncoding: THttpSysString;
   protected
-    function  GetStringVariable(Index: Integer): string; override;
-    procedure SetStringVariable(Index: Integer; const Value: string); override;
+    function  GetStringVariable(Index: Integer): THttpSysString; override;
+    procedure SetStringVariable(Index: Integer; const Value: THttpSysString); override;
 {$IF CompilerVersion >= 32.0}
     function  GetIntegerVariable(Index: Integer): Int64; override;
     procedure SetIntegerVariable(Index: Integer; Value: Int64); override;
@@ -404,8 +413,8 @@ type
     function  GetIntegerVariable(Index: Integer): Integer; override;
     procedure SetIntegerVariable(Index: Integer; Value: Integer); override;
 {$IFEND}
-    function  GetContent: string; override;
-    procedure SetContent(const Value: string); override;
+    function  GetContent: THttpSysString; override;
+    procedure SetContent(const Value: THttpSysString); override;
     function  GetStatusCode: Integer; override;
     procedure SetStatusCode(Value: Integer); override;
   {$ENDIF}
@@ -1624,7 +1633,7 @@ begin
 end;
 
 {$IFNDEF FPC}
-function THttpSysWebResponse.GetStringVariable(Index: Integer): string;
+function THttpSysWebResponse.GetStringVariable(Index: Integer): THttpSysString;
 begin
   case Index of
     25: Result := FContent;
@@ -1635,7 +1644,7 @@ begin
   end;
 end;
 
-procedure THttpSysWebResponse.SetStringVariable(Index: Integer; const Value: string);
+procedure THttpSysWebResponse.SetStringVariable(Index: Integer; const Value: THttpSysString);
 begin
   case Index of
     25: FContent := Value;
@@ -1666,12 +1675,13 @@ begin
     FStatusCode := Value;
 end;
 
-function THttpSysWebResponse.GetContent: string;
+// GetContent and SetContent overrides
+function THttpSysWebResponse.GetContent: THttpSysString;
 begin
   Result := FContent;
 end;
 
-procedure THttpSysWebResponse.SetContent(const Value: string);
+procedure THttpSysWebResponse.SetContent(const Value: THttpSysString);
 begin
   FContent := Value;
 end;
