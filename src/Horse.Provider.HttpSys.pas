@@ -2122,6 +2122,186 @@ begin
   Result := FPort;
 end;
 
+{ THttpSysStreamWriter }
+
+type
+  THttpSysStreamWriter = class(THorseStreamWriterBase)
+  private
+    FReqQueue: THandle;
+    FRequestId: HTTP_REQUEST_ID;
+  protected
+    procedure SendRawHeaders; override;
+    procedure WriteRawBytes(const ABytes: TBytes); override;
+  public
+    constructor Create(const AResponse: THorseResponse); override;
+    function IsConnected: Boolean; override;
+  end;
+
+constructor THttpSysStreamWriter.Create(const AResponse: THorseResponse);
+var
+  LRawResponse: THttpSysRawResponse;
+begin
+  inherited Create(AResponse);
+  LRawResponse := nil;
+  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
+    LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+
+  if Assigned(LRawResponse) then
+  begin
+    FReqQueue := LRawResponse.FReqQueue;
+    FRequestId := LRawResponse.FRequestId;
+  end;
+end;
+
+procedure THttpSysStreamWriter.SendRawHeaders;
+var
+  LResponse: HTTP_RESPONSE;
+  LBytesSent: ULONG;
+  LRet: ULONG;
+  LHeaders: TArray<HTTP_UNKNOWN_HEADER>;
+  LHeaderCount: Integer;
+  LStatusCode: Word;
+  LContentType: AnsiString;
+  LReason: AnsiString;
+  {$IF DEFINED(FPC)}
+  LHeadersList: TStringList;
+  {$ELSE}
+  LHeadersList: TDictionary<string, string>;
+  LPair: TPair<string, string>;
+  {$ENDIF}
+  I: Integer;
+  LHeaderStrings: TArray<AnsiString>;
+begin
+  FillChar(LResponse, SizeOf(LResponse), 0);
+  
+  LStatusCode := FResponse.Status;
+  LResponse.StatusCode := LStatusCode;
+  
+  LReason := 'OK';
+  if LStatusCode = 201 then LReason := 'Created'
+  else if LStatusCode = 204 then LReason := 'No Content'
+  else if LStatusCode = 400 then LReason := 'Bad Request'
+  else if LStatusCode = 401 then LReason := 'Unauthorized'
+  else if LStatusCode = 403 then LReason := 'Forbidden'
+  else if LStatusCode = 404 then LReason := 'Not Found'
+  else if LStatusCode = 500 then LReason := 'Internal Server Error';
+  
+  LResponse.ReasonLength := Length(LReason);
+  LResponse.pReason := PAnsiChar(LReason);
+  LResponse.Version.MajorVersion := 1;
+  LResponse.Version.MinorVersion := 1;
+
+  if (FResponse.RawWebResponse <> nil) and (FResponse.RawWebResponse.ContentType <> '') then
+    LContentType := AnsiString(FResponse.RawWebResponse.ContentType)
+  else
+    LContentType := AnsiString(FResponse.CSContentType);
+
+  if LContentType = '' then
+    LContentType := 'text/html; charset=utf-8';
+  
+  LResponse.Headers.KnownHeaders[12].pRawValue := PAnsiChar(LContentType);
+  LResponse.Headers.KnownHeaders[12].RawValueLength := Length(LContentType);
+
+  LHeadersList := FResponse.CustomHeaders;
+  if LHeadersList <> nil then
+    LHeaderCount := LHeadersList.Count
+  else
+    LHeaderCount := 0;
+
+  if LHeaderCount > 0 then
+  begin
+    SetLength(LHeaders, LHeaderCount);
+    SetLength(LHeaderStrings, LHeaderCount * 2);
+    {$IF DEFINED(FPC)}
+    for I := 0 to LHeaderCount - 1 do
+    begin
+      LHeaderStrings[I * 2] := AnsiString(LHeadersList.Names[I]);
+      LHeaderStrings[I * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
+      
+      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
+      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
+      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
+      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
+    end;
+    {$ELSE}
+    I := 0;
+    for LPair in LHeadersList do
+    begin
+      LHeaderStrings[I * 2] := AnsiString(LPair.Key);
+      LHeaderStrings[I * 2 + 1] := AnsiString(LPair.Value);
+      
+      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
+      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
+      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
+      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
+      Inc(I);
+    end;
+    {$ENDIF}
+    LResponse.Headers.UnknownHeaderCount := LHeaderCount;
+    LResponse.Headers.pUnknownHeaders := @LHeaders[0];
+  end;
+
+  LResponse.EntityChunkCount := 0;
+  LResponse.pEntityChunks := nil;
+
+  LRet := HttpSendHttpResponse(
+    FReqQueue,
+    FRequestId,
+    HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+    @LResponse,
+    nil,
+    LBytesSent,
+    nil,
+    0,
+    nil,
+    nil
+  );
+  if LRet <> ERROR_SUCCESS then
+    raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+end;
+
+procedure THttpSysStreamWriter.WriteRawBytes(const ABytes: TBytes);
+var
+  LChunk: HTTP_DATA_CHUNK_INMEMORY;
+  LBytesSent: ULONG;
+  LRet: ULONG;
+begin
+  if Length(ABytes) = 0 then Exit;
+
+  FillChar(LChunk, SizeOf(LChunk), 0);
+  LChunk.DataChunkType := hctFromMemory;
+  LChunk.pBuffer := @ABytes[0];
+  LChunk.BufferLength := Length(ABytes);
+
+  LRet := HttpSendResponseEntityBody(
+    FReqQueue,
+    FRequestId,
+    HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+    1,
+    @LChunk,
+    LBytesSent,
+    nil,
+    nil,
+    nil,
+    nil
+  );
+  if LRet <> ERROR_SUCCESS then
+    raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+end;
+
+function THttpSysStreamWriter.IsConnected: Boolean;
+begin
+  Result := True;
+end;
+
+function HttpSysStreamWriterFactory(const AResponse: THorseResponse): IHorseStreamWriter;
+begin
+  Result := THttpSysStreamWriter.Create(AResponse);
+end;
+
+initialization
+  THorseResponse.RegisterStreamWriterFactory(HttpSysStreamWriterFactory);
+
 {$ENDIF}
 
 end.

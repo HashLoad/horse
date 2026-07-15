@@ -3384,6 +3384,75 @@ begin
   InternalStopListen;
 end;
 
+{ TEpollStreamWriter }
+
+type
+  TEpollStreamWriter = class(THorseStreamWriterBase)
+  private
+    FRawRes: TEpollRawResponse;
+  protected
+    procedure SendRawHeaders; override;
+    procedure WriteRawBytes(const ABytes: TBytes); override;
+  public
+    constructor Create(const AResponse: THorseResponse); override;
+    function IsConnected: Boolean; override;
+  end;
+
+constructor TEpollStreamWriter.Create(const AResponse: THorseResponse);
+begin
+  inherited Create(AResponse);
+  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
+    FRawRes := TEpollRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+end;
+
+procedure TEpollStreamWriter.SendRawHeaders;
+var
+  LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
+begin
+  if not Assigned(FRawRes) then Exit;
+
+  LHeadersList := FResponse.CustomHeaders;
+  FRawRes.FStatusCode := FResponse.Status;
+
+  case FRawRes.FStatusCode of
+    200: FRawRes.FReason := 'OK';
+    201: FRawRes.FReason := 'Created';
+    204: FRawRes.FReason := 'No Content';
+    301: FRawRes.FReason := 'Moved Permanently';
+    302: FRawRes.FReason := 'Found';
+    400: FRawRes.FReason := 'Bad Request';
+    401: FRawRes.FReason := 'Unauthorized';
+    403: FRawRes.FReason := 'Forbidden';
+    404: FRawRes.FReason := 'Not Found';
+    500: FRawRes.FReason := 'Internal Server Error';
+  else
+    FRawRes.FReason := 'OK';
+  end;
+
+  FRawRes.SendHeaders(LHeadersList);
+  FRawRes.FHeadersSent := True;
+end;
+
+procedure TEpollStreamWriter.WriteRawBytes(const ABytes: TBytes);
+begin
+  if Length(ABytes) = 0 then Exit;
+  if Assigned(FRawRes) then
+    FRawRes.WriteNonBlocking(@ABytes[0], Length(ABytes));
+end;
+
+function TEpollStreamWriter.IsConnected: Boolean;
+begin
+  Result := Assigned(FRawRes) and (FRawRes.FSocket >= 0);
+end;
+
+function EpollStreamWriterFactory(const AResponse: THorseResponse): IHorseStreamWriter;
+begin
+  Result := TEpollStreamWriter.Create(AResponse);
+end;
+
+initialization
+  THorseResponse.RegisterStreamWriterFactory(EpollStreamWriterFactory);
+
 {$ENDIF}
 
 end.

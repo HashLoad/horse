@@ -1609,6 +1609,84 @@ begin
   Result := FRunning;
 end;
 
+{ TIocpStreamWriter }
+
+type
+  TIocpStreamWriter = class(THorseStreamWriterBase)
+  private
+    FRawRes: TIocpRawResponse;
+  protected
+    procedure SendRawHeaders; override;
+    procedure WriteRawBytes(const ABytes: TBytes); override;
+  public
+    constructor Create(const AResponse: THorseResponse); override;
+    function IsConnected: Boolean; override;
+  end;
+
+constructor TIocpStreamWriter.Create(const AResponse: THorseResponse);
+begin
+  inherited Create(AResponse);
+  if Assigned(AResponse.RawWebResponse) and (AResponse.RawWebResponse is TInterfacedWebResponse) then
+    FRawRes := TIocpRawResponse(TInterfacedWebResponse(AResponse.RawWebResponse).RawRes);
+end;
+
+procedure TIocpStreamWriter.SendRawHeaders;
+var
+  LHeaderBytes: TBytes;
+  LHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF};
+  LPair: TPair<string, string>;
+  {$IFDEF FPC}
+  I: Integer;
+  {$ENDIF}
+begin
+  if not Assigned(FRawRes) then Exit;
+
+  LHeadersList := FResponse.CustomHeaders;
+  if LHeadersList <> nil then
+  begin
+    {$IFDEF FPC}
+    for I := 0 to LHeadersList.Count - 1 do
+      FRawRes.FHeaders.AddOrSetValue(LHeadersList.Names[I], LHeadersList.ValueFromIndex[I]);
+    {$ELSE}
+    for LPair in LHeadersList do
+      FRawRes.FHeaders.AddOrSetValue(LPair.Key, LPair.Value);
+    {$ENDIF}
+  end;
+
+  FRawRes.FStatusCode := FResponse.Status;
+  if FRawRes.FStatusCode = 200 then FRawRes.FStatusReason := 'OK'
+  else if FRawRes.FStatusCode = 204 then FRawRes.FStatusReason := 'No Content'
+  else if FRawRes.FStatusCode = 404 then FRawRes.FStatusReason := 'Not Found'
+  else if FRawRes.FStatusCode = 500 then FRawRes.FStatusReason := 'Internal Server Error'
+  else FRawRes.FStatusReason := 'HTTP Response';
+
+  LHeaderBytes := FRawRes.PrepareHeaders;
+  if Length(LHeaderBytes) > 0 then
+    send(FRawRes.FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
+    
+  FRawRes.FHeadersSent := True;
+end;
+
+procedure TIocpStreamWriter.WriteRawBytes(const ABytes: TBytes);
+begin
+  if Length(ABytes) = 0 then Exit;
+  if Assigned(FRawRes) and (FRawRes.FContext.Socket <> INVALID_SOCKET) then
+    send(FRawRes.FContext.Socket, ABytes[0], Length(ABytes), 0);
+end;
+
+function TIocpStreamWriter.IsConnected: Boolean;
+begin
+  Result := Assigned(FRawRes) and (FRawRes.FContext.Socket <> INVALID_SOCKET);
+end;
+
+function IocpStreamWriterFactory(const AResponse: THorseResponse): IHorseStreamWriter;
+begin
+  Result := TIocpStreamWriter.Create(AResponse);
+end;
+
+initialization
+  THorseResponse.RegisterStreamWriterFactory(IocpStreamWriterFactory);
+
 {$ENDIF}
 
 end.
