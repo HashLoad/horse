@@ -71,6 +71,7 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | Defining routes, route params, route groups, query strings | [Routing](./doc/routing.md) |
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request & Response](./doc/request-response.md) |
 | Native bi-directional WebSocket connection support (RFC 6455) | [WebSockets](./doc/websocket.md) |
+| Native streaming (Web Streams / SSE) connection support | [Streaming](./doc/streaming.md) |
 | Using middleware, registration order, the `Next` proc | [Middleware](./doc/middleware.md) |
 | Request lifecycle hooks — onRequest, preParsing, preValidation, onSend, onResponse | [Lifecycle Hooks](./doc/lifecycle-hooks.md) |
 | Graceful Shutdown — draining active connections, telemetry ActiveRequests and flag IsShuttingDown | [Graceful Shutdown](./doc/graceful-shutdown.md) |

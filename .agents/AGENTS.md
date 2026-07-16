@@ -55,5 +55,12 @@ Este documento estabelece as regras de design e desenvolvimento do framework Hor
 * **Comportamento Fail-Fast**: Provedores incompatíveis (como `HttpSys` e servidores gerenciados/hospedados como `Apache`, `ISAPI`, `CGI`) devem retornar HTTP `501 Not Implemented` ou `400 Bad Request` e lançar `EHorseCallbackInterrupted` (da unit `Horse.Exception.Interrupted`) para abortar o processamento do pipeline do Horse de forma segura.
 * **Compatibilidade Lazarus/FPC**: Para manter a compatibilidade cruzada do código entre Delphi e FPC, evite o uso de closures/procedimentos anônimos inline nos callbacks de conexão do WebSocket do Lazarus, preferindo procedimentos regulares ou delegações de classe.
 
-
+## 🟢 Desenvolvimento com Web Streams (Chunked HTTP) e Server-Sent Events (SSE)
+* **Assinatura e Escrita no Stream**: Para disparar transmissões de dados continuadas, utilize sempre `Res.SendStream(Callback)`. A escrita física deve ser efetuada chamando `AWriter.Write(Data)` após a verificação de conectividade `AWriter.IsConnected()`.
+* **Compatibilidade Lazarus/FPC**: Evite closures ou procedimentos anônimos inline (`procedure begin end`) para os callbacks de rotas e streams no Lazarus/FPC, visando compilação multiplataforma estável. Use procedimentos ou métodos normais.
+* **Ciclo de Vida do Indy (`TIdHTTPAppResponse`)**:
+  * Ao operar sob Indy, a thread de conexão física é obtida acessando o campo protegido `FThread` do `TIdHTTPAppResponse`.
+  * Sempre acione `MoveCookiesAndCustomHeaders` e marque a flag `FSent := True` do Indy antes de disparar o `WriteHeader` para evitar que cabeçalhos duplicados ou a resposta HTML padrão de 200 OK do Indy sejam enviados de forma redundante.
+  * Para evitar que o Indy redefina o `ContentType` do stream ou injete seu HTML de 39 bytes padrão no encerramento da rota, vincule um `TMemoryStream` vazio e `ContentLength := 0` no `FResponseInfo.ContentStream` com `FreeContentStream := True` no momento de iniciar o streaming.
+* **Segurança e Middlewares**: Garanta que middlewares que alteram a resposta HTTP de forma assíncrona ou global (como compressão de dados gzip/deflate ou interceptores globais) ignorem a requisição quando `Res.IsStreaming` for `True` para prevenir corrupção de buffer e travamentos na rede.
 

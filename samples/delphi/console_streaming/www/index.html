@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horse Web Streams & SSE Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0b10;
+      --bg-card: rgba(18, 20, 30, 0.6);
+      --primary: #7c4dff;
+      --primary-glow: rgba(124, 77, 255, 0.4);
+      --secondary: #00e5ff;
+      --secondary-glow: rgba(0, 229, 255, 0.3);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --success: #00e676;
+      --error: #ff1744;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 3rem 1.5rem;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.1) 0%, transparent 40%);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      animation: fadeInDown 0.8s ease;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.05em;
+    }
+
+    p.subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1300px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
+      animation: fadeInUp 0.8s ease;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* AI Chatbot Styles */
+    .ai-card .card-title::before {
+      background-color: #d500f9;
+      box-shadow: 0 0 10px #d500f9;
+    }
+
+    .btn-ai {
+      background: #d500f9;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(213, 0, 249, 0.4);
+    }
+
+    .btn-ai:hover {
+      box-shadow: 0 6px 20px rgba(213, 0, 249, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .ai-chat-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      font-size: 1rem;
+      height: 250px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: #e0e0e0;
+      scroll-behavior: smooth;
+    }
+
+    .ai-word-chunk {
+      animation: wordAppear 0.15s ease forwards;
+      display: inline-block;
+      white-space: pre-wrap;
+    }
+
+    @keyframes wordAppear {
+      from { opacity: 0; transform: translateY(3px) scale(0.95); filter: blur(2px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    .cursor::after {
+      content: '▋';
+      color: #d500f9;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .stream-card .card-title::before {
+      background-color: var(--secondary);
+      box-shadow: 0 0 10px var(--secondary);
+    }
+
+    .sse-card .card-title::before {
+      background-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .status-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.connecting {
+      background: var(--secondary);
+      box-shadow: 0 0 8px var(--secondary);
+      animation: pulse 1s infinite;
+    }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-stream {
+      background: var(--secondary);
+      color: #000;
+      box-shadow: 0 4px 15px var(--secondary-glow);
+    }
+
+    .btn-stream:hover {
+      box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-sse {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .btn-sse:hover {
+      box-shadow: 0 6px 20px rgba(124, 77, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .console {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      height: 250px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      scroll-behavior: smooth;
+    }
+
+    .console-line {
+      animation: scanIn 0.3s ease forwards;
+      opacity: 0;
+      transform: translateX(-5px);
+      line-height: 1.4;
+    }
+
+    .console-line.info { color: var(--text-muted); }
+    .console-line.data { color: var(--text); }
+    .console-line.success { color: var(--success); }
+    .console-line.error { color: var(--error); }
+    .console-line.event { color: var(--secondary); }
+
+    /* Custom Scrollbar */
+    .console::-webkit-scrollbar {
+      width: 6px;
+    }
+    .console::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .console::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    .console::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scanIn {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Horse Streaming & SSE</h1>
+    <p class="subtitle">Demonstração nativa de Web Streams e Server-Sent Events no Delphi e Lazarus</p>
+  </header>
+
+  <div class="container">
+    
+    <!-- Web Streams (NDJSON) -->
+    <div class="card stream-card">
+      <div class="card-header">
+        <h2 class="card-title">Web Streams (NDJSON)</h2>
+        <div class="status-badge">
+          <div id="stream-dot" class="status-dot"></div>
+          <span id="stream-status-text">Inativo</span>
+        </div>
+      </div>
+      <button id="btn-start-stream" class="btn btn-stream">Iniciar Leitura de Stream</button>
+      <div id="stream-console" class="console">
+        <div class="console-line info">Console pronto. Clique acima para conectar.</div>
+      </div>
+    </div>
+
+    <!-- Server-Sent Events (SSE) -->
+    <div class="card sse-card">
+      <div class="card-header">
+        <h2 class="card-title">Server-Sent Events (SSE)</h2>
+        <div class="status-badge">
+          <div id="sse-dot" class="status-dot"></div>
+          <span id="sse-status-text">Desconectado</span>
+        </div>
+      </div>
+      <button id="btn-toggle-sse" class="btn btn-sse">Conectar EventSource</button>
+      <div id="sse-console" class="console">
+        <div class="console-line info">Aguardando conexão com SSE...</div>
+      </div>
+    </div>
+
+    <!-- AI Chatbot (Typing Effect) -->
+    <div class="card ai-card">
+      <div class="card-header">
+        <h2 class="card-title">AI Chatbot Stream</h2>
+        <div class="status-badge">
+          <div id="ai-dot" class="status-dot"></div>
+          <span id="ai-status-text">Inativo</span>
+        </div>
+      </div>
+      <button id="btn-toggle-ai" class="btn btn-ai">Iniciar Geração de Resposta</button>
+      <div id="ai-chat-box" class="ai-chat-box">
+        <span class="console-line info">Conecte para iniciar a geração da resposta via streaming da IA.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Console Logger Helper
+    function log(consoleId, text, type = 'data') {
+      const consoleEl = document.getElementById(consoleId);
+      const line = document.createElement('div');
+      line.className = `console-line ${type}`;
+      line.innerText = text;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    // --- Web Streams (NDJSON) ---
+    const btnStream = document.getElementById('btn-start-stream');
+    const streamDot = document.getElementById('stream-dot');
+    const streamStatusText = document.getElementById('stream-status-text');
+
+    btnStream.addEventListener('click', async () => {
+      btnStream.disabled = true;
+      streamDot.className = 'status-dot connecting';
+      streamStatusText.innerText = 'Lendo...';
+      
+      const consoleEl = document.getElementById('stream-console');
+      consoleEl.innerHTML = '';
+      log('stream-console', 'Conectando ao endpoint /ndjson...', 'info');
+
+      try {
+        const response = await fetch('/ndjson');
+        if (!response.body) {
+          throw new Error('ReadableStream não suportado pelo navegador ou sem corpo na resposta.');
+        }
+
+        streamDot.className = 'status-dot active';
+        log('stream-console', 'Conexão aberta. Lendo fluxo de bytes...', 'success');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+
+          // Processa todas as linhas completas, mantendo o resto no buffer
+          for (let i = 0; i < lines.length - 1; i++) {
+            const line = lines[i].trim();
+            if (line) {
+              try {
+                const parsed = JSON.parse(line);
+                log('stream-console', `[JSON] Registro #${parsed.id}: ${parsed.message} (${parsed.timestamp})`, 'data');
+              } catch (e) {
+                log('stream-console', `[Erro Parse] ${line}`, 'error');
+              }
+            }
+          }
+          buffer = lines[lines.length - 1];
+        }
+
+        // Processa eventual resíduo
+        if (buffer.trim()) {
+          try {
+            const parsed = JSON.parse(buffer);
+            log('stream-console', `[JSON Final] Registro #${parsed.id}: ${parsed.message}`, 'data');
+          } catch (e) {
+            log('stream-console', `[Erro Parse Final] ${buffer}`, 'error');
+          }
+        }
+
+        log('stream-console', 'Fluxo de stream finalizado pelo servidor.', 'success');
+      } catch (err) {
+        log('stream-console', `Falha no stream: ${err.message}`, 'error');
+      } finally {
+        btnStream.disabled = false;
+        streamDot.className = 'status-dot';
+        streamStatusText.innerText = 'Inativo';
+      }
+    });
+
+    // --- Server-Sent Events (SSE) ---
+    const btnSse = document.getElementById('btn-toggle-sse');
+    const sseDot = document.getElementById('sse-dot');
+    const sseStatusText = document.getElementById('sse-status-text');
+    let eventSource = null;
+
+    btnSse.addEventListener('click', () => {
+      if (eventSource) {
+        // Desconectar
+        eventSource.close();
+        eventSource = null;
+        sseDot.className = 'status-dot';
+        sseStatusText.innerText = 'Desconectado';
+        btnSse.innerText = 'Conectar EventSource';
+        log('sse-console', 'Conexão SSE encerrada pelo usuário.', 'info');
+      } else {
+        // Conectar
+        sseDot.className = 'status-dot connecting';
+        sseStatusText.innerText = 'Conectando...';
+        btnSse.innerText = 'Desconectar EventSource';
+        
+        const consoleEl = document.getElementById('sse-console');
+        consoleEl.innerHTML = '';
+        log('sse-console', 'Abrindo EventSource para o endpoint /sse...', 'info');
+
+        eventSource = new EventSource('/sse');
+
+        eventSource.onopen = () => {
+          sseDot.className = 'status-dot active';
+          sseStatusText.innerText = 'Conectado';
+          log('sse-console', 'Canal SSE estabelecido. Ouvindo eventos...', 'success');
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            log('sse-console', `[SSE] Mensagem recebida: id=${data.id}, contagem=${data.count}`, 'event');
+          } catch (e) {
+            log('sse-console', `[SSE Raw] ${event.data}`, 'data');
+          }
+        };
+
+        eventSource.onerror = (err) => {
+          log('sse-console', 'Conexão interrompida ou encerrada pelo servidor.', 'error');
+          // Fecha automaticamente para permitir nova tentativa
+          eventSource.close();
+          eventSource = null;
+          sseDot.className = 'status-dot';
+          sseStatusText.innerText = 'Desconectado';
+          btnSse.innerText = 'Conectar EventSource';
+        };
+      }
+    });
+
+    // --- AI Chatbot (Typing Effect) ---
+    const btnAi = document.getElementById('btn-toggle-ai');
+    const aiDot = document.getElementById('ai-dot');
+    const aiStatusText = document.getElementById('ai-status-text');
+    const aiBox = document.getElementById('ai-chat-box');
+    let aiSource = null;
+
+    btnAi.addEventListener('click', () => {
+      if (aiSource) {
+        // Desconecta se já estiver ativo
+        aiSource.close();
+        aiSource = null;
+        aiDot.className = 'status-dot';
+        aiStatusText.innerText = 'Inativo';
+        btnAi.innerText = 'Iniciar Geração de Resposta';
+        // Remove o cursor
+        const cursor = aiBox.querySelector('.cursor');
+        if (cursor) cursor.remove();
+      } else {
+        // Inicializa e limpa a tela de chat
+        aiDot.className = 'status-dot active';
+        aiStatusText.innerText = 'Digitando...';
+        btnAi.innerText = 'Parar Geração';
+        aiBox.innerHTML = '<span class="cursor"></span>';
+        
+        aiSource = new EventSource('/ia-chat');
+
+        aiSource.onmessage = (event) => {
+          const word = event.data;
+          const span = document.createElement('span');
+          span.className = 'ai-word-chunk';
+          span.innerText = word + ' ';
+          
+          // Insere a nova palavra antes do cursor piscante
+          const cursor = aiBox.querySelector('.cursor');
+          if (cursor) {
+            aiBox.insertBefore(span, cursor);
+          } else {
+            aiBox.appendChild(span);
+          }
+          aiBox.scrollTop = aiBox.scrollHeight;
+        };
+
+        aiSource.onerror = () => {
+          aiSource.close();
+          aiSource = null;
+          aiDot.className = 'status-dot';
+          aiStatusText.innerText = 'Inativo';
+          btnAi.innerText = 'Iniciar Geração de Resposta';
+          const cursor = aiBox.querySelector('.cursor');
+          if (cursor) cursor.remove();
+        };
+      }
+    });
+  </script>
+</body>
+</html>
