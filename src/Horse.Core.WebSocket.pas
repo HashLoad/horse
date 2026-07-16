@@ -62,6 +62,15 @@ type
     // Métodos internos de recebimento chamados pelos parsers dos provedores
     procedure HandleIncomingBytes(const ABytes: TBytes; const ALength: Integer);
     procedure TriggerDisconnect;
+
+    // Propriedades expostas para facilidade de uso
+    property ClientIP: string read GetClientIP;
+    property ServerPort: Integer read GetServerPort;
+    property Path: string read GetPath;
+    property OnMessage: TOnWebSocketMessage write SetOnMessage;
+    property OnBinary: TOnWebSocketBinary write SetOnBinary;
+    property OnDisconnect: TOnWebSocketDisconnect write SetOnDisconnect;
+    property OnError: TOnWebSocketError write SetOnError;
   end;
 
   EHorseWebSocketException = class(Exception);
@@ -100,7 +109,9 @@ type
     class procedure RegisterConnection(const APath: string; const AConnection: IHorseWebSocketConnection); static;
     class procedure UnregisterConnection(const APath: string; const AConnection: IHorseWebSocketConnection); static;
     class procedure Broadcast(const APath: string; const AMessage: string); overload; static;
+    class procedure Broadcast(const APath: string; const AMessage: string; const AIgnore: IHorseWebSocketConnection); overload; static;
     class procedure Broadcast(const APath: string; const AData: TBytes); overload; static;
+    class procedure Broadcast(const APath: string; const AData: TBytes; const AIgnore: IHorseWebSocketConnection); overload; static;
     class function GetConnections(const APath: string): TArray<IHorseWebSocketConnection>; static;
   end;
 
@@ -282,6 +293,26 @@ begin
   end;
 end;
 
+class procedure THorseWebSocketManager.Broadcast(const APath: string; const AMessage: string; const AIgnore: IHorseWebSocketConnection);
+var
+  LList: TList<IHorseWebSocketConnection>;
+  LConn: IHorseWebSocketConnection;
+begin
+  FSync.Enter;
+  try
+    if FConnections.TryGetValue(APath, LList) then
+    begin
+      for LConn in LList do
+      begin
+        if (LConn <> AIgnore) and LConn.IsConnected then
+          LConn.SendText(AMessage);
+      end;
+    end;
+  finally
+    FSync.Leave;
+  end;
+end;
+
 class procedure THorseWebSocketManager.Broadcast(const APath: string; const AData: TBytes);
 var
   LList: TList<IHorseWebSocketConnection>;
@@ -294,6 +325,26 @@ begin
       for LConn in LList do
       begin
         if LConn.IsConnected then
+          LConn.SendBinary(AData);
+      end;
+    end;
+  finally
+    FSync.Leave;
+  end;
+end;
+
+class procedure THorseWebSocketManager.Broadcast(const APath: string; const AData: TBytes; const AIgnore: IHorseWebSocketConnection);
+var
+  LList: TList<IHorseWebSocketConnection>;
+  LConn: IHorseWebSocketConnection;
+begin
+  FSync.Enter;
+  try
+    if FConnections.TryGetValue(APath, LList) then
+    begin
+      for LConn in LList do
+      begin
+        if (LConn <> AIgnore) and LConn.IsConnected then
           LConn.SendBinary(AData);
       end;
     end;
