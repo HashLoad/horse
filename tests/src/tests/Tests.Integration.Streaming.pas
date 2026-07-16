@@ -140,6 +140,7 @@ var
   LStatusCodes: array[0..NUM_THREADS - 1] of Integer;
   LContents: array[0..NUM_THREADS - 1] of string;
   I: Integer;
+  LThreadPool: TThreadPool;
 
   function BuildTaskProc(const AIndex: Integer): TProc;
   begin
@@ -170,19 +171,24 @@ var
   end;
 
 begin
-  for I := 0 to NUM_THREADS - 1 do
-  begin
-    LStatusCodes[I] := 0;
-    LContents[I] := '';
-  end;
+  LThreadPool := TThreadPool.Create;
+  try
+    for I := 0 to NUM_THREADS - 1 do
+    begin
+      LStatusCodes[I] := 0;
+      LContents[I] := '';
+    end;
 
-  for I := 0 to NUM_THREADS - 1 do
-  begin
-    LTasks[I] := TTask.Create(BuildTaskProc(I));
-    LTasks[I].Start;
-  end;
+    for I := 0 to NUM_THREADS - 1 do
+    begin
+      LTasks[I] := TTask.Create(nil, BuildTaskProc(I), LThreadPool);
+      LTasks[I].Start;
+    end;
 
-  TTask.WaitForAll(LTasks, 15000);
+    TTask.WaitForAll(LTasks, 15000);
+  finally
+    LThreadPool.Free;
+  end;
 
   for I := 0 to NUM_THREADS - 1 do
   begin
