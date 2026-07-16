@@ -187,8 +187,8 @@ begin
   for I := 0 to NUM_THREADS - 1 do
   begin
     Assert.AreEqual(200, LStatusCodes[I], Format('Thread %d retornou erro: %s', [I, LContents[I]]));
-    Assert.Contains(LContents[I], '{"id": 1}', Format('Thread %d nao recebeu o inicio', [I]));
-    Assert.Contains(LContents[I], '{"id": 5}', Format('Thread %d nao recebeu o fim', [I]));
+    Assert.Contains(LContents[I], '{"id": 1}');
+    Assert.Contains(LContents[I], '{"id": 5}');
   end;
 end;
 
