@@ -131,24 +131,24 @@ if (Test-Path $StudioPath) {
 }
 
 # --- 2. COMPILAÇÃO FPC / LAZARUS DOCKER LINUX ---
-Write-Host ">>> Iniciando matriz de compilação para FPC/Lazarus no Linux via Docker..." -ForegroundColor Cyan
+$HasDocker = $null -ne (Get-Command docker -ErrorAction SilentlyContinue)
 
-foreach ($Scen in $FpcScenarios) {
-    $ScenName = $Scen.Name
-    $Defines = $Scen.Defines
+if ($HasDocker) {
+    Write-Host ">>> Iniciando matriz de compilacao para FPC/Lazarus no Linux via Docker..." -ForegroundColor Cyan
 
-    # Traduz defines do FPC (-dDEF1 -dDEF2)
-    $FpcDefinesList = $Defines -split ";"
-    $FpcFlags = ""
-    foreach ($Def in $FpcDefinesList) {
-        $FpcFlags += "-d$Def "
-    }
+    foreach ($Scen in $FpcScenarios) {
+        $ScenName = $Scen.Name
+        $Defines = $Scen.Defines
 
-    Write-Host " -> Compilando Provedor (FPC Linux): $ScenName..." -ForegroundColor Gray
+        # Traduz defines do FPC (-dDEF1 -dDEF2)
+        $FpcDefinesList = $Defines -split ";"
+        $FpcFlags = ""
+        foreach ($Def in $FpcDefinesList) {
+            $FpcFlags += "-d$Def "
+        }
 
-    # Executa a compilação estática do fpc dentro do container Ubuntu com try-catch para lidar com falta do docker
-    $BuildStatus = "SUCESSO"
-    try {
+        Write-Host " -> Compilando Provedor (FPC Linux): $ScenName..." -ForegroundColor Gray
+
         $DockerArgs = @(
             "run", "--rm",
             "-v", "$ScriptDir\..\:/usr/src/app",
@@ -159,24 +159,39 @@ foreach ($Scen in $FpcScenarios) {
             $FpcFlags.Trim(),
             "CompileCheck.dpr"
         )
-        $DockerOutput = & docker $DockerArgs 2>&1
-        if ($LastExitCode -ne 0) {
-            $BuildStatus = "FALHA"
-            Write-Host "   [!] FALHA na compilacao!" -ForegroundColor Red
-        } else {
-            Write-Host "   [+] OK" -ForegroundColor Green
-        }
-    } catch {
-        $BuildStatus = "DOCKER_INDISPONIVEL"
-        Write-Host "   [!] Docker nao instalado ou indisponivel no host" -ForegroundColor Yellow
-    }
 
-    $Results += [PSCustomObject]@{
-        Compilador = "FPC / Lazarus"
-        Provedor   = $ScenName
-        Defines    = $Defines
-        Plataforma = "Linux (Docker)"
-        Status     = $BuildStatus
+        $BuildStatus = "SUCESSO"
+        try {
+            $DockerOutput = & docker $DockerArgs
+            if ($LastExitCode -ne 0) {
+                $BuildStatus = "FALHA"
+                Write-Host "   [!] FALHA na compilacao!" -ForegroundColor Red
+            } else {
+                Write-Host "   [+] OK" -ForegroundColor Green
+            }
+        } catch {
+            $BuildStatus = "FALHA"
+            Write-Host "   [!] FALHA na execucao do Docker!" -ForegroundColor Red
+        }
+
+        $Results += [PSCustomObject]@{
+            Compilador = "FPC / Lazarus"
+            Provedor   = $ScenName
+            Defines    = $Defines
+            Plataforma = "Linux (Docker)"
+            Status     = $BuildStatus
+        }
+    }
+} else {
+    Write-Host ">>> Docker nao encontrado no host. Pulando testes do Lazarus/FPC." -ForegroundColor Yellow
+    foreach ($Scen in $FpcScenarios) {
+        $Results += [PSCustomObject]@{
+            Compilador = "FPC / Lazarus"
+            Provedor   = $Scen.Name
+            Defines    = $Scen.Defines
+            Plataforma = "Linux (Docker)"
+            Status     = "DOCKER_INDISPONIVEL"
+        }
     }
 }
 
