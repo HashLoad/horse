@@ -181,7 +181,7 @@ begin
 
     for I := 0 to NUM_THREADS - 1 do
     begin
-      LTasks[I] := TTask.Create(nil, BuildTaskProc(I), LThreadPool);
+      LTasks[I] := TTask.Create(BuildTaskProc(I), LThreadPool);
       LTasks[I].Start;
     end;
 
