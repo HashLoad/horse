@@ -139,6 +139,150 @@ end.
 
 ---
 
+## 🎯 Unicast: Envio Direcionado para um Cliente Específico
+
+Diferente do WebSocket (que gerencia conexões de forma assíncrona após o handshake), no Web Streaming e Server-Sent Events (SSE), a conexão HTTP permanece ativa **apenas enquanto o callback passado para `Res.SendStream` estiver em execução**. Se o callback terminar, o stream é encerrado.
+
+Para enviar eventos para um cliente específico a partir de processos externos (como um endpoint REST `/notificar` ou uma thread de background), deve-se associar o ID do cliente a uma **Fila de Mensagens Thread-Safe** (como `TThreadedQueue<string>`). A thread do request SSE fica aguardando novos itens na fila em um loop, mantendo a conexão HTTP aberta de forma eficiente e sem consumo excessivo de CPU.
+
+### 1. Criando o Gerenciador de Filas SSE (`MySSEManager.pas`)
+
+```delphi
+unit MySSEManager;
+
+interface
+
+uses
+  System.SysUtils, System.Generics.Collections, System.SyncObjs;
+
+type
+  TSSEQueue = TThreadedQueue<string>;
+
+  TMySSEManager = class
+  private
+    class var FSync: TCriticalSection;
+    class var FClients: TDictionary<string, TSSEQueue>;
+    class constructor Create;
+    class destructor Destroy;
+  public
+    class procedure RegisterClient(const AClientId: string; const AQueue: TSSEQueue);
+    class procedure UnregisterClient(const AClientId: string);
+    class function SendToClient(const AClientId: string; const AMessage: string): Boolean;
+  end;
+
+implementation
+
+class constructor TMySSEManager.Create;
+begin
+  FSync := TCriticalSection.Create;
+  FClients := TDictionary<string, TSSEQueue>.Create;
+end;
+
+class destructor TMySSEManager.Destroy;
+begin
+  FClients.Free;
+  FSync.Free;
+end;
+
+class procedure TMySSEManager.RegisterClient(const AClientId: string; const AQueue: TSSEQueue);
+begin
+  FSync.Enter;
+  try
+    FClients.AddOrSetValue(AClientId, AQueue);
+  finally
+    FSync.Leave;
+  end;
+end;
+
+class procedure TMySSEManager.UnregisterClient(const AClientId: string);
+begin
+  FSync.Enter;
+  try
+    FClients.Remove(AClientId);
+  finally
+    FSync.Leave;
+  end;
+end;
+
+class function TMySSEManager.SendToClient(const AClientId: string; const AMessage: string): Boolean;
+var
+  LQueue: TSSEQueue;
+begin
+  Result := False;
+  FSync.Enter;
+  try
+    if FClients.TryGetValue(AClientId, LQueue) then
+    begin
+      LQueue.PushItem(AMessage);
+      Result := True;
+    end;
+  finally
+    FSync.Leave;
+  end;
+end;
+
+end.
+```
+
+### 2. Vinculando o Gerenciador à Rota do Horse
+
+```delphi
+uses Horse, Horse.Response, System.SysUtils, MySSEManager;
+
+begin
+  THorse.Get('/sse',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    var
+      LClientId: string;
+    begin
+      LClientId := Req.Query.Items['clientId']; // Ex: /sse?clientId=ClienteX
+
+      if LClientId.IsEmpty then
+      begin
+        Res.Send('clientId is required').Status(400);
+        Exit;
+      end;
+
+      Res.ContentType('text/event-stream; charset=utf-8');
+      Res.AddHeader('Cache-Control', 'no-cache');
+      Res.AddHeader('Connection', 'keep-alive');
+
+      Res.SendStream(
+        procedure(const AWriter: IHorseStreamWriter)
+        var
+          LQueue: TSSEQueue;
+          LMsg: string;
+          LQueueResult: TWaitResult;
+        begin
+          LQueue := TSSEQueue.Create(100);
+          try
+            TMySSEManager.RegisterClient(LClientId, LQueue);
+            try
+              while AWriter.IsConnected do
+              begin
+                // Aguarda itens na fila por até 1000ms para permitir checar conectividade periodicamente
+                LQueueResult := LQueue.PopItem(LMsg, 1000);
+                
+                if LQueueResult = wrSignaled then
+                begin
+                  if not AWriter.IsConnected then Break;
+                  
+                  // Escreve o pacote formatado como SSE
+                  AWriter.Write('event: message'#10'data: ' + LMsg + #10#10);
+                end;
+              end;
+            finally
+              TMySSEManager.UnregisterClient(LClientId);
+            end;
+          finally
+            LQueue.Free;
+          end;
+        end);
+    end);
+```
+
+---
+
 ## ⚠️ Diretrizes e Boas Práticas
 
 *   **Evite Anonymous Methods Inline no Lazarus/FPC**: Devido a restrições do compilador FPC, prefira declarar procedimentos tradicionais ou métodos de classe/objeto para os callbacks das rotas e streams no Lazarus.
