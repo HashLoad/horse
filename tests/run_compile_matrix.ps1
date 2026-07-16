@@ -21,6 +21,11 @@ $StudioPath = "C:\Program Files (x86)\Embarcadero\Studio"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CompileTarget = Join-Path $ScriptDir "src\CompileCheck.dpr"
 
+function Limpar-ArquivosTemporarios {
+    Get-ChildItem -Path $ScriptDir -Recurse -Include *.dcu, *.ppu, *.o, *.dof, *.identcache, *.local -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path (Join-Path $ScriptDir "..\src") -Recurse -Include *.dcu, *.ppu, *.o -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 # Mapeamento de versões
 $FriendlyVersions = @{
     "17.0" = "Delphi 10 Seattle"
@@ -96,8 +101,7 @@ if (Test-Path $StudioPath) {
             Write-Host " -> Compilando Provedor: $ScenName..." -ForegroundColor Gray
 
             # Executa a limpeza dos DCUs antigos
-            Remove-Item -Path (Join-Path $ScriptDir "src\*.dcu") -ErrorAction SilentlyContinue
-            Remove-Item -Path (Join-Path $ScriptDir "src\CompileCheck.exe") -ErrorAction SilentlyContinue
+            Limpar-ArquivosTemporarios
 
             # Chama o dcc32 diretamente via array de argumentos para evitar interpretador do PowerShell no ponto e vírgula
             $DccArgs = @(
@@ -142,6 +146,9 @@ if ($HasDocker) {
         $ScenName = $Scen.Name
         $Defines = $Scen.Defines
 
+        # Garante limpeza completa de arquivos binários compilados incompatíveis do Windows
+        Limpar-ArquivosTemporarios
+
         # Traduz defines do FPC (-dDEF1 -dDEF2)
         $FpcDefinesList = $Defines -split ";"
         $FpcFlags = ""
@@ -156,7 +163,7 @@ if ($HasDocker) {
             "-v", "$ScriptDir\..\:/usr/src/app",
             "-w", "/usr/src/app/tests/src",
             "horse-tests-lazarus",
-            "bash", "-c", "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr"
+            "bash", "-c", "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr"
         )
 
         $BuildStatus = "SUCESSO"
