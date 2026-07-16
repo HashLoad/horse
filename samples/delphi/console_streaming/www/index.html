@@ -68,17 +68,69 @@
 
     .container {
       width: 100%;
-      max-width: 1100px;
+      max-width: 1300px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2.5rem;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
       animation: fadeInUp 0.8s ease;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 1024px) {
       .container {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* AI Chatbot Styles */
+    .ai-card .card-title::before {
+      background-color: #d500f9;
+      box-shadow: 0 0 10px #d500f9;
+    }
+
+    .btn-ai {
+      background: #d500f9;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(213, 0, 249, 0.4);
+    }
+
+    .btn-ai:hover {
+      box-shadow: 0 6px 20px rgba(213, 0, 249, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .ai-chat-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      font-size: 1rem;
+      height: 250px;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: #e0e0e0;
+      scroll-behavior: smooth;
+    }
+
+    .ai-word-chunk {
+      animation: wordAppear 0.15s ease forwards;
+      display: inline-block;
+      white-space: pre-wrap;
+    }
+
+    @keyframes wordAppear {
+      from { opacity: 0; transform: translateY(3px) scale(0.95); filter: blur(2px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    .cursor::after {
+      content: '▋';
+      color: #d500f9;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
 
     .card {
@@ -303,6 +355,21 @@
       </div>
     </div>
 
+    <!-- AI Chatbot (Typing Effect) -->
+    <div class="card ai-card">
+      <div class="card-header">
+        <h2 class="card-title">AI Chatbot Stream</h2>
+        <div class="status-badge">
+          <div id="ai-dot" class="status-dot"></div>
+          <span id="ai-status-text">Inativo</span>
+        </div>
+      </div>
+      <button id="btn-toggle-ai" class="btn btn-ai">Iniciar Geração de Resposta</button>
+      <div id="ai-chat-box" class="ai-chat-box">
+        <span class="console-line info">Conecte para iniciar a geração da resposta via streaming da IA.</span>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -435,6 +502,61 @@
           sseDot.className = 'status-dot';
           sseStatusText.innerText = 'Desconectado';
           btnSse.innerText = 'Conectar EventSource';
+        };
+      }
+    });
+
+    // --- AI Chatbot (Typing Effect) ---
+    const btnAi = document.getElementById('btn-toggle-ai');
+    const aiDot = document.getElementById('ai-dot');
+    const aiStatusText = document.getElementById('ai-status-text');
+    const aiBox = document.getElementById('ai-chat-box');
+    let aiSource = null;
+
+    btnAi.addEventListener('click', () => {
+      if (aiSource) {
+        // Desconecta se já estiver ativo
+        aiSource.close();
+        aiSource = null;
+        aiDot.className = 'status-dot';
+        aiStatusText.innerText = 'Inativo';
+        btnAi.innerText = 'Iniciar Geração de Resposta';
+        // Remove o cursor
+        const cursor = aiBox.querySelector('.cursor');
+        if (cursor) cursor.remove();
+      } else {
+        // Inicializa e limpa a tela de chat
+        aiDot.className = 'status-dot active';
+        aiStatusText.innerText = 'Digitando...';
+        btnAi.innerText = 'Parar Geração';
+        aiBox.innerHTML = '<span class="cursor"></span>';
+        
+        aiSource = new EventSource('/ia-chat');
+
+        aiSource.onmessage = (event) => {
+          const word = event.data;
+          const span = document.createElement('span');
+          span.className = 'ai-word-chunk';
+          span.innerText = word + ' ';
+          
+          // Insere a nova palavra antes do cursor piscante
+          const cursor = aiBox.querySelector('.cursor');
+          if (cursor) {
+            aiBox.insertBefore(span, cursor);
+          } else {
+            aiBox.appendChild(span);
+          }
+          aiBox.scrollTop = aiBox.scrollHeight;
+        };
+
+        aiSource.onerror = () => {
+          aiSource.close();
+          aiSource = null;
+          aiDot.className = 'status-dot';
+          aiStatusText.innerText = 'Inativo';
+          btnAi.innerText = 'Iniciar Geração de Resposta';
+          const cursor = aiBox.querySelector('.cursor');
+          if (cursor) cursor.remove();
         };
       }
     });

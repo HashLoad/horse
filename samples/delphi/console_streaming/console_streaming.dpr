@@ -62,6 +62,36 @@ begin
         end);
     end);
 
+  // Rota de IA Chat simulado palavra por palavra
+  THorse.Get('/ia-chat',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      Res.ContentType('text/event-stream; charset=utf-8');
+      Res.AddHeader('Cache-Control', 'no-cache');
+      Res.AddHeader('Connection', 'keep-alive');
+
+      Res.SendStream(
+        procedure(const AWriter: IHorseStreamWriter)
+        const
+          WORDS: array[0..36] of string = (
+            'O', 'framework', 'Horse', 'agora', 'suporta', 'nativamente', 'a',
+            'transmissao', 'de', 'dados', 'via', 'Web', 'Streams', 'e', 'Server-Sent',
+            'Events', '(SSE).', 'Esta', 'funcionalidade', 'permite', 'construir',
+            'APIs', 'modernas', 'de', 'IA', 'Generativa,', 'telemetria', 'em', 'tempo',
+            'real', 'e', 'transmissoes', 'de', 'alta', 'performance', 'com', 'facilidade!'
+          );
+        var
+          I: Integer;
+        begin
+          for I := Low(WORDS) to High(WORDS) do
+          begin
+            if not AWriter.IsConnected then Break;
+            AWriter.Write('data: ' + WORDS[I] + ' '#10#10);
+            Sleep(85);
+          end;
+        end);
+    end);
+
   THorse.Listen(9000,
     procedure
     begin
