@@ -4,15 +4,17 @@
 
 $ErrorActionPreference = "Continue"
 
-# 1. Otimiza o PATH para evitar limite de caracteres do Windows
+# 1. Otimiza o PATH para evitar limite de caracteres do Windows, preservando o Docker
 $CurrentPath = $env:PATH -split ";"
 $CleanPathDirs = @()
 foreach ($Dir in $CurrentPath) {
-    if ($Dir -like "*C:\Windows*" -or $Dir -like "*Embarcadero*" -or $Dir -like "*Microsoft.NET*") {
+    if ($Dir -like "*C:\Windows*" -or $Dir -like "*Embarcadero*" -or $Dir -like "*Microsoft.NET*" -or $Dir -like "*Docker*") {
         if (Test-Path $Dir) { $CleanPathDirs += $Dir }
     }
 }
-$env:PATH = $CleanPathDirs -join ";"
+$DockerDefault = "C:\Program Files\Docker\Docker\resources\bin"
+if (Test-Path $DockerDefault) { $CleanPathDirs += $DockerDefault }
+$env:PATH = ($CleanPathDirs | Select-Object -Unique) -join ";"
 
 # Caminho do Delphi Studio
 $StudioPath = "C:\Program Files (x86)\Embarcadero\Studio"
