@@ -69,6 +69,7 @@ doc/
 ├── routing.*.md               ← ligação URL → handler
 ├── request-response.*.md      ← API de THorseRequest e THorseResponse
 ├── websocket.*.md             ← suporte nativo a conexões WebSocket (RFC 6455)
+├── streaming.*.md             ← suporte nativo a transmissões streaming (Web Streams / SSE)
 ├── middleware.*.md            ← encadeamento de handlers
 ├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── dependency-injection.*.md  ← injeção de dependências no request scope

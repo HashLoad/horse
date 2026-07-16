@@ -65,6 +65,7 @@ doc/
 ├── routing.md                 ← URL → handler binding
 ├── request-response.md        ← THorseRequest and THorseResponse API
 ├── websocket.md               ← native WebSocket connection support (RFC 6455)
+├── streaming.md               ← native streaming transmission support (Web Streams / SSE)
 ├── middleware.md              ← chaining handlers
 ├── lifecycle-hooks.md         ← request lifecycle hooks (onRequest, etc.)
 ├── dependency-injection.md    ← contextual dependency injection on request scope
