@@ -140,17 +140,11 @@ var
   LStatusCodes: array[0..NUM_THREADS - 1] of Integer;
   LContents: array[0..NUM_THREADS - 1] of string;
   I: Integer;
-begin
-  for I := 0 to NUM_THREADS - 1 do
-  begin
-    LStatusCodes[I] := 0;
-    LContents[I] := '';
-  end;
 
-  for I := 0 to NUM_THREADS - 1 do
+  function BuildTaskProc(const AIndex: Integer): TProc;
   begin
-    LTasks[I] := TTask.Create(
-      procedure(const AIndex: Integer)
+    Result :=
+      procedure
       var
         LClient: THTTPClient;
         LRes: IHTTPResponse;
@@ -172,9 +166,19 @@ begin
         finally
           LClient.Free;
         end;
-      end,
-      I
-    );
+      end;
+  end;
+
+begin
+  for I := 0 to NUM_THREADS - 1 do
+  begin
+    LStatusCodes[I] := 0;
+    LContents[I] := '';
+  end;
+
+  for I := 0 to NUM_THREADS - 1 do
+  begin
+    LTasks[I] := TTask.Create(BuildTaskProc(I));
     LTasks[I].Start;
   end;
 
