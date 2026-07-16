@@ -36,6 +36,15 @@ uses
   Horse.Core,
   Horse.Core.Context;
 
+{$IFNDEF FPC}
+type
+  {$IF CompilerVersion >= 31.0}
+  THttpSysString = string;
+  {$ELSE}
+  THttpSysString = AnsiString;
+  {$IFEND}
+{$ENDIF}
+
 const
   HTTPAPI_DLL = 'httpapi.dll';
 
@@ -275,6 +284,9 @@ const
   );
 
 // Windows Http.sys native APIs
+{$IFNDEF FPC}
+function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
+{$ENDIF}
 function HttpInitialize(Version: HTTPAPI_VERSION; Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpTerminate(Flags: ULONG; pReserved: Pointer): ULONG; stdcall; external HTTPAPI_DLL;
 function HttpCreateServerSession(Version: HTTPAPI_VERSION; var ServerSessionId: HTTP_SERVER_SESSION_ID; Reserved: ULONG): ULONG; stdcall; external HTTPAPI_DLL;
@@ -391,12 +403,12 @@ type
   {$IFNDEF FPC}
   private
     FStatusCode: Integer;
-    FContent: string;
-    FContentType: string;
-    FContentEncoding: string;
+    FContent: THttpSysString;
+    FContentType: THttpSysString;
+    FContentEncoding: THttpSysString;
   protected
-    function  GetStringVariable(Index: Integer): string; override;
-    procedure SetStringVariable(Index: Integer; const Value: string); override;
+    function  GetStringVariable(Index: Integer): THttpSysString; override;
+    procedure SetStringVariable(Index: Integer; const Value: THttpSysString); override;
 {$IF CompilerVersion >= 32.0}
     function  GetIntegerVariable(Index: Integer): Int64; override;
     procedure SetIntegerVariable(Index: Integer; Value: Int64); override;
@@ -404,8 +416,8 @@ type
     function  GetIntegerVariable(Index: Integer): Integer; override;
     procedure SetIntegerVariable(Index: Integer; Value: Integer); override;
 {$IFEND}
-    function  GetContent: string; override;
-    procedure SetContent(const Value: string); override;
+    function  GetContent: THttpSysString; override;
+    procedure SetContent(const Value: THttpSysString); override;
     function  GetStatusCode: Integer; override;
     procedure SetStatusCode(Value: Integer); override;
   {$ENDIF}
@@ -515,7 +527,6 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
-  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LCurrentBuf: TBytes;
 begin
@@ -531,20 +542,18 @@ begin
       LWebRequest := TInterfacedWebRequest.Create(LRawReq);
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
-        LContextObj := THorseContextPool.Instance.Acquire;
-        LReq := THorseRequest(LContextObj.Request);
-        LReq.SetCSRawWebRequest(LWebRequest);
-        LRes := THorseResponse(LContextObj.Response);
-        LRes.SetCSRawWebResponse(LWebResponse);
+        LReq := THorseRequest.Create(LWebRequest);
+        LRes := THorseResponse.Create(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
         finally
           LConcreteRes.SendResponse(LRes);
-          THorseContextPool.Instance.Release(LContextObj);
         end;
       finally
         LWebRequest.Free;
         LWebResponse.Free;
+        LReq.Free;
+        LRes.Free;
       end;
     except
       on E: Exception do
@@ -711,7 +720,6 @@ var
   LWebResponse: TInterfacedWebResponse;
   LReq: THorseRequest;
   LRes: THorseResponse;
-  LContextObj: THorseContext;
   LRequest: PHTTP_REQUEST;
   LHasItem: Boolean;
 begin
@@ -741,20 +749,18 @@ begin
         LWebRequest := TInterfacedWebRequest.Create(LRawReq);
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
-          LContextObj := THorseContextPool.Instance.Acquire;
-          LReq := THorseRequest(LContextObj.Request);
-          LReq.SetCSRawWebRequest(LWebRequest);
-          LRes := THorseResponse(LContextObj.Response);
-          LRes.SetCSRawWebResponse(LWebResponse);
+          LReq := THorseRequest.Create(LWebRequest);
+          LRes := THorseResponse.Create(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);
           finally
             LConcreteRes.SendResponse(LRes);
-            THorseContextPool.Instance.Release(LContextObj);
           end;
         finally
           LWebRequest.Free;
           LWebResponse.Free;
+          LReq.Free;
+          LRes.Free;
         end;
       except
         on E: Exception do
@@ -1624,7 +1630,7 @@ begin
 end;
 
 {$IFNDEF FPC}
-function THttpSysWebResponse.GetStringVariable(Index: Integer): string;
+function THttpSysWebResponse.GetStringVariable(Index: Integer): THttpSysString;
 begin
   case Index of
     25: Result := FContent;
@@ -1635,7 +1641,7 @@ begin
   end;
 end;
 
-procedure THttpSysWebResponse.SetStringVariable(Index: Integer; const Value: string);
+procedure THttpSysWebResponse.SetStringVariable(Index: Integer; const Value: THttpSysString);
 begin
   case Index of
     25: FContent := Value;
@@ -1666,12 +1672,13 @@ begin
     FStatusCode := Value;
 end;
 
-function THttpSysWebResponse.GetContent: string;
+// GetContent and SetContent overrides
+function THttpSysWebResponse.GetContent: THttpSysString;
 begin
   Result := FContent;
 end;
 
-procedure THttpSysWebResponse.SetContent(const Value: string);
+procedure THttpSysWebResponse.SetContent(const Value: THttpSysString);
 begin
   FContent := Value;
 end;
@@ -2121,6 +2128,188 @@ class function THorseProviderHttpSys.GetActivePort: Integer;
 begin
   Result := FPort;
 end;
+
+{ THttpSysStreamWriter }
+
+type
+  THttpSysStreamWriter = class(THorseStreamWriterBase)
+  private
+    FReqQueue: THandle;
+    FRequestId: HTTP_REQUEST_ID;
+  protected
+    procedure SendRawHeaders; override;
+    procedure WriteRawBytes(const ABytes: TBytes); override;
+  public
+    constructor Create(const AResponse: THorseResponse); override;
+    function IsConnected: Boolean; override;
+  end;
+
+constructor THttpSysStreamWriter.Create(const AResponse: THorseResponse);
+var
+  LRawResponse: THttpSysRawResponse;
+  LRawWebResponse: TObject;
+begin
+  inherited Create(AResponse);
+  LRawResponse := nil;
+  LRawWebResponse := AResponse.RawWebResponse;
+  if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
+    LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
+
+  if Assigned(LRawResponse) then
+  begin
+    FReqQueue := LRawResponse.FReqQueue;
+    FRequestId := LRawResponse.FRequestId;
+  end;
+end;
+
+procedure THttpSysStreamWriter.SendRawHeaders;
+var
+  LResponse: HTTP_RESPONSE;
+  LBytesSent: ULONG;
+  LRet: ULONG;
+  LHeaders: TArray<HTTP_UNKNOWN_HEADER>;
+  LHeaderCount: Integer;
+  LStatusCode: Word;
+  LContentType: AnsiString;
+  LReason: AnsiString;
+  {$IF DEFINED(FPC)}
+  LHeadersList: TStringList;
+  {$ELSE}
+  LHeadersList: TDictionary<string, string>;
+  LPair: TPair<string, string>;
+  {$ENDIF}
+  I: Integer;
+  LHeaderStrings: TArray<AnsiString>;
+begin
+  FillChar(LResponse, SizeOf(LResponse), 0);
+  
+  LStatusCode := FResponse.Status;
+  LResponse.StatusCode := LStatusCode;
+  
+  LReason := 'OK';
+  if LStatusCode = 201 then LReason := 'Created'
+  else if LStatusCode = 204 then LReason := 'No Content'
+  else if LStatusCode = 400 then LReason := 'Bad Request'
+  else if LStatusCode = 401 then LReason := 'Unauthorized'
+  else if LStatusCode = 403 then LReason := 'Forbidden'
+  else if LStatusCode = 404 then LReason := 'Not Found'
+  else if LStatusCode = 500 then LReason := 'Internal Server Error';
+  
+  LResponse.ReasonLength := Length(LReason);
+  LResponse.pReason := PAnsiChar(LReason);
+  LResponse.Version.MajorVersion := 1;
+  LResponse.Version.MinorVersion := 1;
+
+  if (FResponse.RawWebResponse <> nil) and (FResponse.RawWebResponse.ContentType <> '') then
+    LContentType := AnsiString(FResponse.RawWebResponse.ContentType)
+  else
+    LContentType := AnsiString(FResponse.CSContentType);
+
+  if LContentType = '' then
+    LContentType := 'text/html; charset=utf-8';
+  
+  LResponse.Headers.KnownHeaders[12].pRawValue := PAnsiChar(LContentType);
+  LResponse.Headers.KnownHeaders[12].RawValueLength := Length(LContentType);
+
+  LHeadersList := FResponse.CustomHeaders;
+  if LHeadersList <> nil then
+    LHeaderCount := LHeadersList.Count
+  else
+    LHeaderCount := 0;
+
+  if LHeaderCount > 0 then
+  begin
+    SetLength(LHeaders, LHeaderCount);
+    SetLength(LHeaderStrings, LHeaderCount * 2);
+    {$IF DEFINED(FPC)}
+    for I := 0 to LHeaderCount - 1 do
+    begin
+      LHeaderStrings[I * 2] := AnsiString(LHeadersList.Names[I]);
+      LHeaderStrings[I * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
+      
+      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
+      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
+      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
+      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
+    end;
+    {$ELSE}
+    I := 0;
+    for LPair in LHeadersList do
+    begin
+      LHeaderStrings[I * 2] := AnsiString(LPair.Key);
+      LHeaderStrings[I * 2 + 1] := AnsiString(LPair.Value);
+      
+      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
+      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
+      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
+      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
+      Inc(I);
+    end;
+    {$ENDIF}
+    LResponse.Headers.UnknownHeaderCount := LHeaderCount;
+    LResponse.Headers.pUnknownHeaders := @LHeaders[0];
+  end;
+
+  LResponse.EntityChunkCount := 0;
+  LResponse.pEntityChunks := nil;
+
+  LRet := HttpSendHttpResponse(
+    FReqQueue,
+    FRequestId,
+    HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+    @LResponse,
+    nil,
+    LBytesSent,
+    nil,
+    0,
+    nil,
+    nil
+  );
+  if LRet <> ERROR_SUCCESS then
+    raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+end;
+
+procedure THttpSysStreamWriter.WriteRawBytes(const ABytes: TBytes);
+var
+  LChunk: HTTP_DATA_CHUNK_INMEMORY;
+  LBytesSent: ULONG;
+  LRet: ULONG;
+begin
+  if Length(ABytes) = 0 then Exit;
+
+  FillChar(LChunk, SizeOf(LChunk), 0);
+  LChunk.DataChunkType := hctFromMemory;
+  LChunk.pBuffer := @ABytes[0];
+  LChunk.BufferLength := Length(ABytes);
+
+  LRet := HttpSendResponseEntityBody(
+    FReqQueue,
+    FRequestId,
+    HTTP_SEND_RESPONSE_FLAG_MORE_DATA,
+    1,
+    @LChunk,
+    LBytesSent,
+    nil,
+    nil,
+    nil,
+    nil
+  );
+  if LRet <> ERROR_SUCCESS then
+    raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+end;
+
+function THttpSysStreamWriter.IsConnected: Boolean;
+begin
+  Result := True;
+end;
+
+function HttpSysStreamWriterFactory(const AResponse: THorseResponse): IHorseStreamWriter;
+begin
+  Result := THttpSysStreamWriter.Create(AResponse);
+end;
+
+initialization
+  THorseResponse.RegisterStreamWriterFactory(HttpSysStreamWriterFactory);
 
 {$ENDIF}
 

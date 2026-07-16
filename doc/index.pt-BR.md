@@ -40,6 +40,7 @@ graph TD
 | [Primeiros passos](./getting-started.pt-BR.md) | Instalação via Boss; exemplos mínimos em Delphi e Lazarus; convenções de estrutura de projeto. |
 | [Roteamento](./routing.pt-BR.md) | `THorse.Get` / `Post` / `Put` / `Delete` / `Patch` / `Head` / `Use`; parâmetros de caminho; grupos de rotas; wildcards; enum de método HTTP. |
 | [Request e Response](./request-response.pt-BR.md) | `THorseRequest` (body, params, query, headers, cookies, sessions, multipart). `THorseResponse` (`Send`, `Status`, `ContentType`, `AddHeader`, `RedirectTo`, `SendFile`, `Download`, `RawWebResponse`). |
+| [WebSockets](./websocket.pt-BR.md) | Suporte nativo a conexões bidirecionais WebSocket (RFC 6455) com porta compartilhada, suporte fail-fast e broadcasts. |
 | [Middleware](./middleware.pt-BR.md) | O modelo `Next` proc; built-in vs custom; ordem de registro; por-rota vs global. |
 | [Ganchos de Ciclo de Vida](./lifecycle-hooks.pt-BR.md) | Ganchos de ciclo de vida (`onRequest`, `preParsing`, `preValidation`, `onSend`, `onResponse`) para estender e interceptar requisições. |
 | [Injeção de Dependência](./dependency-injection.pt-BR.md) | Gerenciamento de ciclo de vida e IoC no request scope (injetores direct e lazy). |
@@ -67,6 +68,8 @@ doc/
 ├── getting-started.*.md       ← primeiros 30 minutos com o Horse
 ├── routing.*.md               ← ligação URL → handler
 ├── request-response.*.md      ← API de THorseRequest e THorseResponse
+├── websocket.*.md             ← suporte nativo a conexões WebSocket (RFC 6455)
+├── streaming.*.md             ← suporte nativo a transmissões streaming (Web Streams / SSE)
 ├── middleware.*.md            ← encadeamento de handlers
 ├── lifecycle-hooks.*.md       ← ganchos de ciclo de vida (onRequest, etc.)
 ├── dependency-injection.*.md  ← injeção de dependências no request scope

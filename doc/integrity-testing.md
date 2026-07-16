@@ -111,3 +111,32 @@ To connect your Delphi IDE (Windows) to this PAServer instance:
    - **Password**: Leave empty.
 3. In your Delphi Project Manager, select **Linux 64-bit** as the target platform, choose the newly created connection profile, and run/debug.
 ```
+
+---
+
+## Static Cross-Compilation Matrix
+
+In addition to runtime network integration testing, Horse includes an automated static compilation verification suite. This is designed to ensure that all combinations of Providers and Routers compile correctly and without syntax regressions across multiple compilers and operating systems.
+
+These tests reside in the folder: `tests/`
+
+### Why is the Compilation Matrix Important?
+In the Delphi and Lazarus/FPC ecosystems, compilers implement *smart linking* and demand-driven compilation. If a secondary provider (such as `HttpSys` or `IOCP`) or a specific router type is not explicitly referenced in the project's default unit test suite, severe syntax errors in those components can remain undetected during standard continuous integration (CI/CD) pipelines.
+
+The matrix forces the full static compilation graph of all framework `.pas` source files in an isolated, parallel, and cross-platform manner.
+
+### What is Tested?
+The `run_compile_matrix.ps1` script orchestrates compiling the stub `tests/src/CompileCheck.dpr` across all combinations of:
+*   **Compilers**: Delphi 10 Seattle, Delphi 11 Alexandria, Delphi 12 Athens, Delphi 13 Florence (local) and Lazarus/FPC (Linux).
+*   **Providers**: Default (Indy), IOCP, HttpSys, Apache, CGI, ISAPI, Daemon, VCL, LCL, Epoll.
+*   **Routers**: Default (`RouterTree`) and Radix Router (`RadixRouter`).
+
+### How to Run the Matrix Locally
+
+To run the full static compilation matrix check in Windows using PowerShell, execute the following command from the repository root:
+
+```powershell
+powershell -File .\tests\run_compile_matrix.ps1
+```
+
+The script will automatically auto-detect your local Delphi installations, check if Docker Desktop is available (to compile Lazarus/FPC targets in an isolated Ubuntu container), run all compilation variations, and print a consolidated success/failure summary table.

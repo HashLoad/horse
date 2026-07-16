@@ -66,7 +66,7 @@ end;
 
 ---
 
-## Como Executar Localmente
+## Como Executar Localmente (Testes de Integridade)
 
 Para rodar os testes de integridade em ambiente local Windows com o PowerShell, basta navegar até a pasta e iniciar o script:
 
@@ -76,3 +76,32 @@ cd samples/delphi/console_complete
 ```
 
 O script cuidará de todo o processo de compilação dos dois roteadores com o compilador Delphi (`dcc32`), inicialização em background para cada um, chamadas HTTP de testes, limpeza e relatório final de falhas de ambos.
+
+---
+
+## Matriz de Compilação Estática Cruzada
+
+Além dos testes de integridade de rede ativos em runtime, o Horse possui uma suíte de verificação estática de compilação automática projetada para certificar que todas as combinações de Provedores e Roteadores compilem de forma correta e sem regressões de sintaxe em múltiplos compiladores e sistemas operacionais.
+
+Esses testes residem na pasta: `tests/`
+
+### Por que a Matriz de Compilação é Importante?
+No ecossistema Delphi e Lazarus/FPC, o compilador adota o conceito de *smart linking* e compilação sob demanda. Se um provedor (como `HttpSys` ou `IOCP`) ou um roteador específico não for explicitamente importado na suíte de testes unitários padrão do projeto, erros sintáticos graves nessas unidades secundárias podem passar despercebidos pelo processo padrão de compilação contínua (CI/CD).
+
+A matriz força o grafo completo de compilação estática de todos os arquivos `.pas` do framework de forma isolada, cruzada e paralela.
+
+### O que é Testado?
+O script `run_compile_matrix.ps1` orquestra a compilação do stub `tests/src/CompileCheck.dpr` testando todas as combinações de:
+*   **Compiladores**: Delphi 10 Seattle, Delphi 11 Alexandria, Delphi 12 Athens, Delphi 13 Florence (locais) e Lazarus/FPC (Linux).
+*   **Provedores**: Default (Indy), IOCP, HttpSys, Apache, CGI, ISAPI, Daemon, VCL, LCL, Epoll.
+*   **Roteadores**: Padrão (`RouterTree`) e Radix Router (`RadixRouter`).
+
+### Como Executar Localmente a Matriz
+
+Para executar a verificação completa da matriz de compilação estática no Windows via PowerShell, basta rodar o seguinte comando a partir da raiz do repositório:
+
+```powershell
+powershell -File .\tests\run_compile_matrix.ps1
+```
+
+O script detectará automaticamente os compiladores Delphi locais instalados e a presença do Docker Desktop (para rodar a matriz no Lazarus/FPC Linux de forma isolada de dentro de um container Ubuntu) e exibirá o relatório consolidado de sucesso e falhas na tela ao final do processo.

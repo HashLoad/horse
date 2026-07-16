@@ -54,7 +54,12 @@ uses
 {$ENDIF}        
   Horse.Request,
   Horse.Response,
-  Horse.Exception.Interrupted;
+  Horse.Exception.Interrupted,
+  Horse.Core.WebSocket
+  {$IF NOT DEFINED(FPC)}
+  , IdHTTPWebBrokerBridge,
+  Horse.Provider.Indy.WebSocket
+  {$ENDIF};
 
 {$IF DEFINED(FPC)}
   {$R Horse.WebModule.lfm}
@@ -96,6 +101,19 @@ begin
   Handled := True;
   LRequest := THorseRequest.Create(Request);
   LResponse := THorseResponse.Create(Response);
+
+  {$IF NOT DEFINED(FPC)}
+  if Request is TIdHTTPAppRequest then
+  begin
+    LRequest.Services.Add(THorseWebSocketUpgrader,
+      TIndyWebSocketUpgrader.Create(
+        TIdHTTPAppRequest(Request).GetThread,
+        Request,
+        Response
+      ), True);
+  end;
+  {$ENDIF}
+
   try
     try
       LPort := Request.ServerPort;
