@@ -97,6 +97,142 @@ AConn.OnMessage :=
     THorseWebSocketManager.Broadcast('/ws', AText, AConnection);
   end;
 ```
+---
+
+## 🎯 Unicast: Sending to a Specific Client (Direct Message)
+
+Horse allows sending messages to individual clients in two primary ways:
+
+### 1. Direct Response in the `OnMessage` Event
+When a message is received, the `OnMessage` callback provides a direct reference to the active connection that triggered the event (`AConnection: IHorseWebSocketConnection`). To respond only to this client, use the `SendText` or `SendBinary` methods on this instance:
+
+```delphi
+AConn.OnMessage :=
+  procedure(const AConnection: IHorseWebSocketConnection; const AText: string)
+  begin
+    // Responds exclusively to the sender client
+    AConnection.SendText('Received: ' + AText);
+  end;
+```
+
+### 2. Targeted Notification from External Events (Session Workaround)
+When you need to send messages to a specific client from other contexts of the application (such as in a REST endpoint `/notify` or in a background thread), you should implement a thread-safe connection manager.
+
+You can create a manager class using a dictionary synchronized by a critical section:
+
+```delphi
+unit MyWSManager;
+
+interface
+
+uses
+  System.SysUtils, System.Generics.Collections, System.SyncObjs,
+  Horse.Core.WebSocket;
+
+type
+  TMyWSManager = class
+  private
+    class var FSync: TCriticalSection;
+    class var FClients: TDictionary<string, IHorseWebSocketConnection>;
+    class constructor Create;
+    class destructor Destroy;
+  public
+    class procedure RegisterClient(const AClientId: string; const AConn: IHorseWebSocketConnection);
+    class procedure UnregisterClient(const AClientId: string);
+    class function SendToClient(const AClientId: string; const AMessage: string): Boolean;
+  end;
+
+implementation
+
+class constructor TMyWSManager.Create;
+begin
+  FSync := TCriticalSection.Create;
+  FClients := TDictionary<string, IHorseWebSocketConnection>.Create;
+end;
+
+class destructor TMyWSManager.Destroy;
+begin
+  FClients.Free;
+  FSync.Free;
+end;
+
+class procedure TMyWSManager.RegisterClient(const AClientId: string; const AConn: IHorseWebSocketConnection);
+begin
+  FSync.Enter;
+  try
+    FClients.AddOrSetValue(AClientId, AConn);
+  finally
+    FSync.Leave;
+  end;
+end;
+
+class procedure TMyWSManager.UnregisterClient(const AClientId: string);
+begin
+  FSync.Enter;
+  try
+    FClients.Remove(AClientId);
+  finally
+    FSync.Leave;
+  end;
+end;
+
+class function TMyWSManager.SendToClient(const AClientId: string; const AMessage: string): Boolean;
+var
+  LConn: IHorseWebSocketConnection;
+begin
+  Result := False;
+  FSync.Enter;
+  try
+    if FClients.TryGetValue(AClientId, LConn) then
+    begin
+      if LConn.IsConnected then
+      begin
+        LConn.SendText(AMessage);
+        Result := True;
+      end;
+    end;
+  finally
+    FSync.Leave;
+  end;
+end;
+
+end.
+```
+
+And in your Horse server route definition:
+
+```delphi
+uses Horse, Horse.Core.WebSocket, MyWSManager;
+
+begin
+  THorse.Get('/ws',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    var
+      LClientId: string;
+    begin
+      LClientId := Req.Query.Items['clientId']; // e.g. /ws?clientId=ClientX
+      
+      if LClientId.IsEmpty then
+      begin
+        Res.Send('clientId is required').Status(400);
+        Exit;
+      end;
+
+      Res.UpgradeToWebSocket(
+        procedure(const AConn: IHorseWebSocketConnection)
+        begin
+          // Register the client and its corresponding WebSocket connection
+          TMyWSManager.RegisterClient(LClientId, AConn);
+
+          AConn.OnDisconnect :=
+            procedure(const AConnection: IHorseWebSocketConnection)
+            begin
+              // Remove the client from the list when disconnecting
+              TMyWSManager.UnregisterClient(LClientId);
+            end;
+        end);
+    end);
+```
 
 ---
 
