@@ -22,6 +22,8 @@ type
     procedure TestStreamingNDJSON;
     [Test]
     procedure TestStreamingSSE;
+    [Test]
+    procedure TestStreamingConcurrentStress;
   end;
 
 implementation
@@ -127,6 +129,62 @@ begin
     Assert.Contains(LContent, 'data: {"id": 5}');
   finally
     LClient.Free;
+  end;
+end;
+
+procedure TTestIntegrationStreaming.TestStreamingConcurrentStress;
+const
+  NUM_THREADS = 15;
+var
+  LTasks: array[0..NUM_THREADS - 1] of ITask;
+  LStatusCodes: array[0..NUM_THREADS - 1] of Integer;
+  LContents: array[0..NUM_THREADS - 1] of string;
+  I: Integer;
+begin
+  for I := 0 to NUM_THREADS - 1 do
+  begin
+    LStatusCodes[I] := 0;
+    LContents[I] := '';
+  end;
+
+  for I := 0 to NUM_THREADS - 1 do
+  begin
+    LTasks[I] := TTask.Create(
+      procedure(const AIndex: Integer)
+      var
+        LClient: THTTPClient;
+        LRes: IHTTPResponse;
+      begin
+        LClient := THTTPClient.Create;
+        try
+          LClient.CustomHeaders['Connection'] := 'close';
+          try
+            LRes := LClient.Get(Format('http://localhost:%d/ndjson', [TEST_PORT]));
+            LStatusCodes[AIndex] := LRes.StatusCode;
+            LContents[AIndex] := LRes.ContentAsString;
+          except
+            on E: Exception do
+            begin
+              LStatusCodes[AIndex] := 500;
+              LContents[AIndex] := E.Message;
+            end;
+          end;
+        finally
+          LClient.Free;
+        end;
+      end,
+      I
+    );
+    LTasks[I].Start;
+  end;
+
+  TTask.WaitForAll(LTasks, 15000);
+
+  for I := 0 to NUM_THREADS - 1 do
+  begin
+    Assert.AreEqual(200, LStatusCodes[I], Format('Thread %d retornou erro: %s', [I, LContents[I]]));
+    Assert.Contains(LContents[I], '{"id": 1}', Format('Thread %d nao recebeu o inicio', [I]));
+    Assert.Contains(LContents[I], '{"id": 5}', Format('Thread %d nao recebeu o fim', [I]));
   end;
 end;
 
