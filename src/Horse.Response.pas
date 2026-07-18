@@ -397,6 +397,18 @@ procedure THorseResponse.Clear;
 begin
   FAborted := False;
   FWebResponse := nil;
+{ STREAM-RESET-1 — a pool-recycled response must NOT inherit the previous
+  request's streaming state. SendStream sets FIsStreaming := True; if it survives
+  into the next request on a reused pooled context, the CrossSocket provider skips
+  that request's Flush (it thinks the stream already sent the response) and the
+  request never responds — the /ping after a stream times out. Reset all three
+  per-request streaming fields here (FStreamWriterFactory is a class var — global,
+  not per-request — and is intentionally left alone). }
+  FIsStreaming := False;
+  FStreamMethod := nil;
+  {$IFNDEF FPC}
+  FStreamCallback := nil;
+  {$ENDIF}
 
   if Assigned(FContent) then
     FreeAndNil(FContent);
