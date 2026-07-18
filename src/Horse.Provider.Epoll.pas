@@ -188,7 +188,7 @@ type
     FStatusCode: Integer;
     FReason: string;
     FIsKeepAlive: Boolean;
-    procedure SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string = '');
+    procedure SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string = ''; const AContentType: string = '');
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     function WriteNonBlocking(ABuffer: Pointer; ALength: Integer): Boolean;
     function WriteNonBlockingV(AIovCnt: Integer; AIov: Pointer): Boolean;
@@ -1757,7 +1757,7 @@ procedure TEpollRawResponse.SetCustomHeader(const AName, AValue: string);
 begin
 end;
 
-procedure TEpollRawResponse.SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string);
+procedure TEpollRawResponse.SendHeaders(AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF}; const AContentLength: string; const AContentType: string);
 var
   LHeaderStr: AnsiString;
   I: Integer;
@@ -1797,7 +1797,17 @@ begin
   end;
 
   if not LHasContentType then
-    LHeaderStr := LHeaderStr + 'Content-Type: text/html; charset=utf-8' + #13#10;
+  begin
+    { Fix A (streaming, re-derived onto merged 2026-07-17) — honour the
+      Res.ContentType the handler set before SendStream. The stream writer passes
+      FResponse.CSContentType here; without it a streamed response with no explicit
+      Content-Type header defaulted to text/html (test 34). The non-stream path
+      already reads CSContentType; this brings the streaming path in line. }
+    if AContentType <> '' then
+      LHeaderStr := LHeaderStr + 'Content-Type: ' + AnsiString(AContentType) + #13#10
+    else
+      LHeaderStr := LHeaderStr + 'Content-Type: text/html; charset=utf-8' + #13#10;
+  end;
 
   if not LHasContentLength and (AContentLength <> '') then
     LHeaderStr := LHeaderStr + 'Content-Length: ' + AnsiString(AContentLength) + #13#10;
@@ -2039,6 +2049,12 @@ var
   LHeaderStr: AnsiString;
   I: Integer;
   LHasContentType, LHasConnection: Boolean;
+  { test 28 — adapter's own inherited CustomHeaders (RawWebResponse.SetCustomHeader) }
+  LAdapterHeaders: TStrings;
+  LAdapterIdx: Integer;
+  { REPEATHDR-1 (test 10) — dup-preserving headers (Set-Cookie) }
+  LRepeatHdrs: TStrings;
+  LRepeatIdx: Integer;
   {$IFNDEF FPC}
   LPair: TPair<string, string>;
   {$ENDIF}
@@ -2089,19 +2105,53 @@ begin
     {$IFDEF FPC}
     for I := 0 to LHeadersList.Count - 1 do
     begin
-      LHeaderStr := LHeaderStr + AnsiString(LHeadersList.Names[I]) + ': ' + AnsiString(LHeadersList.ValueFromIndex[I]) + #13#10;
+      if not SameText(LHeadersList.Names[I], 'Set-Cookie') then
+        LHeaderStr := LHeaderStr + AnsiString(LHeadersList.Names[I]) + ': ' + AnsiString(LHeadersList.ValueFromIndex[I]) + #13#10;
       if SameText(LHeadersList.Names[I], 'Content-Type') then LHasContentType := True;
       if SameText(LHeadersList.Names[I], 'Connection') then LHasConnection := True;
     end;
     {$ELSE}
     for LPair in LHeadersList do
     begin
-      LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
+      if not SameText(LPair.Key, 'Set-Cookie') then
+        LHeaderStr := LHeaderStr + AnsiString(LPair.Key) + ': ' + AnsiString(LPair.Value) + #13#10;
       if SameText(LPair.Key, 'Content-Type') then LHasContentType := True;
       if SameText(LPair.Key, 'Connection') then LHasConnection := True;
     end;
     {$ENDIF}
   end;
+
+  { test 28 (re-derived onto merged 2026-07-17) — headers set via
+    Res.RawWebResponse.SetCustomHeader land on the adapter's OWN inherited
+    CustomHeaders store, NOT on ARes.CustomHeaders (the shadow read above). On the
+    adapter path FWebResponse is nil so the two stores are disjoint — emit the
+    adapter's headers too or RawWebResponse.SetCustomHeader is dropped. Mirrors the
+    IOCP REPEATHDR-1 union and the fork's validated Epoll. TStrings on both
+    compilers (TWebResponse/TResponse.CustomHeaders), so no FPC/Delphi split. }
+  if ARes.RawWebResponse <> nil then
+    LAdapterHeaders := ARes.RawWebResponse.CustomHeaders
+  else
+    LAdapterHeaders := nil;
+  if LAdapterHeaders <> nil then
+    for LAdapterIdx := 0 to LAdapterHeaders.Count - 1 do
+    begin
+      if not SameText(LAdapterHeaders.Names[LAdapterIdx], 'Set-Cookie') then
+        LHeaderStr := LHeaderStr + AnsiString(LAdapterHeaders.Names[LAdapterIdx]) + ': ' +
+          AnsiString(LAdapterHeaders.ValueFromIndex[LAdapterIdx]) + #13#10;
+      if SameText(LAdapterHeaders.Names[LAdapterIdx], 'Content-Type') then LHasContentType := True;
+      if SameText(LAdapterHeaders.Names[LAdapterIdx], 'Connection') then LHasConnection := True;
+    end;
+
+  { REPEATHDR-1 (re-derived onto merged 2026-07-17, test 10) — emit duplicate-
+    preserving headers (Set-Cookie) verbatim from ARes.RepeatHeaders. The shadow
+    CustomHeaders dict collapses repeats to the last value (only user=tester
+    survived; session=abc123 was lost), so Set-Cookie is skipped in the loops above
+    and every occurrence is emitted here instead. RepeatHeaders stores Name=Value. }
+  LRepeatHdrs := ARes.RepeatHeaders;
+  if LRepeatHdrs <> nil then
+    for LRepeatIdx := 0 to LRepeatHdrs.Count - 1 do
+      LHeaderStr := LHeaderStr + AnsiString(LRepeatHdrs.Names[LRepeatIdx]) + ': ' +
+        AnsiString(LRepeatHdrs.ValueFromIndex[LRepeatIdx]) + #13#10;
 
   if not LHasContentType then
   begin
@@ -3292,6 +3342,17 @@ begin
     
     FRunning := True;
     DoOnListen;
+
+    { [EPOLL-LISTEN-1] (re-derived onto merged 2026-07-17, upstream-PR candidate)
+      Console apps expect THorse.Listen to BLOCK until StopListen — the contract
+      every other provider honours (HttpSys/IOCP: `if IsConsole then while FRunning
+      do Sleep`). Merged Epoll's InternalListen spawns worker threads and returns,
+      so the test server printed its banner and exited immediately (workers alive
+      but the main thread fell off the end → "Server stopped." at startup, nothing
+      listening when a client connected). }
+    if IsConsole then
+      while FRunning do
+        Sleep(100);
   except
     on E: Exception do
     begin
@@ -3432,7 +3493,7 @@ begin
     FRawRes.FReason := 'OK';
   end;
 
-  FRawRes.SendHeaders(LHeadersList);
+  FRawRes.SendHeaders(LHeadersList, '', FResponse.CSContentType);
   FRawRes.FHeadersSent := True;
 end;
 

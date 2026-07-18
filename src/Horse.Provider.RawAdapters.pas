@@ -452,6 +452,9 @@ end;
 { --------------------------------------------------------------------------- }
 
 constructor TInterfacedWebRequest.Create(const ARawReq: IHorseRawRequest);
+var
+  LHeaders: TStringList;
+  I: Integer;
 begin
   FRawReq := ARawReq;
   inherited Create;
@@ -479,6 +482,22 @@ begin
     FRawReq.PopulateCookieFields(CookieFields);
     Content         := FRawReq.GetContent;
     ContentLength   := FRawReq.GetContentLength;
+
+    { ALL request headers → TRequest header storage, so GetFieldByName also
+      resolves non-standard headers (e.g. X-Test-Header).  SetFieldByName
+      routes known headers to their typed fields and everything else to
+      CustomHeaders; re-setting the fields assigned above is harmless (same
+      source values). }
+    LHeaders := TStringList.Create;
+    try
+      LHeaders.NameValueSeparator := '=';
+      FRawReq.PopulateHeaders(LHeaders);
+      for I := 0 to LHeaders.Count - 1 do
+        if LHeaders.Names[I] <> '' then
+          SetFieldByName(LHeaders.Names[I], LHeaders.ValueFromIndex[I]);
+    finally
+      LHeaders.Free;
+    end;
   end;
 end;
 

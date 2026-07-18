@@ -60,6 +60,8 @@ type
     class function FindCRLF(const ABuffer: TBytes; AStart, AEnd: Integer): Integer; static; inline;
     class function CompareBytesCI(const ABuffer: TBytes; AStart, ALen: Integer; const AStr: string): Boolean; static; inline;
     class function GetMethodString(const ABuffer: TBytes; AStart, ALen: Integer): string; static; inline;
+    class function ScanChunkedBody(var ABuffer: TBytes; ALength, ABodyOffset: Integer;
+      ACompact: Boolean; out ADecodedLength: Int64): Boolean; static;
   public
     class function TryParseRequest(
       const ABuffer: TBytes; 
@@ -70,8 +72,16 @@ type
       out AVersion: string;
       out AHeaders: THeaderSegments;
       out ABodyOffset: Integer;
-      out AContentLength: Int64
+      out AContentLength: Int64;
+      out AIsChunked: Boolean
     ): Boolean; static;
+    { Fix G — Transfer-Encoding: chunked support. Returns False while the
+      terminating zero-size chunk has not arrived yet (read more and retry).
+      On True the chunk data has been compacted in place at ABodyOffset,
+      ADecodedLength holds the de-chunked body size and ALength is adjusted
+      to ABodyOffset + ADecodedLength. }
+    class function TryDecodeChunkedBody(var ABuffer: TBytes; var ALength: Integer;
+      ABodyOffset: Integer; out ADecodedLength: Int64): Boolean; static;
   end;
 
   TIocpReadOnlyBytesStream = class(TCustomMemoryStream)
@@ -151,6 +161,10 @@ type
     FIsKeepAlive: Boolean;
     FStatusCode: Integer;
     FStatusReason: string;
+    { REPEATHDR-1 — non-owning reference to ARes.RepeatHeaders (Set-Cookie et al).
+      Emitted directly in PrepareHeaders, bypassing the FHeaders dedup dict.
+      nil unless SendResponse assigned it this request (fresh per request). }
+    FRepeatHeaders: TStrings;
     function PrepareHeaders: TBytes;
     procedure WriteV(const AHeaderBytes, ABodyBytes: TBytes);
     procedure SendHeaders;
@@ -367,7 +381,8 @@ class function THorseHttpParser.TryParseRequest(
   out AVersion: string;
   out AHeaders: THeaderSegments;
   out ABodyOffset: Integer;
-  out AContentLength: Int64
+  out AContentLength: Int64;
+  out AIsChunked: Boolean
 ): Boolean;
 var
   LHeaderEnd, LLineStart, LLineEnd, LSpace1, LSpace2, LColon, I: Integer;
@@ -378,6 +393,7 @@ begin
   Result := False;
   ABodyOffset := -1;
   AContentLength := 0;
+  AIsChunked := False;
   AHeaders := nil;
 
   // Encontra o fim dos cabeçalhos (\r\n\r\n)
@@ -455,6 +471,18 @@ begin
         LRawQuery := GetMethodString(ABuffer, AHeaders[High(AHeaders)].ValueStart, AHeaders[High(AHeaders)].ValueLen);
         TryStrToInt64(LRawQuery, AContentLength);
         LHasContentLength := True;
+      end
+      { Fix G (re-derived onto merged 2026-07-17, upstream-PR candidate) —
+        Transfer-Encoding: chunked request body (no Content-Length; framed by
+        chunk-size lines, terminated by a zero-size chunk). TCrossHttpClient sends
+        multipart uploads this way; merged IOCP only knew Content-Length, so it
+        dispatched with an empty body and left the chunk bytes to poison the next
+        keep-alive request (test 13 cascade on the pooling client). }
+      else if CompareBytesCI(ABuffer, AHeaders[High(AHeaders)].KeyStart, AHeaders[High(AHeaders)].KeyLen, 'transfer-encoding') then
+      begin
+        LRawQuery := GetMethodString(ABuffer, AHeaders[High(AHeaders)].ValueStart, AHeaders[High(AHeaders)].ValueLen);
+        if Pos('chunked', LowerCase(LRawQuery)) > 0 then
+          AIsChunked := True;
       end;
     end;
 
@@ -462,6 +490,87 @@ begin
   end;
 
   Result := True;
+end;
+
+class function THorseHttpParser.ScanChunkedBody(var ABuffer: TBytes;
+  ALength, ABodyOffset: Integer; ACompact: Boolean;
+  out ADecodedLength: Int64): Boolean;
+var
+  LSrc, LDst, LLineEnd, I, LDigit: Integer;
+  LChunkSize: Int64;
+  LB: Byte;
+begin
+  Result := False;
+  ADecodedLength := 0;
+  LSrc := ABodyOffset;
+  LDst := ABodyOffset;
+
+  while True do
+  begin
+    { chunk-size line: hex digits, optional ';extensions', terminated by CRLF }
+    LLineEnd := FindCRLF(ABuffer, LSrc, ALength);
+    if LLineEnd = -1 then Exit;   { size line not complete yet }
+
+    LChunkSize := 0;
+    I := LSrc;
+    while I < LLineEnd do
+    begin
+      LB := ABuffer[I];
+      if (LB >= 48) and (LB <= 57) then        { '0'..'9' }
+        LDigit := LB - 48
+      else if (LB >= 97) and (LB <= 102) then  { 'a'..'f' }
+        LDigit := LB - 87
+      else if (LB >= 65) and (LB <= 70) then   { 'A'..'F' }
+        LDigit := LB - 55
+      else
+        Break;                                 { ';' extension or garbage }
+      LChunkSize := (LChunkSize * 16) + LDigit;
+      if LChunkSize > $7FFFFFFF then Exit;     { insane size — treat as incomplete }
+      Inc(I);
+    end;
+    if I = LSrc then Exit;        { no hex digit at all — malformed }
+    LSrc := LLineEnd + 2;
+
+    if LChunkSize = 0 then
+    begin
+      { zero-size chunk: optional trailer header lines, then a final CRLF }
+      while True do
+      begin
+        LLineEnd := FindCRLF(ABuffer, LSrc, ALength);
+        if LLineEnd = -1 then Exit;   { trailer section not complete yet }
+        if LLineEnd = LSrc then       { empty line — end of chunked body }
+        begin
+          ADecodedLength := LDst - ABodyOffset;
+          Result := True;
+          Exit;
+        end;
+        LSrc := LLineEnd + 2;         { skip trailer header line }
+      end;
+    end;
+
+    { chunk data plus its trailing CRLF must be fully present }
+    if LSrc + LChunkSize + 2 > ALength then Exit;
+    if ACompact and (LDst <> LSrc) then
+      Move(ABuffer[LSrc], ABuffer[LDst], LChunkSize);
+    LDst := LDst + Integer(LChunkSize);
+    LSrc := LSrc + Integer(LChunkSize) + 2;
+  end;
+end;
+
+class function THorseHttpParser.TryDecodeChunkedBody(var ABuffer: TBytes;
+  var ALength: Integer; ABodyOffset: Integer;
+  out ADecodedLength: Int64): Boolean;
+begin
+  { pass 1 — scan only: verify the terminating zero-size chunk has arrived.
+    No mutation happens, so an incomplete body can safely be re-scanned
+    after the next read completion delivers more bytes. }
+  Result := ScanChunkedBody(ABuffer, ALength, ABodyOffset, False, ADecodedLength);
+  if not Result then Exit;
+
+  { pass 2 — compact the chunk data in place over the chunk framing.
+    LDst only ever trails LSrc, so the forward Move is safe. }
+  ScanChunkedBody(ABuffer, ALength, ABodyOffset, True, ADecodedLength);
+  ALength := ABodyOffset + Integer(ADecodedLength);
 end;
 
 { TIocpReadOnlyBytesStream }
@@ -724,7 +833,16 @@ begin
   begin
     if (LCookies[I] = ';') or (I = LLen) then
     begin
-      LPart := Copy(LCookies, LStart, I - LStart).Trim;
+      { #11 (2026-07-17, upstream-PR candidate) — the FINAL segment (I = LLen,
+        no trailing ';') must INCLUDE position I, so its length is I-LStart+1.
+        The old unconditional `I - LStart` was correct only for the ';'-delimited
+        case (which excludes the ';'); on the last cookie it dropped the final
+        character (test 11: `session=abc123` -> `abc12`). A trailing ';' still
+        takes the exclude path and yields an empty segment (skipped by Pos). }
+      if LCookies[I] = ';' then
+        LPart := Copy(LCookies, LStart, I - LStart).Trim
+      else
+        LPart := Copy(LCookies, LStart, I - LStart + 1).Trim;
       LEqPos := Pos('=', LPart);
       if LEqPos > 0 then
       begin
@@ -778,6 +896,7 @@ var
   LBuilder: TStringBuilder;
   LPair: TPair<string, string>;
   LHeaderStr: string;
+  LRepeatIdx: Integer;  { REPEATHDR-1 }
 begin
   LBuilder := TStringBuilder.Create;
   try
@@ -799,6 +918,13 @@ begin
 
     for LPair in FHeaders do
       LBuilder.Append(LPair.Key).Append(': ').Append(LPair.Value).Append(#13#10);
+
+    { REPEATHDR-1 — emit duplicate-preserving headers (Set-Cookie) verbatim,
+      one wire line each, bypassing the FHeaders dict that would collapse them. }
+    if FRepeatHeaders <> nil then
+      for LRepeatIdx := 0 to FRepeatHeaders.Count - 1 do
+        LBuilder.Append(FRepeatHeaders.Names[LRepeatIdx]).Append(': ')
+          .Append(FRepeatHeaders.ValueFromIndex[LRepeatIdx]).Append(#13#10);
 
     LBuilder.Append(#13#10);
     LHeaderStr := LBuilder.ToString;
@@ -910,8 +1036,13 @@ var
   {$IFDEF FPC}
   LStatusCode: Integer;
   {$ENDIF}
+  { REPEATHDR-1 / test-28 — iterate the response adapter's own CustomHeaders. }
+  LAdapterHeaders: TStrings;
+  LAdapterIdx: Integer;
 begin
   FStatusCode := ARes.Status;
+  { REPEATHDR-1 — borrow the ordered dup-preserving store for PrepareHeaders. }
+  FRepeatHeaders := ARes.RepeatHeaders;
   
   if FStatusCode = 200 then FStatusReason := 'OK'
   else if FStatusCode = 204 then FStatusReason := 'No Content'
@@ -919,17 +1050,45 @@ begin
   else if FStatusCode = 500 then FStatusReason := 'Internal Server Error'
   else FStatusReason := 'HTTP Response';
 
+  { REPEATHDR-1 — copy the shadow CustomHeaders into FHeaders, but SKIP
+    Set-Cookie: the dict would collapse repeats, and every Set-Cookie is emitted
+    verbatim from FRepeatHeaders in PrepareHeaders instead (test 10). }
   LHeadersList := ARes.CustomHeaders;
   if LHeadersList <> nil then
   begin
     {$IFDEF FPC}
     for LStatusCode := 0 to LHeadersList.Count - 1 do
-      FHeaders.AddOrSetValue(LHeadersList.Names[LStatusCode], LHeadersList.ValueFromIndex[LStatusCode]);
+      if not SameText(LHeadersList.Names[LStatusCode], 'Set-Cookie') then
+        FHeaders.AddOrSetValue(LHeadersList.Names[LStatusCode], LHeadersList.ValueFromIndex[LStatusCode]);
     {$ELSE}
     for LPair in LHeadersList do
-      FHeaders.AddOrSetValue(LPair.Key, LPair.Value);
+      if not SameText(LPair.Key, 'Set-Cookie') then
+        FHeaders.AddOrSetValue(LPair.Key, LPair.Value);
     {$ENDIF}
   end;
+
+  { REPEATHDR-1 / test-28 — headers set via Res.RawWebResponse.SetCustomHeader
+    land on the adapter's own CustomHeaders (inherited TWebResponse store), NOT
+    the shadow FCustomHeaders read above. On IOCP FWebResponse is nil, so the
+    two stores are disjoint — emit the UNION. (Reading the adapter INSTEAD of the
+    shadow was the reverted Fix B: it dropped every Res.AddHeader'd header.)
+    Set-Cookie is skipped here too — it flows through FRepeatHeaders. }
+  if ARes.RawWebResponse <> nil then
+  begin
+    LAdapterHeaders := TInterfacedWebResponse(ARes.RawWebResponse).CustomHeaders;
+    if LAdapterHeaders <> nil then
+      for LAdapterIdx := 0 to LAdapterHeaders.Count - 1 do
+        if not SameText(LAdapterHeaders.Names[LAdapterIdx], 'Set-Cookie') then
+          FHeaders.AddOrSetValue(LAdapterHeaders.Names[LAdapterIdx],
+            LAdapterHeaders.ValueFromIndex[LAdapterIdx]);
+  end;
+
+  { Fix A (re-derived onto merged 2026-07-17) — honour ARes.CSContentType set via
+    Res.ContentType(...). Merged IOCP only populates FHeaders from CustomHeaders,
+    so Res.ContentType was dropped and every response defaulted to text/plain
+    (test 23). Upstream-PR candidate. }
+  if (ARes.CSContentType <> '') and not FHeaders.ContainsKey('Content-Type') then
+    FHeaders.AddOrSetValue('Content-Type', ARes.CSContentType);
 
   if ARes.ContentStream <> nil then
   begin
@@ -1191,11 +1350,17 @@ begin
 end;
 
 procedure THorseIocpWorker.ProcessClientRead(AContext: TIocpConnectionContext; ABytesTransferred: DWORD);
+const
+  { #16 — transport-level body cap. The header section is bounded separately
+    (16 KB, parse-incomplete branch below); finer per-route body limits are the
+    RequestGuard middleware's job. Generous so real uploads never trip it. }
+  IOCP_MAX_BODY_SIZE = 16 * 1024 * 1024;
 var
   LMethod, LPath, LQuery, LVersion: string;
   LHeaders: THeaderSegments;
   LBodyOffset, LNewLen: Integer;
   LContentLength: Int64;
+  LIsChunked: Boolean;
   LRawReq: TIocpRawRequest;
   LRawRes: TIocpRawResponse;
   LReq: THorseRequest;
@@ -1207,16 +1372,9 @@ var
   {$ENDIF}
 begin
   AContext.LastActive := GetTickCount64;
-  
+
   // Copia dados recebidos para o buffer de acumulação da conexão
   LNewLen := AContext.BytesReceived + Integer(ABytesTransferred);
-  
-  // Limitação de tamanho de Headers para proteção DoS (Buffer Overflow)
-  if (not AContext.Processing) and (LNewLen > 16384) then
-  begin
-    CloseConnection(AContext);
-    Exit;
-  end;
 
   if LNewLen > Length(AContext.Buffer) then
     SetLength(AContext.Buffer, LNewLen * 2);
@@ -1226,11 +1384,45 @@ begin
 
   // Tenta parsear a requisição
   if THorseHttpParser.TryParseRequest(AContext.Buffer, AContext.BytesReceived,
-    LMethod, LPath, LQuery, LVersion, LHeaders, LBodyOffset, LContentLength) then
+    LMethod, LPath, LQuery, LVersion, LHeaders, LBodyOffset, LContentLength, LIsChunked) then
   begin
-    // Se a requisição tem corpo (Content-Length > 0), precisamos garantir que recebemos o corpo inteiro!
-    if (LContentLength > 0) and (AContext.BytesReceived < LBodyOffset + LContentLength) then
+    { #16 (2026-07-17, upstream-PR candidate) — headers parsed OK; a large body is
+      now legitimate. The old `(not Processing) and (LNewLen > 16384)` guard above
+      counted accumulated BODY bytes and closed the connection mid-upload on any
+      body > 16 KB (test 16). Bound the body by an explicit cap instead. }
+    if LContentLength > IOCP_MAX_BODY_SIZE then
     begin
+      CloseConnection(AContext);
+      Exit;
+    end;
+
+    { Fix G (re-derived onto merged 2026-07-17) — Transfer-Encoding: chunked
+      request body (e.g. TCrossHttpClient multipart uploads). Wait for the
+      terminating zero-size chunk, then de-chunk in place so the request sees a
+      contiguous body with a known length. Without this the chunk bytes were
+      mistaken for the start of the next request, poisoning the pooling client's
+      keep-alive connection (test 13 timeout cascade on HorseIndyTestClient). }
+    if LIsChunked then
+    begin
+      if not THorseHttpParser.TryDecodeChunkedBody(AContext.Buffer,
+        AContext.BytesReceived, LBodyOffset, LContentLength) then
+      begin
+        PostRead(AContext);
+        Exit;
+      end;
+    end
+    // Se a requisição tem corpo (Content-Length > 0), aguarda o corpo inteiro.
+    else if (LContentLength > 0) and (AContext.BytesReceived < LBodyOffset + LContentLength) then
+    begin
+      { #13 (2026-07-17) — re-arm HERE and return; ProcessClientRead is now the
+        SOLE owner of re-arming. Previously the caller Execute() ALSO did
+        `if not Processing then PostRead`, so an incomplete body left TWO overlapped
+        WSARecv on the same buffer; when the close path later freed the context, the
+        second completion dereferenced freed memory → worker crash / heap corruption
+        → the keep-alive all-timeout cascade that wedged the server across runs.
+        Owning the re-arm here also makes the CloseConnection paths safe: on close we
+        simply do NOT PostRead, and Execute() no longer touches the (possibly freed)
+        context afterwards. }
       PostRead(AContext);
       Exit;
     end;
@@ -1291,6 +1483,20 @@ begin
       Dispose(LData);
       CloseConnection(AContext);
     end;
+  end
+  else
+  begin
+    { Header-size DoS cap — only while the header section is still incomplete
+      (TryParseRequest failed). Previously the equivalent guard ran BEFORE the
+      parse with a `not Processing` condition, so it also counted accumulated
+      BODY bytes and closed >16 KB uploads (#16). Here it can only see an
+      unfinished header block, which is what it was meant to bound. }
+    if LNewLen > 16384 then
+      CloseConnection(AContext)
+    else
+      { Headers still incomplete and within budget — re-arm for the rest
+        (sole-owner re-arm; see #13 note above). }
+      PostRead(AContext);
   end;
 end;
 
@@ -1309,6 +1515,9 @@ var
   LResult: BOOL;
   LCurrentTime, LLastTimeoutCheck: Int64;
   LOptVal: Integer;
+  { Fix C (re-derived onto merged 2026-07-17) — peer-address extraction }
+  LLocalAddr, LRemoteAddr: PSockAddr;
+  LLocalLen, LRemoteLen: Integer;
 begin
   LLastTimeoutCheck := GetTickCount64;
 
@@ -1335,6 +1544,24 @@ begin
         LOptVal := 1;
         setsockopt(LOverlap.Socket, SOL_SOCKET, SO_KEEPALIVE, PAnsiChar(@LOptVal), SizeOf(LOptVal));
 
+        { Fix C (re-derived onto merged 2026-07-17) — extract the remote IP from
+          the AcceptEx output buffer into LContext.ClientIP. Merged IOCP resolves
+          fnGetAcceptExSockaddrs but never calls it, so RemoteAddr was always
+          empty (test 25). Upstream-PR candidate. }
+        LLocalAddr := nil;
+        LRemoteAddr := nil;
+        LLocalLen := 0;
+        LRemoteLen := 0;
+        fnGetAcceptExSockaddrs(
+          @LContext.AcceptOverlapped.Buffer[0],
+          0,
+          SizeOf(TSockAddrIn) + 16,
+          SizeOf(TSockAddrIn) + 16,
+          LLocalAddr, LLocalLen,
+          LRemoteAddr, LRemoteLen);
+        if LRemoteAddr <> nil then
+          LContext.ClientIP := string(inet_ntoa(PSockAddrIn(LRemoteAddr)^.sin_addr));
+
         // Associa o soquete do cliente aceito ao Completion Port
         CreateIoCompletionPort(LOverlap.Socket, FIocpHandle, ULONG_PTR(LContext), 0);
         
@@ -1352,11 +1579,11 @@ begin
         end
         else
         begin
+          { ProcessClientRead is the sole owner of re-arming (#13): it PostReads
+            itself when more of the request is still to come, and deliberately does
+            NOT when it dispatched or closed the connection. Do not re-arm here — the
+            old duplicate PostRead double-posted WSARecv and raced the close/free. }
           ProcessClientRead(LContext, dwBytes);
-          
-          // Re-enfileira próxima leitura se Keep-Alive
-          if not LContext.Processing then
-            PostRead(LContext);
         end;
       end
       else if LOverlap.OpType = ioWrite then
@@ -1615,6 +1842,7 @@ type
   TIocpStreamWriter = class(THorseStreamWriterBase)
   private
     FRawRes: TIocpRawResponse;
+    procedure SendFully(const AData: TBytes; ALen: Integer);
   protected
     procedure SendRawHeaders; override;
     procedure WriteRawBytes(const ABytes: TBytes); override;
@@ -1631,6 +1859,28 @@ begin
   LRawWebResponse := AResponse.RawWebResponse;
   if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
     FRawRes := TIocpRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
+end;
+
+procedure TIocpStreamWriter.SendFully(const AData: TBytes; ALen: Integer);
+var
+  LTotal, LRet: Integer;
+begin
+  { IOCP-STREAM-SENDFULL-1 (2026-07-18) — a single blocking send() may return a
+    PARTIAL count (documented in this environment; the fork's [IOCP-STREAM-1] looped
+    for the same reason). Merged did one send() and ignored the result, so under
+    concurrent streaming load a truncated chunk corrupted the response, leaving the
+    just-streamed keep-alive connection unusable on reuse (test 36). Loop until every
+    byte is sent; stop on error/close (IsConnected then reports false). }
+  if not Assigned(FRawRes) then Exit;
+  LTotal := 0;
+  while LTotal < ALen do
+  begin
+    if FRawRes.FContext.Socket = INVALID_SOCKET then Exit;
+    LRet := send(FRawRes.FContext.Socket, AData[LTotal], ALen - LTotal, 0);
+    if LRet <= 0 then
+      Exit;
+    Inc(LTotal, LRet);
+  end;
 end;
 
 procedure TIocpStreamWriter.SendRawHeaders;
@@ -1656,6 +1906,14 @@ begin
     {$ENDIF}
   end;
 
+  { Fix A (streaming, re-derived onto merged 2026-07-17) — honour the
+    Res.ContentType(...) the handler set before SendStream. Like the non-stream
+    SendResponse path, SendRawHeaders only copies CustomHeaders and never reads
+    the CSContentType shadow, so a streamed response defaulted to text/plain
+    (test 34). Transfer-Encoding: chunked flows separately (base writer). }
+  if (FResponse.CSContentType <> '') and not FRawRes.FHeaders.ContainsKey('Content-Type') then
+    FRawRes.FHeaders.AddOrSetValue('Content-Type', FResponse.CSContentType);
+
   FRawRes.FStatusCode := FResponse.Status;
   if FRawRes.FStatusCode = 200 then FRawRes.FStatusReason := 'OK'
   else if FRawRes.FStatusCode = 204 then FRawRes.FStatusReason := 'No Content'
@@ -1665,7 +1923,7 @@ begin
 
   LHeaderBytes := FRawRes.PrepareHeaders;
   if Length(LHeaderBytes) > 0 then
-    send(FRawRes.FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
+    SendFully(LHeaderBytes, Length(LHeaderBytes));
     
   FRawRes.FHeadersSent := True;
 end;
@@ -1673,8 +1931,7 @@ end;
 procedure TIocpStreamWriter.WriteRawBytes(const ABytes: TBytes);
 begin
   if Length(ABytes) = 0 then Exit;
-  if Assigned(FRawRes) and (FRawRes.FContext.Socket <> INVALID_SOCKET) then
-    send(FRawRes.FContext.Socket, ABytes[0], Length(ABytes), 0);
+  SendFully(ABytes, Length(ABytes));
 end;
 
 function TIocpStreamWriter.IsConnected: Boolean;
