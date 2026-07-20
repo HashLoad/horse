@@ -106,6 +106,14 @@ type
   FPC: TStringList — same key=value string storage used on the Lazarus path.
   =========================================================================== }
     FCustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF};
+{ REPEATHDR-1 (2026-07-17) — ordered, duplicate-preserving side-store for
+  headers that MUST NOT be folded (currently Set-Cookie only; RFC 6265 §3). The
+  primary FCustomHeaders store dedups by name (TDictionary on Delphi / Values[]
+  on FPC), which silently collapses a second Set-Cookie onto the first. The
+  adapter providers (IOCP now; Epoll/HttpSys when re-derived) emit this list
+  directly, bypassing dedup, so every Set-Cookie reaches the wire. TStringList
+  on both compilers; lazily allocated; nil until the first repeatable header. }
+    FRepeatHeaders: TStringList;
 { =========================================================================== }
 { ===========================================================================
   PATCH-COOKIE-1 — typed Set-Cookie list (RFC 6265).
@@ -159,6 +167,8 @@ type
   Indy/ISAPI/CGI request that never read or wrote a custom header.
   =========================================================================== }
     procedure EnsureCustomHeaders;
+{ REPEATHDR-1 — lazy-allocation helper for FRepeatHeaders (mirrors EnsureCustomHeaders). }
+    procedure EnsureRepeatHeaders;
 { =========================================================================== }
   public
     class procedure RegisterStreamWriterFactory(const AFactory: THorseStreamWriterFactory);
@@ -222,6 +232,10 @@ type
   iterates only; all writes go through AddHeader as before.
   =========================================================================== }
     property CustomHeaders: {$IF NOT DEFINED(FPC)}TDictionary<string, string>{$ELSE}TStringList{$ENDIF} read FCustomHeaders;
+{ REPEATHDR-1 — read-only ordered store of duplicate-preserving headers
+  (Set-Cookie). nil until the first such header. Adapter providers emit these
+  directly, bypassing the FCustomHeaders dedup. Name=Value separated. }
+    property RepeatHeaders: TStringList read FRepeatHeaders;
 { =========================================================================== }
 { ===========================================================================
   PATCH-COOKIE-1 — read-only cookie list for the response bridges. nil until
@@ -272,9 +286,14 @@ type
 
 function THorseResponse.AddHeader(const AName, AValue: string): THorseResponse;
 begin
-{ PATCH-RES-4 — nil-guard: skip FWebResponse on CrossSocket path }
+{ PATCH-RES-4 — nil-guard: skip FWebResponse on CrossSocket path.
+  FIX-HEADER-DUP — CustomHeaders.Add APPENDS; SetCustomHeader REPLACES, so a
+  second Set-Cookie (etc.) would overwrite the first (observed: fphttpserver
+  test 10 kept only the last cookie). Append preserves duplicate headers on
+  both fpWeb (TResponse) and Indy WebBroker (TWebResponse) — their wire paths
+  emit each CustomHeaders entry. }
   if Assigned(FWebResponse) then
-    FWebResponse.SetCustomHeader(AName, AValue);
+    FWebResponse.CustomHeaders.Add(AName + '=' + AValue);
 { end PATCH-RES-4 }
 { ===========================================================================
   PATCH-RES-1 — also populate FCustomHeaders so CrossSocket bridge can read it.
@@ -288,6 +307,17 @@ begin
   FCustomHeaders.Values[AName] := AValue;
 {$ENDIF}
 { =========================================================================== }
+{ REPEATHDR-1 — Set-Cookie is the one response header RFC 6265 §3 forbids
+  folding. The dedup store above collapses a repeated Set-Cookie; also append it
+  verbatim to the ordered side-store so adapter providers can emit every one.
+  The dedup entry above is intentionally KEPT so readers that only consult
+  FCustomHeaders (merged Epoll/HttpSys, CrossSocket bridge) still emit one
+  Set-Cookie unchanged — no regression — until they adopt RepeatHeaders too. }
+  if SameText(AName, 'Set-Cookie') then
+  begin
+    EnsureRepeatHeaders;
+    FRepeatHeaders.Add(AName + '=' + AValue);
+  end;
   Result := Self;
 end;
 
@@ -302,6 +332,17 @@ begin
 {$ELSE}
   FCustomHeaders := TStringList.Create;
 {$ENDIF}
+end;
+{ =========================================================================== }
+
+{ ===========================================================================
+  REPEATHDR-1 — EnsureRepeatHeaders implementation
+  =========================================================================== }
+procedure THorseResponse.EnsureRepeatHeaders;
+begin
+  if FRepeatHeaders <> nil then Exit;
+  FRepeatHeaders := TStringList.Create;
+  FRepeatHeaders.NameValueSeparator := '=';
 end;
 { =========================================================================== }
 
@@ -356,12 +397,27 @@ procedure THorseResponse.Clear;
 begin
   FAborted := False;
   FWebResponse := nil;
+{ STREAM-RESET-1 — a pool-recycled response must NOT inherit the previous
+  request's streaming state. SendStream sets FIsStreaming := True; if it survives
+  into the next request on a reused pooled context, the CrossSocket provider skips
+  that request's Flush (it thinks the stream already sent the response) and the
+  request never responds — the /ping after a stream times out. Reset all three
+  per-request streaming fields here (FStreamWriterFactory is a class var — global,
+  not per-request — and is intentionally left alone). }
+  FIsStreaming := False;
+  FStreamMethod := nil;
+  {$IFNDEF FPC}
+  FStreamCallback := nil;
+  {$ENDIF}
 
   if Assigned(FContent) then
     FreeAndNil(FContent);
 
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Clear;
+{ REPEATHDR-1 — wipe the duplicate-preserving store on pool recycle. }
+  if Assigned(FRepeatHeaders) then
+    FRepeatHeaders.Clear;
 { PATCH-RES-4 — wipe CrossSocket shadow fields }
   FCSBody          := '';
   FCSBodyBytes     := nil;
@@ -412,6 +468,9 @@ begin
   =========================================================================== }
   if Assigned(FCustomHeaders) then
     FCustomHeaders.Free;
+{ REPEATHDR-1 — free the duplicate-preserving store. }
+  if Assigned(FRepeatHeaders) then
+    FRepeatHeaders.Free;
 { =========================================================================== }
 { PATCH-RES-6 — free the owned TWebResponse adapter if Clear was not called
   before Destroy (e.g. pool shutdown path). }
@@ -490,8 +549,27 @@ begin
     Exit(Self);
   end;
 { end PATCH-RES-5 }
-{$ENDIF}
   FWebResponse.Content := LContent;
+{$ELSE}
+{ FPC-NEWLINE-1 — fpWeb's TResponse.Content is backed by FContents: TStrings;
+  the fphttpserver wire path emits FContents.Text, which appends a trailing
+  LineEnding to EVERY body ('pong' arrives as 'pong' plus #10; a 65536-byte
+  body arrives as 65537) and trimming afterwards is impossible (TStrings cannot
+  tell a genuine trailing newline from its own). A ContentStream is sent
+  verbatim and takes precedence over Contents; FreeContentStream makes TResponse
+  own it. An empty body still gets an empty stream so Content-Length is 0 with
+  no spurious line ending. Scope: fpWeb-native providers only (FCSRawWebResponse
+  = nil); adapter-backed providers (Epoll/IOCP/HttpSys) keep the Content path
+  their validated bridges read. }
+  if FCSRawWebResponse = nil then
+  begin
+    FWebResponse.FreeContentStream := True;
+    FWebResponse.ContentStream := TStringStream.Create(LContent);
+    FWebResponse.ContentLength := FWebResponse.ContentStream.Size;
+  end
+  else
+    FWebResponse.Content := LContent;
+{$ENDIF}
   Result := Self;
 end;
 

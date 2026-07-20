@@ -21,8 +21,20 @@ uses
 
 type
 {$IF DEFINED(FPC)}
+  { FPC-WEBMODULE-1 — HandleRequest is overridden directly (instead of
+    DoOnRequest) to bypass TCustomFPWebModule.HandleRequest entirely. Horse
+    uses neither fpWeb sessions nor fpWeb actions, and FPC trunk's
+    TCustomFPWebModule.HandleRequest gained CSRF protection that reads
+    Session.Variables for every write request (POST/PUT/DELETE/PATCH) BEFORE
+    it calls DoOnRequest: TSessionHTTPModule.GetSession then raises 'Default
+    session not available outside handlerequest' (module error 500) because
+    FSessionRequest is never assigned on this dispatch path. Overriding
+    DoOnRequest (upstream's approach) does NOT avoid it — the parent
+    HandleRequest runs the CSRF check first. Dispatching straight into the
+    Horse pipeline from an overridden HandleRequest avoids the whole
+    session/CSRF/action machinery. (Upstream-PR candidate.) }
   THorseWebModule = class(TFPWebModule)
-    procedure DoOnRequest(ARequest: TRequest; AResponse: TResponse; var AHandled: Boolean); override;
+    procedure HandleRequest(ARequest: TRequest; AResponse: TResponse); override;
 {$ELSE}
   THorseWebModule = class(TWebModule)
 {$ENDIF}
@@ -84,9 +96,23 @@ begin
 end;
 
 {$IF DEFINED(FPC)}
-procedure THorseWebModule.DoOnRequest(ARequest: {$IF DEFINED(FPC)}TRequest{$ELSE}  TWebRequest {$ENDIF}; AResponse: {$IF DEFINED(FPC)}TResponse{$ELSE}  TWebResponse {$ENDIF}; var AHandled: Boolean);
+procedure THorseWebModule.HandleRequest(ARequest: TRequest; AResponse: TResponse);
+var
+  LHandled: Boolean;
 begin
-  HandlerAction(Self, ARequest, AResponse, AHandled);
+  { FPC-WEBMODULE-1 — deliberately NOT calling inherited: see the class
+    declaration comment. HandlerAction runs the full Horse pipeline and
+    populates AResponse; fpWeb sends it after this returns. }
+  LHandled := True;
+  HandlerAction(Self, ARequest, AResponse, LHandled);
+
+  { A handler that only sets headers (e.g. a HEAD route calling AddHeader
+    without Send) leaves the response with neither a body nor a
+    Content-Length header. An explicit Content-Length: 0 keeps every
+    complete response deterministically framed for keep-alive clients. }
+  if (AResponse.ContentStream = nil) and (AResponse.Contents.Count = 0)
+    and (not AResponse.HeadersSent) then
+    AResponse.ContentLength := 0;
 end;
 {$ENDIF}
 

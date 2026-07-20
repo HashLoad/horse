@@ -393,6 +393,10 @@ type
   private
     FReqQueue: THandle;
     FRequestId: HTTP_REQUEST_ID;
+    { HTTPSYS-STREAM-DBLSEND-1 — set by the streaming writer once it has sent the
+      full response; SendResponse then no-ops to avoid a second send on the same
+      RequestId (error 22/1229). }
+    FResponseSent: Boolean;
   public
     constructor Create(AReqQueue: THandle; ARequestId: HTTP_REQUEST_ID);
     procedure SetCustomHeader(const AName, AValue: string);
@@ -543,7 +547,14 @@ begin
       LWebResponse := THttpSysWebResponse.Create(LRawRes);
       try
         LReq := THorseRequest.Create(LWebRequest);
-        LRes := THorseResponse.Create(LWebResponse);
+        { HTTPSYS-WIRING-1 (2026-07-17) — response must ride the CrossSocket
+          shadow-field path (FWebResponse=nil + SetCSRawWebResponse), NOT the Indy
+          FWebResponse path. SendResponse reads ARes.CSContentType / ARes.CustomHeaders
+          (the CS shadow); with Create(LWebResponse) those stay empty (Res.ContentType/
+          AddHeader wrote to FWebResponse) so Content-Type defaulted to text/html and
+          custom headers were lost. Matches IOCP/Epoll/fork. }
+        LRes := THorseResponse.Create(nil);
+        LRes.SetCSRawWebResponse(LWebResponse);
         try
           THorseProviderHttpSys.Execute(LReq, LRes);
         finally
@@ -551,7 +562,9 @@ begin
         end;
       finally
         LWebRequest.Free;
-        LWebResponse.Free;
+        { HTTPSYS-WIRING-1 — do NOT free LWebResponse here: SetCSRawWebResponse
+          transferred ownership to LRes (THorseResponse.Destroy frees it, PATCH-RES-6);
+          freeing it here too double-frees. }
         LReq.Free;
         LRes.Free;
       end;
@@ -750,7 +763,10 @@ begin
         LWebResponse := THttpSysWebResponse.Create(LRawRes);
         try
           LReq := THorseRequest.Create(LWebRequest);
-          LRes := THorseResponse.Create(LWebResponse);
+          { HTTPSYS-WIRING-1 — CS shadow-field response path (see note at the
+            other dispatch site). }
+          LRes := THorseResponse.Create(nil);
+          LRes.SetCSRawWebResponse(LWebResponse);
           try
             THorseProviderHttpSys.Execute(LReq, LRes);
           finally
@@ -758,7 +774,7 @@ begin
           end;
         finally
           LWebRequest.Free;
-          LWebResponse.Free;
+          { HTTPSYS-WIRING-1 — LWebResponse owned by LRes now (see other site). }
           LReq.Free;
           LRes.Free;
         end;
@@ -1043,6 +1059,13 @@ begin
     SetString(Result, FRequest.CookedUrl.pQueryString, FRequest.CookedUrl.QueryStringLength div SizeOf(WideChar))
   else
     Result := '';
+  { HTTPSYS-QUERY-1 (2026-07-17) — HTTP.sys CookedUrl.pQueryString INCLUDES the
+    leading '?'. Horse core's InitializeQuery parses FWebRequest.Query WITHOUT
+    stripping it, so the first key became '?name' and Req.Query['name'] was empty
+    (test 09). Strip it at the source so both InitializeQuery and PopulateQueryFields
+    get a clean query (IOCP/Epoll GetQueryString return no '?'). }
+  if (Result <> '') and (Result[1] = '?') then
+    Delete(Result, 1, 1);
 end;
 
 function THttpSysRawRequest.GetHost: string;
@@ -1202,7 +1225,11 @@ begin
     if FRequest.Headers.KnownHeaders[I].RawValueLength > 0 then
     begin
       SetString(LValue, PAnsiChar(FRequest.Headers.KnownHeaders[I].pRawValue), FRequest.Headers.KnownHeaders[I].RawValueLength);
-      ADest.Add(HTTP_KNOWN_REQUEST_HEADERS[I] + '=' + LValue);
+      { HTTPSYS-HDRSEP-1 (2026-07-17) — compose with the CALLER's NameValueSeparator
+        (GetHeadersList sets it to ':'), not a hard-coded '='. Merged used '=' so
+        Req.Headers['X-Test-Header'] (parsed with ':') never matched → empty (test 14).
+        IOCP + fork both use ADest.NameValueSeparator. }
+      ADest.Add(HTTP_KNOWN_REQUEST_HEADERS[I] + ADest.NameValueSeparator + LValue);
     end;
   end;
 
@@ -1214,7 +1241,7 @@ begin
       begin
         SetString(LName, pName, NameLength);
         SetString(LValue, pRawValue, RawValueLength);
-        ADest.Add(LName + '=' + LValue);
+        ADest.Add(LName + ADest.NameValueSeparator + LValue);
       end;
     end;
   end;
@@ -1375,6 +1402,9 @@ var
   LBodyBytes: TBytes;
   LHeaders: TArray<HTTP_UNKNOWN_HEADER>;
   LHeaderCount: Integer;
+  { test 28 + REPEATHDR-1 (round 2) — adapter store + dup-preserving Set-Cookie }
+  LRawHeadersList, LRepeatList: TStrings;
+  LRawHeaderCount, LTotalHeaderCount, LRepeatCount, LHdrIdx: Integer;
   LContentType: AnsiString;
   LStatusCode: Word;
   LReason: AnsiString;
@@ -1390,6 +1420,10 @@ var
   LChunkBytesRead: Integer;
   LSendFlags: ULONG;
 begin
+  { HTTPSYS-STREAM-DBLSEND-1 — the streaming writer already sent the full
+    response for this request; do not send it again (error 22/1229). }
+  if FResponseSent then
+    Exit;
   FillChar(LResponse, SizeOf(LResponse), 0);
   
   LStatusCode := ARes.Status;
@@ -1421,44 +1455,86 @@ begin
   LResponse.Headers.KnownHeaders[12].pRawValue := PAnsiChar(LContentType);
   LResponse.Headers.KnownHeaders[12].RawValueLength := Length(LContentType);
 
-  // Set Custom Headers
+  { Set Custom Headers — shadow (AddHeader) + adapter (RawWebResponse.SetCustomHeader,
+    test 28) + RepeatHeaders (dup-preserving Set-Cookie, REPEATHDR-1 test 10). Running
+    index LHdrIdx: skip Set-Cookie from shadow+adapter (dict collapses it), emit each
+    RepeatHeaders entry verbatim. With HTTPSYS-WIRING-1 the shadow (AddHeader) and adapter
+    (SetCustomHeader) stores are disjoint on this path, so their union does not duplicate. }
   LHeadersList := ARes.CustomHeaders;
-  if LHeadersList <> nil then
-    LHeaderCount := LHeadersList.Count
-  else
-    LHeaderCount := 0;
+  if LHeadersList <> nil then LHeaderCount := LHeadersList.Count else LHeaderCount := 0;
 
-  if LHeaderCount > 0 then
+  LRawHeadersList := nil;
+  LRawHeaderCount := 0;
+  if ARes.RawWebResponse <> nil then
   begin
-    SetLength(LHeaders, LHeaderCount);
-    SetLength(LHeaderStrings, LHeaderCount * 2);
+    LRawHeadersList := ARes.RawWebResponse.CustomHeaders;
+    if LRawHeadersList <> nil then LRawHeaderCount := LRawHeadersList.Count;
+  end;
+
+  LRepeatList := ARes.RepeatHeaders;
+  if LRepeatList <> nil then LRepeatCount := LRepeatList.Count else LRepeatCount := 0;
+
+  LTotalHeaderCount := LHeaderCount + LRawHeaderCount + LRepeatCount;
+  if LTotalHeaderCount > 0 then
+  begin
+    SetLength(LHeaders, LTotalHeaderCount);
+    SetLength(LHeaderStrings, LTotalHeaderCount * 2);
+    LHdrIdx := 0;
+
     {$IF DEFINED(FPC)}
     for I := 0 to LHeaderCount - 1 do
-    begin
-      LHeaderStrings[I * 2] := AnsiString(LHeadersList.Names[I]);
-      LHeaderStrings[I * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
-      
-      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
-      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
-      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
-      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
-    end;
+      if not SameText(LHeadersList.Names[I], 'Set-Cookie') then
+      begin
+        LHeaderStrings[LHdrIdx * 2] := AnsiString(LHeadersList.Names[I]);
+        LHeaderStrings[LHdrIdx * 2 + 1] := AnsiString(LHeadersList.ValueFromIndex[I]);
+        LHeaders[LHdrIdx].NameLength := Length(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].RawValueLength := Length(LHeaderStrings[LHdrIdx * 2 + 1]);
+        LHeaders[LHdrIdx].pName := PAnsiChar(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].pRawValue := PAnsiChar(LHeaderStrings[LHdrIdx * 2 + 1]);
+        Inc(LHdrIdx);
+      end;
     {$ELSE}
-    I := 0;
     for LPair in LHeadersList do
-    begin
-      LHeaderStrings[I * 2] := AnsiString(LPair.Key);
-      LHeaderStrings[I * 2 + 1] := AnsiString(LPair.Value);
-      
-      LHeaders[I].NameLength := Length(LHeaderStrings[I * 2]);
-      LHeaders[I].RawValueLength := Length(LHeaderStrings[I * 2 + 1]);
-      LHeaders[I].pName := PAnsiChar(LHeaderStrings[I * 2]);
-      LHeaders[I].pRawValue := PAnsiChar(LHeaderStrings[I * 2 + 1]);
-      Inc(I);
-    end;
+      if not SameText(LPair.Key, 'Set-Cookie') then
+      begin
+        LHeaderStrings[LHdrIdx * 2] := AnsiString(LPair.Key);
+        LHeaderStrings[LHdrIdx * 2 + 1] := AnsiString(LPair.Value);
+        LHeaders[LHdrIdx].NameLength := Length(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].RawValueLength := Length(LHeaderStrings[LHdrIdx * 2 + 1]);
+        LHeaders[LHdrIdx].pName := PAnsiChar(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].pRawValue := PAnsiChar(LHeaderStrings[LHdrIdx * 2 + 1]);
+        Inc(LHdrIdx);
+      end;
     {$ENDIF}
-    LResponse.Headers.UnknownHeaderCount := LHeaderCount;
-    LResponse.Headers.pUnknownHeaders := @LHeaders[0];
+
+    for I := 0 to LRawHeaderCount - 1 do
+      if not SameText(LRawHeadersList.Names[I], 'Set-Cookie') then
+      begin
+        LHeaderStrings[LHdrIdx * 2] := AnsiString(LRawHeadersList.Names[I]);
+        LHeaderStrings[LHdrIdx * 2 + 1] := AnsiString(LRawHeadersList.ValueFromIndex[I]);
+        LHeaders[LHdrIdx].NameLength := Length(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].RawValueLength := Length(LHeaderStrings[LHdrIdx * 2 + 1]);
+        LHeaders[LHdrIdx].pName := PAnsiChar(LHeaderStrings[LHdrIdx * 2]);
+        LHeaders[LHdrIdx].pRawValue := PAnsiChar(LHeaderStrings[LHdrIdx * 2 + 1]);
+        Inc(LHdrIdx);
+      end;
+
+    for I := 0 to LRepeatCount - 1 do
+    begin
+      LHeaderStrings[LHdrIdx * 2] := AnsiString(LRepeatList.Names[I]);
+      LHeaderStrings[LHdrIdx * 2 + 1] := AnsiString(LRepeatList.ValueFromIndex[I]);
+      LHeaders[LHdrIdx].NameLength := Length(LHeaderStrings[LHdrIdx * 2]);
+      LHeaders[LHdrIdx].RawValueLength := Length(LHeaderStrings[LHdrIdx * 2 + 1]);
+      LHeaders[LHdrIdx].pName := PAnsiChar(LHeaderStrings[LHdrIdx * 2]);
+      LHeaders[LHdrIdx].pRawValue := PAnsiChar(LHeaderStrings[LHdrIdx * 2 + 1]);
+      Inc(LHdrIdx);
+    end;
+
+    if LHdrIdx > 0 then
+    begin
+      LResponse.Headers.UnknownHeaderCount := LHdrIdx;
+      LResponse.Headers.pUnknownHeaders := @LHeaders[0];
+    end;
   end;
 
   if (ARes.ContentStream <> nil) and (ARes.ContentStream.Size > 0) then
@@ -2136,11 +2212,13 @@ type
   private
     FReqQueue: THandle;
     FRequestId: HTTP_REQUEST_ID;
+    FRawRes: THttpSysRawResponse;
   protected
     procedure SendRawHeaders; override;
     procedure WriteRawBytes(const ABytes: TBytes); override;
   public
     constructor Create(const AResponse: THorseResponse); override;
+    procedure Close; override;
     function IsConnected: Boolean; override;
   end;
 
@@ -2155,6 +2233,7 @@ begin
   if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
     LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
 
+  FRawRes := LRawResponse;
   if Assigned(LRawResponse) then
   begin
     FReqQueue := LRawResponse.FReqQueue;
@@ -2267,6 +2346,12 @@ begin
   );
   if LRet <> ERROR_SUCCESS then
     raise EOSError.Create('HttpSendHttpResponse failed with error code: ' + IntToStr(LRet));
+
+  { HTTPSYS-STREAM-DBLSEND-1 — the response for this RequestId is now committed
+    (headers sent, MORE_DATA); the dispatch calls SendResponse unconditionally
+    after the handler returns — flag it so that send is skipped (else error 22). }
+  if Assigned(FRawRes) then
+    FRawRes.FResponseSent := True;
 end;
 
 procedure THttpSysStreamWriter.WriteRawBytes(const ABytes: TBytes);
@@ -2296,6 +2381,49 @@ begin
   );
   if LRet <> ERROR_SUCCESS then
     raise EOSError.Create('HttpSendResponseEntityBody failed with error code: ' + IntToStr(LRet));
+end;
+
+procedure THttpSysStreamWriter.Close;
+var
+  LChunk: HTTP_DATA_CHUNK_INMEMORY;
+  LTerminator: TBytes;
+  LBytesSent: ULONG;
+  LRet: ULONG;
+begin
+  { HTTPSYS-STREAM-CLOSE-1 (2026-07-17) — send the chunked 0-terminator as the
+    FINAL entity body WITHOUT MORE_DATA, so HTTP.sys completes the response and the
+    keep-alive connection returns clean. The base Close writes the terminator via
+    WriteRawBytes, which always sets MORE_DATA, so the response never closed at the
+    HTTP.sys level: WinHTTP only finished off the chunked terminator, and keep-alive
+    clients (TCrossHttpClient) WEDGED on the next request over the reused connection.
+    Matches the fork's [HTTPSYS-STREAM-1]. Guard on FResponseSent (our proxy for the
+    base's private FHeadersSent): an empty/never-written stream committed no streaming
+    headers and is finalized by the normal SendResponse path instead. (Streams here
+    are always chunked — HTTP/1.1, non-event-stream; SSE close is Phase 2.) }
+  if not (Assigned(FRawRes) and FRawRes.FResponseSent) then
+    Exit;
+
+  LTerminator := TEncoding.UTF8.GetBytes('0'#13#10#13#10);
+  FillChar(LChunk, SizeOf(LChunk), 0);
+  LChunk.DataChunkType := hctFromMemory;
+  LChunk.pBuffer := @LTerminator[0];
+  LChunk.BufferLength := Length(LTerminator);
+
+  LRet := HttpSendResponseEntityBody(
+    FReqQueue,
+    FRequestId,
+    0,
+    1,
+    @LChunk,
+    LBytesSent,
+    nil,
+    nil,
+    nil,
+    nil
+  );
+  { Best-effort close — do NOT raise from Close; the peer may already be gone. }
+  if LRet <> ERROR_SUCCESS then
+    Exit;
 end;
 
 function THttpSysStreamWriter.IsConnected: Boolean;

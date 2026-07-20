@@ -1,4 +1,4 @@
-unit Horse.Provider.FPC.HTTPApplication;
+﻿unit Horse.Provider.FPC.HTTPApplication;
 
 { PATCH-FPCHTTP-1: ListenWithConfig override — same root cause as PATCH-CONSOLE-1. }
 
@@ -40,6 +40,9 @@ type
     class function GetHost: string; static;
     class procedure InternalListen; virtual;
     class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
+    {$IF FPC_FULLVERSION >= 30301}
+    class procedure EnableServerKeepAlive(const AApplication: THTTPApplication);
+    {$ENDIF}
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
@@ -66,7 +69,75 @@ implementation
 {$IF DEFINED(FPC)}
 
 uses
-  Horse.WebModule;
+  Horse.WebModule,
+  Horse.Response
+  {$IF FPC_FULLVERSION >= 30301}, custhttpapp{$ENDIF};
+
+{ FPC-HTTPAPP-STREAM-1 — fphttpserver (fpWeb) buffers its whole response and is
+  not a streaming transport. Upstream registers an Indy-based WebBroker stream
+  writer as the GLOBAL default (Horse.Response initialization); the real
+  streaming providers override it in their own initialization, but this FPC
+  HTTPApplication provider had none, so fphttpserver inherited the Indy writer
+  and HUNG on every non-empty SendStream (Indy WriteClient on a non-Indy
+  connection). Register a factory that refuses cleanly: Res.SendStream then
+  raises, and the handler's own try/except turns it into a structured 501 (the
+  fork's documented non-engine-transport behaviour) instead of hanging. Only
+  affects the fphttp build — the Epoll FPC build registers Epoll's factory,
+  which wins by init order. }
+function FPCHttpAppStreamRefused(const AResponse: THorseResponse): IHorseStreamWriter;
+begin
+  Result := nil;
+  raise Exception.Create('SendStream is not supported on the FPC HTTPApplication (fphttpserver) provider');
+end;
+
+{$IF FPC_FULLVERSION >= 30301}
+const
+  { Per-request keep-alive lifetime handed to the embedded fphttpserver so its
+    threaded connection loop (TFPHTTPConnectionThread) actually reuses sockets
+    instead of closing after one request. Reset after every request. }
+  DEFAULT_KEEPALIVE_TIMEOUT_MS = 15000;
+
+type
+  { descendants declared in this unit so protected members are reachable
+    regardless of their visibility in fcl-web:
+    - THorseHTTPServerHandlerAccess exposes HTTPServer;
+    - THorseEmbeddedServerAccess exposes KeepConnections, writable only in
+      the protected TFPCustomHttpServer base (TEmbeddedHttpServer descends
+      from it, so the property never becomes public on it). }
+  THorseHTTPServerHandlerAccess = class(custhttpapp.TFPHTTPServerHandler);
+  THorseEmbeddedServerAccess = class(custhttpapp.TEmbeddedHttpServer);
+
+class procedure THorseProvider.EnableServerKeepAlive(const AApplication: THTTPApplication);
+var
+  LHandler: TFPHTTPServerHandler;
+  LServer: TEmbeddedHttpServer;
+begin
+  { FServer is created in the TFPHTTPServerHandler constructor (its own
+    getters read FServer with no nil-check, and the app sets Port/Threaded
+    through them before Run without crashing), so by the time the handler
+    exists the embedded server does too. }
+  LHandler := AApplication.HTTPHandler;
+  if LHandler = nil then
+    Exit;
+  LServer := THorseHTTPServerHandlerAccess(LHandler).HTTPServer;
+  if LServer <> nil then
+  begin
+    { KeepConnections alone is necessary but NOT sufficient in threaded mode
+      (Threaded := True → TFPHTTPConnectionThread): its keep-alive loop is
+      gated on BOTH AllowNewRequest (needs KeepConnections) AND WaitUntil>0,
+      and WaitUntil is 0 whenever KeepConnectionTimeout <= 0 (the default) —
+      so the thread handles exactly one request and exits, closing the
+      socket, no matter what KeepConnections says. A positive
+      KeepConnectionTimeout is what actually keeps the connection looping.
+      The window resets after every request (SetWaitUntil is called each
+      iteration), so this is the per-request keep-alive lifetime, not a hard
+      total cap. }
+    THorseEmbeddedServerAccess(LServer).KeepConnections := True;
+    if THorseEmbeddedServerAccess(LServer).KeepConnectionTimeout <= 0 then
+      THorseEmbeddedServerAccess(LServer).KeepConnectionTimeout := DEFAULT_KEEPALIVE_TIMEOUT_MS;
+  end;
+end;
+{$ENDIF}
 
 class function THorseProvider.GetDefaultHTTPApplication: THTTPApplication;
 begin
@@ -131,6 +202,20 @@ begin
   LHTTPApplication.LegacyRouting := True;
   LHTTPApplication.Address := FHost;
   LHTTPApplication.Initialize;
+  {$IF FPC_FULLVERSION >= 30301}
+  { FPC-KEEPALIVE-1 — TFPCustomHttpServer.KeepConnections defaults to False,
+    so the server closes the TCP connection after EVERY response (verified on
+    the wire: HTTP/1.1, no Connection header, immediate close). Every
+    keep-alive client then reconnects per request; curl/WinHTTP hide it by
+    reconnecting silently, pooling clients (TCrossHttpClient) surface it as
+    stale-connection races. Enabling it restores normal HTTP/1.1 semantics.
+    Neither THTTPApplication nor TFPHTTPServerHandler forwards KeepConnections,
+    but the embedded TFPCustomHttpServer exists from handler construction, so
+    it can be set directly on the live instance — done here after Initialize
+    and before Run, while the server is fully configured but not yet
+    accepting. }
+  EnableServerKeepAlive(LHTTPApplication);
+  {$ENDIF}
   FRunning := True;
   DoOnListen;
   LHTTPApplication.Run;
@@ -197,6 +282,11 @@ class procedure THorseProvider.SetPort(const AValue: Integer);
 begin
   FPort := AValue;
 end;
+
+initialization
+  { FPC-HTTPAPP-STREAM-1 — override the global Indy WebBroker default so
+    fphttpserver refuses SendStream cleanly (501) instead of hanging. }
+  THorseResponse.RegisterStreamWriterFactory(FPCHttpAppStreamRefused);
 {$ENDIF}
 
 end.
