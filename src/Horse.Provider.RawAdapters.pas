@@ -83,7 +83,7 @@ type
   protected
     function  GetStringVariable(Index: Integer): TWebString; override;
     function  GetDateVariable(Index: Integer): TDateTime; override;
-{$IF CompilerVersion >= 32.0}  // Delphi 10.2 Tokyo+
+{$IF CompilerVersion >= 35.0}  // Delphi 11 Alexandria+
     function  GetIntegerVariable(Index: Integer): Int64; override;
 {$ELSE}
     function  GetIntegerVariable(Index: Integer): Integer; override;
@@ -118,7 +118,7 @@ type
     procedure SetStringVariable(Index: Integer; const Value: TWebString); override;
     function  GetDateVariable(Index: Integer): TDateTime; override;
     procedure SetDateVariable(Index: Integer; const Value: TDateTime); override;
-{$IF CompilerVersion >= 32.0}  // Delphi 10.2 Tokyo+
+{$IF CompilerVersion >= 35.0}  // Delphi 11 Alexandria+
     function  GetIntegerVariable(Index: Integer): Int64; override;
     procedure SetIntegerVariable(Index: Integer; Value: Int64); override;
 {$ELSE}
@@ -257,7 +257,7 @@ begin
   Result := 0;
 end;
 
-{$IF CompilerVersion >= 32.0}
+{$IF CompilerVersion >= 35.0}
 function TInterfacedWebRequest.GetIntegerVariable(Index: Integer): Int64;
 {$ELSE}
 function TInterfacedWebRequest.GetIntegerVariable(Index: Integer): Integer;
@@ -378,7 +378,7 @@ begin
   { Stub }
 end;
 
-{$IF CompilerVersion >= 32.0}
+{$IF CompilerVersion >= 35.0}
 function TInterfacedWebResponse.GetIntegerVariable(Index: Integer): Int64;
 {$ELSE}
 function TInterfacedWebResponse.GetIntegerVariable(Index: Integer): Integer;
@@ -387,7 +387,7 @@ begin
   Result := 0;
 end;
 
-{$IF CompilerVersion >= 32.0}
+{$IF CompilerVersion >= 35.0}
 procedure TInterfacedWebResponse.SetIntegerVariable(Index: Integer; Value: Int64);
 {$ELSE}
 procedure TInterfacedWebResponse.SetIntegerVariable(Index: Integer; Value: Integer);

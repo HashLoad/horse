@@ -1,8 +1,8 @@
 {
   "name": "horse",
-  "description": "Horse web framework \u2014 CrossSocket-compatible fork",
-  "version": "3.2.103",
-  "homepage": "https://github.com/freitasjca/horse",
+  "description": "Express-inspired web framework for Delphi and Lazarus",
+  "version": "4.0.0",
+  "homepage": "https://github.com/HashLoad/horse",
   "license": "MIT",
   "mainsrc": "src/",
   "browsingpath": "src/",
