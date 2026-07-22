@@ -21,6 +21,9 @@ uses
   Horse.Proc;
 
 type
+
+  { THorseProvider }
+
   THorseProvider = class(THorseProviderAbstract)
   private
     class var FPort: Integer;
@@ -42,10 +45,10 @@ type
     class property Port: Integer read GetPort write SetPort;
     class function GetActivePort: Integer; override;
     class procedure Listen; overload; override;
-    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallback: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const APort: Integer; const ACallback: TProc); reintroduce; overload; static;
-    class procedure Listen(const AHost: string; const ACallback: TProc = nil); reintroduce; overload; static;
-    class procedure Listen(const ACallback: TProc); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const AHost: string; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
+    class procedure Listen(const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     // PATCH-FPCFCGI-1
     class procedure ListenWithConfig(const APort: Integer;
       const AConfig: THorseCrossSocketConfig); override;
@@ -125,27 +128,32 @@ begin
   InternalListen;;
 end;
 
-class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallback: TProc);
+class procedure THorseProvider.Listen(const APort: Integer; const AHost: string; const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
   SetPort(APort);
   SetHost(AHost);
-  SetOnListen(ACallback);
+  SetOnListen(ACallbackListen);
+  SetOnStopListen(ACallbackStopListen);
   InternalListen;
 end;
 
-class procedure THorseProvider.Listen(const AHost: string; const ACallback: TProc);
+class procedure THorseProvider.Listen(const AHost: string; const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
-  Listen(FPort, AHost, ACallback);
+  Listen(FPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider.Listen(const ACallback: TProc);
+class procedure THorseProvider.Listen(const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
-  Listen(FPort, FHost, ACallback);
+  Listen(FPort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
-class procedure THorseProvider.Listen(const APort: Integer; const ACallback: TProc);
+class procedure THorseProvider.Listen(const APort: Integer; const ACallbackListen: TProc;
+  const ACallbackStopListen: TProc);
 begin
-  Listen(APort, FHost, ACallback);
+  Listen(APort, FHost, ACallbackListen, ACallbackStopListen);
 end;
 
 // PATCH-FPCFCGI-1
