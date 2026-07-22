@@ -11,10 +11,10 @@ uses
   {$IF DEFINED(FPC)}
   SysUtils,
   Classes,
-  syncobjs,
   Generics.Collections,
   Windows,
   WinSock2,
+  syncobjs,
   {$ELSE}
   System.SysUtils,
   System.Classes,
@@ -326,7 +326,7 @@ begin
   LGuid := AGUID;
   APointer := nil;
   Result := WSAIoctl(ASocket, SIO_GET_EXTENSION_FUNCTION_POINTER, @LGuid, SizeOf(LGuid),
-    @APointer, SizeOf(APointer), dwBytes, nil, nil) <> SOCKET_ERROR;
+    @APointer, SizeOf(APointer), {$IFDEF FPC}@{$ENDIF}dwBytes, nil, nil) <> SOCKET_ERROR;
 end;
 
 { THorseHttpParser }
@@ -361,7 +361,7 @@ begin
   begin
     B := ABuffer[AStart + I];
     if (B >= 65) and (B <= 90) then B := B + 32;
-    if Char(B) <> LowerCase(AStr[I + 1])[1] then
+    if Char(B) <> LowerCase(AStr[I + 1]){$IFNDEF FPC}[1]{$ENDIF} then
       Exit(False);
   end;
   Result := True;
@@ -619,8 +619,8 @@ begin
   FResolvedHeaders.Free;
   if Assigned(FBodyStream) then
     FBodyStream.Free;
-  if (FTempFileName <> '') and System.SysUtils.FileExists(FTempFileName) then
-    System.SysUtils.DeleteFile(FTempFileName);
+  if (FTempFileName <> '') and {$IFNDEF FPC}System.{$ENDIF}SysUtils.FileExists(FTempFileName) then
+    {$IFNDEF FPC}System.{$ENDIF}SysUtils.DeleteFile(FTempFileName);
   inherited;
 end;
 
@@ -649,7 +649,7 @@ begin
     Seg := FHeaders[I];
     if THorseHttpParser.CompareBytesCI(FBuffer, Seg.KeyStart, Seg.KeyLen, LLowerName) then
     begin
-      Result := TEncoding.UTF8.GetString(FBuffer, Seg.ValueStart, Seg.ValueLen).Trim;
+      Result := Trim(TEncoding.UTF8.GetString(FBuffer, Seg.ValueStart, Seg.ValueLen));
       FResolvedHeaders.Add(LLowerName, Result);
       Exit;
     end;
@@ -906,7 +906,7 @@ begin
       LBuilder.Append('Content-Type: text/plain; charset=utf-8'#13#10);
       
     if not FHeaders.ContainsKey('Date') then
-      LBuilder.Append('Date: ').Append(FormatDateTime('ddd, dd mmm yyyy hh:nn:ss" GMT"', System.SysUtils.Now)).Append(#13#10);
+      LBuilder.Append('Date: ').Append(FormatDateTime('ddd, dd mmm yyyy hh:nn:ss" GMT"', {$IFNDEF FPC}System.{$ENDIF}SysUtils.Now)).Append(#13#10);
 
     if not FHeaders.ContainsKey('Server') then
       LBuilder.Append('Server: Horse IOCP Server/1.0'#13#10);
@@ -937,7 +937,7 @@ end;
 
 procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
 var
-  LBufs: array[0..1] of TWSABUF;
+  LBufs: array[0..1] of {$IFDEF FPC}WSABUF{$ELSE}TWSABUF{$ENDIF};
   LBufCount: DWORD;
   LBytesSent: DWORD;
   LFlags: DWORD;
@@ -981,7 +981,7 @@ end;
 procedure TIocpRawResponse.SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
 var
   LStreamSize: Int64;
-  LChunkBuf: TBytes;
+  LChunkBuf: TBytes{$IFDEF FPC} = nil{$ENDIF};
   LReadCount: Integer;
   LPair: TPair<string, string>;
 begin
@@ -1366,10 +1366,8 @@ var
   LReq: THorseRequest;
   LRes: THorseResponse;
   LData: PWorkItemData;
-  {$IFNDEF FPC}
   LWebRequest: TInterfacedWebRequest;
   LWebResponse: TInterfacedWebResponse;
-  {$ENDIF}
 begin
   AContext.LastActive := GetTickCount64;
 
@@ -1450,15 +1448,15 @@ begin
     New(LData);
     LData.RawRes := LRawRes;
 
+    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
+    LWebResponse := TInterfacedWebResponse.Create(LRawRes);
+
     {$IFDEF FPC}
-    LReq := THorseRequest.Create(LRawReq);
-    LRes := THorseResponse.Create(LRawRes);
+    LReq := THorseRequest.Create(LWebRequest);
+    LRes := THorseResponse.Create(LWebResponse);
     LData.Req := LReq;
     LData.Res := LRes;
     {$ELSE}
-    LWebRequest := TInterfacedWebRequest.Create(LRawReq);
-    LWebResponse := TInterfacedWebResponse.Create(LRawRes);
-    
     LReq := THorseRequest.Create(LWebRequest);
     LRes := THorseResponse.Create(nil);
     LRes.SetCSRawWebResponse(LWebResponse);
@@ -1772,7 +1770,7 @@ end;
 
 class procedure THorseProviderIOCP.PostReadConnection(AContext: TIocpConnectionContext);
 var
-  LWSABuf: TWSABuf;
+  LWSABuf: {$IFDEF FPC}WSABUF{$ELSE}TWSABUF{$ENDIF};
   dwFlags, dwBytes: DWORD;
 begin
   FillChar(AContext.ReadOverlapped.Overlapped, SizeOf(OVERLAPPED), 0);

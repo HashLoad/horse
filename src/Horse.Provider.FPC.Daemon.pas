@@ -147,7 +147,7 @@ type
 
 function TFPHTTPConnectionRequestHelper.GetSocket: TSocket;
 begin
-  Result := Self.Connection.FSocket.Handle;
+  Result := Self.Connection.Socket.Handle;
 end;
 
 procedure THTTPServerThread.OnRequest(Sender: TObject; var ARequest: TFPHTTPConnectionRequest;
