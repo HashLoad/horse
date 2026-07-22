@@ -274,11 +274,32 @@ uses
   Horse.Core,
   Horse.Exception.Interrupted,
   Horse.Core.MemoryBufferPool
-  {$IF NOT DEFINED(FPC)}
+  {$IF DEFINED(FPC)}
+  , fphttpserver
+  {$ELSE}
   , IdHTTPWebBrokerBridge, IdCustomHTTPServer
   {$ENDIF};
 
-{$IF NOT DEFINED(FPC)}
+{$IF DEFINED(FPC)}
+type
+  TFPHTTPConnectionResponseAccess = class(TFPHTTPConnectionResponse)
+  public
+    procedure WriteToSocket(const ABytes: TBytes);
+  end;
+
+procedure TFPHTTPConnectionResponseAccess.WriteToSocket(
+  const ABytes: TBytes
+);
+begin
+  if Length(ABytes) = 0 then
+    Exit;
+
+  Connection.Socket.WriteBuffer(
+    ABytes[0],
+    Length(ABytes)
+  );
+end;
+{$ELSE}
 type
   TWebRequestFriend = class(TWebRequest);
   TIdHTTPAppResponseFriend = class(TIdHTTPAppResponse);
@@ -1079,13 +1100,28 @@ end;
 
 procedure THorseWebBrokerStreamWriter.WriteRawBytes(const ABytes: TBytes);
 begin
-  if Length(ABytes) = 0 then Exit;
+  if Length(ABytes) = 0 then
+    Exit;
+
+  if FResponse.RawWebResponse = nil then
+    Exit;
 
   if FResponse.RawWebResponse <> nil then
   begin
     {$IF DEFINED(FPC)}
-    if FResponse.RawWebResponse.ContentStream <> nil then
-      FResponse.RawWebResponse.ContentStream.Write(ABytes[0], Length(ABytes));
+    if FResponse.RawWebResponse is TFPHTTPConnectionResponse then
+    begin
+      TFPHTTPConnectionResponseAccess(
+        FResponse.RawWebResponse
+      ).WriteToSocket(ABytes);
+    end
+    else if FResponse.RawWebResponse.ContentStream <> nil then
+    begin
+      FResponse.RawWebResponse.ContentStream.Write(
+        ABytes[0],
+        Length(ABytes)
+      );
+    end;    
     {$ELSE}
     if (FResponse.Request <> nil) and (THorseRequest(FResponse.Request).RawWebRequest <> nil) then
       TWebRequestFriend(THorseRequest(FResponse.Request).RawWebRequest).WriteClient(ABytes[0], Length(ABytes));

@@ -73,23 +73,6 @@ uses
   Horse.Response
   {$IF FPC_FULLVERSION >= 30301}, custhttpapp{$ENDIF};
 
-{ FPC-HTTPAPP-STREAM-1 — fphttpserver (fpWeb) buffers its whole response and is
-  not a streaming transport. Upstream registers an Indy-based WebBroker stream
-  writer as the GLOBAL default (Horse.Response initialization); the real
-  streaming providers override it in their own initialization, but this FPC
-  HTTPApplication provider had none, so fphttpserver inherited the Indy writer
-  and HUNG on every non-empty SendStream (Indy WriteClient on a non-Indy
-  connection). Register a factory that refuses cleanly: Res.SendStream then
-  raises, and the handler's own try/except turns it into a structured 501 (the
-  fork's documented non-engine-transport behaviour) instead of hanging. Only
-  affects the fphttp build — the Epoll FPC build registers Epoll's factory,
-  which wins by init order. }
-function FPCHttpAppStreamRefused(const AResponse: THorseResponse): IHorseStreamWriter;
-begin
-  Result := nil;
-  raise Exception.Create('SendStream is not supported on the FPC HTTPApplication (fphttpserver) provider');
-end;
-
 {$IF FPC_FULLVERSION >= 30301}
 const
   { Per-request keep-alive lifetime handed to the embedded fphttpserver so its
@@ -282,11 +265,6 @@ class procedure THorseProvider.SetPort(const AValue: Integer);
 begin
   FPort := AValue;
 end;
-
-initialization
-  { FPC-HTTPAPP-STREAM-1 — override the global Indy WebBroker default so
-    fphttpserver refuses SendStream cleanly (501) instead of hanging. }
-  THorseResponse.RegisterStreamWriterFactory(FPCHttpAppStreamRefused);
 {$ENDIF}
 
 end.
