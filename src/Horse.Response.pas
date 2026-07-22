@@ -47,12 +47,8 @@ type
   end;
 
   THorseStreamProc = procedure(const AWriter: IHorseStreamWriter) of object;
-  {$IF NOT DEFINED(FPC)}
-  THorseStreamAnonProc = reference to procedure(const AWriter: IHorseStreamWriter);
-  THorseStreamWriterFactory = reference to function(const AResponse: THorseResponse): IHorseStreamWriter;
-  {$ELSE}
-  THorseStreamWriterFactory = function(const AResponse: THorseResponse): IHorseStreamWriter;
-  {$ENDIF}
+  THorseStreamAnonProc = {$IF NOT DEFINED(FPC)}reference to {$ENDIF} procedure(const AWriter: IHorseStreamWriter);
+  THorseStreamWriterFactory = {$IF NOT DEFINED(FPC)}reference to {$ENDIF}function(const AResponse: THorseResponse): IHorseStreamWriter;
 
   THorseStreamWriterBase = class(TInterfacedObject, IHorseStreamWriter)
   private
@@ -88,9 +84,7 @@ type
     FContent: TObject;
     FIsStreaming: Boolean;
     FStreamMethod: THorseStreamProc;
-    {$IFNDEF FPC}
     FStreamCallback: THorseStreamAnonProc;
-    {$ENDIF}
     class var FStreamWriterFactory: THorseStreamWriterFactory;
   private
 { ===========================================================================
@@ -173,9 +167,7 @@ type
   public
     class procedure RegisterStreamWriterFactory(const AFactory: THorseStreamWriterFactory);
     function SendStream(const ACallback: THorseStreamProc): THorseResponse; overload;
-    {$IFNDEF FPC}
     function SendStream(const ACallback: THorseStreamAnonProc): THorseResponse; overload;
-    {$ENDIF}
     function Send(const AContent: string): THorseResponse; overload; virtual;
     function Send(const AContent: TBytes): THorseResponse; overload; virtual;
     function Send<T{$IF NOT DEFINED(FPC)}: class{$ENDIF}>(AContent: T): THorseResponse; overload;
@@ -259,9 +251,7 @@ type
     property Request: TObject read FRequest write FRequest;
     property IsStreaming: Boolean read FIsStreaming;
     property StreamMethod: THorseStreamProc read FStreamMethod;
-    {$IFNDEF FPC}
     property StreamCallback: THorseStreamAnonProc read FStreamCallback;
-    {$ENDIF}
     destructor Destroy; override;
   end;
 
@@ -276,6 +266,14 @@ uses
   Horse.Core.MemoryBufferPool
   {$IF DEFINED(FPC)}
   , fphttpserver
+  , ssockets
+  , sockets
+    {$IFDEF UNIX}
+  , BaseUnix
+    {$ENDIF}
+    {$IFDEF MSWINDOWS}
+  , WinSock2
+    {$ENDIF}
   {$ELSE}
   , IdHTTPWebBrokerBridge, IdCustomHTTPServer
   {$ENDIF};
@@ -285,6 +283,7 @@ type
   TFPHTTPConnectionResponseAccess = class(TFPHTTPConnectionResponse)
   public
     procedure WriteToSocket(const ABytes: TBytes);
+    function ClientConnected: Boolean;
   end;
 
 procedure TFPHTTPConnectionResponseAccess.WriteToSocket(
@@ -294,10 +293,112 @@ begin
   if Length(ABytes) = 0 then
     Exit;
 
+  if (Connection = nil) or (Connection.Socket = nil) then
+    raise EWriteError.Create('Conexão HTTP encerrada durante o streaming.');
+
   Connection.Socket.WriteBuffer(
     ABytes[0],
     Length(ABytes)
   );
+end;
+
+function TFPHTTPConnectionResponseAccess.ClientConnected: Boolean;
+var
+  LSocket: TSocketStream;
+  LSocketError: LongInt;
+  LSocketErrorLen: TSockLen;
+  LReadSet: TFDSet;
+  LTimeout: TTimeVal;
+  LSelectResult: LongInt;
+  LRecvResult: LongInt;
+  LByte: Byte;
+begin
+  Result := False;
+
+  if (Connection = nil) or (Connection.Socket = nil) then
+    Exit;
+
+  LSocket := Connection.Socket;
+  if LSocket.Handle < 0 then
+    Exit;
+
+  { SO_ERROR catches pending/reset socket errors without reading application
+    data. A graceful peer close normally leaves SO_ERROR = 0, so a zero-timeout
+    select + MSG_PEEK is also required below. }
+  LSocketError := 0;
+  LSocketErrorLen := SizeOf(LSocketError);
+  if fpGetSockOpt(
+       LSocket.Handle,
+       SOL_SOCKET,
+       SO_ERROR,
+       @LSocketError,
+       @LSocketErrorLen
+     ) <> 0 then
+    Exit;
+
+  if LSocketError <> 0 then
+    Exit;
+
+  LTimeout.tv_sec := 0;
+  LTimeout.tv_usec := 0;
+
+  {$IFDEF UNIX}
+  fpFD_Zero(LReadSet);
+  fpFD_Set(LSocket.Handle, LReadSet);
+  LSelectResult := fpSelect(
+    LSocket.Handle + 1,
+    @LReadSet,
+    nil,
+    nil,
+    @LTimeout
+  );
+  {$ELSE}
+  FD_Zero(LReadSet);
+  FD_Set(LSocket.Handle, LReadSet);
+  LSelectResult := WinSock2.select(
+    LSocket.Handle + 1,
+    @LReadSet,
+    nil,
+    nil,
+    @LTimeout
+  );
+  {$ENDIF}
+
+  if LSelectResult < 0 then
+    Exit;
+
+  { No pending read event means no FIN/reset was observed and the connection is
+    still considered alive. }
+  if LSelectResult = 0 then
+    Exit(True);
+
+  { A readable TCP socket can mean either data waiting or an orderly close.
+    MSG_PEEK distinguishes them without consuming request bytes. }
+  repeat
+    LRecvResult := fpRecv(LSocket.Handle, @LByte, 1, MSG_PEEK);
+    if LRecvResult >= 0 then
+      Break;
+    LSocketError := SocketError;
+  {$IFDEF UNIX}
+  until LSocketError <> ESysEINTR;
+  {$ELSE}
+  until True;
+  {$ENDIF}
+
+  if LRecvResult > 0 then
+    Exit(True);
+
+  if LRecvResult = 0 then
+    Exit(False);
+
+  { The state may change between select and recv. Would-block still means the
+    socket is valid; every other error is treated as disconnected. }
+  {$IFDEF UNIX}
+  Result := (LSocketError = ESysEWOULDBLOCK) or
+            (LSocketError = ESysEAGAIN);
+  {$ELSE}
+  Result := LSocketError = WSAEWOULDBLOCK;
+  {$ENDIF}
 end;
 {$ELSE}
 type
@@ -427,9 +528,7 @@ begin
   not per-request — and is intentionally left alone). }
   FIsStreaming := False;
   FStreamMethod := nil;
-  {$IFNDEF FPC}
   FStreamCallback := nil;
-  {$ENDIF}
 
   if Assigned(FContent) then
     FreeAndNil(FContent);
@@ -679,16 +778,25 @@ procedure THorseResponse.FlushCookiesToWebResponse;
 { Indy path only. On FPC the fphttpserver TResponse.Cookies mapping is a
   follow-up (CrossSocket is the FPC transport); kept a no-op so FPC builds are
   unaffected. CrossSocket/mORMot never reach the body (FWebResponse is nil). }
-{$IFNDEF FPC}
 var
   LCookie:    THorseCookie;
+{$IFNDEF FPC}
   LState:     THorseCookieState;
   LWebCookie: TCookie;
 {$ENDIF}
 begin
-{$IFNDEF FPC}
   if (FWebResponse = nil) or (FCookies = nil) then
     Exit;
+
+{$IFDEF FPC}
+  { fpWeb supports duplicate custom headers and already serializes entries in
+    name=value form. Writing the cookie's complete RFC 6265 value preserves
+    Max-Age and emits one independent Set-Cookie line per cookie. }
+  for LCookie in FCookies do
+    FWebResponse.CustomHeaders.Add(
+      'Set-Cookie=' + LCookie.ToHeaderValue
+    );
+{$ELSE}
   for LCookie in FCookies do
   begin
     LState := LCookie.State;
@@ -1041,7 +1149,6 @@ begin
   end;
 end;
 
-{$IFNDEF FPC}
 function THorseResponse.SendStream(const ACallback: THorseStreamAnonProc): THorseResponse;
 var
   LWriter: IHorseStreamWriter;
@@ -1060,7 +1167,6 @@ begin
     LWriter.Close;
   end;
 end;
-{$ENDIF}
 
 { THorseWebBrokerStreamWriter }
 
@@ -1131,16 +1237,18 @@ end;
 
 function THorseWebBrokerStreamWriter.IsConnected: Boolean;
 begin
-  Result := True;
-  {$IF NOT DEFINED(FPC)}
-  if FResponse.RawWebResponse <> nil then
-  begin
+  Result := False;
+
+  if FResponse.RawWebResponse = nil then
+    Exit;
+
+  {$IF DEFINED(FPC)}
+  if FResponse.RawWebResponse is TFPHTTPConnectionResponse then
+    Result :=  TFPHTTPConnectionResponseAccess(FResponse.RawWebResponse).ClientConnected
+  {$ELSE}
     if FResponse.RawWebResponse is TIdHTTPAppResponse then
-    begin
       if TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FThread <> nil then
         Result := TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FThread.Connection.Connected;
-    end;
-  end;
   {$ENDIF}
 end;
 
