@@ -59,6 +59,9 @@ type
 
   THorseCore = class(THorseCoreBase)
   private
+    class var FCaseSensitive: Boolean;
+    class function GetCaseSensitive: Boolean; static; inline;
+    class procedure SetCaseSensitive(const AValue: Boolean); static; inline;
     class var FRoutes: IHorseRouter;
     class var FCallbacks: TList<THorseCallback>;
     class var FOnRequest: TList<THorseCallback>;
@@ -97,6 +100,7 @@ type
     class function RegisterCallbacksRoute(const AMethod: TMethodType; const APath: string): THorseCore;
     procedure EmptyNext;
   public
+    class property CaseSensitive: Boolean read GetCaseSensitive write SetCaseSensitive;
     constructor Create; virtual;
     class function ToModule: THorseModule;
     class destructor UnInitialize; {$IFNDEF FPC}virtual; {$ENDIF}
@@ -386,6 +390,16 @@ begin
 end;
 
 {$I Horse.Core.Wrappers.inc}
+
+class function THorseCore.GetCaseSensitive: Boolean;
+begin
+  Result := FCaseSensitive;
+end;
+
+class procedure THorseCore.SetCaseSensitive(const AValue: Boolean);
+begin
+  FCaseSensitive := AValue;
+end;
 
 class function THorseCore.AddCallback(const ACallback: THorseCallback): THorseCore;
 begin
@@ -1731,6 +1745,7 @@ begin
 end;
 
 initialization
+  THorseCore.FCaseSensitive := False;
   GetHorseCoreInstance := @THorseCore.GetInstance;
 
 end.

@@ -5,7 +5,7 @@ interface
 uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
   System.SysUtils, System.Generics.Collections,
-  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
+  {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons, Horse.Core;
 
 type
   [TestFixture]
@@ -64,6 +64,10 @@ type
     procedure ExecuteRouteWithCoringaoPriority;
     [Test]
     procedure ExecuteRouteWithMethodNotAllowedAllowHeader;
+    [Test]
+    procedure ExecuteRouteWithDifferentParamNamesAndSharedPrefix;
+    [Test]
+    procedure ExecuteRouteCaseSensitivity;
   end;
 
 implementation
@@ -504,6 +508,76 @@ begin
 
   Assert.IsTrue(LAllow.Contains('GET'));
   Assert.IsTrue(LAllow.Contains('POST'));
+end;
+
+procedure TTestHorseCoreRouterTree.ExecuteRouteWithDifferentParamNamesAndSharedPrefix;
+var
+  L1Called, L2Called: Boolean;
+begin
+  L1Called := False;
+  L2Called := False;
+
+  FRouterTree.RegisterRoute(mtGet, '/ping/:id/teste',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      L1Called := True;
+      Assert.AreEqual('123', Req.Params.Items['id']);
+    end);
+
+  FRouterTree.RegisterRoute(mtGet, '/ping/:id2/teste2',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      L2Called := True;
+      Assert.AreEqual('456', Req.Params.Items['id2']);
+    end);
+
+  FRequest.Populate('GET', mtGet, '/ping/123/teste', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(L1Called);
+
+  FRequest.Clear;
+  FRequest.Populate('GET', mtGet, '/ping/456/teste2', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(L2Called);
+end;
+
+procedure TTestHorseCoreRouterTree.ExecuteRouteCaseSensitivity;
+var
+  LCalled: Boolean;
+begin
+  THorseCore.CaseSensitive := False;
+  LCalled := False;
+  FRouterTree.RegisterRoute(mtGet, '/PING',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCalled := True;
+    end);
+
+  FRequest.Populate('GET', mtGet, '/ping', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCalled);
+
+  FRouterTree.Free;
+  FRouterTree := THorseRouterTree.Create;
+  THorseCore.CaseSensitive := True;
+  
+  LCalled := False;
+  FRouterTree.RegisterRoute(mtGet, '/PING',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCalled := True;
+    end);
+
+  FRequest.Clear;
+  FRequest.Populate('GET', mtGet, '/ping', '', '');
+  Assert.IsFalse(FRouterTree.Execute(FRequest, FResponse) and LCalled);
+
+  FRequest.Clear;
+  FRequest.Populate('GET', mtGet, '/PING', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCalled);
+
+  THorseCore.CaseSensitive := False;
 end;
 
 initialization

@@ -507,7 +507,10 @@ type
   private
     class function GetActiveRequests: Integer; static; inline;
     class function GetIsShuttingDown: Boolean; static; inline;
+    class function GetCaseSensitive: Boolean; static; inline;
+    class procedure SetCaseSensitive(const AValue: Boolean); static; inline;
   public
+    class property CaseSensitive: Boolean read GetCaseSensitive write SetCaseSensitive;
     class procedure UseRadixRouter;
     class property ActiveRequests: Integer read GetActiveRequests;
     class property IsShuttingDown: Boolean read GetIsShuttingDown;
@@ -532,6 +535,16 @@ uses
   Horse.Provider.Abstract;
 
 { THorse }
+
+class function THorse.GetCaseSensitive: Boolean;
+begin
+  Result := THorseCore.CaseSensitive;
+end;
+
+class procedure THorse.SetCaseSensitive(const AValue: Boolean);
+begin
+  THorseCore.CaseSensitive := AValue;
+end;
 
 class function THorse.GetActiveRequests: Integer;
 begin
