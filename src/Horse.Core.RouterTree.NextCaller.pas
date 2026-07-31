@@ -39,7 +39,7 @@ type
     {$ENDIF}
     FCallNextPath: TCallNextPath;
     FIsGroup: Boolean;
-    FTag: string;
+    FTags: TArray<string>;
     FIsParamsKey: Boolean;
     FPart: string;
     FFound: ^Boolean;
@@ -61,7 +61,7 @@ type
       {$ELSE}
       const AMiddleware: TArray<THorseCallback>;
       {$ENDIF}
-      const ATag: string;
+      const ATags: TArray<string>;
       const AIsParamsKey: Boolean;
       const ACallNextPath: TCallNextPath;
       const APart: string;
@@ -143,7 +143,7 @@ procedure TNextCaller.Configure(
   {$ELSE}
   const AMiddleware: TArray<THorseCallback>;
   {$ENDIF}
-  const ATag: string;
+  const ATags: TArray<string>;
   const AIsParamsKey: Boolean;
   const ACallNextPath: TCallNextPath;
   const APart: string;
@@ -158,7 +158,7 @@ begin
   FResponse := AResponse;
   FIsGroup := AIsGroup;
   FMiddleware := AMiddleware;
-  FTag := ATag;
+  FTags := ATags;
   FIsParamsKey := AIsParamsKey;
   FCallNextPath := ACallNextPath;
   FPart := APart;
@@ -169,6 +169,7 @@ procedure TNextCaller.Init;
 var
   LCurrent: THorseBufferSlice;
   LCurrentStr: string;
+  LTag: string;
 begin
   LCurrentStr := '';
   if (not FIsGroup) and (FIndexSegment < Length(FSegments)) then
@@ -181,7 +182,10 @@ begin
   FIndexCallback := -1;
   if FIsParamsKey then
   begin
-    FRequest.Params.Dictionary.AddOrSetValue(FTag, DecodeParam(LCurrentStr));
+    for LTag in FTags do
+    begin
+      FRequest.Params.Dictionary.AddOrSetValue(LTag, DecodeParam(LCurrentStr));
+    end;
   end;
 end;
 

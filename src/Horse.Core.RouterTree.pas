@@ -35,7 +35,7 @@ type
     procedure PopulateQueuePath(AQueue: TQueue<string>; APath: string; const AUsePrefix: Boolean = True);
   private
     FPart: string;
-    FTag: string;
+    FTags: TArray<string>;
     FFullPath: string;
     FIsParamsKey: Boolean;
     FRouterRegex: string;
@@ -53,6 +53,7 @@ type
     {$ENDIF}
     FHandlerMethods: TList<TMethodType>;
     FRoute: TObjectDictionary<string, THorseRouterTree>;
+    procedure AddTag(const ATag: string);
     procedure RegisterInternal(const AHTTPType: TMethodType; var APath: TQueue<string>; const ACallback: THorseCallback; const AFullPath: string; const AIsMiddleware: Boolean = False);
     procedure RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
     function ExecuteInternal(const ASegments: TArray<THorseBufferSlice>; AIndex: Integer; const AHTTPType: TMethodType; const ARequest: THorseRequest; const AResponse: THorseResponse; const AIsGroup: Boolean = False): Boolean;
@@ -289,7 +290,7 @@ begin
   
   for LPair in FRoute do
   begin
-    if (LPair.Key <> '*') and LCurrent.Compare(LPair.Key) then
+    if (LPair.Key <> '*') and LCurrent.Compare(LPair.Key, not THorseCore.CaseSensitive) then
     begin
       LAcceptable := LPair.Value;
       LFound := True;
@@ -485,7 +486,7 @@ begin
       AResponse,
       AIsGroup,
       FMiddleware,
-      FTag,
+      FTags,
       FIsParamsKey,
       CallNextPath,
       FPart,
@@ -497,6 +498,19 @@ begin
     LNextCaller.Free;
   end;
   Result := LFound;
+end;
+
+procedure THorseRouterTree.AddTag(const ATag: string);
+var
+  LItem: string;
+begin
+  for LItem in FTags do
+  begin
+    if LItem = ATag then
+      Exit;
+  end;
+  SetLength(FTags, Length(FTags) + 1);
+  FTags[High(FTags)] := ATag;
 end;
 
 function THorseRouterTree.ForcePath(const APath: string): THorseRouterTree;
@@ -596,7 +610,7 @@ begin
   LNextRoute := nil;
   for LPair in FRoute do
   begin
-    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
+    if LNext.Compare(LPair.Key, not THorseCore.CaseSensitive) or (LPair.Key = '*') then
     begin
       LNextRoute := LPair.Value;
       LFound := True;
@@ -639,7 +653,7 @@ begin
     if Length(APaths) - 1 = AIndex then
       Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
   end
-  else if (Length(APaths) - 1 = AIndex) and (APaths[AIndex].Compare(FPart) or FIsParamsKey) then
+  else if (Length(APaths) - 1 = AIndex) and (APaths[AIndex].Compare(FPart, not THorseCore.CaseSensitive) or FIsParamsKey) then
   begin
     Exit(FCallBack.ContainsKey(AMethod) or (AMethod = mtAny));
   end;
@@ -651,7 +665,7 @@ begin
   LNextRoute := nil;
   for LPair in FRoute do
   begin
-    if LNext.Compare(LPair.Key) or (LPair.Key = '*') then
+    if LNext.Compare(LPair.Key, not THorseCore.CaseSensitive) or (LPair.Key = '*') then
     begin
       LNextRoute := LPair.Value;
       LFound := True;
@@ -686,6 +700,7 @@ var
   LRawPart: string;
   LOpenParenthesis: Integer;
   LCloseParenthesis: Integer;
+  LTag: string;
 begin
   if not FIsInitialized then
   begin
@@ -715,14 +730,16 @@ begin
         if LCloseParenthesis > LOpenParenthesis then
         begin
           FIsRouterRegex := True;
-          FTag := LNormalizedNextPart.Substring(0, LOpenParenthesis);
+          LTag := LNormalizedNextPart.Substring(0, LOpenParenthesis);
           FRouterRegex := LNormalizedNextPart.Substring(LOpenParenthesis + 1, LCloseParenthesis - LOpenParenthesis - 1);
           FRegexMatcher := THorseRegex.Create(FRouterRegex);
         end;
       end;
 
       if not FIsRouterRegex then
-        FTag := LNormalizedNextPart;
+        LTag := LNormalizedNextPart;
+
+      AddTag(LTag);
     end
     else
     begin
@@ -731,18 +748,39 @@ begin
         FIsRouterRegex := True;
         FRouterRegex := FPart.Substring(1, FPart.Length - 2);
         FRegexMatcher := THorseRegex.Create(FRouterRegex);
-        FTag := '';
-      end
-      else
-      begin
-        FTag := '';
       end;
     end;
 
     FIsInitialized := True;
   end
   else
-    APath.Dequeue;
+  begin
+    LRawPart := APath.Dequeue;
+    if FIsParamsKey then
+    begin
+      LNormalizedNextPart := LRawPart.Substring(1);
+
+      if LNormalizedNextPart.EndsWith('?') then
+      begin
+        LNormalizedNextPart := LNormalizedNextPart.Substring(0, LNormalizedNextPart.Length - 1);
+      end;
+
+      LOpenParenthesis := LNormalizedNextPart.IndexOf('(');
+      if LOpenParenthesis >= 0 then
+      begin
+        LCloseParenthesis := LNormalizedNextPart.IndexOf(')');
+        if LCloseParenthesis > LOpenParenthesis then
+        begin
+          LTag := LNormalizedNextPart.Substring(0, LOpenParenthesis);
+        end;
+      end
+      else
+        LTag := LNormalizedNextPart;
+
+      if LTag <> '' then
+        AddTag(LTag);
+    end;
+  end;
 
   if APath.Count = 0 then
   begin
@@ -776,6 +814,11 @@ begin
   begin
     LNextPart := APath.Peek;
     LNormalizedNextPart := NormalizeParamKey(LNextPart);
+    if not THorseCore.CaseSensitive then
+    begin
+      if (not LNextPart.StartsWith(':')) and (not LNextPart.StartsWith('(')) then
+        LNormalizedNextPart := LowerCase(LNormalizedNextPart);
+    end;
 
     LForceRouter := ForcePath(LNormalizedNextPart);
 
@@ -811,19 +854,88 @@ begin
 end;
 
 procedure THorseRouterTree.RegisterMiddlewareInternal(var APath: TQueue<string>; const AMiddleware: THorseCallback);
+var
+  LNextPart: string;
+  LNormalizedNextPart: string;
+  LForceRouter: THorseRouterTree;
+  LRawPart: string;
+  LNormalizedRawPart: string;
+  LOpenParenthesis: Integer;
+  LCloseParenthesis: Integer;
+  LTag: string;
 begin
-  APath.Dequeue;
-  if APath.Count = 0 then
-    {$IF DEFINED(FPC)}
-    FMiddleware.Add(AMiddleware)
-    {$ELSE}
+  if not FIsInitialized then
+  begin
+    LRawPart := APath.Dequeue;
+    FPart := LRawPart;
+    FIsParamsKey := FPart.StartsWith(':');
+    if FIsParamsKey then
     begin
-      SetLength(FMiddleware, Length(FMiddleware) + 1);
-      FMiddleware[Length(FMiddleware) - 1] := AMiddleware;
-    end
-    {$ENDIF}
+      LNormalizedRawPart := FPart.Substring(1);
+      if LNormalizedRawPart.EndsWith('?') then
+        LNormalizedRawPart := LNormalizedRawPart.Substring(0, LNormalizedRawPart.Length - 1);
+      LOpenParenthesis := LNormalizedRawPart.IndexOf('(');
+      if LOpenParenthesis >= 0 then
+      begin
+        LCloseParenthesis := LNormalizedRawPart.IndexOf(')');
+        if LCloseParenthesis > LOpenParenthesis then
+          LTag := LNormalizedRawPart.Substring(0, LOpenParenthesis);
+      end
+      else
+        LTag := LNormalizedRawPart;
+
+      if LTag <> '' then
+        AddTag(LTag);
+    end;
+    FIsInitialized := True;
+  end
   else
-    ForcePath(APath.Peek).RegisterMiddlewareInternal(APath, AMiddleware);
+  begin
+    LRawPart := APath.Dequeue;
+    if FIsParamsKey then
+    begin
+      LNormalizedRawPart := LRawPart.Substring(1);
+      if LNormalizedRawPart.EndsWith('?') then
+        LNormalizedRawPart := LNormalizedRawPart.Substring(0, LNormalizedRawPart.Length - 1);
+      LOpenParenthesis := LNormalizedRawPart.IndexOf('(');
+      if LOpenParenthesis >= 0 then
+      begin
+        LCloseParenthesis := LNormalizedRawPart.IndexOf(')');
+        if LCloseParenthesis > LOpenParenthesis then
+          LTag := LNormalizedRawPart.Substring(0, LOpenParenthesis);
+      end
+      else
+        LTag := LNormalizedRawPart;
+
+      if LTag <> '' then
+        AddTag(LTag);
+    end;
+  end;
+
+  if APath.Count = 0 then
+  begin
+    {$IF DEFINED(FPC)}
+    FMiddleware.Add(AMiddleware);
+    {$ELSE}
+    SetLength(FMiddleware, Length(FMiddleware) + 1);
+    FMiddleware[Length(FMiddleware) - 1] := AMiddleware;
+    {$ENDIF}
+  end;
+
+  if APath.Count > 0 then
+  begin
+    LNextPart := APath.Peek;
+    LNormalizedNextPart := NormalizeParamKey(LNextPart);
+    if not THorseCore.CaseSensitive then
+    begin
+      if (not LNextPart.StartsWith(':')) and (not LNextPart.StartsWith('(')) then
+        LNormalizedNextPart := LowerCase(LNormalizedNextPart);
+    end;
+
+    LForceRouter := ForcePath(LNormalizedNextPart);
+
+    LForceRouter.RegisterMiddlewareInternal(APath, AMiddleware);
+  end;
 end;
 
 initialization

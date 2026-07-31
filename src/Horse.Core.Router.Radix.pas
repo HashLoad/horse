@@ -567,6 +567,7 @@ var
   LItem: TStaticRouteItem;
   LPathLen: Integer;
   LMatch: Boolean;
+  B1, B2: Byte;
 begin
   ACallbacks := nil;
   if not FStaticRoutesBuilt then
@@ -581,7 +582,14 @@ begin
       LMatch := True;
       for J := 0 to LPathLen - 1 do
       begin
-        if ABuffer[APathSpan.Offset + J] <> LItem.PathBytes[J] then
+        B1 := ABuffer[APathSpan.Offset + J];
+        B2 := LItem.PathBytes[J];
+        if not THorseCore.CaseSensitive then
+        begin
+          if (B1 >= 65) and (B1 <= 90) then B1 := B1 + 32;
+          if (B2 >= 65) and (B2 <= 90) then B2 := B2 + 32;
+        end;
+        if B1 <> B2 then
         begin
           LMatch := False;
           Break;
@@ -617,14 +625,32 @@ begin
     if (LSeg = '') and (I > 0) and (I = Length(LSegments) - 1) then
       Continue;
 
+    if not THorseCore.CaseSensitive then
+    begin
+      if (not LSeg.StartsWith(':')) and (not LSeg.StartsWith('(')) then
+        LSeg := LowerCase(LSeg);
+    end;
+
     LFound := False;
     for LChild in LCurrent.Children do
     begin
-      if SameText(LChild.Part, LSeg) then
+      if THorseCore.CaseSensitive then
       begin
-        LCurrent := LChild;
-        LFound := True;
-        Break;
+        if LChild.Part = LSeg then
+        begin
+          LCurrent := LChild;
+          LFound := True;
+          Break;
+        end;
+      end
+      else
+      begin
+        if SameText(LChild.Part, LSeg) then
+        begin
+          LCurrent := LChild;
+          LFound := True;
+          Break;
+        end;
       end;
     end;
 
@@ -712,7 +738,7 @@ begin
   // 1. Tenta correspondência exata via SWAR 64-bit
   for LChild in ANode.Children do
   begin
-    if (not LChild.IsParam) and (LChild.Part <> '*') and LCurrentSlice.Compare(LChild.Part, True) then
+    if (not LChild.IsParam) and (LChild.Part <> '*') and LCurrentSlice.Compare(LChild.Part, not THorseCore.CaseSensitive) then
     begin
       LTempNode := LChild;
       LBestMatch := FindNode(ASegments, AIndex + 1, LTempNode, AHTTPType, AMiddlewares, AParams);
