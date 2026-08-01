@@ -13,7 +13,7 @@ type
   THorseRttiTypeHelper = class helper for TRttiType
   public
     {$IF NOT DEFINED(FPC)}
-    function FieldValueAsObject(const AInstance: Pointer; const AFieldName: string): TObject;
+      function FieldValueAsObject(const AInstance: Pointer; const AFieldName: string): TObject;
     {$ENDIF}
   end;
 

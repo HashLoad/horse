@@ -22,12 +22,14 @@ uses
 function DecodeParam(const AValue: string): string;
 begin
   if Pos('%', AValue) = 0 then
+  begin
     Exit(AValue);
-    
+  end;
+
   {$IF DEFINED(FPC)}
-  Result := HTTPDecode(AValue);
+    Result := HTTPDecode(AValue);
   {$ELSE}
-  Result := TNetEncoding.URL.Decode(AValue);
+    Result := TNetEncoding.URL.Decode(AValue);
   {$ENDIF}
 end;
 

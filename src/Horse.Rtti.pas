@@ -12,6 +12,7 @@ uses
 {$ELSE}
   System.Rtti;
 {$ENDIF}
+
 type
   THorseRtti = class
   private
@@ -38,7 +39,9 @@ uses
 constructor THorseRtti.Create;
 begin
   if FHorseRtti <> nil then
+  begin
     raise Exception.Create('The Horse Rtti instance has already been created');
+  end;
   FContext := TRttiContext.Create;
   FHorseRtti := Self;
 end;
@@ -46,7 +49,9 @@ end;
 class function THorseRtti.GetDefaultHorseRtti: THorseRtti;
 begin
   if FHorseRtti = nil then
+  begin
     FHorseRtti := THorseRtti.Create;
+  end;
   Result := FHorseRtti;
 end;
 
@@ -63,7 +68,9 @@ end;
 class destructor THorseRtti.UnInitialize;
 begin
   if FHorseRtti <> nil then
+  begin
     FreeAndNil(FHorseRtti);
+  end;
 end;
 
 end.

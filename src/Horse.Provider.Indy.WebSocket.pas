@@ -1,4 +1,4 @@
-unit Horse.Provider.Indy.WebSocket;
+﻿unit Horse.Provider.Indy.WebSocket;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -7,7 +7,12 @@ unit Horse.Provider.Indy.WebSocket;
 interface
 
 uses
-  SysUtils, Classes, IdContext, IdHTTPWebBrokerBridge, Web.HTTPApp, IdGlobal,
+  SysUtils,
+  Classes,
+  IdContext,
+  IdHTTPWebBrokerBridge,
+  Web.HTTPApp,
+  IdGlobal,
   Horse.Core.WebSocket;
 
 type

@@ -1,7 +1,7 @@
-unit Horse.Provider.IOCP;
+﻿unit Horse.Provider.IOCP;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -9,19 +9,19 @@ interface
 {$IFDEF MSWINDOWS}
 uses
   {$IF DEFINED(FPC)}
-  SysUtils,
-  Classes,
-  Generics.Collections,
-  Windows,
-  WinSock2,
-  syncobjs,
+    SysUtils,
+    Classes,
+    Generics.Collections,
+    Windows,
+    WinSock2,
+    syncobjs,
   {$ELSE}
-  System.SysUtils,
-  System.Classes,
-  System.SyncObjs,
-  System.Generics.Collections,
-  Winapi.Windows,
-  Winapi.WinSock2,
+    System.SysUtils,
+    System.Classes,
+    System.SyncObjs,
+    System.Generics.Collections,
+    Winapi.Windows,
+    Winapi.WinSock2,
   {$ENDIF}
   Horse.Provider.Abstract,
   Horse.Provider.Config,
@@ -39,9 +39,9 @@ type
   TIocpConnectionContext = class;
 
   {$IF DEFINED(FPC)}
-  THorseProviderCallback = Horse.Proc.TProc;
+    THorseProviderCallback = Horse.Proc.TProc;
   {$ELSE}
-  THorseProviderCallback = System.SysUtils.TProc;
+    THorseProviderCallback = System.SysUtils.TProc;
   {$ENDIF}
 
   THeaderSegment = record
@@ -75,6 +75,7 @@ type
       out AContentLength: Int64;
       out AIsChunked: Boolean
     ): Boolean; static;
+
     { Fix G — Transfer-Encoding: chunked support. Returns False while the
       terminating zero-size chunk has not arrived yet (read more and retry).
       On True the chunk data has been compacted in place at ABodyOffset,
@@ -120,6 +121,7 @@ type
       const AClientIP: string;
       AClientPort: Integer
     );
+
     destructor Destroy; override;
 
     function GetMethod: string;
@@ -137,9 +139,9 @@ type
     function GetContentLength: Integer;
     {$ELSE}
       {$IF CompilerVersion >= 32.0}
-      function GetContentLength: Int64;
+        function GetContentLength: Int64;
       {$ELSE}
-      function GetContentLength: Integer;
+        function GetContentLength: Integer;
       {$ENDIF}
     {$ENDIF}
 
@@ -291,9 +293,10 @@ type
     Res: THorseResponse;
     RawRes: TIocpRawResponse;
     {$IFNDEF FPC}
-    WebRequest: TInterfacedWebRequest;
+      WebRequest: TInterfacedWebRequest;
     {$ENDIF}
   end;
+
   PWorkItemData = ^TWorkItemData;
 
   function QueueUserWorkItem(Func: Pointer; Context: Pointer; Flags: ULONG): BOOL; stdcall; external kernel32 name 'QueueUserWorkItem';
@@ -308,7 +311,7 @@ implementation
 
 {$IFNDEF FPC}
   {$IF CompilerVersion < 31.0}
-  function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
+    function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
   {$IFEND}
 {$ENDIF}
 
@@ -408,17 +411,21 @@ begin
     end;
   end;
 
-  if LHeaderEnd = -1 then Exit;
+  if LHeaderEnd = -1 then
+    Exit;
 
   // 1. Parse da Request Line
   LLineEnd := FindCRLF(ABuffer, 0, LHeaderEnd);
-  if LLineEnd = -1 then Exit;
+  if LLineEnd = -1 then
+    Exit;
 
   LSpace1 := FindByte(ABuffer, 0, LLineEnd, 32);
-  if LSpace1 = -1 then Exit;
+  if LSpace1 = -1 then
+    Exit;
 
   LSpace2 := FindByte(ABuffer, LSpace1 + 1, LLineEnd, 32);
-  if LSpace2 = -1 then Exit;
+  if LSpace2 = -1 then
+    Exit;
 
   LMethodLen := LSpace1;
   LPathLen := LSpace2 - LSpace1 - 1;
@@ -448,7 +455,8 @@ begin
   while LLineStart < LHeaderEnd do
   begin
     LLineEnd := FindCRLF(ABuffer, LLineStart, LHeaderEnd);
-    if LLineEnd = -1 then LLineEnd := LHeaderEnd;
+    if LLineEnd = -1 then
+      LLineEnd := LHeaderEnd;
 
     LColon := FindByte(ABuffer, LLineStart, LLineEnd, 58); // ':'
     if LColon <> -1 then
@@ -509,7 +517,8 @@ begin
   begin
     { chunk-size line: hex digits, optional ';extensions', terminated by CRLF }
     LLineEnd := FindCRLF(ABuffer, LSrc, ALength);
-    if LLineEnd = -1 then Exit;   { size line not complete yet }
+    if LLineEnd = -1 then
+      Exit;   { size line not complete yet }
 
     LChunkSize := 0;
     I := LSrc;
@@ -528,7 +537,10 @@ begin
       if LChunkSize > $7FFFFFFF then Exit;     { insane size — treat as incomplete }
       Inc(I);
     end;
-    if I = LSrc then Exit;        { no hex digit at all — malformed }
+
+    if I = LSrc then
+      Exit;        { no hex digit at all — malformed }
+
     LSrc := LLineEnd + 2;
 
     if LChunkSize = 0 then
@@ -565,7 +577,8 @@ begin
     No mutation happens, so an incomplete body can safely be re-scanned
     after the next read completion delivers more bytes. }
   Result := ScanChunkedBody(ABuffer, ALength, ABodyOffset, False, ADecodedLength);
-  if not Result then Exit;
+  if not Result then
+    Exit;
 
   { pass 2 — compact the chunk data in place over the chunk framing.
     LDst only ever trails LSrc, so the forward Move is safe. }
@@ -642,7 +655,8 @@ var
   LLowerName: string;
 begin
   LLowerName := LowerCase(AName);
-  if FResolvedHeaders.TryGetValue(LLowerName, Result) then Exit;
+  if FResolvedHeaders.TryGetValue(LLowerName, Result) then
+    Exit;
 
   for I := 0 to Length(FHeaders) - 1 do
   begin
@@ -798,7 +812,8 @@ begin
     Exit;
 
   LBody := GetContent;
-  if LBody = '' then Exit;
+  if LBody = '' then
+    Exit;
 
   LStart := 1;
   LLen := Length(LBody);
@@ -825,7 +840,8 @@ var
   LName, LValue, LPart: string;
 begin
   LCookies := GetFieldByName('Cookie');
-  if LCookies = '' then Exit;
+  if LCookies = '' then
+    Exit;
 
   LStart := 1;
   LLen := Length(LCookies);
@@ -964,6 +980,7 @@ begin
     LBytesSent := 0;
     WSASend(FContext.Socket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil);
   end;
+
   FHeadersSent := True;
 end;
 
@@ -971,7 +988,8 @@ procedure TIocpRawResponse.SendHeaders;
 var
   LHeaderBytes: TBytes;
 begin
-  if FHeadersSent then Exit;
+  if FHeadersSent then
+    Exit;
   LHeaderBytes := PrepareHeaders;
   if Length(LHeaderBytes) > 0 then
     send(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
@@ -1006,7 +1024,8 @@ begin
   while True do
   begin
     LReadCount := AStream.Read(LChunkBuf[0], Length(LChunkBuf));
-    if LReadCount <= 0 then Break;
+    if LReadCount <= 0 then
+      Break;
     send(FContext.Socket, LChunkBuf[0], LReadCount, 0);
   end;
   FinalizeResponse;
@@ -1044,11 +1063,16 @@ begin
   { REPEATHDR-1 — borrow the ordered dup-preserving store for PrepareHeaders. }
   FRepeatHeaders := ARes.RepeatHeaders;
   
-  if FStatusCode = 200 then FStatusReason := 'OK'
-  else if FStatusCode = 204 then FStatusReason := 'No Content'
-  else if FStatusCode = 404 then FStatusReason := 'Not Found'
-  else if FStatusCode = 500 then FStatusReason := 'Internal Server Error'
-  else FStatusReason := 'HTTP Response';
+  if FStatusCode = 200 then
+    FStatusReason := 'OK'
+  else if FStatusCode = 204 then
+    FStatusReason := 'No Content'
+  else if FStatusCode = 404 then
+    FStatusReason := 'Not Found'
+  else if FStatusCode = 500 then
+    FStatusReason := 'Internal Server Error'
+  else
+    FStatusReason := 'HTTP Response';
 
   { REPEATHDR-1 — copy the shadow CustomHeaders into FHeaders, but SKIP
     Set-Cookie: the dict would collapse repeats, and every Set-Cookie is emitted
@@ -1303,7 +1327,8 @@ begin
       for I := FConnections.Count - 1 downto 0 do
       begin
         LContext := FConnections[I];
-        if LContext.Processing then Continue;
+        if LContext.Processing then
+          Continue;
         if LNow - LContext.LastActive > 60000 then // Keep-Alive timeout de 60s
           LExpired.Add(LContext);
       end;
@@ -1325,7 +1350,8 @@ var
   dwBytes: DWORD;
 begin
   LAcceptSocket := socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if LAcceptSocket = INVALID_SOCKET then Exit;
+  if LAcceptSocket = INVALID_SOCKET then
+    Exit;
 
   LContext := TIocpConnectionContext.Create(LAcceptSocket);
   FConnectionsSync.Enter;
@@ -1869,11 +1895,13 @@ begin
     concurrent streaming load a truncated chunk corrupted the response, leaving the
     just-streamed keep-alive connection unusable on reuse (test 36). Loop until every
     byte is sent; stop on error/close (IsConnected then reports false). }
-  if not Assigned(FRawRes) then Exit;
+  if not Assigned(FRawRes) then
+    Exit;
   LTotal := 0;
   while LTotal < ALen do
   begin
-    if FRawRes.FContext.Socket = INVALID_SOCKET then Exit;
+    if FRawRes.FContext.Socket = INVALID_SOCKET then
+      Exit;
     LRet := send(FRawRes.FContext.Socket, AData[LTotal], ALen - LTotal, 0);
     if LRet <= 0 then
       Exit;
@@ -1913,11 +1941,16 @@ begin
     FRawRes.FHeaders.AddOrSetValue('Content-Type', FResponse.CSContentType);
 
   FRawRes.FStatusCode := FResponse.Status;
-  if FRawRes.FStatusCode = 200 then FRawRes.FStatusReason := 'OK'
-  else if FRawRes.FStatusCode = 204 then FRawRes.FStatusReason := 'No Content'
-  else if FRawRes.FStatusCode = 404 then FRawRes.FStatusReason := 'Not Found'
-  else if FRawRes.FStatusCode = 500 then FRawRes.FStatusReason := 'Internal Server Error'
-  else FRawRes.FStatusReason := 'HTTP Response';
+  if FRawRes.FStatusCode = 200 then
+    FRawRes.FStatusReason := 'OK'
+  else if FRawRes.FStatusCode = 204 then
+    FRawRes.FStatusReason := 'No Content'
+  else if FRawRes.FStatusCode = 404 then
+    FRawRes.FStatusReason := 'Not Found'
+  else if FRawRes.FStatusCode = 500 then
+    FRawRes.FStatusReason := 'Internal Server Error'
+  else
+    FRawRes.FStatusReason := 'HTTP Response';
 
   LHeaderBytes := FRawRes.PrepareHeaders;
   if Length(LHeaderBytes) > 0 then
@@ -1928,7 +1961,8 @@ end;
 
 procedure TIocpStreamWriter.WriteRawBytes(const ABytes: TBytes);
 begin
-  if Length(ABytes) = 0 then Exit;
+  if Length(ABytes) = 0 then
+    Exit;
   SendFully(ABytes, Length(ABytes));
 end;
 
@@ -1944,7 +1978,6 @@ end;
 
 initialization
   THorseResponse.RegisterStreamWriterFactory(IocpStreamWriterFactory);
-
 {$ENDIF}
 
 end.

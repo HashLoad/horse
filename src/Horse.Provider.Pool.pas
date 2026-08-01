@@ -1,6 +1,8 @@
-unit Horse.Provider.Pool;
+﻿unit Horse.Provider.Pool;
 
-{$IF DEFINED(FPC)}{$MODE DELPHI}{$H+}{$ENDIF}
+{$IF DEFINED(FPC)}
+  {$MODE DELPHI}
+{$H+}{$ENDIF}
 
 {
   Horse Provider  —  Shared Context Pool
