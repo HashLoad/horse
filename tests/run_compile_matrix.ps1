@@ -46,14 +46,14 @@ $DelphiScenarios = @(
     @{ Name = "HttpSys"; Defines = "CI;HORSE_PROVIDER_HTTPSYS" },
     @{ Name = "HttpSys+Radix"; Defines = "CI;HORSE_PROVIDER_HTTPSYS;HORSE_RADIX_ROUTER" },
     # Apache
-    @{ Name = "Apache"; Defines = "CI;HORSE_PROVIDER_APACHE" },
-    @{ Name = "Apache+Radix"; Defines = "CI;HORSE_PROVIDER_APACHE;HORSE_RADIX_ROUTER" },
+    @{ Name = "Apache"; Defines = "CI;HORSE_PROVIDER_APACHE;HORSE_APACHE" },
+    @{ Name = "Apache+Radix"; Defines = "CI;HORSE_PROVIDER_APACHE;HORSE_APACHE;HORSE_RADIX_ROUTER" },
     # CGI
-    @{ Name = "CGI"; Defines = "CI;HORSE_PROVIDER_CGI" },
-    @{ Name = "CGI+Radix"; Defines = "CI;HORSE_PROVIDER_CGI;HORSE_RADIX_ROUTER" },
+    @{ Name = "CGI"; Defines = "CI;HORSE_PROVIDER_CGI;HORSE_CGI" },
+    @{ Name = "CGI+Radix"; Defines = "CI;HORSE_PROVIDER_CGI;HORSE_CGI;HORSE_RADIX_ROUTER" },
     # ISAPI
-    @{ Name = "ISAPI"; Defines = "CI;HORSE_PROVIDER_ISAPI" },
-    @{ Name = "ISAPI+Radix"; Defines = "CI;HORSE_PROVIDER_ISAPI;HORSE_RADIX_ROUTER" },
+    @{ Name = "ISAPI"; Defines = "CI;HORSE_PROVIDER_ISAPI;HORSE_ISAPI" },
+    @{ Name = "ISAPI+Radix"; Defines = "CI;HORSE_PROVIDER_ISAPI;HORSE_ISAPI;HORSE_RADIX_ROUTER" },
     # Daemon
     @{ Name = "Daemon"; Defines = "CI;HORSE_PROVIDER_DAEMON" },
     @{ Name = "Daemon+Radix"; Defines = "CI;HORSE_PROVIDER_DAEMON;HORSE_RADIX_ROUTER" },
@@ -68,10 +68,10 @@ $FpcScenarios = @(
     @{ Name = "Default+Radix"; Defines = "HORSE_CONSOLE;HORSE_RADIX_ROUTER" },
     @{ Name = "Epoll"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_EPOLL" },
     @{ Name = "Epoll+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_EPOLL;HORSE_RADIX_ROUTER" },
-    @{ Name = "Apache"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_APACHE" },
-    @{ Name = "Apache+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_APACHE;HORSE_RADIX_ROUTER" },
-    @{ Name = "CGI"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI" },
-    @{ Name = "CGI+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI;HORSE_RADIX_ROUTER" },
+    @{ Name = "Apache"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_APACHE;HORSE_APACHE" },
+    @{ Name = "Apache+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_APACHE;HORSE_APACHE;HORSE_RADIX_ROUTER" },
+    @{ Name = "CGI"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI;HORSE_CGI" },
+    @{ Name = "CGI+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI;HORSE_CGI;HORSE_RADIX_ROUTER" },
     @{ Name = "Daemon"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_DAEMON" },
     @{ Name = "Daemon+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_DAEMON;HORSE_RADIX_ROUTER" }
 )
