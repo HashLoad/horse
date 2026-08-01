@@ -1,4 +1,4 @@
-﻿unit Horse.Instance;
+unit Horse.Instance;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -1456,7 +1456,11 @@ begin
   RegisterHorseInstance(APort, Self);
   FRunning := True;
   try
+    {$IF DEFINED(HORSE_ISAPI) OR DEFINED(HORSE_CGI) OR DEFINED(HORSE_APACHE)}
+    THorseProvider.Listen(ACallbackListen);
+    {$ELSE}
     THorseProvider.Listen(APort, AHost, ACallbackListen, ACallbackStopListen);
+    {$ENDIF}
   except
     FRunning := False;
     raise;
