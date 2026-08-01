@@ -64,6 +64,7 @@ type
   { Roteador Radix de alta performance e vetorizado em software (SWAR 64-bit) }
   THorseRadixRouter = class(TInterfacedObject, IHorseRouter)
   private
+    FPrefix: string;
     FRoot: TRadixNode;
     FGlobalMiddlewares: TList<THorseCallback>;
     {$IFDEF FPC}
@@ -85,6 +86,8 @@ type
     {$IFDEF FPC}
     function MatchStaticRoute(const ABuffer: TBytes; const APathSpan: TByteSpan; const AMethod: TMethodType; out ACallbacks: TList<THorseCallback>): Boolean;
     {$ENDIF}
+    function GetPrefix: string;
+    procedure Prefix(const APrefix: string);
     procedure RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
     procedure RegisterRouteMiddleware(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);
     procedure RegisterMiddleware(const APath: string; const AMiddleware: THorseCallback); overload;
@@ -475,6 +478,7 @@ end;
 
 constructor THorseRadixRouter.Create;
 begin
+  FPrefix := '';
   FRoot := TRadixNode.Create('');
   FGlobalMiddlewares := TList<THorseCallback>.Create;
   {$IFDEF FPC}
@@ -615,8 +619,19 @@ var
   LChild: TRadixNode;
   LFound: Boolean;
   I: Integer;
+  LFullPath: string;
 begin
-  LSegments := APath.Trim(['/']).Split(['/']);
+  if FPrefix <> '' then
+  begin
+    if not APath.StartsWith('/') then
+      LFullPath := FPrefix + '/' + APath
+    else
+      LFullPath := FPrefix + APath;
+  end
+  else
+    LFullPath := APath;
+
+  LSegments := LFullPath.Trim(['/']).Split(['/']);
   LCurrent := FRoot;
 
   for I := 0 to Length(LSegments) - 1 do
@@ -663,7 +678,17 @@ begin
   end;
 
   LCurrent.AddRouteCallback(AHTTPType, ACallback, AIsMiddleware);
-  LCurrent.FullPath := '/' + APath.Trim(['/']);
+  LCurrent.FullPath := '/' + LFullPath.Trim(['/']);
+end;
+
+function THorseRadixRouter.GetPrefix: string;
+begin
+  Result := FPrefix;
+end;
+
+procedure THorseRadixRouter.Prefix(const APrefix: string);
+begin
+  FPrefix := '/' + APrefix.Trim(['/']);
 end;
 
 procedure THorseRadixRouter.RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback);

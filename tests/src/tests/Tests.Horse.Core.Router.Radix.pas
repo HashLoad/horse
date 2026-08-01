@@ -46,6 +46,8 @@ type
     procedure ExecuteRouteWithCoringaoPriority;
     [Test]
     procedure ExecuteRouteWithMethodNotAllowedAllowHeader;
+    [Test]
+    procedure ExecuteRouteWithPrefix;
   end;
 
 implementation
@@ -363,6 +365,25 @@ begin
 
   Assert.IsTrue(LAllow.Contains('GET'));
   Assert.IsTrue(LAllow.Contains('POST'));
+end;
+
+procedure TTestHorseCoreRouterRadix.ExecuteRouteWithPrefix;
+var
+  LCalled: Boolean;
+begin
+  LCalled := False;
+  FRouter.Prefix('/api');
+  Assert.AreEqual('/api', FRouter.GetPrefix);
+
+  FRouter.RegisterRoute(mtGet, '/users',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCalled := True;
+    end);
+
+  FRequest.Populate('GET', mtGet, '/api/users', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCalled);
 end;
 
 initialization
