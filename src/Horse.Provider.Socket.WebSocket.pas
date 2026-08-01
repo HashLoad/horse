@@ -22,13 +22,13 @@ uses
 type
   {$IFDEF FPC}
     {$IFDEF MSWINDOWS}
-    TSocket = THandle;
+      TSocket = THandle;
     {$ELSE}
-    TSocket = LongInt;
+      TSocket = LongInt;
     {$ENDIF}
   {$ELSE}
     {$IFNDEF MSWINDOWS}
-    TSocket = Integer;
+      TSocket = Integer;
     {$ENDIF}
   {$ENDIF}
 

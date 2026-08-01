@@ -1,4 +1,4 @@
-unit Horse.Provider.HttpSys;
+﻿unit Horse.Provider.HttpSys;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -39,22 +39,17 @@ uses
 {$IFNDEF FPC}
 type
   {$IF CompilerVersion >= 31.0}
-  THttpSysString = string;
+    THttpSysString = string;
   {$ELSE}
-  THttpSysString = AnsiString;
+    THttpSysString = AnsiString;
   {$IFEND}
 {$ENDIF}
 
 const
   HTTPAPI_DLL = 'httpapi.dll';
-
   HTTP_INITIALIZE_SERVER = $00000001;
-
-  // HttpSendHttpResponse flags
   HTTP_SEND_RESPONSE_FLAG_DISCONNECT  = $00000001;
   HTTP_SEND_RESPONSE_FLAG_MORE_DATA   = $00000002;
-
-  // Request flags
   HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS = $00000001;
 
 {$MINENUMSIZE 4}
@@ -128,6 +123,7 @@ type
     pName: PAnsiChar;
     pRawValue: PAnsiChar;
   end;
+
   PHTTP_UNKNOWN_HEADER = ^HTTP_UNKNOWN_HEADER;
   THTTP_UNKNOWN_HEADER_ARRAY = array[0..65535] of HTTP_UNKNOWN_HEADER;
   PHTTP_UNKNOWN_HEADER_ARRAY = ^THTTP_UNKNOWN_HEADER_ARRAY;
@@ -163,6 +159,7 @@ type
     pClientCertInfo: Pointer;
     SslClientCertNegotiated: ULONG;
   end;
+
   PHTTP_SSL_INFO = ^HTTP_SSL_INFO;
 
   HTTP_REQUEST = record
@@ -187,6 +184,7 @@ type
     RequestInfoCount: USHORT;
     pRequestInfo: Pointer;
   end;
+
   PHTTP_REQUEST = ^HTTP_REQUEST;
 
   THttpChunkType = (
@@ -201,23 +199,24 @@ type
     pBuffer: Pointer;
     BufferLength: ULONG;
     {$IFDEF CPUX64}
-    Reserved2: array[0..2] of ULONG;
+      Reserved2: array[0..2] of ULONG;
     {$ELSE}
-    Reserved2: array[0..3] of ULONG;
+      Reserved2: array[0..3] of ULONG;
     {$ENDIF}
   end;
+
   PHTTP_DATA_CHUNK_INMEMORY = ^HTTP_DATA_CHUNK_INMEMORY;
 
   HTTP_DATA_CHUNK_FILE = record
     DataChunkType: THttpChunkType;
     {$IFDEF CPUX64}
-    Reserved1: ULONG;
+      Reserved1: ULONG;
     {$ENDIF}
     StartingOffset: UInt64;
     Length: UInt64;
     FileHandle: THandle;
     {$IFNDEF CPUX64}
-    Reserved2: array[0..1] of ULONG;
+      Reserved2: array[0..1] of ULONG;
     {$ENDIF}
   end;
 
@@ -233,6 +232,7 @@ type
     ResponseInfoCount: USHORT;
     pResponseInfo: Pointer;
   end;
+
   PHTTP_RESPONSE = ^HTTP_RESPONSE;
 
   THTTP_SERVER_PROPERTY = (
@@ -250,6 +250,7 @@ type
     Flags: ULONG;
     RequestQueueHandle: THandle;
   end;
+
   PHTTP_BINDING_INFO = ^HTTP_BINDING_INFO;
 
   TSockAddrIn = record
@@ -258,6 +259,7 @@ type
     sin_addr: array[0..3] of Byte;
     sin_zero: array[0..7] of Byte;
   end;
+
   PSockAddrIn = ^TSockAddrIn;
 
 const
@@ -283,7 +285,6 @@ const
     'Set-Cookie', 'Vary', 'Www-Authenticate'
   );
 
-// Windows Http.sys native APIs
 {$IFNDEF FPC}
 function GetTickCount64: UInt64; stdcall; external 'kernel32.dll' name 'GetTickCount64';
 {$ENDIF}

@@ -5,8 +5,9 @@ program Console;
 {$ENDIF}
 
 {$APPTYPE CONSOLE}
+
 {$IFDEF MSWINDOWS}
-{$R *.res}
+  {$R *.res}
 {$ENDIF}
 
 uses

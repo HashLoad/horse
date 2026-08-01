@@ -1,7 +1,7 @@
-unit Horse.Request;
+﻿unit Horse.Request;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -16,9 +16,9 @@ uses
   System.SysUtils,
   Web.HTTPApp,
   System.Generics.Collections,
-{$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
-{$ENDIF}
+  {$IF CompilerVersion > 32.0}
+    Web.ReqMulti,
+  {$ENDIF}
 {$ENDIF}
   Horse.Core.Param,
   Horse.Session,

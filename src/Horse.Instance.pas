@@ -1,4 +1,4 @@
-unit Horse.Instance;
+﻿unit Horse.Instance;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -66,7 +66,10 @@ type
     FPort: Integer;
     FHost: string;
     FRunning: Boolean;
-    procedure EmptyNext;
+
+    {$IF DEFINED(FPC)}
+      procedure EmptyNext;
+    {$ENDIF}
 
     class function TrimPath(const APath: string): string; static;
     function RegisterRoute(const AHTTPType: TMethodType; const APath: string; const ACallback: THorseCallback): THorseInstance;
@@ -361,9 +364,12 @@ end;
 
 { THorseInstance }
 
+{$IF DEFINED(FPC)}
 procedure THorseInstance.EmptyNext;
 begin
+
 end;
+{$ENDIF}
 
 constructor THorseInstance.Create;
 begin

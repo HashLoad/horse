@@ -1,7 +1,7 @@
-unit Horse.Response;
+﻿unit Horse.Response;
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface
@@ -17,10 +17,11 @@ uses
   System.SysUtils,
   System.Classes,
   Web.HTTPApp,
-{$IF CompilerVersion > 32.0}
-  Web.ReqMulti,
+  {$IF CompilerVersion > 32.0}
+    Web.ReqMulti,
+  {$ENDIF}
 {$ENDIF}
-{$ENDIF}
+
 { ===========================================================================
   PATCH-RES-1 — added System.Generics.Collections (Delphi only)
   Reason: FCustomHeaders is TList<TPair<string,string>> on Delphi.
@@ -29,7 +30,7 @@ uses
 {$IF NOT DEFINED(FPC)}
   System.Generics.Collections,
 {$ENDIF}
-{ =========================================================================== }
+
   Horse.Commons,
   Horse.Core.Cookie,
   Horse.Core.WebSocket;

@@ -1,4 +1,4 @@
-unit Horse.Provider.RawAdapters;
+﻿unit Horse.Provider.RawAdapters;
 
 {
   Horse Provider Raw Adapters
@@ -26,7 +26,7 @@ unit Horse.Provider.RawAdapters;
 }
 
 {$IF DEFINED(FPC)}
-{$MODE DELPHI}{$H+}
+  {$MODE DELPHI}{$H+}
 {$ENDIF}
 
 interface

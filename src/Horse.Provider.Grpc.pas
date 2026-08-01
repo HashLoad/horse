@@ -7,23 +7,34 @@ unit Horse.Provider.Grpc;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Generics.Collections, System.SyncObjs,
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  System.SyncObjs,
   {$IFNDEF FPC}
-  System.Rtti,
+    System.Rtti,
   {$ELSE}
-  Rtti,
+    Rtti,
   {$ENDIF}
   {$IFDEF MSWINDOWS}
     {$IFNDEF FPC}
-    Winapi.WinSock2, Winapi.Windows,
+      Winapi.WinSock2,
+      Winapi.Windows,
     {$ELSE}
-    WinSock2, Windows,
+      WinSock2,
+      Windows,
     {$ENDIF}
   {$ELSE}
     {$IFDEF FPC}
-    Sockets, BaseUnix,
+      Sockets,
+      BaseUnix,
     {$ELSE}
-    Posix.SysSocket, Posix.Unistd, Posix.NetinetIn, Posix.ArpaInet, Posix.SysSelect, Posix.SysTime,
+      Posix.SysSocket,
+      Posix.Unistd,
+      Posix.NetinetIn,
+      Posix.ArpaInet,
+      Posix.SysSelect,
+      Posix.SysTime,
     {$ENDIF}
   {$ENDIF}
   Horse.Grpc.Attributes,
@@ -41,17 +52,17 @@ type
   {$IFDEF MSWINDOWS}
   THorseSocket = TSocket;
     {$IFNDEF FPC}
-    TFDSet = Winapi.WinSock2.TFDSet;
-    TTimeVal = Winapi.WinSock2.TTimeVal;
+      TFDSet = Winapi.WinSock2.TFDSet;
+      TTimeVal = Winapi.WinSock2.TTimeVal;
     {$ELSE}
-    TFDSet = WinSock2.TFDSet;
-    TTimeVal = WinSock2.TTimeVal;
+      TFDSet = WinSock2.TFDSet;
+      TTimeVal = WinSock2.TTimeVal;
     {$ENDIF}
   {$ELSE}
   THorseSocket = Integer;
     {$IFNDEF FPC}
-    TFDSet = Posix.SysSelect.fd_set;
-    TTimeVal = Posix.SysTime.timeval;
+      TFDSet = Posix.SysSelect.fd_set;
+      TTimeVal = Posix.SysTime.timeval;
     {$ENDIF}
   {$ENDIF}
 
@@ -79,8 +90,7 @@ type
     FSocket: THorseSocket;
     FHttp2Conn: THorseHttp2Connection;
     procedure OnOutput(AData: PByte; ALen: Integer);
-    procedure OnRequest(AConnection: TObject; AStreamId: Cardinal;
-      const AHeaders: TNameValuePairs; const ABody: TBytes);
+    procedure OnRequest(AConnection: TObject; AStreamId: Cardinal; const AHeaders: TNameValuePairs; const ABody: TBytes);
   protected
     procedure Execute; override;
   public
@@ -98,8 +108,7 @@ type
     class var FConnectionQueue: TQueue<THorseSocket>;
     class var FQueueSection: TCriticalSection;
     class var FThreadPool: TList<TThread>;
-    class procedure OnHttp2Request(AConnection: TObject; AStreamId: Cardinal;
-      const AHeaders: TNameValuePairs; const ABody: TBytes); static;
+    class procedure OnHttp2Request(AConnection: TObject; AStreamId: Cardinal; const AHeaders: TNameValuePairs; const ABody: TBytes); static;
     class procedure ListenLoop; static;
   public
     class constructor CreateClass;
@@ -116,9 +125,9 @@ type
 
 const
   {$IFDEF MSWINDOWS}
-  InvalidSocketValue = INVALID_SOCKET;
+    InvalidSocketValue = INVALID_SOCKET;
   {$ELSE}
-  InvalidSocketValue = -1;
+    InvalidSocketValue = -1;
   {$ENDIF}
 
 function SocketRead(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
@@ -135,47 +144,47 @@ implementation
 
 function SocketReadyToAccept(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
 var
-  FDSet: TFDSet;
-  TimeVal: TTimeVal;
+  LFDSet: TFDSet;
+  LTimeVal: TTimeVal;
 begin
-  FDSetZero(FDSet);
-  FDSetAdd(ASocket, FDSet);
-  TimeVal.tv_sec := ATimeoutMS div 1000;
-  TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
-  
+  FDSetZero(LFDSet);
+  FDSetAdd(ASocket, LFDSet);
+  LTimeVal.tv_sec := ATimeoutMS div 1000;
+  LTimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
+
   {$IFDEF MSWINDOWS}
-  Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
+    Result := select(0, @LFDSet, nil, nil, @LTimeVal) > 0;
   {$ELSE}
-  Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
+    Result := select(ASocket + 1, @LFDSet, nil, nil, @LTimeVal) > 0;
   {$ENDIF}
 end;
 
 function SocketReadyToRead(ASocket: THorseSocket; ATimeoutMS: Integer): Boolean;
 var
-  FDSet: TFDSet;
-  TimeVal: TTimeVal;
+  LFDSet: TFDSet;
+  LTimeVal: TTimeVal;
 begin
-  FDSetZero(FDSet);
-  FDSetAdd(ASocket, FDSet);
-  TimeVal.tv_sec := ATimeoutMS div 1000;
-  TimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
+  FDSetZero(LFDSet);
+  FDSetAdd(ASocket, LFDSet);
+  LTimeVal.tv_sec := ATimeoutMS div 1000;
+  LTimeVal.tv_usec := (ATimeoutMS mod 1000) * 1000;
   
   {$IFDEF MSWINDOWS}
-  Result := select(0, @FDSet, nil, nil, @TimeVal) > 0;
+    Result := select(0, @LFDSet, nil, nil, @LTimeVal) > 0;
   {$ELSE}
-  Result := select(ASocket + 1, @FDSet, nil, nil, @TimeVal) > 0;
+    Result := select(ASocket + 1, @LFDSet, nil, nil, @LTimeVal) > 0;
   {$ENDIF}
 end;
 
 procedure FDSetZero(var AFDSet: TFDSet);
 begin
   {$IFDEF MSWINDOWS}
-  AFDSet.fd_count := 0;
+    AFDSet.fd_count := 0;
   {$ELSE}
     {$IFDEF FPC}
-    FD_ZERO(AFDSet);
+      FD_ZERO(AFDSet);
     {$ELSE}
-    Posix.SysSelect.__FD_ZERO(AFDSet);
+      Posix.SysSelect.__FD_ZERO(AFDSet);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -183,13 +192,13 @@ end;
 procedure FDSetAdd(ASocket: THorseSocket; var AFDSet: TFDSet);
 begin
   {$IFDEF MSWINDOWS}
-  AFDSet.fd_array[AFDSet.fd_count] := ASocket;
-  Inc(AFDSet.fd_count);
+    AFDSet.fd_array[AFDSet.fd_count] := ASocket;
+    Inc(AFDSet.fd_count);
   {$ELSE}
     {$IFDEF FPC}
-    FD_SET(ASocket, AFDSet);
+      FD_SET(ASocket, AFDSet);
     {$ELSE}
-    Posix.SysSelect.__FD_SET(ASocket, AFDSet);
+      Posix.SysSelect.__FD_SET(ASocket, AFDSet);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -197,12 +206,12 @@ end;
 function SocketRead(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
 begin
   {$IFDEF MSWINDOWS}
-  Result := recv(ASocket, ABuffer^, ALen, 0);
+    Result := recv(ASocket, ABuffer^, ALen, 0);
   {$ELSE}
     {$IFDEF FPC}
-    Result := fpRecv(ASocket, ABuffer, ALen, 0);
+      Result := fpRecv(ASocket, ABuffer, ALen, 0);
     {$ELSE}
-    Result := recv(ASocket, ABuffer^, ALen, 0);
+      Result := recv(ASocket, ABuffer^, ALen, 0);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -210,12 +219,12 @@ end;
 function SocketWrite(ASocket: THorseSocket; ABuffer: Pointer; ALen: Integer): Integer;
 begin
   {$IFDEF MSWINDOWS}
-  Result := send(ASocket, ABuffer^, ALen, 0);
+    Result := send(ASocket, ABuffer^, ALen, 0);
   {$ELSE}
     {$IFDEF FPC}
-    Result := fpSend(ASocket, ABuffer, ALen, 0);
+      Result := fpSend(ASocket, ABuffer, ALen, 0);
     {$ELSE}
-    Result := send(ASocket, ABuffer^, ALen, 0);
+      Result := send(ASocket, ABuffer^, ALen, 0);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -223,12 +232,12 @@ end;
 procedure CloseSocketHandle(ASocket: THorseSocket);
 begin
   {$IFDEF MSWINDOWS}
-  closesocket(ASocket);
+    closesocket(ASocket);
   {$ELSE}
     {$IFDEF FPC}
-    CloseSocket(ASocket);
+      CloseSocket(ASocket);
     {$ELSE}
-    Posix.Unistd.__close(ASocket);
+      Posix.Unistd.__close(ASocket);
     {$ENDIF}
   {$ENDIF}
 end;
@@ -244,15 +253,15 @@ begin
 
   {$IFDEF MSWINDOWS}
     {$IFNDEF FPC}
-    Result := bind(ASocket, TSockAddr(ServerAddr), SizeOf(ServerAddr)) = 0;
+      Result := bind(ASocket, TSockAddr(ServerAddr), SizeOf(ServerAddr)) = 0;
     {$ELSE}
-    Result := WinSock2.bind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+      Result := WinSock2.bind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
     {$ENDIF}
   {$ELSE}
     {$IFDEF FPC}
-    Result := fpBind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
+      Result := fpBind(ASocket, @ServerAddr, SizeOf(ServerAddr)) = 0;
     {$ELSE}
-    Result := bind(ASocket, Posix.SysSocket.sockaddr(ServerAddr), SizeOf(ServerAddr)) = 0;
+      Result := bind(ASocket, Posix.SysSocket.sockaddr(ServerAddr), SizeOf(ServerAddr)) = 0;
     {$ENDIF}
   {$ENDIF}
 end;
@@ -261,28 +270,28 @@ function SocketAccept(ASocket: THorseSocket; out AClientSocket: THorseSocket): B
 var
   Addr: sockaddr_in;
   {$IFDEF MSWINDOWS}
-  AddrLen: Integer;
+    AddrLen: Integer;
   {$ELSE}
     {$IFDEF FPC}
-    AddrLen: Integer;
+      AddrLen: Integer;
     {$ELSE}
-    AddrLen: socklen_t;
+      AddrLen: socklen_t;
     {$ENDIF}
   {$ENDIF}
 begin
   AddrLen := SizeOf(Addr);
   {$IFDEF MSWINDOWS}
     {$IFNDEF FPC}
-    AClientSocket := accept(ASocket, PSockAddr(@Addr), @AddrLen);
+      AClientSocket := accept(ASocket, PSockAddr(@Addr), @AddrLen);
     {$ELSE}
-    AClientSocket := WinSock2.accept(ASocket, @Addr, @AddrLen);
+      AClientSocket := WinSock2.accept(ASocket, @Addr, @AddrLen);
     {$ENDIF}
     Result := AClientSocket <> INVALID_SOCKET;
   {$ELSE}
     {$IFDEF FPC}
-    AClientSocket := fpAccept(ASocket, @Addr, @AddrLen);
+      AClientSocket := fpAccept(ASocket, @Addr, @AddrLen);
     {$ELSE}
-    AClientSocket := accept(ASocket, Posix.SysSocket.sockaddr(Addr), AddrLen);
+      AClientSocket := accept(ASocket, Posix.SysSocket.sockaddr(Addr), AddrLen);
     {$ENDIF}
     Result := AClientSocket <> -1;
   {$ENDIF}
@@ -592,7 +601,7 @@ end;
 class procedure THorseGrpcProvider.Start(APort: Integer);
 var
   {$IFDEF MSWINDOWS}
-  WData: TWSAData;
+    WData: TWSAData;
   {$ENDIF}
   Res: Integer;
   LNumThreads: Integer;
@@ -603,9 +612,9 @@ begin
   FPort := APort;
 
   {$IFDEF MSWINDOWS}
-  Res := WSAStartup($202, WData);
-  if Res <> 0 then
-    raise Exception.Create('WSAStartup failed');
+    Res := WSAStartup($202, WData);
+    if Res <> 0 then
+      raise Exception.Create('WSAStartup failed');
   {$ENDIF}
 
   FListenSocket := socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -692,7 +701,7 @@ begin
   end;
 
   {$IFDEF MSWINDOWS}
-  WSACleanup;
+    WSACleanup;
   {$ENDIF}
 end;
 
