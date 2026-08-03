@@ -213,6 +213,7 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [regyssilveira/horse-crud](https://github.com/regyssilveira/horse-crud)                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-request-id](https://github.com/regyssilveira/horse-request-id)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 |  [regyssilveira/horse-sanitize](https://github.com/regyssilveira/horse-sanitize)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+|  [usofm/horse-neon](https://github.com/usofm/horse-neon)                                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 
 
 ## 📊 Telemetry
