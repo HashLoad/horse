@@ -4,6 +4,7 @@ interface
 
 {$IF DEFINED(HORSE_VCL)}
 uses
+  Horse.Core,
   Horse.Provider.Abstract,
   Horse.Provider.Config,
   Horse.Constants,
