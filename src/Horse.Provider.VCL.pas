@@ -78,8 +78,7 @@ implementation
 uses
   Web.WebReq,
   Horse.WebModule,
-  IdCustomTCPServer,
-  System.Classes;
+  IdCustomTCPServer;
 
 class function THorseProvider.IsRunning: Boolean;
 begin
