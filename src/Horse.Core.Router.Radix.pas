@@ -1,4 +1,4 @@
-unit Horse.Core.Router.Radix;
+﻿unit Horse.Core.Router.Radix;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -362,7 +362,7 @@ begin
           raise;
         if E is EHorseException then
         begin
-          FResponse.Send(EHorseException(E).Error).Status(EHorseException(E).Status);
+          FResponse.Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
           Exit;
         end;
         if THorse.HasOnError then
