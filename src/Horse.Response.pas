@@ -1,4 +1,4 @@
-﻿unit Horse.Response;
+unit Horse.Response;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -164,6 +164,8 @@ type
     procedure EnsureCustomHeaders;
 { REPEATHDR-1 — lazy-allocation helper for FRepeatHeaders (mirrors EnsureCustomHeaders). }
     procedure EnsureRepeatHeaders;
+    function GetContentStream: TStream;
+    function GetCSContentType: string;
 { =========================================================================== }
   public
     class procedure RegisterStreamWriterFactory(const AFactory: THorseStreamWriterFactory);
@@ -243,8 +245,8 @@ type
   FWebResponse is nil (CrossSocket path); on the Indy path they are empty.
   =========================================================================== }
     property BodyText:       string  read FCSBody;
-    property ContentStream:  TStream read FCSContentStream;
-    property CSContentType:  string  read FCSContentType;
+    property ContentStream:  TStream read GetContentStream;
+    property CSContentType:  string  read GetCSContentType;
     property BodyBytes:      TBytes  read FCSBodyBytes;
 { =========================================================================== }
     function Abort: THorseResponse; virtual;
@@ -264,7 +266,8 @@ uses
   Horse.Request,
   Horse.Core,
   Horse.Exception.Interrupted,
-  Horse.Core.MemoryBufferPool
+  Horse.Core.MemoryBufferPool,
+  Horse.Provider.RawAdapters
   {$IF DEFINED(FPC)}
   , fphttpserver
   , ssockets
@@ -478,6 +481,27 @@ end;
 function THorseResponse.Content: TObject;
 begin
   Result := FContent;
+end;
+
+function THorseResponse.GetContentStream: TStream;
+begin
+  Result := FCSContentStream;
+  if (Result = nil) and Assigned(FCSRawWebResponse) then
+  begin
+    {$IF NOT DEFINED(FPC)}
+    if FCSRawWebResponse is TInterfacedWebResponse then
+      Result := TInterfacedWebResponse(FCSRawWebResponse).ContentStream
+    else
+    {$ENDIF}
+      Result := FCSRawWebResponse.ContentStream;
+  end;
+end;
+
+function THorseResponse.GetCSContentType: string;
+begin
+  Result := FCSContentType;
+  if (Result = '') and Assigned(FCSRawWebResponse) then
+    Result := FCSRawWebResponse.ContentType;
 end;
 
 function THorseResponse.ContentType(const AContentType: string): THorseResponse;
@@ -1027,21 +1051,8 @@ begin
   end;
 
   LUpgrader := THorseWebSocketUpgrader(LUpgraderObj);
+  LUpgrader.OnConnect := AOnConnect;
   LConnection := LUpgrader.Upgrade(LRequest.PathInfo, 30);
-  
-  if Assigned(AOnConnect) then
-  begin
-    try
-      AOnConnect(LConnection);
-    except
-      on E: Exception do
-      begin
-        LConnection.TriggerError(E);
-        LConnection.Close(1011, 'Internal Error');
-        raise;
-      end;
-    end;
-  end;
   
   Result := LConnection;
 end;

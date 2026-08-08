@@ -5,7 +5,7 @@ interface
 uses
   DUnitX.TestFramework, Horse, System.SysUtils, System.Classes,
   System.Threading, System.Net.HttpClient, System.Net.URLClient, Tests.CleanupHelper,
-  Horse.Commons, Horse.Response;
+  Horse.Commons, Horse.Response, Horse.Provider.RawAdapters;
 
 type
   [TestFixture]
@@ -24,6 +24,8 @@ type
     procedure TestStreamingSSE;
     [Test]
     procedure TestStreamingConcurrentStress;
+    [Test]
+    procedure TestCrossSocketStreamFallback;
   end;
 
 implementation
@@ -195,6 +197,28 @@ begin
     Assert.AreEqual(200, LStatusCodes[I], Format('Thread %d retornou erro: %s', [I, LContents[I]]));
     Assert.Contains(LContents[I], '{"id": 1}');
     Assert.Contains(LContents[I], '{"id": 5}');
+  end;
+end;
+
+procedure TTestIntegrationStreaming.TestCrossSocketStreamFallback;
+var
+  LResponse: THorseResponse;
+  LAdapter: TInterfacedWebResponse;
+  LStream: TStream;
+begin
+  LResponse := THorseResponse.Create(nil);
+  try
+    LAdapter := TInterfacedWebResponse.Create(nil);
+    LResponse.SetCSRawWebResponse(LAdapter);
+
+    LStream := TMemoryStream.Create;
+    LResponse.RawWebResponse.ContentStream := LStream;
+    LResponse.RawWebResponse.ContentType := 'application/octet-stream';
+
+    Assert.AreEqual(LStream, LResponse.ContentStream, 'O stream da THorseResponse deve realizar o fallback para o adapter.');
+    Assert.AreEqual('application/octet-stream', LResponse.CSContentType, 'O Content-Type da THorseResponse deve realizar o fallback para o adapter.');
+  finally
+    LResponse.Free;
   end;
 end;
 

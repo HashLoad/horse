@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.Indy.WebSocket;
+unit Horse.Provider.Indy.WebSocket;
 
 {$IF DEFINED(FPC)}
   {$MODE DELPHI}{$H+}
@@ -72,7 +72,7 @@ begin
   if not IsConnected then
     Exit;
   try
-    FContext.Connection.IOHandler.ReadBytes(LIdBytes, ACount, False);
+    FContext.Connection.IOHandler.ReadBytes(LIdBytes, -1, False);
     if Length(LIdBytes) > 0 then
     begin
       SetLength(ABuffer, Length(LIdBytes));
@@ -163,6 +163,21 @@ begin
 
   LTransport := TIndyWebSocketTransport.Create(FContext);
   LConnection := THorseWebSocketConnection.Create(LTransport, APath, AHeartbeatInterval);
+
+  if Assigned(OnConnect) then
+  begin
+    try
+      OnConnect(LConnection);
+    except
+      on E: Exception do
+      begin
+        LConnection.TriggerError(E);
+        LConnection.Close(1011, 'Internal Error');
+        LConnection.TriggerDisconnect;
+        raise;
+      end;
+    end;
+  end;
 
   // Executa o loop bloqueante na thread atual do Indy, mantendo o socket aberto
   SetLength(LBuffer, 4096);

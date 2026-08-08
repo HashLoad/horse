@@ -78,7 +78,10 @@ type
   EHorseWebSocketNotSupported = class(EHorseWebSocketException);
 
   THorseWebSocketUpgrader = class
+  private
+    FOnConnect: TOnWebSocketConnect;
   public
+    property OnConnect: TOnWebSocketConnect read FOnConnect write FOnConnect;
     function Upgrade(const APath: string; const AHeartbeatInterval: Integer = 0): IHorseWebSocketConnection; virtual; abstract;
   end;
 
@@ -826,6 +829,7 @@ begin
       except
       end;
     end;
+    THorseWebSocketManager.UnregisterConnection(FPath, Self);
   end;
 end;
 

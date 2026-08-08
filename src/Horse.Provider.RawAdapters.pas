@@ -1,4 +1,4 @@
-﻿unit Horse.Provider.RawAdapters;
+unit Horse.Provider.RawAdapters;
 
 {
   Horse Provider Raw Adapters
@@ -112,6 +112,7 @@ type
   private
     FRawRes: IHorseRawResponse;
     FContent: TWebString;
+    FContentType: TWebString;
     FContentStream: TStream;
   protected
     function  GetStringVariable(Index: Integer): TWebString; override;
@@ -360,12 +361,20 @@ end;
 
 function TInterfacedWebResponse.GetStringVariable(Index: Integer): TWebString;
 begin
-  Result := '';
+  case Index of
+    8: Result := FContentType;
+    12: Result := FContent;
+  else
+    Result := '';
+  end;
 end;
 
 procedure TInterfacedWebResponse.SetStringVariable(Index: Integer; const Value: TWebString);
 begin
-  { Stub }
+  case Index of
+    8: FContentType := Value;
+    12: FContent := Value;
+  end;
 end;
 
 function TInterfacedWebResponse.GetDateVariable(Index: Integer): TDateTime;
