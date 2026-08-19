@@ -32,6 +32,7 @@ uses
   Horse.Commons,
   Horse.Proc,
   Horse.Exception.Interrupted,
+  Horse.Core,
   Horse.Core.WebSocket,
   Horse.Provider.Socket.WebSocket;
 
@@ -303,6 +304,7 @@ type
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
     class function GetActivePort: Integer; override;
     class procedure StopListen; override;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class function IsRunning: Boolean;
 
     class constructor CreateClass;
@@ -1327,8 +1329,13 @@ procedure TIocpConnectionRegistry.CollectExpired(
   AExpired: TList<TIocpConnectionContext>; const ANow: Int64);
 var
   I: Integer;
+  LTimeout: Integer;
   LContext: TIocpConnectionContext;
 begin
+  LTimeout := THorseProviderAbstract.ReadTimeout;
+  if LTimeout <= 0 then
+    LTimeout := 60000;
+
   FSync.Enter;
   try
     for I := FConnections.Count - 1 downto 0 do
@@ -1336,7 +1343,7 @@ begin
       LContext := FConnections[I];
       if (not LContext.Accepted) or LContext.Processing then
         Continue;
-      if ANow - LContext.LastActive > 60000 then
+      if ANow - LContext.LastActive > LTimeout then
       begin
         { Keep the context alive after leaving the registry lock. }
         LContext.AddRef;
@@ -1501,6 +1508,8 @@ var
   LBodyOffset, LNewLen: Integer;
   LContentLength: Int64;
   LIsChunked: Boolean;
+  LIsKeepAlive: Boolean;
+  LConnectionHeader: string;
   LRawReq: TIocpRawRequest;
   LRawRes: TIocpRawResponse;
   LReq: THorseRequest;
@@ -1583,7 +1592,10 @@ begin
       AContext.ClientPort
     );
       
-    LRawRes := TIocpRawResponse.Create(AContext, True);
+    LConnectionHeader := LRawReq.GetFieldByName('connection');
+    LIsKeepAlive := not SameText(LConnectionHeader, 'close') and
+      (SameText(LVersion, 'HTTP/1.1') or SameText(LConnectionHeader, 'keep-alive'));
+    LRawRes := TIocpRawResponse.Create(AContext, LIsKeepAlive);
 
     New(LData);
     LData.RawRes := LRawRes;
@@ -2005,6 +2017,22 @@ begin
   InternalStopListen;
 end;
 
+class procedure THorseProviderIOCP.StopListenGraceful(const ATimeoutMS: Integer);
+var
+  LStartedAt: UInt64;
+begin
+  THorseCore.SetIsShuttingDown(True);
+  try
+    LStartedAt := GetTickCount64;
+    while (THorseCore.GetActiveRequests > 0) and
+          (GetTickCount64 - LStartedAt < UInt64(ATimeoutMS)) do
+      Sleep(10);
+    InternalStopListen;
+  finally
+    THorseCore.SetIsShuttingDown(False);
+  end;
+end;
+
 class function THorseProviderIOCP.IsRunning: Boolean;
 begin
   Result := FRunning;
@@ -2032,7 +2060,7 @@ begin
   inherited Create(AResponse);
   LRawWebResponse := AResponse.RawWebResponse;
   if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
-    FRawRes := TIocpRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
+    FRawRes := TInterfacedWebResponse(LRawWebResponse).RawRes as TIocpRawResponse;
 end;
 
 procedure TIocpStreamWriter.SendFully(const AData: TBytes; ALen: Integer);

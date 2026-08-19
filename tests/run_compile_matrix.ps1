@@ -163,7 +163,7 @@ if ($HasDocker) {
             "-v", "$ScriptDir\..\:/usr/src/app",
             "-w", "/usr/src/app/tests/src",
             "horse-tests-lazarus",
-            "bash", "-c", "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr"
+            "bash", "-c", "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr && /tmp/fpc_bin/CompileCheck"
         )
 
         $BuildStatus = "SUCESSO"

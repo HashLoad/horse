@@ -4,7 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework, Horse, Horse.Commons, System.SysUtils, System.Classes,
-  System.Threading, System.Net.HttpClient, Tests.CleanupHelper;
+  System.Threading, IdHTTP, Tests.CleanupHelper;
 
 type
   [TestFixture]
@@ -50,23 +50,24 @@ end;
 
 procedure TTestIntegrationKeepAlive.TestKeepAliveHeadersPreserved;
 var
-  LClient: THTTPClient;
-  LRes: IHTTPResponse;
+  LClient: TIdHTTP;
+  LContent: string;
+  LConnectionHeader: string;
   I: Integer;
 begin
-  LClient := THTTPClient.Create;
+  LClient := TIdHTTP.Create(nil);
   try
+    LClient.Request.Connection := 'keep-alive';
     for I := 1 to 3 do
     begin
-      LRes := LClient.Get(Format('http://localhost:%d/ping', [TEST_PORT]));
-      Assert.AreEqual(200, LRes.StatusCode, 'HTTP status should be 200 OK');
-      Assert.AreEqual('pong', LRes.ContentAsString);
-      
-      if LRes.ContainsHeader('Connection') then
-      begin
-        Assert.IsFalse(SameText(LRes.HeaderValue['Connection'], 'close'),
+      LContent := LClient.Get(Format('http://localhost:%d/ping', [TEST_PORT]));
+      Assert.AreEqual(200, LClient.ResponseCode, 'HTTP status should be 200 OK');
+      Assert.AreEqual('pong', LContent);
+
+      LConnectionHeader := LClient.Response.RawHeaders.Values['Connection'];
+      if LConnectionHeader <> '' then
+        Assert.IsFalse(SameText(LConnectionHeader, 'close'),
           'Server should not force connection close under keep-alive');
-      end;
     end;
   finally
     LClient.Free;
