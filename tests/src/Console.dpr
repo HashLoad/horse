@@ -92,6 +92,9 @@ uses
   Tests.Integration.WebSocket in 'tests\Tests.Integration.WebSocket.pas',
   Tests.Integration.AdvancedRouting in 'tests\Tests.Integration.AdvancedRouting.pas',
   Tests.Integration.Streaming in 'tests\Tests.Integration.Streaming.pas',
+  {$IFDEF HORSE_PROVIDER_IOCP}
+  Tests.Horse.Provider.IOCP in 'tests\Tests.Horse.Provider.IOCP.pas',
+  {$ENDIF}
   Horse.Mime in '..\..\src\Horse.Mime.pas',
   Horse.Utils in '..\..\src\Horse.Utils.pas',
   Horse.Provider.Config in '..\..\src\Horse.Provider.Config.pas',
