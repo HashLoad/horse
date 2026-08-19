@@ -67,7 +67,7 @@ implementation
 
 procedure TAppStartupConfigure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 begin
-  Res.RawWebResponse.CustomHeaders.Values['X-Startup-Middleware'] := 'active';
+  Res.AddHeader('X-Startup-Middleware', 'active');
   Next();
 end;
 
@@ -176,7 +176,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        LInstance.Listen(TEST_PORT);
+        LInstance.Listen(TEST_PORT, '127.0.0.1');
       end);
     LThread.FreeOnTerminate := False;
     LThread.Start;
@@ -256,7 +256,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        LInstance.Listen(TEST_PORT);
+        LInstance.Listen(TEST_PORT, '127.0.0.1');
       end);
     LThread.FreeOnTerminate := False;
     LThread.Start;
@@ -298,7 +298,7 @@ begin
       procedure
       begin
         try
-          LInstance.Listen(TEST_PORT);
+          LInstance.Listen(TEST_PORT, '127.0.0.1');
         except
           on E: Exception do
           begin
@@ -343,7 +343,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        LInstance.Listen(TEST_PORT);
+        LInstance.Listen(TEST_PORT, '127.0.0.1');
       end);
     LThread.FreeOnTerminate := False;
     LThread.Start;

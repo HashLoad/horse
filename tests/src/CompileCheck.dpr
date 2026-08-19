@@ -6,6 +6,10 @@ program CompileCheck;
 {$ENDIF}
 
 uses
+  {$IFDEF FPC}
+  Generics.Defaults,
+  Horse.Core.Param.Header,
+  {$ENDIF}
   {$IFDEF HORSE_PROVIDER_IOCP}
   Horse.Provider.IOCP,
   {$ENDIF}
@@ -32,7 +36,21 @@ uses
   {$ENDIF}
   Horse;
 
+{$IFDEF FPC}
+var
+  LHeaderComparer: IEqualityComparer<string>;
+{$ENDIF}
+
 begin
   // Apenas uma chamada estática simples para forçar a compilação de todo o grafo de units
   THorse.GetActivePort;
+  {$IFDEF FPC}
+  { Compile-time regression check for the platform-dependent specialization of
+    IEqualityComparer<string>, plus a minimal behavior check when executed. }
+  LHeaderComparer := THorseHeaderComparer.Create;
+  if (not LHeaderComparer.Equals('Content-Type', 'content-type')) or
+     (LHeaderComparer.GetHashCode('Content-Type') <>
+      LHeaderComparer.GetHashCode('content-type')) then
+    Halt(1);
+  {$ENDIF}
 end.
