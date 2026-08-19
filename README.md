@@ -70,40 +70,16 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | First server, install paths, Delphi/Lazarus setup | [Getting Started](./doc/getting-started.md) |
 | Defining routes, route params, route groups, query strings | [Routing](./doc/routing.md) |
 | `THorseRequest` / `THorseResponse` — body, headers, cookies, sessions, status, streaming | [Request & Response](./doc/request-response.md) |
-| Native bi-directional WebSocket connection support (RFC 6455) | [WebSockets](./doc/websocket.md) |
-| Native streaming (Web Streams / SSE) connection support | [Streaming](./doc/streaming.md) |
 | Using middleware, registration order, the `Next` proc | [Middleware](./doc/middleware.md) |
-| Request lifecycle hooks — onRequest, preParsing, preValidation, onSend, onResponse | [Lifecycle Hooks](./doc/lifecycle-hooks.md) |
-| Graceful Shutdown — draining active connections, telemetry ActiveRequests and flag IsShuttingDown | [Graceful Shutdown](./doc/graceful-shutdown.md) |
-| Multi-Instance — running and isolating multiple independent HTTP servers concurrently inside the same process | [Multi-Instance](./doc/multi-instance.md) |
-| Memory Buffer Pool — high-performance thread-safe buffer recycling to eliminate heap allocation | [Memory Buffer Pool](./doc/memory-buffer-pool.md) |
 | **Writing & publishing your own middleware** — skeleton, thread safety, Provider neutrality, Boss packaging | [**Writing a Middleware**](./doc/writing-middleware.md) |
-| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, gRPC, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
+| **Choosing a transport provider** — Indy (default), CrossSocket, mORMot2, ICS, HttpSys, Apache, ISAPI, CGI, daemons | [**Providers**](./doc/providers.md) |
 | **Deploy** as Console / VCL / Daemon / Windows Service / LCL / HTTPApplication — one-page recipe | [**Deployment Cheatsheet**](./doc/deployment.md) |
 | Full middleware catalogue with extended descriptions | [Middleware Ecosystem](./doc/middleware-ecosystem.md) |
-| Observability, distributed tracing (OpenTelemetry) and metrics collection (Prometheus) | [Observability & Telemetry](./doc/telemetry.md) |
-| Automated integration, resilience (Access Violation) and SO limit testing | [Integrity Testing](./doc/integrity-testing.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
-| Long-term architecture roadmap and technical backlog | [Roadmap](./doc/roadmap/README.md) |
-
-### 🤖 AI Coding Skills
-To help your AI agent (like Antigravity, GitHub Copilot, or Claude) understand and write idiomatic, thread-safe, and memory-safe Horse code, we provide pre-packaged instruction files in [`doc/skills/`](./doc/skills/README.md).
-
-To use them:
-* **Copilot / Claude / Custom AIs:** Refer to the files in [`doc/skills/`](./doc/skills/README.md) to feed context to your agent.
-* **Antigravity IDE:** Add the path to the `doc/` directory of the Horse repository in your local `.agents/skills.json` file to load all skills automatically:
-  ```json
-  {
-    "entries": [
-      { "path": "path/to/horse/doc" }
-    ]
-  }
-  ```
-  Or copy the skill folders directly into your project's `.agents/skills/` directory.
 
 ## 🔌 Providers (transport layer)
 
-A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** and **mORMot2** Providers replace both with async **IOCP / epoll / kqueue** I/O; the optional **ICS** Provider (Delphi; Windows + Linux64/macOS) swaps in OverbyteICS's modern **OpenSSL 3.x / 4.x** stack — TLS 1.3, SNI, mTLS. The **HttpSys** Provider (Windows) is **built into Horse** — it drives the OS's **http.sys** kernel-mode HTTP stack (the same one IIS uses) with no external library.
+A _provider_ is the HTTP transport that owns the socket and hands requests to your route handlers. **The same handler code runs under any provider** — you select one at compile time via a Conditional Define. The default Provider depends on the compiler: **Indy** on Delphi (for Console / VCL / Daemon), **`fphttpserver`** on FPC (for Daemon / HTTPApplication / LCL). The optional **CrossSocket** and **mORMot2** Providers replace both with async **IOCP / epoll / kqueue** I/O; the optional **ICS** Provider (Delphi; Windows + Linux64/macOS) swaps in OverbyteICS's modern **OpenSSL 3.x / 4.x** stack — TLS 1.3, SNI, mTLS; the optional **nghttp2** Provider adds native **HTTP/2** with HPACK header compression, multiplexed streams, TLS, mTLS, and gRPC — on both Delphi and FPC, built on [`Delphi-nghttp2`](https://github.com/freitasjca/Delphi-nghttp2). The **HttpSys** Provider (Windows) is **built into Horse** — it drives the OS's **http.sys** kernel-mode HTTP stack (the same one IIS uses) with no external library.
 
 | Provider | Compiler define | Delphi | Lazarus |
 | ----------------------------------------------------------------------------------------------- | ----------------------- | :------------------: | :-------------------------: |
@@ -112,10 +88,8 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 | 🆕 **[horse-provider-crosssocket](https://github.com/freitasjca/horse-provider-crosssocket)**    | `HORSE_CROSSSOCKET`     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot)**               | `HORSE_PROVIDER_MORMOT` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_     | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-| 🆕 **[HTTP.sys](./doc/httpsys.md)** _(Windows kernel-mode driver for ultra-low latency)_        | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| 🆕 **[epoll](./doc/epoll.md)** _(Linux-native asynchronous event loop)_                         | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-| 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_     | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-| 🆕 **[IOCP](./doc/iocp.md)** _(Windows-native asynchronous I/O completion ports)_               | `HORSE_PROVIDER_IOCP`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-nghttp2](https://github.com/freitasjca/horse-provider-nghttp2)** _(HTTP/2 + gRPC; requires [Delphi-nghttp2](https://github.com/freitasjca/Delphi-nghttp2))_ | `HORSE_PROVIDER_NGHTTP2` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **HttpSys** _(built-in; Windows-only)_                                                          | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
 > **Note** — Apache / ISAPI / CGI / FastCGI Application types (below) do **not** use any of these Providers. The host process (Apache, IIS, the web server) owns the socket; Horse runs in-process. See [Providers & Application types](./doc/providers.md) for the full model.
 
@@ -123,9 +97,9 @@ A _provider_ is the HTTP transport that owns the socket and hands requests to yo
 
 > **OverbyteICS installation** — the ICS Provider requires [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download) (v9.x). **Install ICS following the official ICS instructions** — download/clone ICS and add its `Source/` folder to your project search path (ICS is not Boss-installable). For TLS, the OpenSSL libraries ship with ICS (DLLs on Windows, `.so` on Linux). The ICS Provider is **Delphi only — Windows and POSIX (Linux64 / macOS)** via ICS's own `Ics.Posix.*` message pump (on Linux use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run`); a **Lazarus/FPC** port is not viable — ICS's POSIX layer rides the Delphi POSIX RTL and ICS compiles out OpenSSL under FPC. Its distinctive value is ICS's OpenSSL 3.x / 4.x stack (TLS 1.3, SNI, mTLS). See [horse-provider-ics](https://github.com/freitasjca/horse-provider-ics) for setup, the A–K test suite, and known limitations.
 
-> **HttpSys** — **no install**: the `Horse.Provider.HttpSys` unit ships with Horse and binds directly to Windows' `httpapi.dll` (http.sys), so there's no external library. Set `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi or Lazarus). Because http.sys is a kernel-mode, machine-wide HTTP stack, binding a non-`localhost` host or a privileged port needs a one-time URL reservation (`netsh http add urlacl url=http://+:9000/ user=Everyone`) or Administrator rights; HTTPS uses the Windows certificate store via `netsh http add sslcert`. It is mutually exclusive with the CrossSocket / mORMot / ICS Providers (one transport per build).
+> **Delphi-nghttp2 installation** — `boss install github.com/freitasjca/horse-provider-nghttp2` pulls the provider and its [`Delphi-nghttp2`](https://github.com/freitasjca/Delphi-nghttp2) dependency automatically. At runtime, **libnghttp2 ≥ 1.59** must be present (dynamic-loaded — no link-time dependency): on Windows, download the prebuilt DLL from the [curl for Windows bundle](https://curl.se/windows/); on Linux, `sudo apt install libnghttp2-14`; on macOS, `brew install nghttp2`. For TLS and gRPC, OpenSSL 3.x or 1.1 is auto-detected. **FPC trunk 3.3.1 required** (FPC 3.2.2 is a hard blocker). See [horse-provider-nghttp2](https://github.com/freitasjca/horse-provider-nghttp2) for the full setup guide, TLS/mTLS config, and gRPC samples.
 
-> **IOCP** — **no install**: the `Horse.Provider.IOCP` unit ships with Horse and binds directly to Windows' input/output completion ports using Winsock2 API for extremely high performance and scalability on Windows self-hosted application types. Set `HORSE_PROVIDER_IOCP` (Windows; Delphi or Lazarus). It is mutually exclusive with Indy, HttpSys and other socket providers (one transport per build).
+> **HttpSys** — **no install**: the `Horse.Provider.HttpSys` unit ships with Horse and binds directly to Windows' `httpapi.dll` (http.sys), so there's no external library. Set `HORSE_PROVIDER_HTTPSYS` (Windows; Delphi or Lazarus). Because http.sys is a kernel-mode, machine-wide HTTP stack, binding a non-`localhost` host or a privileged port needs a one-time URL reservation (`netsh http add urlacl url=http://+:9000/ user=Everyone`) or Administrator rights; HTTPS uses the Windows certificate store via `netsh http add sslcert`. It is mutually exclusive with the CrossSocket / mORMot / ICS Providers (one transport per build).
 
 ## 🎯 Application types
 
@@ -199,39 +173,9 @@ This is a list of middlewares that are created by the Horse community, please cr
 |  [isaquepinheiro/horse-jsonbr](https://github.com/HashLoad/JSONBr)                                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [IagooCesaar/Horse-JsonInterceptor](https://github.com/IagooCesaar/Horse-JsonInterceptor)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [dliocode/horse-datalogger](https://github.com/dliocode/horse-datalogger)                                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
+|  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-documentation](https://github.com/weslleycapelari/horse-documentation)             | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 |  [weslleycapelari/horse-validator](https://github.com/weslleycapelari/horse-validator)                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [regyssilveira/horse-rate-limit](https://github.com/regyssilveira/horse-rate-limit)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-compression-v2](https://github.com/regyssilveira/horse-compression-v2)               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-static](https://github.com/regyssilveira/horse-static)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-dto](https://github.com/regyssilveira/horse-dto)                                     | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-rbac](https://github.com/regyssilveira/horse-rbac)                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-schema-validation](https://github.com/regyssilveira/horse-schema-validation)         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-multipart](https://github.com/regyssilveira/horse-multipart)                         | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-helmet](https://github.com/regyssilveira/horse-helmet)                               | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-ssl-redirect](https://github.com/regyssilveira/horse-ssl-redirect)                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-crud](https://github.com/regyssilveira/horse-crud)                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-request-id](https://github.com/regyssilveira/horse-request-id)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-sanitize](https://github.com/regyssilveira/horse-sanitize)                           | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [usofm/horse-neon](https://github.com/usofm/horse-neon)                                                   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-
-
-## 📊 Telemetry
-
-These are middlewares focused on application observability, metrics, and tracing:
-
-| Middleware | Delphi | Lazarus |
-| ---------------------------------------------------------------------------------------------------------- | -------------------- | --------------------------- |
-|  [marcobreveglieri/horse-prometheus-metrics](https://github.com/marcobreveglieri/horse-prometheus-metrics) | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
-|  [regyssilveira/horse-opentelemetry](https://github.com/regyssilveira/horse-opentelemetry)                 | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-|  [regyssilveira/horse-prometheus](https://github.com/regyssilveira/horse-prometheus)                       | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
-
-## 🤖 AI Agent Skills
-
-This repository includes native instructions and model skills designed to guide AI agents (such as Gemini, Claude, ChatGPT, and GitHub Copilot) during development.
-
-* **AI Guidelines:** See [.agents/AGENTS.md](./.agents/AGENTS.md) for core architectural rules on dependency injection, lifecycle hooks, concurrency, and telemetry.
-* **Agent Skills:** See [doc/skills/README.md](./doc/skills/README.md) for the complete directory of optimized AI skills and development guides.
 
 ## Delphi Versions
 
