@@ -88,6 +88,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
+    LClient.CustomHeaders['Connection'] := 'close';
     LRes := LClient.Options(Format('http://localhost:%d/resource', [TEST_PORT]));
     Assert.AreEqual(200, LRes.StatusCode);
     Assert.AreEqual('options-interceptor-ok', LRes.ContentAsString);
@@ -103,6 +104,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
+    LClient.CustomHeaders['Connection'] := 'close';
     LRes := LClient.Trace(Format('http://localhost:%d/resource', [TEST_PORT]));
     Assert.AreEqual(200, LRes.StatusCode);
     Assert.AreEqual('trace-interceptor-ok', LRes.ContentAsString);
@@ -121,6 +123,7 @@ begin
   LClient := THTTPClient.Create;
   LSource := TStringStream.Create('');
   try
+    LClient.CustomHeaders['Connection'] := 'close';
     LRes := LClient.Put(Format('http://localhost:%d/resource', [TEST_PORT]), LSource);
     Assert.AreEqual(405, LRes.StatusCode);
     LAllow := LRes.HeaderValue['Allow'];

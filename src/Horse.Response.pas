@@ -1359,6 +1359,10 @@ begin
 end;
 
 initialization
+{$IF NOT DEFINED(HORSE_PROVIDER_IOCP) AND
+     NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND
+     NOT DEFINED(HORSE_PROVIDER_EPOLL)}
   THorseResponse.RegisterStreamWriterFactory(DefaultWebBrokerStreamWriterFactory);
+{$ENDIF}
 
 end.

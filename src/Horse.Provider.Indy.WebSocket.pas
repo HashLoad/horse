@@ -143,7 +143,6 @@ end;
 function TIndyWebSocketUpgrader.Upgrade(const APath: string; const AHeartbeatInterval: Integer): IHorseWebSocketConnection;
 var
   LAcceptKey: string;
-  LHandshakeResponse: string;
   LTransport: IHorseWebSocketTransport;
   LConnection: IHorseWebSocketConnection;
   LClientKey: string;
@@ -153,13 +152,11 @@ begin
   LClientKey := FWebRequest.GetFieldByName('Sec-WebSocket-Key');
   LAcceptKey := THorseWebSocketHandshake.CalculateAcceptKey(LClientKey);
 
-  LHandshakeResponse :=
-    'HTTP/1.1 101 Switching Protocols' + #13#10 +
-    'Upgrade: websocket' + #13#10 +
-    'Connection: Upgrade' + #13#10 +
-    'Sec-WebSocket-Accept: ' + LAcceptKey + #13#10#13#10;
-    
-  FContext.Connection.IOHandler.Write(LHandshakeResponse);
+  FContext.Connection.IOHandler.WriteLn('HTTP/1.1 101 Switching Protocols');
+  FContext.Connection.IOHandler.WriteLn('Upgrade: websocket');
+  FContext.Connection.IOHandler.WriteLn('Connection: Upgrade');
+  FContext.Connection.IOHandler.WriteLn('Sec-WebSocket-Accept: ' + LAcceptKey);
+  FContext.Connection.IOHandler.WriteLn('');
 
   LTransport := TIndyWebSocketTransport.Create(FContext);
   LConnection := THorseWebSocketConnection.Create(LTransport, APath, AHeartbeatInterval);

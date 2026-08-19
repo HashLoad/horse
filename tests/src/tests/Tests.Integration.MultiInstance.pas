@@ -73,7 +73,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        FInstance1.Listen(PORT_1);
+        FInstance1.Listen(PORT_1, '127.0.0.1');
       end);
     LThread.Start;
     Sleep(800); // Aguarda o bind da porta 1
@@ -96,7 +96,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        FInstance2.Listen(PORT_2);
+        FInstance2.Listen(PORT_2, '127.0.0.1');
       end);
     LThread.Start;
     Sleep(800); // Aguarda o bind da porta 2

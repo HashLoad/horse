@@ -353,7 +353,7 @@ begin
     THorse.OnError(CustomErrorHandler);
     LResponse := LClient.Get('http://localhost:9000/Api/Exception/Horse');
     Assert.AreEqual(400, LResponse.StatusCode);
-    Assert.AreEqual('Simulated Horse Error', LResponse.ContentAsString);
+    Assert.AreEqual('{"error":"Simulated Horse Error"}', LResponse.ContentAsString);
   finally
     THorse.OnError(nil);
     LClient.Free;

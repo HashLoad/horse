@@ -142,7 +142,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        LInstance1.Listen(PORT_INSTANCE_1);
+        LInstance1.Listen(PORT_INSTANCE_1, '127.0.0.1');
       end);
     LThread.Start;
     Sleep(800);
@@ -165,7 +165,7 @@ begin
     LThread := TThread.CreateAnonymousThread(
       procedure
       begin
-        LInstance2.Listen(PORT_INSTANCE_2);
+        LInstance2.Listen(PORT_INSTANCE_2, '127.0.0.1');
       end);
     LThread.Start;
     Sleep(800);

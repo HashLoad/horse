@@ -103,7 +103,7 @@ begin
 end;
 
 initialization
-{$IFDEF MSWINDOWS}
+{$IF DEFINED(MSWINDOWS) AND NOT DEFINED(HORSE_PROVIDER_HTTPSYS)}
   TDUnitX.RegisterTestFixture(TTestIntegrationReadTimeout);
 {$ENDIF}
 

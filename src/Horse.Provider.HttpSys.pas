@@ -487,6 +487,7 @@ type
     class procedure ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig); override;
     class function GetActivePort: Integer; override;
     class procedure StopListen; override;
+    class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class function IsRunning: Boolean;
 
     class property ServerSessionId: HTTP_SERVER_SESSION_ID read FServerSessionId;
@@ -1097,19 +1098,33 @@ end;
 function THttpSysRawRequest.GetServerPort: Integer;
 var
   LFamily: Word;
+  LHost: string;
+  LPortSeparator: Integer;
+  LHostPort: Integer;
   LIPv4: PSockAddrIn;
 begin
-  if FRequest.Address.pLocalAddress = nil then
-    Exit(80);
-
-  LFamily := PWord(FRequest.Address.pLocalAddress)^;
-  if LFamily = 2 then // AF_INET
+  Result := 80;
+  if FRequest.Address.pLocalAddress <> nil then
   begin
-    LIPv4 := PSockAddrIn(FRequest.Address.pLocalAddress);
-    Result := (LIPv4.sin_port shl 8) or (LIPv4.sin_port shr 8); // Swap endianness
-  end
-  else
-    Result := 80;
+    LFamily := PWord(FRequest.Address.pLocalAddress)^;
+    if LFamily = 2 then // AF_INET
+    begin
+      LIPv4 := PSockAddrIn(FRequest.Address.pLocalAddress);
+      Result := (LIPv4.sin_port shl 8) or (LIPv4.sin_port shr 8); // Swap endianness
+    end;
+  end;
+
+  { HTTP.sys may expose an IPv6 local address even when the request Host header
+    contains the application port. Prefer that explicit port so THorseInstance
+    can resolve the correct isolated router. }
+  LHost := GetHost;
+  LPortSeparator := LastDelimiter(':', LHost);
+  if LPortSeparator > 0 then
+  begin
+    LHostPort := StrToIntDef(Copy(LHost, LPortSeparator + 1, MaxInt), 0);
+    if LHostPort > 0 then
+      Result := LHostPort;
+  end;
 end;
 
 function THttpSysRawRequest.GetContentType: string;
@@ -2196,6 +2211,22 @@ begin
   InternalStopListen;
 end;
 
+class procedure THorseProviderHttpSys.StopListenGraceful(const ATimeoutMS: Integer);
+var
+  LStartedAt: UInt64;
+begin
+  THorseCore.SetIsShuttingDown(True);
+  try
+    LStartedAt := GetTickCount64;
+    while (THorseCore.GetActiveRequests > 0) and
+          (GetTickCount64 - LStartedAt < UInt64(ATimeoutMS)) do
+      Sleep(10);
+    InternalStopListen;
+  finally
+    THorseCore.SetIsShuttingDown(False);
+  end;
+end;
+
 class function THorseProviderHttpSys.IsRunning: Boolean;
 begin
   Result := FRunning;
@@ -2232,7 +2263,7 @@ begin
   LRawResponse := nil;
   LRawWebResponse := AResponse.RawWebResponse;
   if Assigned(LRawWebResponse) and (LRawWebResponse is TInterfacedWebResponse) then
-    LRawResponse := THttpSysRawResponse(TInterfacedWebResponse(LRawWebResponse).RawRes);
+    LRawResponse := TInterfacedWebResponse(LRawWebResponse).RawRes as THttpSysRawResponse;
 
   FRawRes := LRawResponse;
   if Assigned(LRawResponse) then

@@ -38,7 +38,7 @@ begin
   THorse.Get('/error/custom',
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
     begin
-      raise EHorseException.Create.Status(THTTPStatus.BadRequest).Error('{"error":"Invalid request parameters"}');
+      raise EHorseException.Create.Status(THTTPStatus.BadRequest).Error('Invalid request parameters');
     end);
 
   TThread.CreateAnonymousThread(
