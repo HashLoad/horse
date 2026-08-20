@@ -114,6 +114,7 @@ Um _provider_ é o transporte HTTP que é dono do socket e entrega requisições
 | 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 | 🆕 **[HTTP.sys](./doc/httpsys.pt-BR.md)** _(driver de modo kernel do Windows para ultra-baixa latência)_ | `HORSE_PROVIDER_HTTPSYS` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[epoll](./doc/epoll.pt-BR.md)** _(event loop assíncrono nativo do Linux)_                  | `HORSE_PROVIDER_EPOLL`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
+| 🆕 **[horse-provider-ics](https://github.com/freitasjca/horse-provider-ics)** _(Delphi; Win + Linux/macOS)_  | `HORSE_PROVIDER_ICS`    | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;❌ |
 | 🆕 **[IOCP](./doc/iocp.pt-BR.md)** _(portas de conclusão de E/S assíncronas nativas do Windows)_ | `HORSE_PROVIDER_IOCP`   | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 | 🆕 **[horse-provider-nghttp2](https://github.com/freitasjca/horse-provider-nghttp2)** _(HTTP/2 + gRPC; requer [Delphi-nghttp2](https://github.com/freitasjca/Delphi-nghttp2))_ | `HORSE_PROVIDER_NGHTTP2` | &nbsp;&nbsp;&nbsp;✔️ | &nbsp;&nbsp;&nbsp;&nbsp;✔️ |
 
