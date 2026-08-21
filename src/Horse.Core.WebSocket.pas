@@ -23,6 +23,17 @@ type
 
   IHorseWebSocketConnection = interface;
 
+{ FIX-WS-CAST  forward declaration so THorseWebSocketParser.FeedBytes can take
+  the connection as a CLASS reference.
+
+  The parser is declared before THorseWebSocketConnection, so without this
+  forward its FeedBytes could only name the interface  which is what led to
+  the interface-to-class hard cast this fix removes. An interface reference
+  points at the interface VMT field inside the object, not at the object, so
+  casting it back to the class reinterpreted the pointer and every field read
+  landed at the wrong address: OnMessage, OnBinary and OnError never fired. }
+  THorseWebSocketConnection = class;
+
   TOnWebSocketConnect = {$IF DEFINED(FPC)}procedure{$ELSE}reference to procedure{$ENDIF}(const AConnection: IHorseWebSocketConnection);
   TOnWebSocketMessage = {$IF DEFINED(FPC)}procedure{$ELSE}reference to procedure{$ENDIF}(const AConnection: IHorseWebSocketConnection; const AMessage: string);
   TOnWebSocketBinary = {$IF DEFINED(FPC)}procedure{$ELSE}reference to procedure{$ENDIF}(const AConnection: IHorseWebSocketConnection; const AData: TBytes);
@@ -130,7 +141,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure FeedBytes(const ABytes: TBytes; ALength: Integer; const AConnection: IHorseWebSocketConnection);
+    procedure FeedBytes(const ABytes: TBytes; ALength: Integer; const AConnection: THorseWebSocketConnection);
     class function BuildFrame(const AType: TWebSocketMessageType; const AData: TBytes): TBytes; static;
   end;
 
@@ -465,7 +476,7 @@ begin
   Result := True;
 end;
 
-procedure THorseWebSocketParser.FeedBytes(const ABytes: TBytes; ALength: Integer; const AConnection: IHorseWebSocketConnection);
+procedure THorseWebSocketParser.FeedBytes(const ABytes: TBytes; ALength: Integer; const AConnection: THorseWebSocketConnection);
 var
   LFrame: TWebSocketFrame;
   LConsumed: Integer;
@@ -504,13 +515,13 @@ begin
             if FAccumulatedOpcode = $1 then
             begin
               LMsgText := TEncoding.UTF8.GetString(FAccumulatedPayload);
-              if Assigned(THorseWebSocketConnection(AConnection).FOnMessage) then
-                THorseWebSocketConnection(AConnection).FOnMessage(AConnection, LMsgText);
+              if Assigned(AConnection.FOnMessage) then
+                AConnection.FOnMessage(AConnection, LMsgText);
             end
             else if FAccumulatedOpcode = $2 then
             begin
-              if Assigned(THorseWebSocketConnection(AConnection).FOnBinary) then
-                THorseWebSocketConnection(AConnection).FOnBinary(AConnection, FAccumulatedPayload);
+              if Assigned(AConnection.FOnBinary) then
+                AConnection.FOnBinary(AConnection, FAccumulatedPayload);
             end;
             SetLength(FAccumulatedPayload, 0);
             FAccumulatedOpcode := 0;
@@ -527,8 +538,8 @@ begin
           else
           begin
             LMsgText := TEncoding.UTF8.GetString(LFrame.Payload);
-            if Assigned(THorseWebSocketConnection(AConnection).FOnMessage) then
-              THorseWebSocketConnection(AConnection).FOnMessage(AConnection, LMsgText);
+            if Assigned(AConnection.FOnMessage) then
+              AConnection.FOnMessage(AConnection, LMsgText);
           end;
         end;
         
@@ -541,8 +552,8 @@ begin
           end
           else
           begin
-            if Assigned(THorseWebSocketConnection(AConnection).FOnBinary) then
-              THorseWebSocketConnection(AConnection).FOnBinary(AConnection, LFrame.Payload);
+            if Assigned(AConnection.FOnBinary) then
+              AConnection.FOnBinary(AConnection, LFrame.Payload);
           end;
         end;
         
@@ -557,7 +568,7 @@ begin
         $9: // Ping frame
         begin
           // Envia Pong com o mesmo payload recebido
-          THorseWebSocketConnection(AConnection).SendRawFrame(wsmtPong, LFrame.Payload);
+          AConnection.SendRawFrame(wsmtPong, LFrame.Payload);
         end;
         
         $A: // Pong frame
@@ -571,8 +582,8 @@ begin
   except
     on E: Exception do
     begin
-      if Assigned(THorseWebSocketConnection(AConnection).FOnError) then
-        THorseWebSocketConnection(AConnection).FOnError(AConnection, E);
+      if Assigned(AConnection.FOnError) then
+        AConnection.FOnError(AConnection, E);
       AConnection.Close(1002, 'Protocol Error');
     end;
   end;
