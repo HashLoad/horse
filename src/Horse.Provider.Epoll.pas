@@ -2340,6 +2340,7 @@ var
   LBodyOffset: Integer;
   LContentLength: Int64;
   LWorker: THorseEpollWorker;
+  LInlinePipeline: TProc;
 begin
   LWorker := Self;
   LRequestComplete := False;
@@ -2553,8 +2554,10 @@ begin
     AContext.FProcessing := True;
 
     {$IF NOT DEFINED(FPC)}
-    // Delphi Linux: Executa rotas assincronamente no Task Parallel Library
-    TTask.Run(
+    // Delphi Linux: executa rotas INLINE no proprio worker. O hop antigo via
+    // TTask.Run especulava o TThreadPool.Default ate Max=2048 e o wake por
+    // futex entre ~2000 threads explosava a cauda p99 -- divida item 93.
+    LInlinePipeline :=
       procedure
       var
         LHorseReq: THorseRequest;
@@ -2679,7 +2682,8 @@ begin
         except
           // Captura exceÃ§Ãµes para seguranÃ§a na thread
         end;
-      end);
+      end;
+    LInlinePipeline();
     {$ELSE}
     // Lazarus FPC: Despacha as rotas via GTaskPool de forma assÃ­ncrona
     {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
