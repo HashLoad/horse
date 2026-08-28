@@ -26,6 +26,16 @@ type
     procedure TestResponseSendBytesOverload;
     [Test]
     procedure TestRequestStateAndMatchedRouteCycle;
+
+    { FIX-WS-8441: IsWebSocket detection and Clear-reset coverage }
+    [Test]
+    procedure TestIsWebSocketDefaultFalse;
+    [Test]
+    procedure TestIsWebSocketDetectedByUpgradeHeader;
+    [Test]
+    procedure TestIsWebSocketDetectedByExplicitSignal;
+    [Test]
+    procedure TestIsWebSocketResetByClear;
   end;
 
 implementation
@@ -171,6 +181,43 @@ begin
   Assert.AreEqual('', FRequest.MatchedRoute, 'MatchedRoute should be empty after Clear');
   Assert.AreEqual<Integer>(0, FRequest.State.Count, 'State dictionary should be empty after Clear');
   Assert.IsTrue(LDestroyed, 'State values should be automatically freed after Clear due to doOwnsValues');
+end;
+
+{ FIX-WS-8441 ----------------------------------------------------------------
+  Four tests covering the provider-signal WebSocket upgrade path:
+  1. default is False (no false positives on HTTP/1.1 non-upgrade requests)
+  2. detection via the HTTP/1.1 `Upgrade: websocket` header (existing path)
+  3. detection via the explicit SetWebSocketUpgrade signal (HTTP/2 / RFC 8441)
+  4. FWebSocketUpgrade is reset to False by Clear (pooled-request safety)
+---------------------------------------------------------------------------- }
+
+procedure TTestHorseRequestRecycle.TestIsWebSocketDefaultFalse;
+begin
+  Assert.IsFalse(FRequest.IsWebSocket,
+    'IsWebSocket must be False on a freshly created request with no header and no provider signal');
+end;
+
+procedure TTestHorseRequestRecycle.TestIsWebSocketDetectedByUpgradeHeader;
+begin
+  FRequest.Headers.Dictionary.AddOrSetValue('Upgrade', 'websocket');
+  Assert.IsTrue(FRequest.IsWebSocket,
+    'IsWebSocket must be True when the Upgrade: websocket header is present (HTTP/1.1 path)');
+end;
+
+procedure TTestHorseRequestRecycle.TestIsWebSocketDetectedByExplicitSignal;
+begin
+  FRequest.SetWebSocketUpgrade(True);
+  Assert.IsTrue(FRequest.IsWebSocket,
+    'IsWebSocket must be True when the provider sets the explicit upgrade signal (HTTP/2 / RFC 8441 path)');
+end;
+
+procedure TTestHorseRequestRecycle.TestIsWebSocketResetByClear;
+begin
+  FRequest.SetWebSocketUpgrade(True);
+  Assert.IsTrue(FRequest.IsWebSocket, 'Precondition: upgrade signal must be set before Clear');
+  FRequest.Clear;
+  Assert.IsFalse(FRequest.IsWebSocket,
+    'IsWebSocket must be False after Clear — FWebSocketUpgrade must be reset for safe request recycling');
 end;
 
 initialization
