@@ -50,6 +50,25 @@ type
     FCSPathInfo:    string;
     FCSContentType: string;
     FCSRemoteAddr:  string;
+{ ===========================================================================
+  FIX-WS-8441  transport-signalled WebSocket upgrade.
+
+  IsWebSocket tests for `Upgrade: websocket`, which HTTP/2 cannot carry:
+  connection-specific headers are forbidden outright (RFC 9113 8.2.2), and a
+  conforming HTTP/2 server must reject a request that sends one. RFC 8441
+  replaces the whole mechanism with extended CONNECT  `:method CONNECT` plus
+  a `:protocol: websocket` pseudo-header.
+
+  Pseudo-headers are deliberately stripped before they reach Req.Headers (they
+  are not real headers and would confuse Indy-style middleware), so core
+  cannot see `:protocol`. A provider that recognises the upgrade at transport
+  level sets this flag instead during request population.
+
+  Deliberately protocol-agnostic: HTTP/3 uses the same extended-CONNECT
+  mechanism, and a boolean covers both without core knowing either. Defaults
+  to False, so every existing provider behaves exactly as before.
+  =========================================================================== }
+    FWebSocketUpgrade: Boolean;
 { PATCH-REQ-9  cached decoded body string for the CrossSocket path.
   Populated once at populate time by SetBodyString (called from
   TRequestBridge.MapBody); returned directly by Body: string so the stream
@@ -123,6 +142,9 @@ type
     function ContentType: string; virtual;
     function Host: string; virtual;
     function IsWebSocket: Boolean; virtual;
+{ FIX-WS-8441  set by providers whose transport signals a WebSocket upgrade by
+  means other than the HTTP/1.1 `Upgrade` header. See FWebSocketUpgrade. }
+    procedure SetWebSocketUpgrade(const AValue: Boolean); virtual;
     function WebSocketKey: string; virtual;
     property Arena: THorseArenaAllocator read GetArena write FArena;
     function PathInfo: string; virtual;
@@ -366,6 +388,10 @@ begin
   FCSContentType := '';
   FCSRemoteAddr  := '';
 { end PATCH-REQ-3 }
+{ FIX-WS-8441  must be wiped with the other shadow fields. THorseRequest is
+  pooled; leaving this set would make the next request served by this instance
+  report IsWebSocket=True with no upgrade of its own. }
+  FWebSocketUpgrade := False;
 { PATCH-REQ-8  free the per-request TWebRequest adapter (owned).
   Nil on the Indy path (never assigned there); owned on CrossSocket path. }
   if Assigned(FCSRawWebRequest) then
@@ -964,7 +990,17 @@ end;
 
 function THorseRequest.IsWebSocket: Boolean;
 begin
-  Result := Headers.ContainsKey('upgrade') and (Pos('websocket', LowerCase(Headers['upgrade'])) > 0);
+{ FIX-WS-8441  the flag is checked first and short-circuits, so an HTTP/2
+  provider never pays the header lookup. On HTTP/1.1 nothing sets it and the
+  original test runs unchanged. }
+  Result := FWebSocketUpgrade
+            or (Headers.ContainsKey('upgrade') and (Pos('websocket', LowerCase(Headers['upgrade'])) > 0));
+end;
+
+{ FIX-WS-8441 }
+procedure THorseRequest.SetWebSocketUpgrade(const AValue: Boolean);
+begin
+  FWebSocketUpgrade := AValue;
 end;
 
 function THorseRequest.WebSocketKey: string;
