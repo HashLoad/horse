@@ -1359,9 +1359,25 @@ begin
 end;
 
 initialization
+{ FIX-STREAM-FACTORY — every provider that supplies its own stream writer must
+  be excluded here, because FStreamWriterFactory is a last-writer-wins class var
+  and BOTH registrations run from unit initialization sections. Whichever
+  initializes second silently wins, and that order is decided by the compiler's
+  dependency walk — not by anything in this source.
+
+  HORSE_PROVIDER_NGHTTP2 was missing from this list. On FPC trunk the provider's
+  own factory happened to initialize last and streaming worked; on FPC 3.2.2 the
+  order differs, this WebBroker default won, and the nghttp2 transport answered
+  every streaming request with total silence — no headers, no body, client
+  timeout. Nothing else was affected, which is what made it hard to find.
+
+  Note that the three providers already listed were excluded for exactly this
+  reason. Adding the fourth restores the intent; it does not change behaviour on
+  any build where the order already happened to favour the provider. }
 {$IF NOT DEFINED(HORSE_PROVIDER_IOCP) AND
      NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND
-     NOT DEFINED(HORSE_PROVIDER_EPOLL)}
+     NOT DEFINED(HORSE_PROVIDER_EPOLL) AND
+     NOT DEFINED(HORSE_PROVIDER_NGHTTP2)}
   THorseResponse.RegisterStreamWriterFactory(DefaultWebBrokerStreamWriterFactory);
 {$ENDIF}
 
