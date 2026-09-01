@@ -48,11 +48,35 @@ type
     procedure ExecuteRouteWithMethodNotAllowedAllowHeader;
     [Test]
     procedure ExecuteRouteWithPrefix;
+{$IF SizeOf(Char) > 1}
+    [Test]
+    procedure ExecuteRouteWithUtf8LiteralAndParam;
+{$ENDIF}
   end;
 
 implementation
 
 { TTestHorseCoreRouterRadix }
+
+{$IF SizeOf(Char) > 1}
+procedure TTestHorseCoreRouterRadix.ExecuteRouteWithUtf8LiteralAndParam;
+var
+  LCalled: Boolean;
+begin
+  LCalled := False;
+  FRouter.RegisterRoute(mtGet, '/ação/:id',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCalled := True;
+      Assert.AreEqual('42', Req.Params.Items['id']);
+    end);
+
+  FRequest.Populate('GET', mtGet, '/ação/42', '', '');
+  Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCalled);
+end;
+
+{$ENDIF}
 
 procedure TTestHorseCoreRouterRadix.Setup;
 begin

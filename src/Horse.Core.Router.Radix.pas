@@ -38,6 +38,9 @@ type
   TRadixNode = class
   public
     Part: string;
+{$IF SizeOf(Char) > 1}
+    PartBytes: TArray<Byte>;
+{$ENDIF}
     IsParam: Boolean;
     ParamName: string;
     IsOptional: Boolean;
@@ -110,12 +113,18 @@ uses
 
 {$IFDEF FPC}
 function StringToBytes(const AStr: string): TBytes;
+{$IF SizeOf(Char) = 1}
 var
   I: Integer;
+{$ENDIF}
 begin
+{$IF SizeOf(Char) = 1}
   SetLength(Result, Length(AStr));
   for I := 1 to Length(AStr) do
     Result[I - 1] := Byte(AStr[I]);
+{$ELSE}
+  Result := TEncoding.UTF8.GetBytes(AStr);
+{$ENDIF}
 end;
 {$ENDIF}
 
@@ -387,6 +396,9 @@ var
   LCloseParenthesis: Integer;
 begin
   Part := APart;
+{$IF SizeOf(Char) > 1}
+  PartBytes := TEncoding.UTF8.GetBytes(APart);
+{$ENDIF}
   Children := TObjectList<TRadixNode>.Create(True);
   Callbacks := TDictionary<TMethodType, TArray<THorseCallback>>.Create;
   Middlewares := TList<THorseCallback>.Create;
@@ -763,7 +775,13 @@ begin
   // 1. Tenta correspondência exata via SWAR 64-bit
   for LChild in ANode.Children do
   begin
-    if (not LChild.IsParam) and (LChild.Part <> '*') and LCurrentSlice.Compare(LChild.Part, not THorseCore.CaseSensitive) then
+    if (not LChild.IsParam) and (LChild.Part <> '*') and
+{$IF SizeOf(Char) = 1}
+      LCurrentSlice.Compare(LChild.Part, not THorseCore.CaseSensitive) then
+{$ELSE}
+      LCurrentSlice.CompareBytes(LChild.PartBytes, 0, Length(LChild.PartBytes),
+        not THorseCore.CaseSensitive) then
+{$ENDIF}
     begin
       LTempNode := LChild;
       LBestMatch := FindNode(ASegments, AIndex + 1, LTempNode, AHTTPType, AMiddlewares, AParams);
