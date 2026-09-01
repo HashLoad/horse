@@ -875,7 +875,7 @@ begin
     FOwnsArena := True;
   end;
 
-{$IF DEFINED(FPC)}
+{$IF SizeOf(Char) = 1}
   LByteCount := Length(LPath);
   LSlice := FArena.Allocate(LByteCount);
   LBytes := LSlice.Buffer;
