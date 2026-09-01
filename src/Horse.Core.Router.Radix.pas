@@ -174,6 +174,12 @@ begin
   GCurrentNext();
 end;
 
+procedure RadixExecutorDoPreValidation(Req: THorseRequest; Res: THorseResponse;
+  Next: TNextProc);
+begin
+  TRadixExecutor(GCurrentExecutor).DoPreValidation(Req, Res, Next);
+end;
+
 constructor TRadixExecutor.Create(ARouter: THorseRadixRouter; AReq: THorseRequest; ARes: THorseResponse);
 begin
   FRouter := ARouter;
@@ -255,7 +261,7 @@ begin
       try
         LCallbacksList.AddRange(FRouter.FGlobalMiddlewares);
         
-        LCallbacksList.Add(THorseCallback(DoPreValidation));
+        LCallbacksList.Add(Pointer(@RadixExecutorDoPreValidation));
 
         LCallbacksList.AddRange(LMiddlewares);
         
