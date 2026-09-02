@@ -27,7 +27,6 @@ uses
     System.SyncObjs,
     System.Generics.Collections,
     System.Generics.Defaults,
-    System.Threading,
     System.NetEncoding,
     Posix.Base,
     Posix.SysTypes,
@@ -54,6 +53,13 @@ uses
   Horse.Provider.Socket.WebSocket;
 
 type
+  {$IFNDEF FPC}
+  TEpollPipelineMode = (
+    epmBoundedPool,
+    epmInline
+  );
+  {$ENDIF}
+
   { Estrutura que representa os segmentos de cabeÃ§alhos indexados durante o
     parsing preguiÃ§oso para evitar alocaÃ§Ãµes desnecessÃ¡rias na heap. }
   TEpollConnectionContext = class;
@@ -281,9 +287,19 @@ type
     class var FRunning: Boolean;
     class var FListenSockets: TList<Integer>;
     class var FWorkers: TObjectList<THorseEpollWorker>;
+    {$IFNDEF FPC}
+    class var FPipelineMode: TEpollPipelineMode;
+    class var FPipelineWorkerThreads: Integer;
+    class var FPipelineQueueCapacity: Integer;
+    {$ENDIF}
 
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetHost(const AValue: string); static;
+    {$IFNDEF FPC}
+    class procedure SetPipelineMode(const AValue: TEpollPipelineMode); static;
+    class procedure SetPipelineWorkerThreads(const AValue: Integer); static;
+    class procedure SetPipelineQueueCapacity(const AValue: Integer); static;
+    {$ENDIF}
     class function GetPort: Integer; static;
     class function GetHost: string; static;
     class function GetDefaultPort: Integer; static;
@@ -295,6 +311,11 @@ type
   public
     class property Host: string read GetHost write SetHost;
     class property Port: Integer read GetPort write SetPort;
+    {$IFNDEF FPC}
+    class property PipelineMode: TEpollPipelineMode read FPipelineMode write SetPipelineMode;
+    class property PipelineWorkerThreads: Integer read FPipelineWorkerThreads write SetPipelineWorkerThreads;
+    class property PipelineQueueCapacity: Integer read FPipelineQueueCapacity write SetPipelineQueueCapacity;
+    {$ENDIF}
     class procedure Listen; overload; override;
     class procedure Listen(const APort: Integer; const AHost: string = '0.0.0.0'; const ACallbackListen: TProc = nil; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
     class procedure Listen(const APort: Integer; const ACallbackListen: TProc; const ACallbackStopListen: TProc = nil); reintroduce; overload; static;
@@ -471,6 +492,38 @@ type
 
 var
   GTaskPool: TEpollFPCTaskPool = nil;
+{$ELSE}
+type
+  TEpollPipelinePool = class;
+
+  TEpollPipelineThread = class(TThread)
+  private
+    FPool: TEpollPipelinePool;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(APool: TEpollPipelinePool);
+  end;
+
+  TEpollPipelinePool = class
+  private
+    FActive: Boolean;
+    FHead: Integer;
+    FLock: TCriticalSection;
+    FQueue: TArray<TProc>;
+    FQueued: Integer;
+    FSemaphore: TSemaphore;
+    FTail: Integer;
+    FWorkers: TObjectList<TEpollPipelineThread>;
+    function Dequeue(out ATask: TProc): Boolean;
+  public
+    constructor Create(AThreadCount, AQueueCapacity: Integer);
+    destructor Destroy; override;
+    function TryQueue(const ATask: TProc): Boolean;
+  end;
+
+var
+  GPipelinePool: TEpollPipelinePool = nil;
 {$ENDIF}
 
 const
@@ -946,6 +999,128 @@ begin
       Exit;
     end;
   end;
+end;
+{$ENDIF}
+
+{$IFNDEF FPC}
+{ TEpollPipelineThread }
+
+constructor TEpollPipelineThread.Create(APool: TEpollPipelinePool);
+begin
+  inherited Create(True);
+  FPool := APool;
+  FreeOnTerminate := False;
+  Start;
+end;
+
+procedure TEpollPipelineThread.Execute;
+var
+  LTask: TProc;
+begin
+  while True do
+  begin
+    FPool.FSemaphore.WaitFor(1000);
+    if FPool.Dequeue(LTask) then
+    begin
+      try
+        LTask();
+      finally
+        LTask := nil;
+      end;
+      Continue;
+    end;
+
+    if not FPool.FActive then
+      Break;
+  end;
+end;
+
+{ TEpollPipelinePool }
+
+constructor TEpollPipelinePool.Create(AThreadCount, AQueueCapacity: Integer);
+var
+  I: Integer;
+begin
+  inherited Create;
+  if AThreadCount < 1 then
+    raise EArgumentOutOfRangeException.Create('Pipeline worker count must be greater than zero');
+  if AQueueCapacity < 1 then
+    raise EArgumentOutOfRangeException.Create('Pipeline queue capacity must be greater than zero');
+
+  FActive := True;
+  FLock := TCriticalSection.Create;
+  SetLength(FQueue, AQueueCapacity);
+  FSemaphore := TSemaphore.Create(nil, 0, AQueueCapacity + AThreadCount, '');
+  FWorkers := TObjectList<TEpollPipelineThread>.Create(True);
+  for I := 1 to AThreadCount do
+    FWorkers.Add(TEpollPipelineThread.Create(Self));
+end;
+
+destructor TEpollPipelinePool.Destroy;
+var
+  I: Integer;
+begin
+  if FLock <> nil then
+  begin
+    FLock.Enter;
+    try
+      FActive := False;
+    finally
+      FLock.Leave;
+    end;
+  end
+  else
+    FActive := False;
+
+  if FWorkers <> nil then
+  begin
+    if FSemaphore <> nil then
+      for I := 0 to FWorkers.Count - 1 do
+        FSemaphore.Release;
+    for I := 0 to FWorkers.Count - 1 do
+      FWorkers[I].WaitFor;
+    FWorkers.Free;
+  end;
+  for I := 0 to Length(FQueue) - 1 do
+    FQueue[I] := nil;
+  FLock.Free;
+  FSemaphore.Free;
+  inherited;
+end;
+
+function TEpollPipelinePool.Dequeue(out ATask: TProc): Boolean;
+begin
+  ATask := nil;
+  FLock.Enter;
+  try
+    Result := FQueued > 0;
+    if not Result then
+      Exit;
+    ATask := FQueue[FHead];
+    FQueue[FHead] := nil;
+    FHead := (FHead + 1) mod Length(FQueue);
+    Dec(FQueued);
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TEpollPipelinePool.TryQueue(const ATask: TProc): Boolean;
+begin
+  FLock.Enter;
+  try
+    Result := FActive and (FQueued < Length(FQueue));
+    if Result then
+    begin
+      FQueue[FTail] := ATask;
+      FTail := (FTail + 1) mod Length(FQueue);
+      Inc(FQueued);
+    end;
+  finally
+    FLock.Leave;
+  end;
+  if Result then
+    FSemaphore.Release;
 end;
 {$ENDIF}
 
@@ -2554,9 +2729,10 @@ begin
     AContext.FProcessing := True;
 
     {$IF NOT DEFINED(FPC)}
-    // Delphi Linux: executa rotas INLINE no proprio worker. O hop antigo via
-    // TTask.Run especulava o TThreadPool.Default ate Max=2048 e o wake por
-    // futex entre ~2000 threads explosava a cauda p99 -- divida item 93.
+    // The same pipeline can run inline for CPU-bound/short handlers or in the
+    // provider-owned bounded pool when handlers may block. Unlike
+    // TThreadPool.Default, the latter has deterministic concurrency and queue
+    // limits and does not alter process-wide thread-pool settings.
     LInlinePipeline :=
       procedure
       var
@@ -2680,10 +2856,14 @@ begin
             end;
           end;
         except
-          // Captura exceÃ§Ãµes para seguranÃ§a na thread
+          LWorker.CloseConnection(LLocalContext);
         end;
       end;
-    LInlinePipeline();
+    if THorseProviderEpoll.PipelineMode = epmInline then
+      LInlinePipeline()
+    else if (GPipelinePool = nil) or
+      (not GPipelinePool.TryQueue(LInlinePipeline)) then
+      LWorker.CloseConnection(AContext);
     {$ELSE}
     // Lazarus FPC: Despacha as rotas via GTaskPool de forma assÃ­ncrona
     {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
@@ -3183,6 +3363,11 @@ begin
   FListenSockets := TList<Integer>.Create;
   FWorkers := TObjectList<THorseEpollWorker>.Create(True);
   FRunning := False;
+  {$IFNDEF FPC}
+  FPipelineMode := epmBoundedPool;
+  FPipelineWorkerThreads := 0;
+  FPipelineQueueCapacity := 2048;
+  {$ENDIF}
 
   // Eleva o limite mÃ¡ximo de descritores de arquivos abertos (ulimit -n) do processo para 65535
   LRLimit.rlim_cur := 65535;
@@ -3191,8 +3376,6 @@ begin
   fpSetrlimit(RLIMIT_NOFILE, @LRLimit);
   {$ELSE}
   setrlimit(RLIMIT_NOFILE, LRLimit);
-  TThreadPool.Default.MaxWorkerThreads := 2048;
-  TThreadPool.Default.MinWorkerThreads := TThread.ProcessorCount * 8;
   {$ENDIF}
 end;
 
@@ -3227,6 +3410,33 @@ class procedure THorseProviderEpoll.SetHost(const AValue: string);
 begin
   FHost := AValue;
 end;
+
+{$IFNDEF FPC}
+class procedure THorseProviderEpoll.SetPipelineMode(const AValue: TEpollPipelineMode);
+begin
+  if FRunning then
+    raise EInvalidOperation.Create('Pipeline mode cannot be changed while the epoll provider is running');
+  FPipelineMode := AValue;
+end;
+
+class procedure THorseProviderEpoll.SetPipelineWorkerThreads(const AValue: Integer);
+begin
+  if FRunning then
+    raise EInvalidOperation.Create('Pipeline worker count cannot be changed while the epoll provider is running');
+  if AValue < 0 then
+    raise EArgumentOutOfRangeException.Create('Pipeline worker count cannot be negative');
+  FPipelineWorkerThreads := AValue;
+end;
+
+class procedure THorseProviderEpoll.SetPipelineQueueCapacity(const AValue: Integer);
+begin
+  if FRunning then
+    raise EInvalidOperation.Create('Pipeline queue capacity cannot be changed while the epoll provider is running');
+  if AValue < 1 then
+    raise EArgumentOutOfRangeException.Create('Pipeline queue capacity must be greater than zero');
+  FPipelineQueueCapacity := AValue;
+end;
+{$ENDIF}
 
 class procedure THorseProviderEpoll.SetPort(const AValue: Integer);
 begin
@@ -3322,10 +3532,22 @@ var
 begin
   TriggerBeforeListen;
   if FRunning then Exit;
+  FRunning := True;
 
-  LThreadCount := TThread.ProcessorCount;
-  if LThreadCount <= 0 then
-    LThreadCount := 2;
+  try
+    LThreadCount := TThread.ProcessorCount;
+    if LThreadCount <= 0 then
+      LThreadCount := 2;
+
+  {$IFNDEF FPC}
+  if FPipelineMode = epmBoundedPool then
+  begin
+    I := FPipelineWorkerThreads;
+    if I = 0 then
+      I := LThreadCount * 8;
+    GPipelinePool := TEpollPipelinePool.Create(I, FPipelineQueueCapacity);
+  end;
+  {$ENDIF}
 
   {$IFDEF FPC}
   {$IFNDEF HORSE_EPOLL_SYNCHRONOUS}
@@ -3334,7 +3556,6 @@ begin
   {$ENDIF}
   {$ENDIF}
 
-  try
     for I := 1 to LThreadCount do
     begin
       LSocket := CreateListenSocket(FPort, FHost);
@@ -3344,7 +3565,6 @@ begin
       LWorker.Start;
     end;
     
-    FRunning := True;
     DoOnListen;
 
     { [EPOLL-LISTEN-1] (re-derived onto merged 2026-07-17, upstream-PR candidate)
@@ -3375,16 +3595,22 @@ begin
 
   FRunning := False;
 
+  for I := 0 to FWorkers.Count - 1 do
+    FWorkers[I].TerminateWorker;
+
   {$IFDEF FPC}
   if GTaskPool <> nil then
   begin
     GTaskPool.Free;
     GTaskPool := nil;
   end;
+  {$ELSE}
+  if GPipelinePool <> nil then
+  begin
+    GPipelinePool.Free;
+    GPipelinePool := nil;
+  end;
   {$ENDIF}
-
-  for I := 0 to FWorkers.Count - 1 do
-    FWorkers[I].TerminateWorker;
 
   FWorkers.Clear;
 
