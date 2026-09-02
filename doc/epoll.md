@@ -84,3 +84,31 @@ end.
 ```
 
 The framework will resolve the `THorse.Listen` call to the native epoll reactor when running under Linux.
+
+## Pipeline execution modes (Delphi)
+
+By default, route handlers run in a bounded pool owned by the epoll provider. This keeps blocking handlers (database access, filesystem operations, or remote calls) away from the I/O event-loop threads without changing Delphi's process-wide `TThreadPool.Default` settings.
+
+The default worker count is eight times the processor count and the default pending-request queue capacity is 2048. Configure either value before calling `Listen`:
+
+```delphi
+uses
+  Horse,
+  Horse.Provider.Epoll;
+
+begin
+  THorseProviderEpoll.PipelineWorkerThreads := 32; // 0 = automatic
+  THorseProviderEpoll.PipelineQueueCapacity := 1024;
+  THorse.Listen(9095);
+end.
+```
+
+Applications whose handlers are known to be short and non-blocking can opt into inline execution:
+
+```delphi
+THorseProviderEpoll.PipelineMode := epmInline;
+```
+
+Inline mode removes the dispatch hop and can improve throughput and tail latency for very short handlers. It also means that one slow handler blocks its epoll worker and delays every connection assigned to that event loop. Do not use inline mode for handlers that perform blocking I/O. Pipeline settings cannot be changed while the provider is running.
+
+When the bounded queue is full, the provider closes the newly saturated connection instead of creating more threads or silently losing the request. During shutdown, it stops accepting work and drains requests already accepted by the pipeline pool before releasing their connection contexts.
