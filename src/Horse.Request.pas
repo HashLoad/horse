@@ -199,6 +199,7 @@ type
     );
     function RemoteAddr: string; virtual;
     function GetPathSegments: TArray<THorseBufferSlice>;
+    function DecodePathParam(const AValue: string): string;
 { ===========================================================================
   PATCH-REQ-5  RawPathInfo
   Returns the undecoded (percent-encoded) request path on the Delphi/Indy
@@ -624,7 +625,7 @@ end;
 
 procedure THorseRequest.InitializeParams;
 begin
-  FParams := THorseCoreParam.Create(THorseList.Create).Required(True);
+  FParams := THorseCoreParam.Create(THorseList.Create, False).Required(True);
 end;
 
 { ===========================================================================
@@ -855,19 +856,52 @@ end;
 function THorseRequest.GetPathSegments: TArray<THorseBufferSlice>;
 var
   LPath: string;
-  LPathLen: Integer;
   LByteCount: Integer;
   LBytes: TBytes;
   LTempBytes: TBytes;
   LSlice: THorseBufferSlice;
   LStartOffset: Integer;
-  I, LLen: Integer;
-  LStart, LCount: Integer;
+  I, LInputEnd, LLen: Integer;
+  LStart, LWrite, LCount: Integer;
+  LDecodedByte: Byte;
+  LDecodePercent: Boolean;
+
+  function HexValue(const AByte: Byte): Integer;
+  begin
+    case AByte of
+      Ord('0')..Ord('9'):
+        Result := AByte - Ord('0');
+      Ord('A')..Ord('F'):
+        Result := AByte - Ord('A') + 10;
+      Ord('a')..Ord('f'):
+        Result := AByte - Ord('a') + 10;
+    else
+      Result := -1;
+    end;
+  end;
+
+  function TryDecodePercent(const AIndex: Integer; out AByte: Byte): Boolean;
+  var
+    LHigh, LLow: Integer;
+  begin
+    Result := False;
+    if AIndex + 2 >= LInputEnd then
+      Exit;
+    LHigh := HexValue(LBytes[AIndex + 1]);
+    LLow := HexValue(LBytes[AIndex + 2]);
+    if (LHigh < 0) or (LLow < 0) then
+      Exit;
+    AByte := Byte((LHigh shl 4) or LLow);
+    Result := True;
+  end;
 begin
   LPath := RawPathInfo;
-  LPathLen := Length(LPath);
-  if LPathLen = 0 then
+  if Length(LPath) = 0 then
     Exit(nil);
+
+  // WebBroker and FPC's TRequest expose the original percent-encoded path.
+  // Populate() supplies the provider's path directly and keeps legacy decoding.
+  LDecodePercent := Assigned(FWebRequest);
 
   if FArena = nil then
   begin
@@ -893,27 +927,44 @@ begin
 {$ENDIF}
 
   SetLength(Result, 0);
+  LInputEnd := LStartOffset + LByteCount;
   LStart := LStartOffset;
+  LWrite := LStartOffset;
   LCount := 0;
 
   I := LStartOffset;
-  while I < LStartOffset + LByteCount do
+  while I < LInputEnd do
   begin
     if LBytes[I] = 47 then // '/'
     begin
-      LLen := I - LStart;
-      if (LLen > 0) or (LStart = LStartOffset) then
+      LLen := LWrite - LStart;
+      if (LLen > 0) or (LCount = 0) then
       begin
         Inc(LCount);
         SetLength(Result, LCount);
         Result[LCount - 1] := THorseBufferSlice.Create(LBytes, LStart, LLen);
       end;
-      LStart := I + 1;
+      Inc(I);
+      LStart := LWrite;
+      Continue;
     end;
+
+    if LDecodePercent and (LBytes[I] = Ord('%')) and
+      TryDecodePercent(I, LDecodedByte) then
+    begin
+      LBytes[LWrite] := LDecodedByte;
+      Inc(LWrite);
+      Inc(I, 3);
+      Continue;
+    end;
+
+    if LWrite <> I then
+      LBytes[LWrite] := LBytes[I];
+    Inc(LWrite);
     Inc(I);
   end;
 
-  LLen := (LStartOffset + LByteCount) - LStart;
+  LLen := LWrite - LStart;
   if LLen > 0 then
   begin
     Inc(LCount);
@@ -922,6 +973,15 @@ begin
   end;
 end;
 { =========================================================================== }
+
+function THorseRequest.DecodePathParam(const AValue: string): string;
+begin
+  // GetPathSegments decodes WebBroker/FPC paths; CrossSocket supplies a decoded path.
+  if Assigned(FWebRequest) or Assigned(FCSRawWebRequest) then
+    Result := AValue
+  else
+    Result := DecodeParam(AValue);
+end;
 
 { ===========================================================================
   PATCH-REQ-4 � PopulateCookiesFromHeader implementation

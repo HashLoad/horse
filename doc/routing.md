@@ -23,6 +23,8 @@ THorse.Head  ('/items/:id', ...);
 
 Method-routing is exact: `THorse.Get` only matches `GET` requests to that path. A request with the wrong method on a known path returns `405 Method Not Allowed`. A request with an unknown path returns `404 Not Found`.
 
+When `THorse.CaseSensitive` is `False`, route matching folds ASCII letters only. UTF-8 route text is supported, but non-ASCII case folding is intentionally not implied: `/AÇÃO` and `/ação` should be registered and requested with the same non-ASCII spelling.
+
 ## Path parameters
 
 Use a colon-prefixed segment to capture part of the URL:

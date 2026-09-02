@@ -191,9 +191,13 @@ end;
 function TRadixExecutor.Run: Boolean;
 var
   LStopwatch: TStopwatch;
+  LPreviousExecutor: Pointer;
+  LPreviousNext: TNextProc;
 begin
   LStopwatch := TStopwatch.StartNew;
   FResponse.Request := FRequest;
+  LPreviousExecutor := GCurrentExecutor;
+  LPreviousNext := GCurrentNext;
   GCurrentExecutor := Self;
   try
     try
@@ -207,9 +211,14 @@ begin
       end;
     end;
   finally
-    LStopwatch.Stop;
-    THorseCore.ExecuteOnTelemetry(FRequest, FResponse, LStopwatch.Elapsed.TotalMilliseconds);
-    THorse.ExecuteOnResponse(FRequest, FResponse);
+    try
+      LStopwatch.Stop;
+      THorseCore.ExecuteOnTelemetry(FRequest, FResponse, LStopwatch.Elapsed.TotalMilliseconds);
+      THorse.ExecuteOnResponse(FRequest, FResponse);
+    finally
+      GCurrentNext := LPreviousNext;
+      GCurrentExecutor := LPreviousExecutor;
+    end;
   end;
 end;
 
@@ -254,7 +263,8 @@ begin
       begin
         LKeys := LParams.Keys.ToArray;
         for I := 0 to Length(LKeys) - 1 do
-          FRequest.Params.Dictionary.AddOrSetValue(LKeys[I], DecodeParam(LParams.Items[LKeys[I]]));
+          FRequest.Params.Dictionary.AddOrSetValue(LKeys[I],
+            FRequest.DecodePathParam(LParams.Items[LKeys[I]]));
       end;
 
       LCallbacksList := TList<THorseCallback>.Create;
@@ -902,7 +912,8 @@ begin
                   begin
                     LKeys := LParams.Keys.ToArray;
                     for I := 0 to Length(LKeys) - 1 do
-                      ARequest.Params.Dictionary.AddOrSetValue(LKeys[I], DecodeParam(LParams.Items[LKeys[I]]));
+                      ARequest.Params.Dictionary.AddOrSetValue(LKeys[I],
+                        ARequest.DecodePathParam(LParams.Items[LKeys[I]]));
                   end;
 
                   LCallbacksList := TList<THorseCallback>.Create;
