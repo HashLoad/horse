@@ -236,6 +236,12 @@ unit Horse;
 {$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_ICS)}
   {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
 {$IFEND}
+{ HORSE_PROVIDER_IOCP is tested BEFORE HORSE_PROVIDER_NGHTTP2 in the selector
+  chains below, so without this guard defining both compiles cleanly and IOCP
+  wins silently — the build would use a transport the developer did not ask for. }
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_IOCP)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_IOCP are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
 {$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_NGHTTP2))}
   {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
 {$IFEND}
@@ -292,12 +298,21 @@ uses
     {$MESSAGE ERROR 'HORSE_PROVIDER_IOCP is only supported on Windows.'}
     {$ENDIF}
   {$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
-  { FPC branch of the nghttp2 selector. Cross-product FPC units
-    (Nghttp2.FPC.Daemon, Nghttp2.FPC.LCL, Nghttp2.FPC.HTTPApplication)
-    aren't shipped in v2.0 — HORSE_APPTYPE_* on FPC currently falls through
-    to the plain console-shape provider. Add them in a follow-up when
-    FPC/Lazarus deployments materialise. }
-  Horse.Provider.Nghttp2,
+  { FPC branch of the nghttp2 selector. The cross-product FPC units
+    (Nghttp2.FPC.Daemon, Nghttp2.FPC.LCL) are not shipped yet, so the
+    corresponding HORSE_APPTYPE_* values are rejected outright rather than
+    silently falling through to the console shape — an application-type
+    directive that is quietly discarded produces a binary of a different shape
+    than the one the developer asked for. FATAL (not ERROR) because these sit
+    inside the uses clause: compilation must stop here, or the missing unit
+    name cascades into unrelated syntax errors. }
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 + HORSE_APPTYPE_DAEMON is not supported on FPC — Horse.Provider.Nghttp2.FPC.Daemon does not exist yet. Omit HORSE_APPTYPE_DAEMON to build the console shape, or build this target with Delphi.'}
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 + HORSE_APPTYPE_LCL is not supported on FPC — Horse.Provider.Nghttp2.FPC.LCL does not exist yet. Omit HORSE_APPTYPE_LCL to build the console shape, or build this target with Delphi.'}
+    {$ELSE}
+    Horse.Provider.Nghttp2,   { console shape — also covers FPC HTTPApplication }
+    {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
   {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
