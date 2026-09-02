@@ -84,3 +84,31 @@ end.
 ```
 
 O framework resolverá automaticamente a chamada de `THorse.Listen` para o reactor nativo epoll quando executado em ambientes Linux.
+
+## Modos de execução da pipeline (Delphi)
+
+Por padrão, os handlers das rotas são executados em um pool limitado pertencente ao próprio provider epoll. Isso mantém handlers bloqueantes (acesso ao banco de dados, filesystem ou chamadas remotas) fora das threads do event loop sem alterar as configurações globais de `TThreadPool.Default` do processo Delphi.
+
+A quantidade padrão de workers é oito vezes a quantidade de processadores e a capacidade padrão da fila de requisições pendentes é 2048. Configure esses valores antes de chamar `Listen`:
+
+```delphi
+uses
+  Horse,
+  Horse.Provider.Epoll;
+
+begin
+  THorseProviderEpoll.PipelineWorkerThreads := 32; // 0 = automático
+  THorseProviderEpoll.PipelineQueueCapacity := 1024;
+  THorse.Listen(9095);
+end.
+```
+
+Aplicações cujos handlers sejam comprovadamente curtos e não bloqueantes podem optar pela execução inline:
+
+```delphi
+THorseProviderEpoll.PipelineMode := epmInline;
+```
+
+O modo inline elimina o despacho para outra thread e pode melhorar throughput e latência de cauda para handlers muito curtos. Em contrapartida, um único handler lento bloqueia seu worker epoll e atrasa todas as conexões atribuídas àquele event loop. Não use o modo inline em handlers que realizem E/S bloqueante. As configurações da pipeline não podem ser alteradas enquanto o provider estiver em execução.
+
+Quando a fila limitada está cheia, o provider fecha a nova conexão saturada em vez de criar mais threads ou perder silenciosamente a requisição. Durante o shutdown, ele deixa de aceitar trabalho e drena as requisições já aceitas pelo pool antes de liberar os contexts das conexões.
