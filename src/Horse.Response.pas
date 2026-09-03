@@ -924,7 +924,7 @@ begin
     if LState.HasExpires then
       LWebCookie.Expires := LState.Expires;   // TCookie has no Max-Age — use .Expires() on Indy
     LWebCookie.Secure := LState.Secure;
-{$IF CompilerVersion >= 31}   // Delphi 10.1 Berlin+ — TCookie.HttpOnly
+{$IF CompilerVersion >= 32}   // Delphi 10.2 Tokyo+ — TCookie.HttpOnly (Berlin's Web.HTTPApp lacks it)
     LWebCookie.HttpOnly := LState.HttpOnly;
 {$IFEND}
 {$IF CompilerVersion >= 34}   // Delphi 10.4 Sydney+ — TCookie.SameSite (string)
