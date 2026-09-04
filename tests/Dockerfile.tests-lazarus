@@ -15,6 +15,11 @@ COPY . .
 RUN mkdir -p tests/lib && cd tests/src && \
     fpc -Mdelphi -Sh -FE.. -FU../lib -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src" "-dHORSE_CONSOLE" "-dHORSE_PROVIDER_EPOLL" IntegrationServer.dpr
 
+# Regressao do transporte WebSocket non-blocking usado pelo provider epoll.
+RUN mkdir -p tests/lib-websocket && cd tests/src && \
+    fpc -Mdelphi -Sh -FE.. -FU../lib-websocket -Fu"../../src" "-dHORSE_CONSOLE" "-dHORSE_PROVIDER_EPOLL" WebSocketEpollRegression.dpr && \
+    ../WebSocketEpollRegression
+
 WORKDIR /usr/src/app/tests
 
 # Executa o servidor de integração que valida as rotas e finaliza autonomamente
