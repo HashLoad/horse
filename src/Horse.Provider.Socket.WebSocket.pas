@@ -9,6 +9,7 @@ interface
 uses
   SysUtils, Classes,
   {$IF DEFINED(FPC)}
+    SyncObjs,
     Sockets,
     {$IFDEF MSWINDOWS}
       { FIX-WS-NONBLOCK  WSAGetLastError / select / TFDSet }
@@ -18,6 +19,7 @@ uses
       BaseUnix,
     {$ENDIF}
   {$ELSE}
+    System.SyncObjs,
     {$IFDEF MSWINDOWS}
       Winapi.WinSock2,
     {$ELSE}
@@ -46,13 +48,24 @@ type
   private
     FSocket: TSocket;
     FIsClosed: Boolean;
+    FSocketClosed: Boolean;
+    FActiveOperations: Integer;
+    FStateLock: TCriticalSection;
+    FOperationsFinished: TEvent;
     FClientIP: string;
     FServerPort: Integer;
     { FIX-WS-NONBLOCK }
-    function WouldBlock: Boolean;
-    function WaitReadable(const ATimeoutMS: Integer): Boolean;
+    function BeginOperation(out ASocket: TSocket): Boolean;
+    procedure EndOperation;
+    function GetLastSocketError: Integer;
+    function IsInterrupted(const AError: Integer): Boolean;
+    function WouldBlock(const AError: Integer): Boolean;
+    function WaitReadable(const ASocket: TSocket; const ATimeoutMS: Integer): Boolean;
+    function Closing: Boolean;
+    procedure RequestClose(const AWaitForOperations: Boolean);
   public
     constructor Create(ASocket: TSocket; const AClientIP: string = ''; const AServerPort: Integer = 0);
+    destructor Destroy; override;
     function Read(var ABuffer: TBytes; const ACount: Integer): Integer;
     function Write(const ABuffer: TBytes; const ACount: Integer): Integer;
     procedure Close;
@@ -87,8 +100,20 @@ begin
   inherited Create;
   FSocket := ASocket;
   FIsClosed := False;
+  FSocketClosed := False;
+  FActiveOperations := 0;
+  FStateLock := TCriticalSection.Create;
+  FOperationsFinished := TEvent.Create(nil, True, True, '');
   FClientIP := AClientIP;
   FServerPort := AServerPort;
+end;
+
+destructor THorseWebSocketSocketTransport.Destroy;
+begin
+  Close;
+  FOperationsFinished.Free;
+  FStateLock.Free;
+  inherited;
 end;
 
 { FIX-WS-NONBLOCK  distinguish "no data yet" from "peer closed".
@@ -113,39 +138,120 @@ end;
   costs no CPU, and the loop is bounded only by the socket's own lifetime --
   which is correct: a WebSocket peer may legitimately stay silent for minutes. }
 
-function THorseWebSocketSocketTransport.WouldBlock: Boolean;
+function THorseWebSocketSocketTransport.BeginOperation(out ASocket: TSocket): Boolean;
+begin
+  FStateLock.Enter;
+  try
+    Result := not FIsClosed and not FSocketClosed;
+    if not Result then
+      Exit;
+    ASocket := FSocket;
+    if FActiveOperations = 0 then
+      FOperationsFinished.ResetEvent;
+    Inc(FActiveOperations);
+  finally
+    FStateLock.Leave;
+  end;
+end;
+
+procedure THorseWebSocketSocketTransport.EndOperation;
+var
+  LSocket: TSocket;
+  LCloseSocket: Boolean;
+  LSignalFinished: Boolean;
+begin
+  LSocket := 0;
+  LCloseSocket := False;
+  FStateLock.Enter;
+  try
+    Dec(FActiveOperations);
+    LSignalFinished := FActiveOperations = 0;
+    if LSignalFinished and FIsClosed and not FSocketClosed then
+    begin
+      LSocket := FSocket;
+      FSocketClosed := True;
+      LCloseSocket := True;
+    end;
+  finally
+    FStateLock.Leave;
+  end;
+
+  if LCloseSocket then
+  begin
+    {$IF DEFINED(FPC)}
+      CloseSocket(LSocket);
+    {$ELSE}
+      {$IFDEF MSWINDOWS}
+        closesocket(LSocket);
+      {$ELSE}
+        Posix.Unistd.__close(LSocket);
+      {$ENDIF}
+    {$ENDIF}
+  end;
+
+  if LSignalFinished then
+    FOperationsFinished.SetEvent;
+end;
+
+function THorseWebSocketSocketTransport.GetLastSocketError: Integer;
 {$IF DEFINED(FPC)}
   {$IFDEF MSWINDOWS}
-  var
-    LErr: Integer;
   begin
-    LErr := WSAGetLastError;
-    Result := (LErr = WSAEWOULDBLOCK) or (LErr = WSAEINTR);
+    Result := WSAGetLastError;
   end;
   {$ELSE}
-  var
-    LErr: Integer;
   begin
-    LErr := fpgeterrno;
-    Result := (LErr = ESysEAGAIN) or (LErr = ESysEWOULDBLOCK) or (LErr = ESysEINTR);
+    Result := fpgeterrno;
   end;
   {$ENDIF}
 {$ELSE}
   {$IFDEF MSWINDOWS}
-  var
-    LErr: Integer;
   begin
-    LErr := WSAGetLastError;
-    Result := (LErr = WSAEWOULDBLOCK) or (LErr = WSAEINTR);
+    Result := WSAGetLastError;
   end;
   {$ELSE}
   begin
-    Result := (errno = EAGAIN) or (errno = EWOULDBLOCK) or (errno = EINTR);
+    Result := errno;
   end;
   {$ENDIF}
 {$ENDIF}
 
-function THorseWebSocketSocketTransport.WaitReadable(const ATimeoutMS: Integer): Boolean;
+function THorseWebSocketSocketTransport.IsInterrupted(const AError: Integer): Boolean;
+begin
+  {$IF DEFINED(FPC)}
+    {$IFDEF MSWINDOWS}
+      Result := AError = WSAEINTR;
+    {$ELSE}
+      Result := AError = ESysEINTR;
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF MSWINDOWS}
+      Result := AError = WSAEINTR;
+    {$ELSE}
+      Result := AError = EINTR;
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function THorseWebSocketSocketTransport.WouldBlock(const AError: Integer): Boolean;
+begin
+  {$IF DEFINED(FPC)}
+    {$IFDEF MSWINDOWS}
+      Result := AError = WSAEWOULDBLOCK;
+    {$ELSE}
+      Result := (AError = ESysEAGAIN) or (AError = ESysEWOULDBLOCK);
+    {$ENDIF}
+  {$ELSE}
+    {$IFDEF MSWINDOWS}
+      Result := AError = WSAEWOULDBLOCK;
+    {$ELSE}
+      Result := (AError = EAGAIN) or (AError = EWOULDBLOCK);
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function THorseWebSocketSocketTransport.WaitReadable(const ASocket: TSocket;
+  const ATimeoutMS: Integer): Boolean;
 {$IF DEFINED(FPC)}
   {$IFDEF MSWINDOWS}
   var
@@ -153,7 +259,7 @@ function THorseWebSocketSocketTransport.WaitReadable(const ATimeoutMS: Integer):
     LTimeout: TTimeVal;
   begin
     LSet.fd_count := 1;
-    LSet.fd_array[0] := FSocket;
+    LSet.fd_array[0] := ASocket;
     LTimeout.tv_sec := ATimeoutMS div 1000;
     LTimeout.tv_usec := (ATimeoutMS mod 1000) * 1000;
     Result := select(0, @LSet, nil, nil, @LTimeout) > 0;
@@ -164,10 +270,10 @@ function THorseWebSocketSocketTransport.WaitReadable(const ATimeoutMS: Integer):
     LTimeout: TTimeVal;
   begin
     fpFD_ZERO(LSet);
-    fpFD_SET(FSocket, LSet);
+    fpFD_SET(ASocket, LSet);
     LTimeout.tv_sec := ATimeoutMS div 1000;
     LTimeout.tv_usec := (ATimeoutMS mod 1000) * 1000;
-    Result := fpSelect(FSocket + 1, @LSet, nil, nil, @LTimeout) > 0;
+    Result := fpSelect(ASocket + 1, @LSet, nil, nil, @LTimeout) > 0;
   end;
   {$ENDIF}
 {$ELSE}
@@ -179,7 +285,7 @@ function THorseWebSocketSocketTransport.WaitReadable(const ATimeoutMS: Integer):
     { Winapi.WinSock2 exposes FD_SET as a TYPE, not the usual macro-style
       procedure, so the members are filled in by hand. }
     LSet.fd_count := 1;
-    LSet.fd_array[0] := FSocket;
+    LSet.fd_array[0] := ASocket;
     LTimeout.tv_sec := ATimeoutMS div 1000;
     LTimeout.tv_usec := (ATimeoutMS mod 1000) * 1000;
     Result := select(0, @LSet, nil, nil, @LTimeout) > 0;
@@ -190,114 +296,170 @@ function THorseWebSocketSocketTransport.WaitReadable(const ATimeoutMS: Integer):
     LTimeout: timeval;
   begin
     FD_ZERO(LSet);
-    FD_SET(FSocket, LSet);
+    FD_SET(ASocket, LSet);
     LTimeout.tv_sec := ATimeoutMS div 1000;
     LTimeout.tv_usec := (ATimeoutMS mod 1000) * 1000;
-    Result := select(FSocket + 1, @LSet, nil, nil, @LTimeout) > 0;
+    Result := select(ASocket + 1, @LSet, nil, nil, @LTimeout) > 0;
   end;
   {$ENDIF}
 {$ENDIF}
 
 function THorseWebSocketSocketTransport.Read(var ABuffer: TBytes; const ACount: Integer): Integer;
+var
+  LError: Integer;
+  LSocket: TSocket;
 begin
   Result := 0;
-  if FIsClosed then
+  if (ACount <= 0) or (Length(ABuffer) < ACount) or not BeginOperation(LSocket) then
     Exit;
   try
-    while True do
-    begin
-      {$IF DEFINED(FPC)}
-        Result := fprecv(FSocket, @ABuffer[0], ACount, 0);
-      {$ELSE}
-        {$IFDEF MSWINDOWS}
-          Result := recv(FSocket, ABuffer[0], ACount, 0);
+    try
+      while not Closing do
+      begin
+        {$IF DEFINED(FPC)}
+          Result := fprecv(LSocket, @ABuffer[0], ACount, 0);
         {$ELSE}
-          Result := recv(FSocket, ABuffer[0], ACount, 0);
+          {$IFDEF MSWINDOWS}
+            Result := recv(LSocket, ABuffer[0], ACount, 0);
+          {$ELSE}
+            Result := recv(LSocket, ABuffer[0], ACount, 0);
+          {$ENDIF}
         {$ENDIF}
-      {$ENDIF}
 
-      if Result > 0 then
-        Exit;
+        if Result > 0 then
+          Exit;
 
-      { recv = 0 is an orderly shutdown -- genuinely closed. }
-      if Result = 0 then
-      begin
-        FIsClosed := True;
-        Exit;
+        if Result = 0 then
+        begin
+          RequestClose(False);
+          Exit;
+        end;
+
+        LError := GetLastSocketError;
+        if IsInterrupted(LError) then
+          Continue;
+        if not WouldBlock(LError) then
+        begin
+          Result := 0;
+          RequestClose(False);
+          Exit;
+        end;
+
+        WaitReadable(LSocket, WS_SOCKET_READ_TICK_MS);
       end;
-
-      { recv < 0: only a would-block errno means "keep waiting". }
-      if not WouldBlock then
-      begin
-        Result := 0;
-        FIsClosed := True;
-        Exit;
-      end;
-
-      { Idle. Park in select() until data arrives or the tick expires; a
-        timeout is not a disconnect, so simply retry. }
-      WaitReadable(WS_SOCKET_READ_TICK_MS);
-      if FIsClosed then
-      begin
-        Result := 0;
-        Exit;
-      end;
+      Result := 0;
+    except
+      Result := 0;
+      RequestClose(False);
     end;
-  except
-    Result := 0;
-    FIsClosed := True;
+  finally
+    EndOperation;
   end;
 end;
 
 function THorseWebSocketSocketTransport.Write(const ABuffer: TBytes; const ACount: Integer): Integer;
+var
+  LSocket: TSocket;
 begin
   Result := 0;
-  if FIsClosed then
+  if (ACount <= 0) or (Length(ABuffer) < ACount) or not BeginOperation(LSocket) then
     Exit;
   try
-    {$IF DEFINED(FPC)}
-      Result := fpsend(FSocket, @ABuffer[0], ACount, 0);
-    {$ELSE}
-      {$IFDEF MSWINDOWS}
-        Result := send(FSocket, ABuffer[0], ACount, 0);
+    try
+      {$IF DEFINED(FPC)}
+        Result := fpsend(LSocket, @ABuffer[0], ACount, 0);
       {$ELSE}
-        Result := send(FSocket, ABuffer[0], ACount, 0);
+        {$IFDEF MSWINDOWS}
+          Result := send(LSocket, ABuffer[0], ACount, 0);
+        {$ELSE}
+          Result := send(LSocket, ABuffer[0], ACount, 0);
+        {$ENDIF}
       {$ENDIF}
-    {$ENDIF}
-    if Result < 0 then
-    begin
+      if Result < 0 then
+      begin
+        Result := 0;
+        RequestClose(False);
+      end;
+    except
       Result := 0;
-      FIsClosed := True;
+      RequestClose(False);
     end;
-  except
-    Result := 0;
-    FIsClosed := True;
+  finally
+    EndOperation;
   end;
 end;
 
 procedure THorseWebSocketSocketTransport.Close;
 begin
-  if not FIsClosed then
-  begin
-    FIsClosed := True;
-    try
-      {$IF DEFINED(FPC)}
-        CloseSocket(FSocket);
-      {$ELSE}
-        {$IFDEF MSWINDOWS}
-          closesocket(FSocket);
-        {$ELSE}
-          Posix.Unistd.__close(FSocket);
-        {$ENDIF}
-      {$ENDIF}
-    except
-    end;
-  end;
+  RequestClose(True);
 end;
 
 function THorseWebSocketSocketTransport.IsConnected: Boolean;
 begin
-  Result := not FIsClosed;
+  Result := not Closing;
+end;
+
+function THorseWebSocketSocketTransport.Closing: Boolean;
+begin
+  FStateLock.Enter;
+  try
+    Result := FIsClosed;
+  finally
+    FStateLock.Leave;
+  end;
+end;
+
+procedure THorseWebSocketSocketTransport.RequestClose(
+  const AWaitForOperations: Boolean);
+var
+  LSocket: TSocket;
+  LCloseSocket: Boolean;
+  LHasOperations: Boolean;
+begin
+  LCloseSocket := False;
+  FStateLock.Enter;
+  try
+    FIsClosed := True;
+    if FSocketClosed then
+      Exit;
+    LSocket := FSocket;
+    LHasOperations := FActiveOperations > 0;
+    if not LHasOperations then
+    begin
+      FSocketClosed := True;
+      LCloseSocket := True;
+    end;
+  finally
+    FStateLock.Leave;
+  end;
+
+  if LHasOperations then
+  begin
+    {$IF DEFINED(FPC)}
+      fpShutdown(LSocket, 2);
+    {$ELSE}
+      {$IFDEF MSWINDOWS}
+        shutdown(LSocket, SD_BOTH);
+      {$ELSE}
+        shutdown(LSocket, SHUT_RDWR);
+      {$ENDIF}
+    {$ENDIF}
+    if AWaitForOperations then
+      FOperationsFinished.WaitFor(INFINITE);
+  end
+  else if LCloseSocket then
+  begin
+    {$IF DEFINED(FPC)}
+      CloseSocket(LSocket);
+    {$ELSE}
+      {$IFDEF MSWINDOWS}
+        closesocket(LSocket);
+      {$ELSE}
+        Posix.Unistd.__close(LSocket);
+      {$ENDIF}
+    {$ENDIF}
+    FOperationsFinished.SetEvent;
+  end;
 end;
 
 function THorseWebSocketSocketTransport.GetClientIP: string;
