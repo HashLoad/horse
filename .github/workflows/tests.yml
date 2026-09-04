@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Install Free Pascal Compiler (FPC)
       run: |
@@ -38,3 +38,51 @@ jobs:
       run: |
         cd tests
         ./Console -exit:Continue
+
+  fpc-trunk-keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Known FPC 3.3.1 revision where the latency regression was reproduced.
+      FPC_TRUNK_REF: a92f381365576b6b64be9eb9b8a2db5b4609d8a5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install FPC bootstrap compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fpc make
+
+    - name: Build FPC trunk
+      run: |
+        git init /tmp/fpc-source
+        git -C /tmp/fpc-source remote add origin https://gitlab.com/freepascal.org/fpc/source.git
+        git -C /tmp/fpc-source fetch --depth 1 origin "$FPC_TRUNK_REF"
+        git -C /tmp/fpc-source checkout --detach FETCH_HEAD
+        make -C /tmp/fpc-source -j2 all OPT="-O2"
+        sudo make -C /tmp/fpc-source install INSTALL_PREFIX=/opt/fpc
+        compiler_path=$(find /opt/fpc/lib/fpc -mindepth 2 -maxdepth 2 -name ppcx64 | head -1)
+        compiler_dir=$(dirname "$compiler_path")
+        sudo ln -sf "$compiler_path" /opt/fpc/bin/ppcx64
+        sudo "$compiler_dir/samplecfg" "$compiler_dir" /etc
+        echo "/opt/fpc/bin" >> "$GITHUB_PATH"
+
+    - name: Compile keep-alive regression server
+      run: |
+        mkdir -p /tmp/horse-fpc-units /tmp/horse-fpc-bin
+        cd tests/src
+        fpc -B -Mdelphi -Sh \
+          -FE/tmp/horse-fpc-bin \
+          -FU/tmp/horse-fpc-units \
+          -Fu../../src \
+          -dHORSE_CONSOLE \
+          FPCHttpKeepAliveServer.dpr
+
+    - name: Run keep-alive latency regression
+      run: |
+        /tmp/horse-fpc-bin/FPCHttpKeepAliveServer &
+        server_pid=$!
+        trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+        sleep 1
+        python3 tests/fpc_keepalive_regression.py

@@ -42,6 +42,7 @@ type
     class procedure DoGetModule(Sender: TObject; ARequest: TRequest; var ModuleClass: TCustomHTTPModuleClass);
     {$IF FPC_FULLVERSION >= 30301}
     class procedure EnableServerKeepAlive(const AApplication: THTTPApplication);
+    class procedure ConfigureServerTransport(const AApplication: THTTPApplication);
     {$ENDIF}
   public
     class property Host: string read GetHost write SetHost;
@@ -71,7 +72,8 @@ implementation
 uses
   Horse.WebModule,
   Horse.Response
-  {$IF FPC_FULLVERSION >= 30301}, custhttpapp{$ENDIF};
+  {$IF FPC_FULLVERSION >= 30301}, custhttpapp, fphttpserver, ssockets{$ENDIF}
+  {$IF DEFINED(FPC) AND DEFINED(UNIX)}, Sockets{$ENDIF};
 
 {$IF FPC_FULLVERSION >= 30301}
 const
@@ -89,6 +91,61 @@ type
       from it, so the property never becomes public on it). }
   THorseHTTPServerHandlerAccess = class(custhttpapp.TFPHTTPServerHandler);
   THorseEmbeddedServerAccess = class(custhttpapp.TEmbeddedHttpServer);
+
+  {$IFDEF UNIX}
+  THorseNoDelaySocketHandler = class(TSocketHandler)
+  public
+    function Accept: Boolean; override;
+  end;
+
+  THorseSocketHandlerFactory = class
+  private
+    FPrevious: TGetSocketHandlerEvent;
+  public
+    procedure CreateHandler(Sender: TObject; const UseSSL: Boolean;
+      out AHandler: TSocketHandler);
+    property Previous: TGetSocketHandlerEvent read FPrevious write FPrevious;
+  end;
+  {$ENDIF}
+
+var
+  {$IFDEF UNIX}
+  GSocketHandlerFactory: THorseSocketHandlerFactory;
+  GConfiguredSocketServer: TEmbeddedHttpServer;
+  {$ENDIF}
+
+{$IFDEF UNIX}
+function THorseNoDelaySocketHandler.Accept: Boolean;
+var
+  LEnabled: LongInt;
+begin
+  Result := inherited Accept;
+  if not Result then
+    Exit;
+
+  LEnabled := 1;
+  { fphttpserver writes the response headers and body separately. On Linux,
+    leaving Nagle enabled makes the second small write interact with delayed
+    ACK and adds about 40-44 ms to every reused HTTP/1.1 connection. Accept is
+    the first handler callback invoked after TSocketStream associates the raw
+    socket, so the descriptor is valid here. }
+  fpSetSockOpt(Socket.Handle, IPPROTO_TCP, TCP_NODELAY, @LEnabled,
+    SizeOf(LEnabled));
+end;
+
+procedure THorseSocketHandlerFactory.CreateHandler(Sender: TObject;
+  const UseSSL: Boolean; out AHandler: TSocketHandler);
+begin
+  AHandler := nil;
+  if Assigned(FPrevious) then
+    FPrevious(Sender, UseSSL, AHandler);
+
+  { Do not replace custom or TLS handlers. The default non-TLS handler is the
+    only path affected by the two-small-writes delayed-ACK regression. }
+  if (AHandler = nil) and not UseSSL then
+    AHandler := THorseNoDelaySocketHandler.Create;
+end;
+{$ENDIF}
 
 class procedure THorseProvider.EnableServerKeepAlive(const AApplication: THTTPApplication);
 var
@@ -119,6 +176,35 @@ begin
     if THorseEmbeddedServerAccess(LServer).KeepConnectionTimeout <= 0 then
       THorseEmbeddedServerAccess(LServer).KeepConnectionTimeout := DEFAULT_KEEPALIVE_TIMEOUT_MS;
   end;
+end;
+
+class procedure THorseProvider.ConfigureServerTransport(
+  const AApplication: THTTPApplication);
+{$IFDEF UNIX}
+var
+  LHandler: TFPHTTPServerHandler;
+  LServer: TEmbeddedHttpServer;
+{$ENDIF}
+begin
+  {$IFDEF UNIX}
+  LHandler := AApplication.HTTPHandler;
+  if LHandler = nil then
+    Exit;
+  LServer := THorseHTTPServerHandlerAccess(LHandler).HTTPServer;
+  if (LServer = nil) or (LServer = GConfiguredSocketServer) then
+    Exit;
+
+  if GSocketHandlerFactory = nil then
+    GSocketHandlerFactory := THorseSocketHandlerFactory.Create;
+  { Do not use OnAllowConnect here. FPC 3.3.1 stores that callback but its
+    DoOnAllowConnect implementation does not dispatch it. A socket-handler
+    factory is both effective and early enough to configure accepted sockets. }
+  GSocketHandlerFactory.Previous :=
+    THorseEmbeddedServerAccess(LServer).OnGetSocketHandler;
+  THorseEmbeddedServerAccess(LServer).OnGetSocketHandler :=
+    GSocketHandlerFactory.CreateHandler;
+  GConfiguredSocketServer := LServer;
+  {$ENDIF}
 end;
 {$ENDIF}
 
@@ -198,6 +284,7 @@ begin
     and before Run, while the server is fully configured but not yet
     accepting. }
   EnableServerKeepAlive(LHTTPApplication);
+  ConfigureServerTransport(LHTTPApplication);
   {$ENDIF}
   FRunning := True;
   DoOnListen;

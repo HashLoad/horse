@@ -156,6 +156,15 @@ if ($HasDocker) {
             $FpcFlags += "-d$Def "
         }
 
+        # Apache applications are shared modules loaded by httpd. Compile the
+        # Pascal units without the standalone link/run step; linking an
+        # executable here produces expected unresolved ap_/apr_ symbols.
+        if ($Defines -like "*HORSE_PROVIDER_APACHE*") {
+            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Cn -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr"
+        } else {
+            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr && /tmp/fpc_bin/CompileCheck"
+        }
+
         Write-Host " -> Compilando Provedor (FPC Linux): $ScenName..." -ForegroundColor Gray
 
         $DockerArgs = @(
@@ -163,7 +172,7 @@ if ($HasDocker) {
             "-v", "$ScriptDir\..\:/usr/src/app",
             "-w", "/usr/src/app/tests/src",
             "horse-tests-lazarus",
-            "bash", "-c", "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr && /tmp/fpc_bin/CompileCheck"
+            "bash", "-c", $FpcCommand
         )
 
         $BuildStatus = "SUCESSO"
