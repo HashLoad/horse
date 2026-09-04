@@ -29,6 +29,10 @@ unit Horse.Provider.RawAdapters;
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
+{$IF DEFINED(HORSE_APACHE) or DEFINED(HORSE_ISAPI) or DEFINED(HORSE_CGI) or DEFINED(HORSE_FCGI)}
+  {$MESSAGE FATAL 'Horse.Provider.RawAdapters is for self-hosted providers and must not be linked into Apache, ISAPI, CGI, or FastCGI applications.'}
+{$IFEND}
+
 interface
 
 uses
