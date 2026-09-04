@@ -298,20 +298,13 @@ uses
     {$MESSAGE ERROR 'HORSE_PROVIDER_IOCP is only supported on Windows.'}
     {$ENDIF}
   {$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
-  { FPC branch of the nghttp2 selector. The cross-product FPC units
-    (Nghttp2.FPC.Daemon, Nghttp2.FPC.LCL) are not shipped yet, so the
-    corresponding HORSE_APPTYPE_* values are rejected outright rather than
-    silently falling through to the console shape — an application-type
-    directive that is quietly discarded produces a binary of a different shape
-    than the one the developer asked for. FATAL (not ERROR) because these sit
-    inside the uses clause: compilation must stop here, or the missing unit
-    name cascades into unrelated syntax errors. }
+  { FPC lifecycle shape selected by the application type. }
     {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 + HORSE_APPTYPE_DAEMON is not supported on FPC — Horse.Provider.Nghttp2.FPC.Daemon does not exist yet. Omit HORSE_APPTYPE_DAEMON to build the console shape, or build this target with Delphi.'}
+    Horse.Provider.Nghttp2.FPC.Daemon,
     {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
-    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 + HORSE_APPTYPE_LCL is not supported on FPC — Horse.Provider.Nghttp2.FPC.LCL does not exist yet. Omit HORSE_APPTYPE_LCL to build the console shape, or build this target with Delphi.'}
+    Horse.Provider.Nghttp2.FPC.LCL,
     {$ELSE}
-    Horse.Provider.Nghttp2,   { console shape — also covers FPC HTTPApplication }
+    Horse.Provider.Nghttp2.FPC.HTTPApplication,
     {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
@@ -538,7 +531,24 @@ type
     THorseProvider = Horse.Provider.ICS.THorseProviderICS;
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
-  THorseProvider = Horse.Provider.Nghttp2.THorseProviderNghttp2;
+  THorseProvider =
+  {$IFDEF FPC}
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+      Horse.Provider.Nghttp2.FPC.Daemon.THorseProviderNghttp2FPCDaemon;
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+      Horse.Provider.Nghttp2.FPC.LCL.THorseProviderNghttp2FPCLCL;
+    {$ELSE}
+      Horse.Provider.Nghttp2.FPC.HTTPApplication.THorseProviderNghttp2FPCHTTPApplication;
+    {$ENDIF}
+  {$ELSE}
+    {$IF DEFINED(HORSE_APPTYPE_VCL)}
+      Horse.Provider.Nghttp2.VCL.THorseProviderNghttp2VCL;
+    {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+      Horse.Provider.Nghttp2.Daemon.THorseProviderNghttp2Daemon;
+    {$ELSE}
+      Horse.Provider.Nghttp2.THorseProviderNghttp2;
+    {$ENDIF}
+  {$ENDIF}
 {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   THorseProvider =
   {$IF DEFINED(FPC)}
