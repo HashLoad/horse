@@ -1,7 +1,7 @@
 {
   "name": "horse",
   "description": "Express-inspired web framework for Delphi and Lazarus",
-  "version": "3.3.0",
+  "version": "3.3.4",
   "homepage": "https://github.com/HashLoad/horse",
   "license": "MIT",
   "mainsrc": "src/",

@@ -1048,10 +1048,18 @@ begin
 end;
 
 function THttpSysRawRequest.GetPathInfo: string;
+var
+  LQueryPos: Integer;
 begin
-  if FRequest.CookedUrl.pAbsPath <> nil then
-    SetString(Result, FRequest.CookedUrl.pAbsPath, FRequest.CookedUrl.AbsPathLength div SizeOf(WideChar))
-  else
+  { Keep the escaped path until Horse splits it into route segments. The
+    HTTP.sys cooked URL decodes %2F to '/', which would turn an encoded slash
+    inside a parameter into a path separator and produce a false 404. IOCP and
+    Epoll expose the raw path for the same reason. }
+  Result := GetURL;
+  LQueryPos := Pos('?', Result);
+  if LQueryPos > 0 then
+    SetLength(Result, LQueryPos - 1);
+  if Result = '' then
     Result := '/';
 end;
 

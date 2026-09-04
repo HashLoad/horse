@@ -18,7 +18,8 @@ var
   LList: TList<THorseCallback>;
 begin
   // 1. Para a escuta do servidor
-  THorse.StopListen;
+  if THorse.IsRunning then
+    THorse.StopListen;
 
   // 2. Reseta a arvore de rotas global
   THorse.Routes := nil;

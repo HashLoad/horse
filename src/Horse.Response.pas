@@ -285,8 +285,10 @@ uses
   Horse.Core,
   Horse.Exception.Interrupted,
   Horse.Core.MemoryBufferPool
-  {$IF DEFINED(HORSE_PROVIDER_EPOLL) or DEFINED(HORSE_PROVIDER_IOCP) or DEFINED(HORSE_PROVIDER_HTTPSYS)}
+  {$IF NOT DEFINED(FPC)}
+  {$IF NOT DEFINED(HORSE_APACHE) and NOT DEFINED(HORSE_ISAPI) and NOT DEFINED(HORSE_CGI) and NOT DEFINED(HORSE_FCGI)}
   , Horse.Provider.RawAdapters
+  {$IFEND}
   {$IFEND}
   {$IF DEFINED(FPC)}
   , fphttpserver
@@ -508,10 +510,12 @@ begin
   Result := FCSContentStream;
   if (Result = nil) and Assigned(FCSRawWebResponse) then
   begin
-    {$IF NOT DEFINED(FPC) and (DEFINED(HORSE_PROVIDER_EPOLL) or DEFINED(HORSE_PROVIDER_IOCP) or DEFINED(HORSE_PROVIDER_HTTPSYS))}
+    {$IF NOT DEFINED(FPC)}
+    {$IF NOT DEFINED(HORSE_APACHE) and NOT DEFINED(HORSE_ISAPI) and NOT DEFINED(HORSE_CGI) and NOT DEFINED(HORSE_FCGI)}
     if FCSRawWebResponse is TInterfacedWebResponse then
       Result := TInterfacedWebResponse(FCSRawWebResponse).ContentStream
     else
+    {$ENDIF}
     {$ENDIF}
       Result := FCSRawWebResponse.ContentStream;
   end;
