@@ -41,7 +41,7 @@ begin
   if IsEmpty or (ABuffer = nil) or (FOffset < 0) or (FOffset + FLength > System.Length(ABuffer)) then
     Result := ''
   else
-    SetString(Result, PChar(@ABuffer[FOffset]), FLength);
+    Result := TEncoding.UTF8.GetString(ABuffer, FOffset, FLength);
 end;
 
 end.

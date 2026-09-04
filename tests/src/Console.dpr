@@ -73,6 +73,8 @@ uses
   Tests.Horse.Core.Group in 'tests\Tests.Horse.Core.Group.pas',
   {$IFNDEF FPC}
   Tests.Horse.Core.Router.Radix in 'tests\Tests.Horse.Core.Router.Radix.pas',
+  {$ELSE}
+  Tests.Horse.Core.Router.Radix.FPC in 'tests\Tests.Horse.Core.Router.Radix.FPC.pas',
   {$ENDIF}
   Tests.Horse.Request.Recycle in 'tests\Tests.Horse.Request.Recycle.pas',
   Tests.Horse.Core.Middleware in 'tests\Tests.Horse.Core.Middleware.pas',

@@ -34,6 +34,7 @@ type
     FFields: TDictionary<string, THorseCoreParamField>;
     FContent: TStrings;
     FRequired: Boolean;
+    FDecodeValues: Boolean;
 
     function GetItem(const AKey: string): string;
     function GetDictionary: THorseList;
@@ -66,7 +67,8 @@ type
     function AddStream(const AKey: string; const AContent: TStream): THorseCoreParam; overload;
     function AddStream(const AKey: string; const AContent: TStream; const AOwnsStream: Boolean): THorseCoreParam; overload;
 
-    constructor Create(const AParams: THorseList);
+    constructor Create(const AParams: THorseList;
+      const ADecodeValues: Boolean = True);
     destructor Destroy; override;
   end;
 
@@ -81,11 +83,13 @@ uses
   Horse.Utils,
   Horse.Core.Param.Config;
 
-constructor THorseCoreParam.Create(const AParams: THorseList);
+constructor THorseCoreParam.Create(const AParams: THorseList;
+  const ADecodeValues: Boolean);
 begin
   inherited Create;
   FParams := AParams;
   FRequired := False;
+  FDecodeValues := ADecodeValues;
 end;
 
 destructor THorseCoreParam.Destroy;
@@ -146,7 +150,10 @@ begin
   Result := FParams.TryGetValue(AKey, LVal);
   if Result then
   begin
-    AValue := DecodeParam(LVal);
+    if FDecodeValues then
+      AValue := DecodeParam(LVal)
+    else
+      AValue := LVal;
     if AValue <> LVal then
       FParams.AddOrSetValue(AKey, AValue);
   end;
@@ -158,7 +165,10 @@ var
 begin
   if FParams.TryGetValue(AKey, LVal) then
   begin
-    Result := DecodeParam(LVal);
+    if FDecodeValues then
+      Result := DecodeParam(LVal)
+    else
+      Result := LVal;
     if Result <> LVal then
       FParams.AddOrSetValue(AKey, Result);
   end
@@ -263,7 +273,10 @@ begin
   begin
     FContent := TStringList.Create;
     for LPair in FParams do
-      FContent.Add(LPair.Key + '=' + DecodeParam(LPair.Value));
+      if FDecodeValues then
+        FContent.Add(LPair.Key + '=' + DecodeParam(LPair.Value))
+      else
+        FContent.Add(LPair.Key + '=' + LPair.Value);
   end;
   Result := FContent;
 end;
@@ -273,10 +286,13 @@ var
   I: Integer;
 begin
   Result := FParams.ToArray;
-  for I := 0 to Length(Result) - 1 do
+  if FDecodeValues then
   begin
-    Result[I].Value := DecodeParam(Result[I].Value);
-    FParams.AddOrSetValue(Result[I].Key, Result[I].Value);
+    for I := 0 to Length(Result) - 1 do
+    begin
+      Result[I].Value := DecodeParam(Result[I].Value);
+      FParams.AddOrSetValue(Result[I].Key, Result[I].Value);
+    end;
   end;
 end;
 

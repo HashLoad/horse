@@ -184,7 +184,8 @@ begin
   begin
     for LTag in FTags do
     begin
-      FRequest.Params.Dictionary.AddOrSetValue(LTag, DecodeParam(LCurrentStr));
+      FRequest.Params.Dictionary.AddOrSetValue(LTag,
+        FRequest.DecodePathParam(LCurrentStr));
     end;
   end;
 end;

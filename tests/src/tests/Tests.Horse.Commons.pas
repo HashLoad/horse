@@ -40,6 +40,10 @@ type
     [Test]
     [TestCase('Test08', 'BufferSlice IndexOf')]
     procedure TestBufferSliceIndexOf;
+{$IF SizeOf(Char) > 1}
+    [Test]
+    procedure TestBufferSliceUtf8String;
+{$ENDIF}
   end;
 
 implementation
@@ -190,6 +194,19 @@ begin
   Assert.AreEqual(13, LSlice.IndexOf(Ord('/'), 10));
   Assert.AreEqual(-1, LSlice.IndexOf(Ord('?')));
 end;
+
+{$IF SizeOf(Char) > 1}
+procedure TTestHorseCommons.TestBufferSliceUtf8String;
+var
+  LBuf: TBytes;
+  LSlice: THorseBufferSlice;
+begin
+  LBuf := TEncoding.UTF8.GetBytes('ação');
+  LSlice := THorseBufferSlice.Create(LBuf, 0, Length(LBuf));
+
+  Assert.AreEqual('ação', LSlice.ToString);
+end;
+{$ENDIF}
 
 initialization
   TDUnitX.RegisterTestFixture(TTestHorseCommons);

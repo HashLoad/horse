@@ -68,11 +68,34 @@ type
     procedure ExecuteRouteWithDifferentParamNamesAndSharedPrefix;
     [Test]
     procedure ExecuteRouteCaseSensitivity;
+{$IF SizeOf(Char) > 1}
+    [Test]
+    procedure ExecuteRouteWithUtf8LiteralAndParam;
+{$ENDIF}
   end;
 
 implementation
 
 { TTestHorseCoreRouterTree }
+
+{$IF SizeOf(Char) > 1}
+procedure TTestHorseCoreRouterTree.ExecuteRouteWithUtf8LiteralAndParam;
+var
+  LCalled: Boolean;
+begin
+  LCalled := False;
+  FRouterTree.RegisterRoute(mtGet, '/ação/:id',
+    procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
+    begin
+      LCalled := True;
+      Assert.AreEqual('42', Req.Params.Items['id']);
+    end);
+
+  FRequest.Populate('GET', mtGet, '/ação/42', '', '');
+  Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCalled);
+end;
+{$ENDIF}
 
 procedure TTestHorseCoreRouterTree.Setup;
 begin

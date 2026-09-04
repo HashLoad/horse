@@ -23,6 +23,8 @@ THorse.Head  ('/items/:id', ...);
 
 O roteamento por método é exato: `THorse.Get` só atende requisições `GET` para aquele caminho. Uma requisição com método errado em um caminho conhecido retorna `405 Method Not Allowed`. Uma requisição com caminho desconhecido retorna `404 Not Found`.
 
+Quando `THorse.CaseSensitive` é `False`, a comparação ignora maiúsculas e minúsculas apenas para letras ASCII. Rotas UTF-8 são suportadas, mas isso não implica case folding de caracteres não ASCII: `/AÇÃO` e `/ação` devem ser registrados e requisitados com a mesma grafia não ASCII.
+
 ## Parâmetros de caminho
 
 Use um segmento prefixado com dois-pontos para capturar parte da URL:
