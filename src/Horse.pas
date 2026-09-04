@@ -113,6 +113,7 @@ unit Horse;
 {$IFDEF HORSE_ISAPI}       {$DEFINE HORSE_HOST_ISAPI}           {$ENDIF}
 {$IFDEF HORSE_CGI}         {$DEFINE HORSE_HOST_CGI}             {$ENDIF}
 {$IFDEF HORSE_FCGI}        {$DEFINE HORSE_HOST_FCGI}            {$ENDIF}
+{$IFDEF HORSE_NGHTTP2}     {$DEFINE HORSE_PROVIDER_NGHTTP2}     {$ENDIF}
 
 { ===========================================================================
   PATCH-HORSE-1 — Architecturally-impossible combination guard (expanded)
@@ -183,6 +184,21 @@ unit Horse;
   {$IFEND}
 {$IFEND}
 
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2)}
+  {$IF DEFINED(HORSE_HOST_ISAPI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 cannot combine with HORSE_HOST_ISAPI — IIS owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_APACHE)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 cannot combine with HORSE_HOST_APACHE — Apache owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_CGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 cannot combine with HORSE_HOST_CGI — the web server owns the socket; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+  {$IF DEFINED(HORSE_HOST_FCGI)}
+    {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 cannot combine with HORSE_HOST_FCGI — FastCGI talks to a web server; a self-hosted Provider cannot coexist.'}
+  {$ENDIF}
+{$IFEND}
+
 { Rule 2 — cross-platform Application-type mismatch }
 {$IF DEFINED(HORSE_APPTYPE_VCL) and DEFINED(FPC)}
   {$MESSAGE FATAL 'HORSE_APPTYPE_VCL is Delphi-only — use HORSE_APPTYPE_LCL for Lazarus/FPC.'}
@@ -196,7 +212,7 @@ unit Horse;
 
 { Rule 3 — HORSE_NOPROVIDER × anything else }
 {$IF DEFINED(HORSE_NOPROVIDER)}
-  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_ICS) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
+  {$IF DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_ICS) or DEFINED(HORSE_PROVIDER_NGHTTP2) or DEFINED(HORSE_APPTYPE_VCL) or DEFINED(HORSE_APPTYPE_DAEMON) or DEFINED(HORSE_APPTYPE_LCL) or DEFINED(HORSE_HOST_APACHE) or DEFINED(HORSE_HOST_ISAPI) or DEFINED(HORSE_HOST_CGI) or DEFINED(HORSE_HOST_FCGI)}
     {$MESSAGE FATAL 'HORSE_NOPROVIDER is mutually exclusive with all HORSE_PROVIDER_*, HORSE_APPTYPE_*, and HORSE_HOST_* defines — remove one.'}
   {$IFEND}
 {$IFEND}
@@ -211,10 +227,25 @@ unit Horse;
 {$IF DEFINED(HORSE_PROVIDER_MORMOT) and DEFINED(HORSE_PROVIDER_ICS)}
   {$MESSAGE FATAL 'HORSE_PROVIDER_MORMOT and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
 {$IFEND}
-{$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT))}
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_CROSSSOCKET)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_CROSSSOCKET are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_MORMOT)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_MORMOT are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_ICS)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_ICS are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{ HORSE_PROVIDER_IOCP is tested BEFORE HORSE_PROVIDER_NGHTTP2 in the selector
+  chains below, so without this guard defining both compiles cleanly and IOCP
+  wins silently — the build would use a transport the developer did not ask for. }
+{$IF DEFINED(HORSE_PROVIDER_NGHTTP2) and DEFINED(HORSE_PROVIDER_IOCP)}
+  {$MESSAGE FATAL 'HORSE_PROVIDER_NGHTTP2 and HORSE_PROVIDER_IOCP are mutually exclusive — pick exactly one transport Provider per build.'}
+{$IFEND}
+{$IF DEFINED(HORSE_PROVIDER_HTTPSYS) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_NGHTTP2))}
   {$MESSAGE FATAL 'HORSE_PROVIDER_HTTPSYS is mutually exclusive with other transport Providers — pick exactly one per build.'}
 {$IFEND}
-{$IF DEFINED(HORSE_PROVIDER_EPOLL) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_HTTPSYS))}
+{$IF DEFINED(HORSE_PROVIDER_EPOLL) and (DEFINED(HORSE_PROVIDER_CROSSSOCKET) or DEFINED(HORSE_PROVIDER_MORMOT) or DEFINED(HORSE_PROVIDER_HTTPSYS) or DEFINED(HORSE_PROVIDER_NGHTTP2))}
   {$MESSAGE FATAL 'HORSE_PROVIDER_EPOLL is mutually exclusive with other transport Providers — pick exactly one per build.'}
 {$IFEND}
 { =========================================================================== }
@@ -265,6 +296,15 @@ uses
     Horse.Provider.IOCP,
     {$ELSE}
     {$MESSAGE ERROR 'HORSE_PROVIDER_IOCP is only supported on Windows.'}
+    {$ENDIF}
+  {$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
+  { FPC lifecycle shape selected by the application type. }
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+    Horse.Provider.Nghttp2.FPC.Daemon,
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+    Horse.Provider.Nghttp2.FPC.LCL,
+    {$ELSE}
+    Horse.Provider.Nghttp2.FPC.HTTPApplication,
     {$ENDIF}
   {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   Horse.Provider.FPC.Daemon,
@@ -333,6 +373,15 @@ uses
   Horse.Provider.ICS.Daemon,
   {$ELSE}
   Horse.Provider.ICS,            { Console-shape — Delphi default for ICS }
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
+  System.SysUtils,
+  {$IF DEFINED(HORSE_APPTYPE_VCL)}
+  Horse.Provider.Nghttp2.VCL,     { Windows GUI host — auto-Listen from FormCreate }
+  {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+  Horse.Provider.Nghttp2.Daemon,  { Windows Service (TService) or Linux daemon (SIGTERM handler) }
+  {$ELSE}
+  Horse.Provider.Nghttp2,         { Console-shape — Delphi default for nghttp2 }
   {$ENDIF}
 {$ELSE}
   System.SysUtils,
@@ -480,6 +529,25 @@ type
     THorseProvider = Horse.Provider.ICS.Daemon.THorseProviderICSDaemon;
   {$ELSE}
     THorseProvider = Horse.Provider.ICS.THorseProviderICS;
+  {$ENDIF}
+{$ELSEIF DEFINED(HORSE_PROVIDER_NGHTTP2)}
+  THorseProvider =
+  {$IFDEF FPC}
+    {$IF DEFINED(HORSE_APPTYPE_DAEMON)}
+      Horse.Provider.Nghttp2.FPC.Daemon.THorseProviderNghttp2FPCDaemon;
+    {$ELSEIF DEFINED(HORSE_APPTYPE_LCL)}
+      Horse.Provider.Nghttp2.FPC.LCL.THorseProviderNghttp2FPCLCL;
+    {$ELSE}
+      Horse.Provider.Nghttp2.FPC.HTTPApplication.THorseProviderNghttp2FPCHTTPApplication;
+    {$ENDIF}
+  {$ELSE}
+    {$IF DEFINED(HORSE_APPTYPE_VCL)}
+      Horse.Provider.Nghttp2.VCL.THorseProviderNghttp2VCL;
+    {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
+      Horse.Provider.Nghttp2.Daemon.THorseProviderNghttp2Daemon;
+    {$ELSE}
+      Horse.Provider.Nghttp2.THorseProviderNghttp2;
+    {$ENDIF}
   {$ENDIF}
 {$ELSEIF DEFINED(HORSE_APPTYPE_DAEMON)}
   THorseProvider =
