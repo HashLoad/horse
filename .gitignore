@@ -96,3 +96,7 @@ benchmarks/linux_comparison/
 
 # Benchmarks local results
 benchmarks/results/
+
+# FPC test binaries (Linux builds have no extension, so *.exe misses them)
+tests/src/FPCHttpKeepaliveTest
+tests/src/FPCHttpKeepAliveServer
