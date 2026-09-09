@@ -73,7 +73,8 @@ uses
   Horse.WebModule,
   Horse.Response
   {$IF FPC_FULLVERSION >= 30301}, custhttpapp, fphttpserver, ssockets{$ENDIF}
-  {$IF DEFINED(FPC) AND DEFINED(UNIX)}, Sockets{$ENDIF};
+  {$IF DEFINED(FPC) AND DEFINED(UNIX)}, Sockets{$ENDIF}
+  {$IF DEFINED(FPC) AND DEFINED(MSWINDOWS)}, WinSock2{$ENDIF};
 
 {$IF FPC_FULLVERSION >= 30301}
 const
@@ -92,7 +93,7 @@ type
   THorseHTTPServerHandlerAccess = class(custhttpapp.TFPHTTPServerHandler);
   THorseEmbeddedServerAccess = class(custhttpapp.TEmbeddedHttpServer);
 
-  {$IFDEF UNIX}
+  {$IF DEFINED(UNIX) or DEFINED(MSWINDOWS)}
   THorseNoDelaySocketHandler = class(TSocketHandler)
   public
     function Accept: Boolean; override;
@@ -106,15 +107,15 @@ type
       out AHandler: TSocketHandler);
     property Previous: TGetSocketHandlerEvent read FPrevious write FPrevious;
   end;
-  {$ENDIF}
+  {$IFEND}
 
+{$IF DEFINED(UNIX) or DEFINED(MSWINDOWS)}
 var
-  {$IFDEF UNIX}
   GSocketHandlerFactory: THorseSocketHandlerFactory;
   GConfiguredSocketServer: TEmbeddedHttpServer;
-  {$ENDIF}
+{$IFEND}
 
-{$IFDEF UNIX}
+{$IF DEFINED(UNIX) or DEFINED(MSWINDOWS)}
 function THorseNoDelaySocketHandler.Accept: Boolean;
 var
   LEnabled: LongInt;
@@ -124,13 +125,18 @@ begin
     Exit;
 
   LEnabled := 1;
-  { fphttpserver writes the response headers and body separately. On Linux,
-    leaving Nagle enabled makes the second small write interact with delayed
-    ACK and adds about 40-44 ms to every reused HTTP/1.1 connection. Accept is
-    the first handler callback invoked after TSocketStream associates the raw
-    socket, so the descriptor is valid here. }
-  fpSetSockOpt(Socket.Handle, IPPROTO_TCP, TCP_NODELAY, @LEnabled,
-    SizeOf(LEnabled));
+  { fphttpserver writes the response headers and body separately. Leaving
+    Nagle enabled makes the second small write interact with delayed ACK and
+    adds latency to reused HTTP/1.1 connections. Accept is the first handler
+    callback invoked after TSocketStream associates the raw socket, so the
+    descriptor is valid here. }
+  {$IFDEF UNIX}
+  Sockets.fpSetSockOpt(Socket.Handle, Sockets.IPPROTO_TCP,
+    Sockets.TCP_NODELAY, @LEnabled, SizeOf(LEnabled));
+  {$ELSE}
+  WinSock2.setsockopt(WinSock2.TSocket(Socket.Handle), WinSock2.IPPROTO_TCP,
+    WinSock2.TCP_NODELAY, PAnsiChar(@LEnabled), SizeOf(LEnabled));
+  {$ENDIF}
 end;
 
 procedure THorseSocketHandlerFactory.CreateHandler(Sender: TObject;
@@ -145,7 +151,7 @@ begin
   if (AHandler = nil) and not UseSSL then
     AHandler := THorseNoDelaySocketHandler.Create;
 end;
-{$ENDIF}
+{$IFEND}
 
 class procedure THorseProvider.EnableServerKeepAlive(const AApplication: THTTPApplication);
 var
@@ -180,13 +186,13 @@ end;
 
 class procedure THorseProvider.ConfigureServerTransport(
   const AApplication: THTTPApplication);
-{$IFDEF UNIX}
+{$IF DEFINED(UNIX) or DEFINED(MSWINDOWS)}
 var
   LHandler: TFPHTTPServerHandler;
   LServer: TEmbeddedHttpServer;
-{$ENDIF}
+{$IFEND}
 begin
-  {$IFDEF UNIX}
+  {$IF DEFINED(UNIX) or DEFINED(MSWINDOWS)}
   LHandler := AApplication.HTTPHandler;
   if LHandler = nil then
     Exit;
@@ -204,7 +210,7 @@ begin
   THorseEmbeddedServerAccess(LServer).OnGetSocketHandler :=
     GSocketHandlerFactory.CreateHandler;
   GConfiguredSocketServer := LServer;
-  {$ENDIF}
+  {$IFEND}
 end;
 {$ENDIF}
 
