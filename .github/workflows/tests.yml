@@ -18,6 +18,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y fpc
 
+    - name: Run FPC WebSocket EAGAIN regression
+      run: tests/fpc-websocket/run-ws-eagain-test.sh
+
     - name: Install Boss Dependency Manager
       run: |
         curl -L https://github.com/hashload/boss/releases/latest/download/boss-linux -o boss
