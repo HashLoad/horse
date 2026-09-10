@@ -98,5 +98,4 @@ benchmarks/linux_comparison/
 benchmarks/results/
 
 # FPC test binaries (Linux builds have no extension, so *.exe misses them)
-tests/src/FPCHttpKeepaliveTest
 tests/src/FPCHttpKeepAliveServer

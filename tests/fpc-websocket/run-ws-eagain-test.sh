@@ -10,7 +10,7 @@
 #
 # Exit code = number of failed checks, so it can gate CI directly.
 # =============================================================================
-set -uo pipefail
+set -euo pipefail
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 HORSE_SRC=${HORSE_SRC:-$(cd "$HERE/../../src" 2>/dev/null && pwd)}

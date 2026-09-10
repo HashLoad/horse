@@ -169,7 +169,7 @@ type
 
 procedure TServerThread.Execute;
 begin
-  THorse.Listen(TEST_PORT);
+  THorse.Listen(TEST_PORT, '127.0.0.1');
 end;
 
 { ── Raw client helpers ─────────────────────────────────────────────────────
@@ -195,9 +195,17 @@ begin
 end;
 
 procedure SendStr(ASock: LongInt; const AText: string);
+var
+  LSent, LOffset: LongInt;
 begin
-  if Length(AText) > 0 then
-    fpSend(ASock, @AText[1], Length(AText), 0);
+  LOffset := 1;
+  while LOffset <= Length(AText) do
+  begin
+    LSent := fpSend(ASock, @AText[LOffset], Length(AText) - LOffset + 1, 0);
+    if LSent <= 0 then
+      raise Exception.CreateFmt('send failed at byte %d', [LOffset]);
+    Inc(LOffset, LSent);
+  end;
 end;
 
 { Waits up to ATimeoutMS for readability. Returns True when the socket became
@@ -229,6 +237,56 @@ begin
   end;
 end;
 
+function HeaderContentLength(const AResponse: string): Integer;
+const
+  HEADER_NAME = 'content-length:';
+var
+  LHeaders: string;
+  LLineEnd, LPos, LValueStart: Integer;
+begin
+  Result := -1;
+  LHeaders := LowerCase(Copy(AResponse, 1, Pos(#13#10#13#10, AResponse) - 1));
+  LPos := Pos(HEADER_NAME, LHeaders);
+  if LPos = 0 then
+    Exit;
+
+  LValueStart := LPos + Length(HEADER_NAME);
+  LLineEnd := Pos(#13#10, Copy(LHeaders, LValueStart, MaxInt));
+  if LLineEnd = 0 then
+    LLineEnd := Length(LHeaders) - LValueStart + 2;
+  Result := StrToIntDef(Trim(Copy(LHeaders, LValueStart, LLineEnd - 1)), -1);
+end;
+
+{ Accumulate an HTTP response because TCP may split headers and body across
+  any number of recv calls. A response without Content-Length (such as 101)
+  is complete once the header terminator arrives. }
+function ReadHttpResponse(ASock: LongInt; ATimeoutMS: Integer): string;
+var
+  LBodyLength, LHeaderEnd, LRemaining: Integer;
+  LChunk: string;
+  LDeadline: QWord;
+begin
+  Result := '';
+  LDeadline := GetTickCount64 + QWord(ATimeoutMS);
+  repeat
+    if GetTickCount64 >= LDeadline then
+      Exit;
+    LRemaining := Integer(LDeadline - GetTickCount64);
+    LChunk := ReadAvailable(ASock, LRemaining);
+    if LChunk = '' then
+      Exit;
+    Result := Result + LChunk;
+    LHeaderEnd := Pos(#13#10#13#10, Result);
+    if LHeaderEnd > 0 then
+    begin
+      LBodyLength := HeaderContentLength(Result);
+      if (LBodyLength < 0) or
+        (Length(Result) >= LHeaderEnd + 3 + LBodyLength) then
+        Exit;
+    end;
+  until False;
+end;
+
 { Post-upgrade quiet probe. Does not consume data (MSG_PEEK), so a later check
   can still read whatever arrives.
 
@@ -256,7 +314,7 @@ end;
 function ProbeQuiet(ASock: LongInt; ATimeoutMS: Integer; out AData: string): Integer;
 var
   LBuf: array[0..1023] of Byte;
-  LN:   LongInt;
+  LErrNo, LN: LongInt;
 begin
   AData := '';
   if not WaitReadable(ASock, ATimeoutMS) then
@@ -270,10 +328,14 @@ begin
     Move(LBuf[0], AData[1], LN);
     Result := 2;                   { unsolicited — the stray HTTP response }
   end
-  else if (fpgeterrno = ESysEAGAIN) or (fpgeterrno = ESysEWOULDBLOCK) then
-    Result := 0
   else
-    Result := -1;
+  begin
+    LErrNo := fpgeterrno;
+    if (LErrNo = ESysEAGAIN) or (LErrNo = ESysEWOULDBLOCK) then
+      Result := 0
+    else
+      Result := -1;
+  end;
 end;
 
 function ProbeName(AStatus: Integer): string;
@@ -317,7 +379,7 @@ begin
     'Connection: Upgrade'#13#10 +
     'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=='#13#10 +
     'Sec-WebSocket-Version: 13'#13#10#13#10);
-  Result := ReadAvailable(ASock, 5000);
+  Result := ReadHttpResponse(ASock, 5000);
 end;
 
 { ── Checks ─────────────────────────────────────────────────────────────── }
@@ -385,7 +447,7 @@ begin
       'GET /ping HTTP/1.1'#13#10 +
       'Host: 127.0.0.1:' + IntToStr(TEST_PORT) + #13#10 +
       'Connection: close'#13#10#13#10);
-    LResp := ReadAvailable(LSock, 5000);
+    LResp := ReadHttpResponse(LSock, 5000);
     Check('server still serves HTTP after an abrupt peer close',
       (Pos('200', LResp) > 0) and (Pos('pong', LResp) > 0),
       Copy(LResp, 1, 60));
