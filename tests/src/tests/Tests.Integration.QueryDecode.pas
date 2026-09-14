@@ -64,7 +64,8 @@ begin
   TThread.CreateAnonymousThread(
     procedure
     begin
-      THorse.Listen(TEST_PORT);
+      // Loopback only: the test server has no reason to be reachable from the network.
+      THorse.Listen(TEST_PORT, '127.0.0.1');
     end).Start;
 
   Sleep(1500);
@@ -84,7 +85,9 @@ begin
   LClient := THTTPClient.Create;
   try
     LClient.CustomHeaders['Connection'] := 'close';
-    LRes := LClient.Get(Format('http://localhost:%d/decode-once/query?v=%s', [TEST_PORT, AEncoded]));
+    // 127.0.0.1, not localhost: the server binds IPv4 loopback only, and
+    // localhost may resolve to ::1 first.
+    LRes := LClient.Get(Format('http://127.0.0.1:%d/decode-once/query?v=%s', [TEST_PORT, AEncoded]));
 
     // A second decode raises inside the handler, which Horse turns into a 500
     // carrying the exception message: show it rather than a bare status.
@@ -107,7 +110,7 @@ begin
   try
     LClient.CustomHeaders['Connection'] := 'close';
     LClient.CustomHeaders['Content-Type'] := 'application/x-www-form-urlencoded';
-    LRes := LClient.Put(Format('http://localhost:%d/decode-once/form', [TEST_PORT]), LSource);
+    LRes := LClient.Put(Format('http://127.0.0.1:%d/decode-once/form', [TEST_PORT]), LSource);
 
     Assert.AreEqual(200, LRes.StatusCode, LRes.ContentAsString);
     Assert.AreEqual('100%|100%|100%', LRes.ContentAsString,
