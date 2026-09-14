@@ -531,7 +531,14 @@ var
   LName: String;
   LValue: String;
 begin
-  FContentFields := THorseCoreParam.Create(THorseList.Create).Required(False);
+  // [FIX-DECODE-ONCE-1] ADecodeValues=False. Every path that fills this
+  // collection stores values ALREADY URL-decoded: Delphi WebBroker ContentFields
+  // (ExtractHTTPFields runs TNetEncoding.URL on each field; FPC fpweb not
+  // verified) and the CrossSocket bridge (Delphi-Cross-Socket decodes form
+  // bodies). Decoding again on read raised EConvertError on any value holding a
+  // literal percent sign, turned + into a space, and - because GetItem writes
+  // the result back - re-decoded on every repeated read. Params uses the same.
+  FContentFields := THorseCoreParam.Create(THorseList.Create, False).Required(False);
 { PATCH-REQ-4 � nil-guard: on CrossSocket path FWebRequest is nil.
   Multipart / form-url-encoded body parsing is the responsibility of
   application-level middleware on the CrossSocket path (e.g. a middleware
@@ -643,7 +650,11 @@ var
   LStart, LLen, I, LEqPos: Integer;
   LKey, LValue: string;
 begin
-  FQuery := THorseCoreParam.Create(THorseList.Create).Required(False);
+  // [FIX-DECODE-ONCE-1] ADecodeValues=False. Values are stored decoded: the loop
+  // below runs DecodeParam on every key and value, and the CrossSocket bridge
+  // stores Delphi-Cross-Socket's decoded query. Decoding again on each read was
+  // a second - and, via GetItem's write-back, a repeated - decode.
+  FQuery := THorseCoreParam.Create(THorseList.Create, False).Required(False);
   if not Assigned(FWebRequest) then
     Exit;  // CrossSocket path: bridge populates query dict directly
   
