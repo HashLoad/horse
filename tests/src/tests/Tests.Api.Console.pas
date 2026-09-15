@@ -77,12 +77,12 @@ procedure TApiTest.TestGet;
 var
   LResponse: IResponse;
 begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9130/Api/Test')
     .Accept('application/json')
     .Get;
 
   FJSONArray := TJSONObject.ParseJSONValue(LResponse.Content) as TJSONArray;
-  Assert.AreEqual(9000, THorse.Port);
+  Assert.AreEqual(9130, THorse.Port);
   {$IFDEF HORSE_PROVIDER_HTTPSYS}
   Assert.AreEqual('localhost', THorse.Host);
   {$ELSE}
@@ -99,7 +99,7 @@ procedure TApiTest.TestPatch(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9130/Api/Test')
     .Accept('application/json')
     .AddBody('{"value": "' + AValue + '"}')
     .Patch;
@@ -117,7 +117,7 @@ procedure TApiTest.TestPost(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9130/Api/Test')
     .Accept('application/json')
     .AddBody('{"value": "' + AValue + '"}')
     .Post;
@@ -135,7 +135,7 @@ procedure TApiTest.TestPut(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test')
+  LResponse := TRequest.New.BaseURL('http://localhost:9130/Api/Test')
     .Accept('application/json')
     .AddBody('{"value": "' + AValue + '"}')
     .Put;
@@ -153,7 +153,7 @@ procedure TApiTest.TestDelete(const AValue: string);
 var
   LResponse: IResponse;
 begin
-  LResponse := TRequest.New.BaseURL('http://localhost:9000/Api/Test/' + AValue)
+  LResponse := TRequest.New.BaseURL('http://localhost:9130/Api/Test/' + AValue)
     .Accept('application/json')
     .Delete;
 
@@ -173,7 +173,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LResponse := LClient.Get('http://localhost:9000/Api/Protected');
+    LResponse := LClient.Get('http://localhost:9130/Api/Protected');
     Assert.AreEqual(401, LResponse.StatusCode);
     Assert.AreEqual('Unauthorized', LResponse.ContentAsString);
   finally
@@ -191,7 +191,7 @@ begin
   try
     SetLength(LHeaders, 1);
     LHeaders[0] := TNetHeader.Create('Authorization', 'Bearer MySecretToken');
-    LResponse := LClient.Get('http://localhost:9000/Api/Protected', nil, LHeaders);
+    LResponse := LClient.Get('http://localhost:9130/Api/Protected', nil, LHeaders);
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('SecretData', LResponse.ContentAsString);
   finally
@@ -206,7 +206,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LResponse := LClient.Get('http://localhost:9000/Api/Cors');
+    LResponse := LClient.Get('http://localhost:9130/Api/Cors');
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('CorsData', LResponse.ContentAsString);
     Assert.AreEqual('*', LResponse.HeaderValue['Access-Control-Allow-Origin']);
@@ -222,7 +222,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LResponse := LClient.Options('http://localhost:9000/Api/Cors');
+    LResponse := LClient.Options('http://localhost:9130/Api/Cors');
     Assert.AreEqual(204, LResponse.StatusCode);
     Assert.AreEqual('*', LResponse.HeaderValue['Access-Control-Allow-Origin']);
     Assert.AreEqual('GET, POST, OPTIONS', LResponse.HeaderValue['Access-Control-Allow-Methods']);
@@ -241,7 +241,7 @@ begin
   try
     SetLength(LHeaders, 1);
     LHeaders[0] := TNetHeader.Create('X-Custom-Header', 'CustomValue');
-    LResponse := LClient.Get('http://localhost:9000/Api/CustomHeader', nil, LHeaders);
+    LResponse := LClient.Get('http://localhost:9130/Api/CustomHeader', nil, LHeaders);
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('CustomValue', LResponse.ContentAsString);
   finally
@@ -256,7 +256,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LResponse := LClient.Get('http://localhost:9000/Api/RouteMiddlewares');
+    LResponse := LClient.Get('http://localhost:9130/Api/RouteMiddlewares');
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('RouteMiddlewaresData', LResponse.ContentAsString);
     Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step1']);
@@ -273,7 +273,7 @@ var
 begin
   LClient := THTTPClient.Create;
   try
-    LResponse := LClient.Get('http://localhost:9000/Api/StaticRouteMiddlewares');
+    LResponse := LClient.Get('http://localhost:9130/Api/StaticRouteMiddlewares');
     Assert.AreEqual(200, LResponse.StatusCode);
     Assert.AreEqual('StaticRouteMiddlewaresData', LResponse.ContentAsString);
     Assert.AreEqual('true', LResponse.HeaderValue['X-Route-Step1']);
@@ -291,7 +291,7 @@ begin
   LClient := THTTPClient.Create;
   try
     THorse.OnError(nil);
-    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    LResponse := LClient.Get('http://localhost:9130/Api/Exception/Normal');
     Assert.AreEqual(500, LResponse.StatusCode);
     Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error: Simulated Normal Error'));
   finally
@@ -312,7 +312,7 @@ begin
   LClient := THTTPClient.Create;
   try
     THorse.OnError(CustomErrorHandler);
-    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    LResponse := LClient.Get('http://localhost:9130/Api/Exception/Normal');
     Assert.AreEqual(503, LResponse.StatusCode);
     Assert.AreEqual('Custom Error: Simulated Normal Error', LResponse.ContentAsString);
   finally
@@ -334,7 +334,7 @@ begin
   LClient := THTTPClient.Create;
   try
     THorse.OnError(CrashingErrorHandler);
-    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Normal');
+    LResponse := LClient.Get('http://localhost:9130/Api/Exception/Normal');
     Assert.AreEqual(500, LResponse.StatusCode);
     Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error in OnError: Crash in OnError'));
   finally
@@ -351,7 +351,7 @@ begin
   LClient := THTTPClient.Create;
   try
     THorse.OnError(CustomErrorHandler);
-    LResponse := LClient.Get('http://localhost:9000/Api/Exception/Horse');
+    LResponse := LClient.Get('http://localhost:9130/Api/Exception/Horse');
     Assert.AreEqual(400, LResponse.StatusCode);
     Assert.AreEqual('{"error":"Simulated Horse Error"}', LResponse.ContentAsString);
   finally
@@ -381,7 +381,7 @@ begin
         {$IFDEF HORSE_PROVIDER_HTTPSYS}
         THorse.Host := 'localhost';
         {$ENDIF}
-        THorse.Listen;
+        THorse.Listen(9130);
       end).Start;
     Sleep(500);
   end;

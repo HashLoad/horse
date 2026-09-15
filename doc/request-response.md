@@ -84,6 +84,14 @@ THorse.Get('/search/:type',
 - `TryGetValue(name; out value): Boolean` — distinguish absent vs empty.
 - `Dictionary: TDictionary<string,string>` (Delphi) / `TStringList` (FPC) — direct collection access if you need to iterate.
 
+URL-encoded query and form text values are decoded before they are exposed through
+`Req.Query` and `Req.ContentFields`; reading an accessor does not decode them again.
+For example, `?v=100%25` returns `100%` on both the first and repeated
+`Req.Query['v']` reads. `?v=a%2B%2541` returns `a+%41`, preserving the encoded
+plus sign and literal percent sequence. Do not URL-decode these values again in
+your route handler. Form bodies are recognized with
+`Content-Type: application/x-www-form-urlencoded; charset=utf-8` as well.
+
 ### File uploads
 
 `multipart/form-data` requests populate `Req.ContentFields`:
