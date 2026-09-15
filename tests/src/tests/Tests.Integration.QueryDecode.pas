@@ -39,7 +39,9 @@ type
     procedure TestQueryValueDecodedOnce(AEncoded, AExpected: string);
 
     [Test]
-    procedure TestFormFieldDecodedOnce;
+    [TestCase('TrailingPercent', '100%25,100%')]
+    [TestCase('PlusAndEncodedPercent', 'a%2B%2541,a+%41')]
+    procedure TestFormFieldDecodedOnce(AEncoded, AExpected: string);
   end;
 
 implementation
@@ -99,21 +101,21 @@ begin
   end;
 end;
 
-procedure TTestIntegrationQueryDecode.TestFormFieldDecodedOnce;
+procedure TTestIntegrationQueryDecode.TestFormFieldDecodedOnce(AEncoded, AExpected: string);
 var
   LClient: THTTPClient;
   LRes: IHTTPResponse;
   LSource: TStringStream;
 begin
   LClient := THTTPClient.Create;
-  LSource := TStringStream.Create('v=100%25', TEncoding.UTF8);
+  LSource := TStringStream.Create('v=' + AEncoded, TEncoding.UTF8);
   try
     LClient.CustomHeaders['Connection'] := 'close';
-    LClient.CustomHeaders['Content-Type'] := 'application/x-www-form-urlencoded';
+    LClient.CustomHeaders['Content-Type'] := 'application/x-www-form-urlencoded; charset=utf-8';
     LRes := LClient.Put(Format('http://127.0.0.1:%d/decode-once/form', [TEST_PORT]), LSource);
 
     Assert.AreEqual(200, LRes.StatusCode, LRes.ContentAsString);
-    Assert.AreEqual('100%|100%|100%', LRes.ContentAsString,
+    Assert.AreEqual(AExpected + '|' + AExpected + '|' + AExpected, LRes.ContentAsString,
       'first read | repeated read | Field');
   finally
     LSource.Free;

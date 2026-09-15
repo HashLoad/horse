@@ -532,10 +532,9 @@ var
   LValue: String;
 begin
   // [FIX-DECODE-ONCE-1] ADecodeValues=False. Every path that fills this
-  // collection stores values ALREADY URL-decoded: Delphi WebBroker ContentFields
-  // (ExtractHTTPFields runs TNetEncoding.URL on each field; FPC fpweb not
-  // verified) and the CrossSocket bridge (Delphi-Cross-Socket decodes form
-  // bodies). Decoding again on read raised EConvertError on any value holding a
+  // collection stores values ALREADY URL-decoded: WebBroker ContentFields and
+  // the raw adapters (including IOCP) decode form values before storing them.
+  // Decoding again on read raised EConvertError on any value holding a
   // literal percent sign, turned + into a space, and - because GetItem writes
   // the result back - re-decoded on every repeated read. Params uses the same.
   FContentFields := THorseCoreParam.Create(THorseList.Create, False).Required(False);
@@ -706,15 +705,7 @@ var
 begin
   LContentType := FWebRequest.ContentType;
   LFormUrlEncoded := TMimeTypes.ApplicationXWWWFormURLEncoded.ToString;
-{$IF DEFINED(FPC)}
-  Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
-{$ELSE}
-{$IF CompilerVersion <= 30}
-  Result := LContentType = PChar(LFormUrlEncoded);
-{$ELSE}
-  Result := StrLIComp(PChar(LContentType), PChar(LFormUrlEncoded), Length(LFormUrlEncoded)) = 0;
-{$IFEND}
-{$ENDIF}
+  Result := SameText(Copy(LContentType, 1, Length(LFormUrlEncoded)), LFormUrlEncoded);
 end;
 
 function THorseRequest.IsMultipartForm: Boolean;
