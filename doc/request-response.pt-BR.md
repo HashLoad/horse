@@ -84,6 +84,15 @@ THorse.Get('/search/:type',
 - `TryGetValue(name; out value): Boolean` — distingue ausente vs vazio.
 - `Dictionary: TDictionary<string,string>` (Delphi) / `TStringList` (FPC) — acesso direto à coleção se precisar iterar.
 
+Os valores de query e dos campos de texto de formulário codificados na URL são
+decodificados antes de serem expostos por `Req.Query` e `Req.ContentFields`; ler
+um accessor não os decodifica novamente. Por exemplo, `?v=100%25` retorna
+`100%` tanto na primeira quanto nas leituras seguintes de `Req.Query['v']`.
+`?v=a%2B%2541` retorna `a+%41`, preservando o sinal de mais codificado e a
+sequência literal com porcentagem. Não aplique outra decodificação de URL a
+esses valores no handler. Corpos de formulário também são reconhecidos com
+`Content-Type: application/x-www-form-urlencoded; charset=utf-8`.
+
 ### Upload de arquivos
 
 Requisições `multipart/form-data` populam `Req.ContentFields`:
