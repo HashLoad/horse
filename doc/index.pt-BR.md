@@ -58,6 +58,7 @@ graph TD
 | [Suporte de Compilador](./compiler-support.pt-BR.md) | Versões testadas do Delphi, versões do FPC, plataformas-alvo, guards de versão de compilador. |
 | [Cheatsheet de Deploy](./deployment.pt-BR.md) | Referência de uma página pra entregar um binário CrossSocket ou mORMot2 como qualquer um dos sete formatos de Aplicação (Console / VCL / Daemon / Serviço Windows / daemon FPC / LCL / HTTPApplication FPC). |
 | [Testes de Integridade](./integrity-testing.pt-BR.md) | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack. |
+| [Checklist de Release](./release-checklist.pt-BR.md) | Mapa de versões, validação, publicação da tag e atualização posterior do lockfile dos testes. |
 
 ## Como a documentação está organizada
 
@@ -86,6 +87,7 @@ doc/
 ├── telemetry.*.md             ← integração com OpenTelemetry e Prometheus
 ├── middleware-ecosystem.*.md  ← catálogo de pacotes
 ├── integrity-testing.*.md     ← testes de integridade e resiliência
+├── release-checklist.*.md     ← versões de release e atualização posterior do lockfile
 └── compiler-support.*.md      ← versões / plataformas
 ```
 

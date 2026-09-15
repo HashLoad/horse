@@ -84,6 +84,7 @@ O guia completo fica em [`doc/`](./doc/index.pt-BR.md) — um pequeno wiki que c
 | Observabilidade, rastreamento (OpenTelemetry) e coleta de métricas (Prometheus) | [Observabilidade e Telemetria](./doc/telemetry.pt-BR.md) |
 | Testes de integração automatizados, resiliência (Access Violation) e limites de Stack | [Testes de Integridade](./doc/integrity-testing.pt-BR.md) |
 | Versões suportadas de Delphi / FPC e plataformas | [Suporte de Compilador](./doc/compiler-support.pt-BR.md) |
+| Versões, validação de releases, tags e lockfile de dependências dos testes | [Checklist de Release](./doc/release-checklist.pt-BR.md) |
 | Planejamento arquitetural de longo prazo e backlog técnico | [Roadmap](./doc/roadmap/README.md) |
 
 ### 🤖 AI Coding Skills

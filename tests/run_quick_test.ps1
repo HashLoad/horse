@@ -19,7 +19,7 @@ if (Test-Path $OutputExe) { Remove-Item -Path $OutputExe -Force }
 
 # 2. Configurações
 Set-Content -Path $IncPath -Value '{$DEFINE CI}' -Force
-$SearchPath = '..\..\src;modules;modules\jhonson\src;modules\restrequest4delphi\src;modules\restrequest4delphi\src\core;modules\restrequest4delphi\src\interfaces'
+$SearchPath = '..\..\src;modules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src'
 $CfgContent = @(
     "-B",
     "-Q",
