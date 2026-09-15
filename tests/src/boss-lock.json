@@ -1,30 +1,24 @@
 {
-	"hash": "25d902c24283ab8cfbac54dfa101ad31",
-	"updated": "2026-06-15T14:16:27.4807627-03:00",
+	"hash": "d41d8cd98f00b204e9800998ecf8427e",
+	"updated": "2026-09-15T16:52:45-03:00",
 	"installedModules": {
 		"github.com/hashload/horse": {
-			"name": "horse",
-			"version": "3.2.0",
-			"hash": "ac8340f7d5e6f9c03c97a6fc534924b2",
-			"artifacts": {},
-			"failed": false,
-			"changed": false
+			"name": "github_com_hashload_horse",
+			"version": "3.3.6",
+			"hash": "55675fcd7c1002b7f305c0582e1b0256",
+			"artifacts": {}
 		},
 		"github.com/hashload/jhonson": {
-			"name": "jhonson",
-			"version": "1.2.1",
-			"hash": "c99b0eaf72fc3076121ad4c5ca6b5b88",
-			"artifacts": {},
-			"failed": false,
-			"changed": false
+			"name": "github_com_hashload_jhonson",
+			"version": "1.2.5",
+			"hash": "5a116b8a6832a4ee5f061ef1ae18ebbe",
+			"artifacts": {}
 		},
 		"github.com/viniciussanchez/restrequest4delphi": {
-			"name": "restrequest4delphi",
-			"version": "v4.0.26",
-			"hash": "d6aafbfc06418086bf1a593b20ca627f",
-			"artifacts": {},
-			"failed": false,
-			"changed": false
+			"name": "github_com_viniciussanchez_restrequest4delphi",
+			"version": "v4.0.32",
+			"hash": "df1144df4b6a53de1dca636c880da403",
+			"artifacts": {}
 		}
 	}
 }

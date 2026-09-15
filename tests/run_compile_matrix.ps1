@@ -109,8 +109,8 @@ if (Test-Path $StudioPath) {
                 "-Isrc",
                 "-Usrc",
                 "-NSSystem;Xml;Data;Datasnap;Web;Soap;Winapi",
-                "-Imodules;modules\jhonson\src;modules\restrequest4delphi\src",
-                "-Umodules;modules\jhonson\src;modules\restrequest4delphi\src",
+                "-Imodules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src",
+                "-Umodules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src",
                 "-D$Defines",
                 $CompileTarget
             )
@@ -160,9 +160,9 @@ if ($HasDocker) {
         # Pascal units without the standalone link/run step; linking an
         # executable here produces expected unresolved ap_/apr_ symbols.
         if ($Defines -like "*HORSE_PROVIDER_APACHE*") {
-            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Cn -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr"
+            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Cn -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/github_com_hashload_jhonson/src:modules/github_com_viniciussanchez_restrequest4delphi/src $($FpcFlags.Trim()) CompileCheck.dpr"
         } else {
-            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/jhonson/src:modules/restrequest4delphi/src:modules/cors/src:modules/basic-auth/src $($FpcFlags.Trim()) CompileCheck.dpr && /tmp/fpc_bin/CompileCheck"
+            $FpcCommand = "mkdir -p /tmp/fpc_lib /tmp/fpc_bin && fpc -B -Mdelphi -Sh -FE/tmp/fpc_bin -FU/tmp/fpc_lib -Fu../../src:modules/github_com_hashload_jhonson/src:modules/github_com_viniciussanchez_restrequest4delphi/src $($FpcFlags.Trim()) CompileCheck.dpr && /tmp/fpc_bin/CompileCheck"
         }
 
         Write-Host " -> Compilando Provedor (FPC Linux): $ScenName..." -ForegroundColor Gray

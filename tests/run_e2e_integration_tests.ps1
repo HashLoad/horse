@@ -137,7 +137,7 @@ $ServerExe = Join-Path $ScriptDir "IntegrationServer.exe"
 if (Test-Path $ServerExe) { Remove-Item -Path $ServerExe -Force }
 
 # 2. Configurações de compilação do IntegrationServer
-$SearchPath = '..\..\src;modules;modules\jhonson\src;modules\restrequest4delphi\src;modules\restrequest4delphi\src\core;modules\restrequest4delphi\src\interfaces;modules\cors\src;modules\basic-auth\src'
+$SearchPath = '..\..\src;modules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src;modules\cors\src;modules\basic-auth\src'
 $CfgPath = Join-Path $ServerSrcDir "IntegrationServer.cfg"
 $CfgContent = @(
     "-B",

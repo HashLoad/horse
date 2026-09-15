@@ -35,7 +35,7 @@ jobs:
     - name: Compile Console Tests
       run: |
         cd tests/src
-        fpc -Mdelphi -Sh -O2 -FE.. -Fu"../../src:modules/jhonson/src:modules/restrequest4delphi/src:controllers:tests" "-dRR4D_INDY" "-dHORSE_CONSOLE" Console.dpr
+        fpc -Mdelphi -Sh -O2 -FE.. -Fu"../../src:modules/github_com_hashload_jhonson/src:modules/github_com_viniciussanchez_restrequest4delphi/src:controllers:tests" "-dRR4D_INDY" "-dHORSE_CONSOLE" Console.dpr
 
     - name: Run Console Tests
       run: |

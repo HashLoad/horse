@@ -84,6 +84,7 @@ The full guide lives in [`doc/`](./doc/index.md) — a small wiki that complemen
 | Observability, distributed tracing (OpenTelemetry) and metrics collection (Prometheus) | [Observability & Telemetry](./doc/telemetry.md) |
 | Automated integration, resilience (Access Violation) and SO limit testing | [Integrity Testing](./doc/integrity-testing.md) |
 | Supported Delphi / FPC versions and platforms | [Compiler Support](./doc/compiler-support.md) |
+| Versioning, release validation, tags, and test dependency lockfiles | [Release Checklist](./doc/release-checklist.md) |
 | Long-term architecture roadmap and technical backlog | [Roadmap](./doc/roadmap/README.md) |
 
 ### 🤖 AI Coding Skills

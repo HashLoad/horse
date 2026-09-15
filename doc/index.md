@@ -54,6 +54,7 @@ graph TD
 | [Compiler Support](./compiler-support.md) | Tested Delphi releases, FPC versions, target platforms, compiler-version guards. |
 | [Deployment Cheatsheet](./deployment.md) | One-page reference for shipping a CrossSocket or mORMot2 binary as any of the seven Application shapes (Console / VCL / Daemon / Windows Service / FPC daemon / LCL / FPC HTTPApplication). |
 | [Integrity Testing](./integrity-testing.md) | Automated integration, resilience (Access Violation) and SO limit testing. |
+| [Release Checklist](./release-checklist.md) | Version map, validation, tagging, and post-release test lockfile refresh. |
 
 ## How the docs are organised
 
@@ -78,6 +79,7 @@ doc/
 ├── telemetry.md               ← OpenTelemetry & Prometheus integration
 ├── middleware-ecosystem.md    ← package catalogue
 ├── integrity-testing.md       ← integrity and resilience testing
+├── release-checklist.md       ← release version map and post-release lockfile refresh
 └── compiler-support.md        ← versions / platforms
 ```
 
