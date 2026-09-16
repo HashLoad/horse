@@ -1,11 +1,11 @@
 {
 	"hash": "d41d8cd98f00b204e9800998ecf8427e",
-	"updated": "2026-09-16T01:26:29Z",
+	"updated": "2026-09-16T12:22:20Z",
 	"installedModules": {
 		"github.com/hashload/horse": {
 			"name": "github_com_HashLoad_horse",
-			"version": "3.3.7",
-			"hash": "82c49a2e381e04d3ab1733c9d248cc4f",
+			"version": "3.3.8",
+			"hash": "4dc71dcd5b0df0649b3973e35bb9d364",
 			"artifacts": {}
 		},
 		"github.com/hashload/jhonson": {
