@@ -21,6 +21,9 @@ jobs:
     - name: Run FPC WebSocket EAGAIN regression
       run: tests/fpc-websocket/run-ws-eagain-test.sh
 
+    - name: Run FPC router lifetime regression
+      run: sh tests/fpc-router-lifetime/run-router-lifetime-test.sh
+
     - name: Install Boss Dependency Manager
       run: |
         curl -L https://github.com/hashload/boss/releases/latest/download/boss-linux -o boss
