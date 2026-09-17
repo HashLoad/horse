@@ -37,6 +37,36 @@ versions, and example server ports are also unrelated to the Horse release.
    that the tag resolves to the intended commit. Synchronize the local checkout
    and maintainer fork with upstream.
 
+## Publishing multiline text with GitHub CLI
+
+Always write multiline PR descriptions, issue comments, and release notes to a
+UTF-8 Markdown file and pass that file to GitHub CLI. Do not pass text such as
+`"First line\n\nSecond line"` to `--body` or `--notes`: PowerShell and `gh` may
+send the backslash and `n` literally, and GitHub will display `\n` instead of a
+line break.
+
+```powershell
+gh pr create --body-file pr-body.md
+gh pr edit <number> --body-file pr-body.md
+gh issue comment <number> --body-file issue-comment.md
+gh release create <version> --notes-file release-notes.md
+gh release edit <version> --notes-file release-notes.md
+```
+
+Before deleting the temporary Markdown file, read the saved body back and
+confirm that headings, lists, code blocks, accented characters, and line breaks
+were preserved:
+
+```powershell
+gh pr view <number> --json body --jq .body
+gh release view <version> --json body --jq .body
+```
+
+For issue comments, also open the returned comment URL or query the comment
+through the GitHub API. This verification is part of publishing; a successful
+CLI exit code only confirms that GitHub accepted the text, not that it was
+formatted as intended.
+
 ## After publishing: refresh the test lockfile
 
 1. In a separate branch, run `boss update` from `tests/src` using a known Boss
