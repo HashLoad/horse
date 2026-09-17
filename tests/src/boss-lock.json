@@ -1,11 +1,11 @@
 {
 	"hash": "d41d8cd98f00b204e9800998ecf8427e",
-	"updated": "2026-09-16T12:22:20Z",
+	"updated": "2026-09-17T00:41:51Z",
 	"installedModules": {
 		"github.com/hashload/horse": {
 			"name": "github_com_HashLoad_horse",
-			"version": "3.3.8",
-			"hash": "4dc71dcd5b0df0649b3973e35bb9d364",
+			"version": "3.3.9",
+			"hash": "686960fd42e725d2e6297e8b372b7818",
 			"artifacts": {}
 		},
 		"github.com/hashload/jhonson": {
@@ -16,8 +16,8 @@
 		},
 		"github.com/viniciussanchez/restrequest4delphi": {
 			"name": "github_com_viniciussanchez_restrequest4delphi",
-			"version": "v4.0.32",
-			"hash": "df1144df4b6a53de1dca636c880da403",
+			"version": "v4.0.33",
+			"hash": "7dd2c66363e1db034bca3d0ab5c41648",
 			"artifacts": {}
 		}
 	}
