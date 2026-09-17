@@ -37,6 +37,36 @@ pacotes de exemplo e portas de servidor também não são versões do Horse.
    que a release não é rascunho/pré-release e que a tag aponta para o commit
    esperado. Sincronize a cópia local e o fork do mantenedor com o upstream.
 
+## Publicação de textos multilinha com GitHub CLI
+
+Sempre escreva descrições multilinha de PRs, comentários de issues e notas de
+release em um arquivo Markdown UTF-8 e forneça esse arquivo ao GitHub CLI. Não
+envie textos como `"Primeira linha\n\nSegunda linha"` por `--body` ou `--notes`:
+o PowerShell e o `gh` podem enviar literalmente a barra e a letra `n`, fazendo o
+GitHub exibir `\n` no lugar da quebra de linha.
+
+```powershell
+gh pr create --body-file pr-body.md
+gh pr edit <número> --body-file pr-body.md
+gh issue comment <número> --body-file issue-comment.md
+gh release create <versão> --notes-file release-notes.md
+gh release edit <versão> --notes-file release-notes.md
+```
+
+Antes de apagar o arquivo Markdown temporário, leia novamente o conteúdo salvo
+e confirme que títulos, listas, blocos de código, caracteres acentuados e
+quebras de linha foram preservados:
+
+```powershell
+gh pr view <número> --json body --jq .body
+gh release view <versão> --json body --jq .body
+```
+
+Para comentários de issues, abra também a URL retornada ou consulte o
+comentário pela API do GitHub. Essa verificação faz parte da publicação: um
+código de saída bem-sucedido do CLI confirma apenas que o GitHub aceitou o
+texto, não que ele foi formatado como esperado.
+
 ## Depois de publicar: atualizar o lockfile dos testes
 
 1. Em outra branch, execute `boss update` em `tests/src` com uma versão
