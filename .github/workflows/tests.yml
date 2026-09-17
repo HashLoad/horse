@@ -24,6 +24,9 @@ jobs:
     - name: Run FPC router lifetime regression
       run: sh tests/fpc-router-lifetime/run-router-lifetime-test.sh
 
+    - name: Run FPC URL decoding regression
+      run: sh tests/fpc-url-decoding/run-url-decoding-test.sh
+
     - name: Install Boss Dependency Manager
       run: |
         curl -L https://github.com/hashload/boss/releases/latest/download/boss-linux -o boss
