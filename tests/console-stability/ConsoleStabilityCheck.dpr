@@ -16,10 +16,25 @@ uses
 
 const
   TEST_PORT = 19181;
-  CLIENT_COUNT = 50;
-  REQUESTS_PER_CLIENT = 1500;
+  DEFAULT_CLIENT_COUNT = 50;
+  DEFAULT_REQUESTS_PER_CLIENT = 1500;
+  DEFAULT_REQUEST_DELAY_MS = 0;
   CONNECT_TIMEOUT_MS = 5000;
   READ_TIMEOUT_MS = 10000;
+
+var
+  GClientCount: Integer;
+  GRequestsPerClient: Integer;
+  GRequestDelayMS: Integer;
+
+function EnvironmentInteger(const AName: string; const ADefault: Integer): Integer;
+var
+  LValue: string;
+begin
+  LValue := GetEnvironmentVariable(AName);
+  if (LValue = '') or not TryStrToInt(LValue, Result) or (Result < 0) then
+    Result := ADefault;
+end;
 
 type
   TServerThread = class(TThread)
@@ -84,7 +99,7 @@ begin
     LHTTP.HTTPOptions := LHTTP.HTTPOptions + [hoKeepOrigProtocol];
     LHTTP.Request.Connection := 'keep-alive';
 
-    for LIteration := 1 to REQUESTS_PER_CLIENT do
+    for LIteration := 1 to GRequestsPerClient do
     begin
       LStartedAt := GetTickCount64;
       try
@@ -107,6 +122,8 @@ begin
       LElapsed := GetTickCount64 - LStartedAt;
       if LElapsed > FMaxLatencyMS then
         FMaxLatencyMS := LElapsed;
+      if (GRequestDelayMS > 0) and (LIteration < GRequestsPerClient) then
+        Sleep(GRequestDelayMS);
     end;
   finally
     LHTTP.Free;
@@ -123,6 +140,15 @@ var
   LMaxLatencyMS: UInt64;
   LFirstError: string;
 begin
+  GClientCount := EnvironmentInteger('HORSE_STABILITY_CLIENTS', DEFAULT_CLIENT_COUNT);
+  GRequestsPerClient := EnvironmentInteger('HORSE_STABILITY_REQUESTS_PER_CLIENT', DEFAULT_REQUESTS_PER_CLIENT);
+  GRequestDelayMS := EnvironmentInteger('HORSE_STABILITY_REQUEST_DELAY_MS', DEFAULT_REQUEST_DELAY_MS);
+  if (GClientCount = 0) or (GRequestsPerClient = 0) then
+  begin
+    Writeln('Client and request counts must be greater than zero');
+    Halt(1);
+  end;
+
   THorse.Get('/stability', Ping);
   LServer := TServerThread.Create(True);
   LClients := TObjectList<TClientThread>.Create(True);
@@ -142,7 +168,7 @@ begin
       Halt(1);
     end;
 
-    for LIndex := 1 to CLIENT_COUNT do
+    for LIndex := 1 to GClientCount do
       LClients.Add(TClientThread.Create(LIndex));
     for LClient in LClients do
       LClient.Start;
@@ -161,8 +187,9 @@ begin
         LFirstError := LClient.FirstError;
     end;
 
-    Writeln(Format('clients=%d requests=%d errors=%d max_latency_ms=%d',
-      [CLIENT_COUNT, CLIENT_COUNT * REQUESTS_PER_CLIENT, LErrors, LMaxLatencyMS]));
+    Writeln(Format('clients=%d requests=%d delay_ms=%d errors=%d max_latency_ms=%d',
+      [GClientCount, GClientCount * GRequestsPerClient, GRequestDelayMS,
+       LErrors, LMaxLatencyMS]));
     if LErrors <> 0 then
     begin
       Writeln('First error: ', LFirstError);

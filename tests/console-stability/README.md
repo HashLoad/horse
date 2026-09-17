@@ -13,3 +13,18 @@ powershell -ExecutionPolicy Bypass -File tests/console-stability/run-console-sta
 
 Set `RADSTUDIO_RSVARS` when RAD Studio is installed outside the default Delphi
 12 path.
+
+The default run has no delay so that it can be used as a quick regression
+check. The workload can be paced with environment variables. The issue's
+reported rate (75,000 transactions from 50 clients over approximately eight
+hours) is equivalent to a delay of about 19.2 seconds between requests from
+each client:
+
+```powershell
+$env:HORSE_STABILITY_CLIENTS = '50'
+$env:HORSE_STABILITY_REQUESTS_PER_CLIENT = '1500'
+$env:HORSE_STABILITY_REQUEST_DELAY_MS = '19200'
+powershell -ExecutionPolicy Bypass -File tests/console-stability/run-console-stability-test.ps1
+```
+
+Unset `HORSE_STABILITY_REQUEST_DELAY_MS` (or set it to `0`) for the quick run.
