@@ -81,6 +81,9 @@ begin
     .Get;
 
   Assert.AreEqual(400, LRes.StatusCode, 'EHorseException should return its custom status');
+  Assert.AreEqual('application/json; charset=UTF-8',
+    LRes.Headers.Values['Content-Type'],
+    'EHorseException JSON responses must declare the canonical UTF-8 content type');
   Assert.AreEqual('{"error":"Invalid request parameters"}', LRes.Content, 'Body should contain custom exception content');
 end;
 
