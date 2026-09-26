@@ -268,12 +268,90 @@ uses
   that need the raw bytes should use Body<TStream>.
   =========================================================================== }
 function THorseRequest.Body: string;
+{$IF NOT DEFINED(FPC)}
+  {$IF CompilerVersion < 36}
+  function IsJSONContentType(const AContentType: string): Boolean;
+  var
+    LMediaType: string;
+    LSeparator: Integer;
+  begin
+    LSeparator := Pos(';', AContentType);
+    if LSeparator > 0 then
+      LMediaType := Trim(Copy(AContentType, 1, LSeparator - 1))
+    else
+      LMediaType := Trim(AContentType);
+
+    Result := SameText(LMediaType, 'application/json') or
+      ((Length(LMediaType) > 5) and
+       SameText(Copy(LMediaType, Length(LMediaType) - 4, 5), '+json'));
+  end;
+
+  function IsUTF8OrUnspecifiedCharset(const AContentType: string): Boolean;
+  var
+    LParameter: string;
+    LCharset: string;
+    LParameterStart: Integer;
+    LParameterEnd: Integer;
+    LSeparator: Integer;
+  begin
+    Result := True;
+    LParameterStart := Pos(';', AContentType) + 1;
+    if LParameterStart = 1 then
+      Exit;
+
+    while LParameterStart <= Length(AContentType) do
+    begin
+      LParameterEnd := LParameterStart;
+      while (LParameterEnd <= Length(AContentType)) and
+        (AContentType[LParameterEnd] <> ';') do
+        Inc(LParameterEnd);
+
+      LParameter := Trim(Copy(AContentType, LParameterStart,
+        LParameterEnd - LParameterStart));
+      LSeparator := Pos('=', LParameter);
+      if (LSeparator > 0) and
+        SameText(Trim(Copy(LParameter, 1, LSeparator - 1)), 'charset') then
+      begin
+        LCharset := Trim(Copy(LParameter, LSeparator + 1, MaxInt));
+        if (Length(LCharset) >= 2) and
+          (((LCharset[1] = '"') and (LCharset[Length(LCharset)] = '"')) or
+           ((LCharset[1] = '''') and (LCharset[Length(LCharset)] = ''''))) then
+          LCharset := Copy(LCharset, 2, Length(LCharset) - 2);
+        Exit(SameText(LCharset, 'utf-8') or SameText(LCharset, 'utf8'));
+      end;
+
+      LParameterStart := LParameterEnd + 1;
+    end;
+  end;
+  {$IFEND}
+{$ENDIF}
+{$IF NOT DEFINED(FPC)}
+  {$IF CompilerVersion < 36}
+var
+  LContentType: string;
+  {$IFEND}
+{$ENDIF}
 begin
   if not Assigned(FWebRequest) then
   begin
     Result := FBodyString;
     Exit;
   end;
+
+  {$IF NOT DEFINED(FPC)}
+    {$IF CompilerVersion < 36}
+    LContentType := string(FWebRequest.GetFieldByName('Content-Type'));
+    { Delphi 11 and older decode an unspecified charset as ANSI. Indy keeps
+      the original request bytes in RawContent, so JSON can be decoded using
+      its UTF-8 default without changing other WebBroker providers or media
+      types. Delphi 12 and newer already handle this in Web.HTTPApp. }
+    if FWebRequest.ClassNameIs('TIdHTTPAppRequest') and
+      IsJSONContentType(LContentType) and
+      IsUTF8OrUnspecifiedCharset(LContentType) then
+      Exit(UTF8ToString(RawByteString(FWebRequest.RawContent)));
+    {$IFEND}
+  {$ENDIF}
+
   Result := FWebRequest.Content;
 end;
 
