@@ -118,7 +118,7 @@ foreach ($Inst in $Installations) {
         
         # 3. Geração do arquivo de configuração .cfg do dcc32 temporário para o build
         # Nota: os caminhos de busca devem ser relativos à pasta tests/src/ onde o Console.dpr reside.
-        $SearchPath = '..\..\src;modules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src'
+        $SearchPath = '..\..\src;modules;modules\jhonson\src;modules\restrequest4delphi\src;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src'
         $CfgContent = @(
             "-B",
             "-Q",

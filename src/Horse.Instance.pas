@@ -1493,7 +1493,28 @@ procedure THorseInstance.StopListenGraceful(const ATimeoutMS: Integer);
 begin
   SetIsShuttingDown(True);
   try
-    StopListen;
+    // [FIX-GRACEFUL-INSTANCE-1] Delegate to the provider's StopListenGraceful,
+    // not to the hard StopListen.
+    //
+    // This used to call StopListen, which reaches THorseProvider.StopListen and
+    // never THorseProvider.StopListenGraceful — so ATimeoutMS was accepted and
+    // discarded, and every provider override of StopListenGraceful was bypassed
+    // on the Multi-Instance path. All seven that ship with Horse implement a
+    // real bounded drain (Console, IOCP, HttpSys, VCL, Daemon, FPC.Daemon,
+    // FPC.LCL): they stop accepting, then poll GetActiveRequests until zero or
+    // ATimeoutMS expires. None of that ran here.
+    //
+    // The effect was silent: the server stopped, the call returned promptly, and
+    // in-flight requests were cut off — indistinguishable from a successful
+    // drain unless you measure. AGENTS.md directs users to this exact method for
+    // coordinated shutdown behind Kubernetes and load-balancer probes, which is
+    // precisely where cutting off in-flight work costs a dropped response.
+    //
+    // UnregisterHorseInstance and FRunning are kept from the old StopListen path
+    // so instance bookkeeping is unchanged; only the stop call is corrected.
+    THorseProvider.StopListenGraceful(ATimeoutMS);
+    UnregisterHorseInstance(FPort);
+    FRunning := False;
   finally
     SetIsShuttingDown(False);
   end;
