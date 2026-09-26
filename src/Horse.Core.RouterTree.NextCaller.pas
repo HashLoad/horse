@@ -256,7 +256,7 @@ begin
                     raise;
                   if E is EHorseException then
                   begin
-                    FResponse.Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
+                    FResponse.ContentType('application/json; charset=UTF8').Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
                     Exit;
                   end;
                   if THorse.HasOnError then
