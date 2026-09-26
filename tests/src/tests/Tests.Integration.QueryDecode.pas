@@ -38,6 +38,7 @@ type
     [TestCase('PlusAndEncodedPercent', 'a%2B%2541,a+%41')]
     [TestCase('PlusAsSpace', 'Jo+da+Silva,Jo da Silva')]
     [TestCase('PlusAndEncodedSpace', 'a+b%20c,a b c')]
+    [TestCase('PlusWithInvalidPercent', 'a+b%,a b%')]
     procedure TestQueryValueDecodedOnce(AEncoded, AExpected: string);
 
     [Test]

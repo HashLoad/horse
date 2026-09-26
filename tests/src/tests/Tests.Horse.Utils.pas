@@ -33,6 +33,7 @@ type
     [TestCase('EncodedSpace', 'hello%20world,hello world')]
     [TestCase('NoSpecialChars', 'abc,abc')]
     [TestCase('InvalidPercentIsPreserved', '100%,100%')]
+    [TestCase('PlusDecodedWithInvalidPercentPreserved', 'a+b%,a b%')]
     procedure QueryParamDecodesPlusAsSpace(const AInput, AExpected: string);
 
     [Test]
