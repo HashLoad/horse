@@ -679,9 +679,9 @@ begin
       LKey := Copy(LQuery, LStart, LEqPos - LStart);
       LValue := Copy(LQuery, LEqPos + 1, I - LEqPos - 1);
       
-      LKey := DecodeParam(LKey);
-      LValue := DecodeParam(LValue);
-        
+      LKey := DecodeQueryParam(LKey);
+      LValue := DecodeQueryParam(LValue);
+
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, LValue)
       else
@@ -690,7 +690,7 @@ begin
     else
     begin
       LKey := Copy(LQuery, LStart, I - LStart);
-      LKey := DecodeParam(LKey);
+      LKey := DecodeQueryParam(LKey);
       if not FQuery.Dictionary.ContainsKey(LKey) then
         FQuery.Dictionary.AddOrSetValue(LKey, '');
     end;

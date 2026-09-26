@@ -18,6 +18,19 @@ begin
   end;
 end;
 
+procedure CheckQuery(const AInput, AExpected: string);
+var
+  LActual: string;
+begin
+  LActual := DecodeQueryParam(AInput);
+  if LActual <> AExpected then
+  begin
+    Writeln('DecodeQueryParam failed for "', AInput, '": expected "',
+      AExpected, '", got "', LActual, '"');
+    Halt(1);
+  end;
+end;
+
 begin
   Check('100%', '100%');
   Check('value%2', 'value%2');
@@ -27,4 +40,8 @@ begin
   Check('hello%20world', 'hello world');
   Check('%2fapi', '/api');
   Check('a+b c', 'a+b c');
+  CheckQuery('a+b', 'a b');
+  CheckQuery('a%2Bb', 'a+b');
+  CheckQuery('Jo%C3%A3o+Silva', 'Jo' + #$00E3 + 'o Silva');
+  CheckQuery('a+b%', 'a b%');
 end.

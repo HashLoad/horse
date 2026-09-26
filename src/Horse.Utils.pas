@@ -7,6 +7,7 @@ unit Horse.Utils;
 interface
 
 function DecodeParam(const AValue: string): string;
+function DecodeQueryParam(const AValue: string): string;
 
 implementation
 
@@ -60,10 +61,21 @@ begin
     Exit(AValue);
 
   {$IF DEFINED(FPC)}
-    Result := HTTPDecode(AValue);
+    Result := UTF8Decode(HTTPDecode(AValue));
   {$ELSE}
     Result := TNetEncoding.URL.Decode(AValue);
   {$ENDIF}
+end;
+
+{ Query-string decoding (application/x-www-form-urlencoded): '+' means space
+  and %2B means a literal '+'. Route params must keep using DecodeParam, where
+  '+' is a literal character. }
+function DecodeQueryParam(const AValue: string): string;
+begin
+  { Replace the application/x-www-form-urlencoded space marker first, then
+    reuse the route-safe percent decoder. This is compatible with all Delphi
+    versions supported by Horse; PlusAsSpaces is unavailable in older RTLs. }
+  Result := DecodeParam(StringReplace(AValue, '+', ' ', [rfReplaceAll]));
 end;
 
 end.
