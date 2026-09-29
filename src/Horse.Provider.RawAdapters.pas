@@ -197,6 +197,8 @@ const
 { --------------------------------------------------------------------------- }
 
 constructor TInterfacedWebRequest.Create(const ARawReq: IHorseRawRequest);
+var
+  LContentType: string;
 begin
   { Assign FRawReq BEFORE inherited Create — TWebRequest.Create calls
     GetStringVariable internally during initialisation. }
@@ -208,7 +210,32 @@ begin
   if Assigned(FRawReq) then
   begin
     FRawReq.PopulateQueryFields(QueryFields);
-    FRawReq.PopulateContentFields(ContentFields);
+
+    { [FIX-RAWFIELDS-1] Only touch ContentFields when the body really is form
+      data. READING this property is not free: TWebRequest.GetContentFields
+      lazily runs ExtractContentFields over Content, which splits the body,
+      strips quotes and URL-DECODES every piece. On a JSON body that is both
+      pointless and unsafe — a literal '%' in any string value raises
+      EConvertError ("Error decoding URL style (%XX) encoded string at position
+      N") from the CONSTRUCTOR, before the route or any middleware runs, so the
+      caller gets a 500 whose message names neither the request nor the field.
+
+      Reported against a live service and reproduced: a PUT whose payload held
+        "descripcion":"Impuesto al Valor Agregado 13%"
+      failed every time — 30 characters, '%' last, hence "at position 30" — while
+      the identical document without the percent sign succeeded. It presented as
+      intermittent because only documents containing a '%' fail, and as
+      provider-specific because Indy uses a real WebBroker request and never
+      reaches these adapters.
+
+      Skipping costs nothing: every provider's PopulateContentFields is already
+      gated on a form body and adds nothing otherwise, so this removes only work
+      that had no effect. }
+    LContentType := LowerCase(FRawReq.GetContentType);
+    if (Pos('application/x-www-form-urlencoded', LContentType) > 0) or
+       (Pos('multipart/form-data', LContentType) > 0) then
+      FRawReq.PopulateContentFields(ContentFields);
+
     FRawReq.PopulateCookieFields(CookieFields);
   end;
 end;
