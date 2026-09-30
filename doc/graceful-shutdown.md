@@ -55,12 +55,21 @@ To facilitate monitoring and cloud-native integration, we exposed two public sta
 To perform a graceful shutdown in Horse, call the `StopListenGraceful(const ATimeoutMS: Integer = 5000)` method passing the maximum timeout in milliseconds to force the shutdown.
 
 ### Supported Providers
-The graceful shutdown protocol and escoament loop are natively implemented in the following providers:
+The graceful shutdown protocol and drain loop are natively implemented in the following providers:
 * **Console Provider** (`Horse.Provider.Console`)
 * **VCL Provider** (`Horse.Provider.VCL`)
 * **Daemon Provider** (`Horse.Provider.Daemon`)
 * **Lazarus/LCL Provider** (`Horse.Provider.FPC.LCL`)
 * **Lazarus Daemon Provider** (`Horse.Provider.FPC.Daemon`)
+* **IOCP Provider** (`Horse.Provider.IOCP`)
+* **HTTP.sys Provider** (`Horse.Provider.HttpSys`)
+
+> **Not implemented in the epoll provider.** `Horse.Provider.Epoll` does not override
+> `StopListenGraceful`, so it inherits `THorseProviderAbstract`'s, which **discards
+> `ATimeoutMS`** and calls `StopListen`. Calling it there is an abrupt stop, not a drain.
+
+External providers are responsible for their own override — a provider that merely
+inherits the abstract base silently ignores the timeout.
 
 ### Complete Example:
 

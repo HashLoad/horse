@@ -61,6 +61,16 @@ O protocolo de desligamento suave e o ciclo de escoamento de requisições ativa
 * **Daemon Provider** (`Horse.Provider.Daemon`)
 * **Lazarus/LCL Provider** (`Horse.Provider.FPC.LCL`)
 * **Lazarus Daemon Provider** (`Horse.Provider.FPC.Daemon`)
+* **IOCP Provider** (`Horse.Provider.IOCP`)
+* **HTTP.sys Provider** (`Horse.Provider.HttpSys`)
+
+> **Não implementado no provedor epoll.** `Horse.Provider.Epoll` não sobrescreve
+> `StopListenGraceful`, portanto herda a implementação de `THorseProviderAbstract`, que
+> **descarta `ATimeoutMS`** e chama `StopListen`. Chamá-lo ali resulta em uma parada
+> abrupta, não em um escoamento.
+
+Provedores externos são responsáveis pela própria sobrescrita — um provedor que apenas
+herda a classe base abstrata ignora o timeout silenciosamente.
 
 ### Exemplo Completo:
 
