@@ -196,9 +196,28 @@ const
 { TInterfacedWebRequest                                                       }
 { --------------------------------------------------------------------------- }
 
-constructor TInterfacedWebRequest.Create(const ARawReq: IHorseRawRequest);
+{ [FIX-RAWFIELDS-1] True when the media type IS a form body.
+
+  Compares the media type EXACTLY, after stripping any parameters, rather than
+  searching for a substring. Pos('application/x-www-form-urlencoded', ...) also
+  matches 'x-application/x-www-form-urlencoded', 'multipart/form-data-x', and any
+  header that merely MENTIONS the token inside a parameter - each of which would send
+  a non-form body straight back down the parsing path this guard exists to avoid. }
+function IsFormMediaType(const AContentType: string): Boolean;
 var
-  LContentType: string;
+  LMedia: string;
+  LSemicolon: Integer;
+begin
+  LMedia := AContentType;
+  LSemicolon := Pos(';', LMedia);
+  if LSemicolon > 0 then
+    LMedia := Copy(LMedia, 1, LSemicolon - 1);
+  LMedia := LowerCase(Trim(LMedia));
+  Result := (LMedia = 'application/x-www-form-urlencoded') or
+            (LMedia = 'multipart/form-data');
+end;
+
+constructor TInterfacedWebRequest.Create(const ARawReq: IHorseRawRequest);
 begin
   { Assign FRawReq BEFORE inherited Create — TWebRequest.Create calls
     GetStringVariable internally during initialisation. }
@@ -231,9 +250,7 @@ begin
       Skipping costs nothing: every provider's PopulateContentFields is already
       gated on a form body and adds nothing otherwise, so this removes only work
       that had no effect. }
-    LContentType := LowerCase(FRawReq.GetContentType);
-    if (Pos('application/x-www-form-urlencoded', LContentType) > 0) or
-       (Pos('multipart/form-data', LContentType) > 0) then
+    if IsFormMediaType(FRawReq.GetContentType) then
       FRawReq.PopulateContentFields(ContentFields);
 
     FRawReq.PopulateCookieFields(CookieFields);
