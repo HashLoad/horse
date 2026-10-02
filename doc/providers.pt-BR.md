@@ -119,6 +119,8 @@ CrossSocket e Indy são **alternativas drop-in** para o mesmo código Horse. O m
 
 Para configuração (certificados TLS, limites de tamanho de body, número de threads IO, mTLS), veja a [documentação do próprio provider](https://github.com/freitasjca/horse-provider-crosssocket#readme). Um teste de integração TLS unidirecional + mútuo acompanha o `tests/` do provider (`HorseCSTLSTestServer` / `…Client`, veja `tests/TLS-TESTS.md`).
 
+Os campos de cifra TLS de `THorseCrossSocketConfig` (`Horse.Provider.Config`) são separados por geração de protocolo, porque o OpenSSL os configura por chamadas distintas. `SSLCipherList` vale **apenas para TLS 1.2 e anteriores**. `SSLCipherSuitesTLS13` define as suítes do TLS 1.3 (nomes exatos, com diferença entre maiúsculas e minúsculas), e `SSLMinVersion` (`htvDefault` / `htvTLS12` / `htvTLS13`) define a versão mínima do protocolo. Vazio / `htvDefault` não configura nada. Um provider que não consiga aplicar um valor recusa iniciar em vez de ignorá-lo.
+
 ### Instalação 
 
 O `horse-provider-crosssocket` instala o Delphi-Cross-Socket via Boss. 
