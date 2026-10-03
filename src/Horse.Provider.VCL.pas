@@ -305,7 +305,7 @@ begin
 
         end;
 
-        if (THorseCore.GetActiveRequests = 0) and (LCount = 0) then
+        if (GetDrainActiveRequests = 0) and (LCount = 0) then
         begin
           Break;
         end;
