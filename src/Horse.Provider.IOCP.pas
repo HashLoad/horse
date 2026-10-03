@@ -2031,7 +2031,7 @@ begin
   THorseCore.SetIsShuttingDown(True);
   try
     LStartedAt := GetTickCount64;
-    while (THorseCore.GetActiveRequests > 0) and
+    while (GetDrainActiveRequests > 0) and
           (GetTickCount64 - LStartedAt < UInt64(ATimeoutMS)) do
       Sleep(10);
     InternalStopListen;

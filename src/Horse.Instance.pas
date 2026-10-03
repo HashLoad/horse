@@ -1501,8 +1501,11 @@ begin
     // discarded, and every provider override of StopListenGraceful was bypassed
     // on the Multi-Instance path. All seven that ship with Horse implement a
     // real bounded drain (Console, IOCP, HttpSys, VCL, Daemon, FPC.Daemon,
-    // FPC.LCL): they stop accepting, then poll GetActiveRequests until zero or
-    // ATimeoutMS expires. None of that ran here.
+    // FPC.LCL): they stop accepting, then poll the active-request count until
+    // zero or ATimeoutMS expires. None of that ran here. That count includes this
+    // instance's own requests only since FIX-GRACEFUL-INSTANCE-2
+    // (GetDrainActiveRequests); before it the drains read THorseCore's counter
+    // alone, which an instance-routed request never touches.
     //
     // The effect was silent: the server stopped, the call returned promptly, and
     // in-flight requests were cut off — indistinguishable from a successful

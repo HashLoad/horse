@@ -176,7 +176,12 @@ begin
   LServerThread := TThread.CreateAnonymousThread(
     procedure
     begin
-      LInstance.Listen(TEST_PORT_INSTANCE);
+      // Bind the IPv4 loopback explicitly, and request that same address.
+      // THorseInstance.Listen(port) defaults the host to 0.0.0.0, which HttpSys
+      // registers as the wildcard http://+:port/ - allowed only with admin
+      // rights or a URL reservation. Without either, Listen raises inside this
+      // thread, nothing listens, and the client fails to connect (WinHTTP 12029).
+      LInstance.Listen(TEST_PORT_INSTANCE, '127.0.0.1');
     end);
   LServerThread.FreeOnTerminate := False;
   LServerThread.Start;
@@ -199,7 +204,7 @@ begin
         LHeaders[0] := TNetHeader.Create('Connection', 'close');
 
         try
-          LRes := LClient.Get('http://localhost:' + TEST_PORT_INSTANCE.ToString + '/slow-request', TStream(nil), LHeaders);
+          LRes := LClient.Get('http://127.0.0.1:' + TEST_PORT_INSTANCE.ToString + '/slow-request', TStream(nil), LHeaders);
           LStatusCode := LRes.StatusCode;
           LContent := LRes.ContentAsString;
         except
