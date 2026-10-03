@@ -51,7 +51,11 @@ begin
   TThread.CreateAnonymousThread(
     procedure
     begin
-      THorse.Listen(TEST_PORT);
+      // Bind the IPv4 loopback explicitly and request that same address. With
+      // no host, HttpSys registers http://localhost:<port>/ and http.sys answers
+      // a request whose Host is 127.0.0.1 with its own 400 Invalid Hostname.
+      // Same pattern as Tests.Integration.QueryDecode.
+      THorse.Listen(TEST_PORT, '127.0.0.1');
     end).Start;
 
   Sleep(1500);
@@ -97,7 +101,7 @@ begin
   LSource := TStringStream.Create('{"query":"buscar_clientes"}', TEncoding.UTF8);
   try
     LClient.CustomHeaders['Content-Type'] := 'application/json';
-    LRes := IHTTPResponse(LClient.Execute('QUERY', Format('http://localhost:%d/search', [TEST_PORT]), LSource));
+    LRes := IHTTPResponse(LClient.Execute('QUERY', Format('http://127.0.0.1:%d/search', [TEST_PORT]), LSource));
     
     Assert.AreEqual(200, LRes.StatusCode, 'HTTP status should be 200 OK');
     Assert.AreEqual('QUERY OK: {"query":"buscar_clientes"}', LRes.ContentAsString);
