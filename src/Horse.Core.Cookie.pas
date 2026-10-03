@@ -138,11 +138,11 @@ var
   C: Char;
 begin
   if AName = '' then
-    raise EHorseException.Create('Cookie name must not be empty');
+    raise EHorseException.New.Error('Cookie name must not be empty');
   for C in AName do
     if (C <= #31) or (C = #127) or (Pos(C, COOKIE_NAME_SEPARATORS) > 0) then
-      raise EHorseException.CreateFmt(
-        'Invalid character in cookie name "%s" (RFC 6265 token)', [AName]);
+      raise EHorseException.New.Error(Format(
+        'Invalid character in cookie name "%s" (RFC 6265 token)', [AName]));
 end;
 
 { Reject control chars / CR / LF / ';' in attribute values (anti-injection);
@@ -153,8 +153,8 @@ var
 begin
   for C in AValue do
     if (C < #32) or (C = #127) or (C = ';') then
-      raise EHorseException.CreateFmt(
-        'Invalid character in cookie %s (control char or ";")', [AWhat]);
+      raise EHorseException.New.Error(Format(
+        'Invalid character in cookie %s (control char or ";")', [AWhat]));
   Result := AValue;
 end;
 
@@ -211,7 +211,7 @@ end;
 function THorseCookie.ToHeaderValue: string;
 begin
   if FName = '' then
-    raise EHorseException.Create('Cookie name must be set before ToHeaderValue');
+    raise EHorseException.New.Error('Cookie name must be set before ToHeaderValue');
 
   Result := FName + '=' + FValue;
 
