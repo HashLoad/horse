@@ -109,7 +109,9 @@ uses
   Posix.Signal,
   Posix.Fcntl,
   ThirdParty.Posix.Syslog,
-  System.Classes;
+  System.Classes,
+  Horse.Core;   { THorseCore.SetIsShuttingDown in the stop paths - Console and VCL
+                  already list it; without it this unit does not compile }
 
 procedure HandleSignals(SigNum: Integer); cdecl;
 begin
