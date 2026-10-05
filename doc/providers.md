@@ -128,7 +128,7 @@ The TLS cipher fields of `THorseCrossSocketConfig` (`Horse.Provider.Config`) are
 | Earlier versions of those two providers | **Silently ignored** | **Silently ignored** |
 | Horse's built-in providers (Indy, HttpSys, IOCP, Epoll, Daemon, FPC) | Ignored | Ignored |
 
-The built-in providers' `ListenWithConfig` uses only the port, so they ignore **every** field of this record, the TLS fields included (`SSLEnabled` too). The mORMot2 and ICS providers have their own config records; see their documentation.
+The built-in providers' `ListenWithConfig` uses only the port, so they ignore **every** field of this record, the TLS fields included (`SSLEnabled` too). Of the built-ins, only Indy (Console, Daemon, VCL) serves TLS, and it is configured through `THorse.IOHandleSSL` (its own `SSLVersions` and `CipherList`), not through this record. HttpSys, IOCP, Epoll and the FPC providers serve plain HTTP only. The mORMot2 and ICS providers have their own config records; see their documentation.
 
 If you depend on `htvTLS13`, pin the provider version in your Boss dependencies and check it from outside: `openssl s_client -connect <host>:<port> -tls1_2` must fail. The tests in this repository cover only the record's defaults. Enforcement is tested in the provider repositories against an `openssl s_client` peer: CrossSocket `scripts/run-tls-tests.bat` pass 3, nghttp2 `samples/tests/build-fpc.sh` stage 10c.
 
