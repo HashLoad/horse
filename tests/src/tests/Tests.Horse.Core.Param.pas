@@ -290,13 +290,13 @@ end;
 procedure TTestHorseCoreParam.AsCurrency;
 begin
   FParams.AddOrSetValue('Key1', '5.5');
-  Assert.AreEqual('5,5', CurrToStr( FHorseParam.Field('Key1').AsCurrency));
+  Assert.AreEqual('5,5', CurrToStr(FHorseParam.Field('Key1').AsCurrency, FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsCurrencyDecimalSeparator;
 begin
   FParams.AddOrSetValue('Key1', '5,5');
-  Assert.AreEqual('5,5', CurrToStr( FHorseParam.Field('Key1').AsCurrency));
+  Assert.AreEqual('5,5', CurrToStr(FHorseParam.Field('Key1').AsCurrency, FFormatSettings));
 end;
 
 procedure TTestHorseCoreParam.AsCurrencyErrorFormat;
