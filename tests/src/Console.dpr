@@ -98,6 +98,7 @@ uses
   Tests.Integration.WebSocket in 'tests\Tests.Integration.WebSocket.pas',
   Tests.Integration.AdvancedRouting in 'tests\Tests.Integration.AdvancedRouting.pas',
   Tests.Integration.Streaming in 'tests\Tests.Integration.Streaming.pas',
+  Tests.Horse.Provider.RawAdapters in 'tests\Tests.Horse.Provider.RawAdapters.pas',
   {$IFDEF HORSE_PROVIDER_IOCP}
   Tests.Horse.Provider.IOCP in 'tests\Tests.Horse.Provider.IOCP.pas',
   {$ENDIF}
