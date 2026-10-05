@@ -102,6 +102,12 @@ type
     class procedure Listen; virtual; abstract;
     class procedure StopListen; virtual;
     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); virtual;
+    // [FIX-GRACEFUL-INSTANCE-2] What a drain must wait for: requests counted on
+    // THorseCore PLUS those counted on the THorseInstance that owns this
+    // provider's port. Execute counts an instance-routed request on the
+    // instance only, so a drain that polls THorseCore.GetActiveRequests alone
+    // sees 0 on the Multi-Instance path and closes connections mid-request.
+    class function GetDrainActiveRequests: Integer;
 { ===========================================================================
   PATCH-ABS-2 — added ListenWithConfig virtual class method
   =========================================================================== }
@@ -341,6 +347,16 @@ begin
   finally
     THorseCore.SetIsShuttingDown(False);
   end;
+end;
+
+class function THorseProviderAbstract.GetDrainActiveRequests: Integer;
+var
+  LInstance: THorseCoreBase;
+begin
+  Result := THorseCore.GetActiveRequests;
+  LInstance := GetHorseInstanceByPort(GetActivePort);
+  if (LInstance <> nil) and (LInstance is THorseInstance) then
+    Inc(Result, THorseInstance(LInstance).GetActiveRequests);
 end;
 
 { ===========================================================================
