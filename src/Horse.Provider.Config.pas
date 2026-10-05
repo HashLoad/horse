@@ -178,6 +178,13 @@ type
     // A provider that cannot enforce the requested minimum must refuse at
     // Listen rather than serve with a weaker one.
     // Default: htvDefault
+    //
+    // The "must refuse" rules above are the CONTRACT for a provider that
+    // implements SSLCipherSuitesTLS13 / SSLMinVersion, not a guarantee from
+    // this record: Horse's built-in providers read only the port in
+    // ListenWithConfig, and providers released before these fields existed
+    // compile against them and ignore them. doc/providers.md lists which
+    // provider versions apply or refuse each value.
 
     // ── Server identity ───────────────────────────────────────────────────
     ServerBanner: string;
