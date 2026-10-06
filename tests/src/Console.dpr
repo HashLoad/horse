@@ -79,6 +79,7 @@ uses
   Tests.Horse.Request.Recycle in 'tests\Tests.Horse.Request.Recycle.pas',
   Tests.Horse.Request.DecodeOnce in 'tests\Tests.Horse.Request.DecodeOnce.pas',
   Tests.Horse.Utils in 'tests\Tests.Horse.Utils.pas',
+  Tests.Horse.Provider.Config in 'tests\Tests.Horse.Provider.Config.pas',
   Tests.Horse.Core.RouterLifetime in 'tests\Tests.Horse.Core.RouterLifetime.pas',
   Tests.Horse.Core.Cookie in 'tests\Tests.Horse.Core.Cookie.pas',
   Tests.Horse.Core.Middleware in 'tests\Tests.Horse.Core.Middleware.pas',
