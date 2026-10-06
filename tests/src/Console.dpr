@@ -100,6 +100,7 @@ uses
   Tests.Integration.AdvancedRouting in 'tests\Tests.Integration.AdvancedRouting.pas',
   Tests.Integration.Streaming in 'tests\Tests.Integration.Streaming.pas',
   Tests.Horse.Provider.RawAdapters in 'tests\Tests.Horse.Provider.RawAdapters.pas',
+  Tests.Horse.Provider.MaxConnections in 'tests\Tests.Horse.Provider.MaxConnections.pas',
   {$IFDEF HORSE_PROVIDER_IOCP}
   Tests.Horse.Provider.IOCP in 'tests\Tests.Horse.Provider.IOCP.pas',
   {$ENDIF}

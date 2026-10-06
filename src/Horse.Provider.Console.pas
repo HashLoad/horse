@@ -34,6 +34,12 @@ type
     class var FRunning: Boolean;
     class var FEvent: TEvent;
     class var FMaxConnections: Integer;
+    { FIX-MAXCONN-RESET-1: the limits that were in force before the first time
+      a positive MaxConnections was applied, so that setting it back to 0
+      restores them instead of leaving the old limit in force. }
+    class var FMaxConnectionsApplied: Boolean;
+    class var FSavedWebMaxConnections: Integer;
+    class var FSavedBridgeMaxConnections: Integer;
     class var FListenQueue: Integer;
     class var FKeepConnectionAlive: Boolean;
     class var FIdHTTPWebBrokerBridge: TIdHTTPWebBrokerBridge;
@@ -260,10 +266,28 @@ begin
   LIdHTTPWebBrokerBridge := GetDefaultHTTPWebBroker;
   WebRequestHandler.WebModuleClass := WebModuleClass;
   try
+    { FIX-MAXCONN-RESET-1. WebRequestHandler is process-global and the Indy bridge
+      lives for the whole process, so a limit applied here outlives StopListen.
+      0 used to mean "don't touch", which made an applied limit permanent:
+      MaxConnections := 0 could never lift it without a restart. Now 0 still
+      leaves the defaults alone in a process that never set a limit, and
+      restores the values saved below in one that did. }
     if FMaxConnections > 0 then
     begin
+      if not FMaxConnectionsApplied then
+      begin
+        FSavedWebMaxConnections := WebRequestHandler.MaxConnections;
+        FSavedBridgeMaxConnections := GetDefaultHTTPWebBroker.MaxConnections;
+        FMaxConnectionsApplied := True;
+      end;
       WebRequestHandler.MaxConnections := FMaxConnections;
       GetDefaultHTTPWebBroker.MaxConnections := FMaxConnections;
+    end
+    else if FMaxConnectionsApplied then
+    begin
+      WebRequestHandler.MaxConnections := FSavedWebMaxConnections;
+      GetDefaultHTTPWebBroker.MaxConnections := FSavedBridgeMaxConnections;
+      FMaxConnectionsApplied := False;
     end;
 
     if FListenQueue = 0 then
