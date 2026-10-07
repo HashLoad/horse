@@ -7,8 +7,8 @@ unit Horse.Provider.Console;
   DEFAULT_PORT (9000), silently ignoring the caller-supplied APort.
   Fix: override ListenWithConfig in THorseProvider (Console) so that it sets
   Console's own FPort via SetPort before calling InternalListen.
-  AConfig is intentionally ignored — Console/Indy has no use for
-  THorseCrossSocketConfig; only CrossSocket overrides ListenWithConfig fully.
+  Unsupported TLS options are rejected before changing the port; other
+  CrossSocket-specific options remain unused by Console/Indy.
   =========================================================================== }
 
 interface
@@ -474,12 +474,13 @@ end;
   PATCH-CONSOLE-1 — ListenWithConfig implementation
   Sets Console's own FPort before starting, so the port is honoured even when
   the caller goes through the abstract ListenWithConfig entry point.
-  AConfig is intentionally ignored — Indy/Console has no use for CrossSocket
-  configuration. CrossSocket overrides ListenWithConfig completely.
+  Unsupported TLS options are rejected before changing the port. Other
+  CrossSocket-specific options are not applied by Indy/Console.
   =========================================================================== }
 class procedure THorseProvider.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'Console');
   SetPort(APort);
   InternalListen;
 end;

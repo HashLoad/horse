@@ -1,232 +1,75 @@
-# run_e2e_integration_tests.ps1
-# Script para automação de testes de integração ponta a ponta (End-to-End) físicos no Delphi 13 Florence.
+param([string]$MiddlewareRoot = '', [string]$Version = '37.0')
+$ErrorActionPreference = 'Stop'
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if (-not $MiddlewareRoot) { $MiddlewareRoot = Join-Path $root '../horse_middlewares' }
+$compiler = "C:/Program Files (x86)/Embarcadero/Studio/$Version/bin/dcc32.exe"
+$library = "C:/Program Files (x86)/Embarcadero/Studio/$Version/lib/win32/release"
+$output = Join-Path $root ('benchmarks/results/e2e-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -ItemType Directory -Force $output | Out-Null
 
-$ErrorActionPreference = "Stop"
-
-$StudioPath = "C:\Program Files (x86)\Embarcadero\Studio\37.0"
-$RsvarsPath = Join-Path $StudioPath "bin\rsvars.bat"
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-
-# Função para parar processos em portas específicas
-function Stop-ProcessesOnPorts {
-    param([int[]]$Ports)
-    foreach ($Port in $Ports) {
-        $Connections = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
-        if ($Connections) {
-            Write-Host " -> Liberando porta $Port ocupada..." -ForegroundColor Yellow
-            foreach ($Conn in $Connections) {
-                if ($Conn.OwningProcess -gt 0) {
-                    Stop-Process -Id $Conn.OwningProcess -Force -ErrorAction SilentlyContinue
-                }
-            }
-            Sleep 1
-        }
+function Assert-PortFree([int]$Port) {
+    if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) {
+        throw "Port $Port is occupied; no unrelated process will be stopped."
     }
 }
 
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " FASE 1: TESTE DE INTEGRAÇÃO MULTI-INSTANCE (E2E)         " -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor Cyan
-
-# Garante que as portas 9001 e 9002 estejam livres
-Stop-ProcessesOnPorts -Ports @(9001, 9002)
-
-$SampleSrcDir = Join-Path $ScriptDir "..\samples\delphi\console_multi_instance"
-$SampleExe = Join-Path $SampleSrcDir "ConsoleMultiInstance.exe"
-
-# 1. Limpeza
-if (Test-Path $SampleExe) { Remove-Item -Path $SampleExe -Force }
-
-# 2. Configurações de compilação do Sample
-$SearchPath = '..\..\..\src'
-$CfgPath = Join-Path $SampleSrcDir "ConsoleMultiInstance.cfg"
-$CfgContent = @(
-    "-B",
-    "-Q",
-    "-NS`"System;Xml;Data;Datasnap;Web;Soap;Winapi`"",
-    "-I`"$SearchPath`"",
-    "-U`"$SearchPath`""
-)
-Set-Content -Path $CfgPath -Value ($CfgContent -join "`r`n") -Force
-
-# 3. Compilação do Sample Multi-Instance
-Write-Host " -> Compilando Sample Multi-Instance..." -ForegroundColor Gray
-$BuildCommand = "call `"{0}`" && cd /d `"{1}`" && dcc32.exe ConsoleMultiInstance.dpr" -f $RsvarsPath, $SampleSrcDir
-$BuildOutput = cmd.exe /c $BuildCommand 2>&1
-$BuildExitCode = $LASTEXITCODE
-
-if (Test-Path $CfgPath) { Remove-Item -Path $CfgPath -Force }
-
-if ($BuildExitCode -eq 0 -and (Test-Path $SampleExe)) {
-    Write-Host " -> Compilação: SUCESSO" -ForegroundColor Green
-} else {
-    Write-Host " -> Compilação: ERRO" -ForegroundColor Red
-    Write-Host $BuildOutput -ForegroundColor DarkRed
-    exit 1
+function Build-Server([string]$Source, [string]$ExtraSearchPath = '') {
+    & $compiler -B -Q '-NSSystem;Xml;Data;Datasnap;Web;Soap;Winapi' "-U$root/src;$library;$ExtraSearchPath" "-I$root/src;$ExtraSearchPath" "-E$output" "-N0$output" $Source *> "$output/build-$([IO.Path]::GetFileNameWithoutExtension($Source)).log"
+    if ($LASTEXITCODE -ne 0) { throw "Build failed; see $output" }
 }
 
-# 4. Executa o Sample em background
-Write-Host " -> Executando servidor Multi-Instance em background..." -ForegroundColor Gray
-$SampleProcess = Start-Process -FilePath $SampleExe -ArgumentList "--delay" -NoNewWindow -PassThru
-
-# Aguarda inicialização física das portas
-$TimeoutSeconds = 10
-$Start = Get-Date
-$Ready = $false
-while (((Get-Date) - $Start).TotalSeconds -lt $TimeoutSeconds) {
-    try {
-        $Res1 = Invoke-RestMethod -Uri "http://127.0.0.1:9001/api/v1/ping" -Method Get
-        $Res2 = Invoke-RestMethod -Uri "http://127.0.0.1:9002/admin/ping" -Method Get
-        if (($Res1 -eq "Pong da API Publica (Instancia 1)") -and ($Res2 -eq "Pong da Area Admin (Instancia 2)")) {
-            $Ready = $true
-            Break
-        }
-    } catch {
-        Sleep -Milliseconds 200
-    }
-}
-if (-not $Ready) {
-    throw "Servidores não inicializaram a tempo na porta 9001/9002"
-}
-
+Assert-PortFree 9001
+Assert-PortFree 9002
+Build-Server "$root/samples/delphi/console_multi_instance/ConsoleMultiInstance.dpr"
+$process = Start-Process "$output/ConsoleMultiInstance.exe" -ArgumentList '--delay' -WindowStyle Hidden -PassThru -RedirectStandardOutput "$output/multi-instance.log" -RedirectStandardError "$output/multi-instance.err"
 try {
-    # 5. Faz chamadas HTTP E2E
-    Write-Host " -> Testando Requisições HTTP:" -ForegroundColor Gray
-
-    # Teste 1.1: Porta 9001 (API Pública)
-    $Res1 = Invoke-RestMethod -Uri "http://127.0.0.1:9001/api/v1/ping" -Method Get
-    Write-Host "    [GET] http://127.0.0.1:9001/api/v1/ping -> Resposta: '$Res1'" -ForegroundColor Green
-    if ($Res1 -ne "Pong da API Publica (Instancia 1)") { throw "Resposta incorreta na porta 9001" }
-
-    # Teste 1.2: Porta 9002 (Admin/Metrics)
-    $Res2 = Invoke-RestMethod -Uri "http://127.0.0.1:9002/admin/ping" -Method Get
-    Write-Host "    [GET] http://127.0.0.1:9002/admin/ping  -> Resposta: '$Res2'" -ForegroundColor Green
-    if ($Res2 -ne "Pong da Area Admin (Instancia 2)") { throw "Resposta incorreta na porta 9002" }
-
-    # Teste 1.3: Isolamento (Chamar rota 9002 na porta 9001 - Esperado 404)
-    try {
-        Invoke-RestMethod -Uri "http://127.0.0.1:9001/admin/ping" -Method Get -ErrorAction Stop
-        throw "Deveria ter retornado 404"
-    } catch {
-        if ($_.Exception.Response.StatusCode -eq 404) {
-            Write-Host "    [GET] http://127.0.0.1:9001/admin/ping  -> Resposta: 404 Not Found (Isolamento OK)" -ForegroundColor Green
-        } else {
-            throw "Erro inesperado: $_"
-        }
+    $ready = $false
+    $deadline = (Get-Date).AddSeconds(8)
+    while ((Get-Date) -lt $deadline) {
+        if ($process.HasExited) { throw 'Multi-instance server exited before readiness.' }
+        try {
+            $public = Invoke-RestMethod 'http://127.0.0.1:9001/api/v1/ping' -TimeoutSec 2
+            $admin = Invoke-RestMethod 'http://127.0.0.1:9002/admin/ping' -TimeoutSec 2
+            if ($public -ne 'Pong da API Publica (Instancia 1)' -or
+                $admin -ne 'Pong da Area Admin (Instancia 2)') { throw 'Incorrect ping response' }
+            $ready = $true
+            break
+        } catch { Start-Sleep -Milliseconds 100 }
     }
+    if (-not $ready) { throw 'Multi-instance listener startup timed out.' }
+    $isolated = $false
+    try { Invoke-WebRequest 'http://127.0.0.1:9001/admin/ping' -TimeoutSec 2 | Out-Null }
+    catch { $isolated = [int]$_.Exception.Response.StatusCode -eq 404 }
+    if (-not $isolated) { throw 'Instance isolation failed: expected 404.' }
+    if (-not $process.WaitForExit(15000)) { throw 'Multi-instance shutdown timed out.' }
+    if ($process.ExitCode -ne 0) { throw 'Multi-instance server failed.' }
+    Write-Host 'PASS: multi-instance responses, route isolation and graceful exit.'
 } finally {
-    # 6. Encerra o processo do servidor
-    Write-Host " -> Encerrando servidor Multi-Instance..." -ForegroundColor Gray
-    Stop-Process -Id $SampleProcess.Id -Force -ErrorAction SilentlyContinue
-    Sleep 1
+    if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+    $process.Dispose()
 }
 
-
-Write-Host ""
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " FASE 2: TESTE DE INTEGRAÇÃO NORMAL CLÁSSICO (E2E)         " -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor Cyan
-
-# Garante que a porta 9999 esteja livre
-Stop-ProcessesOnPorts -Ports @(9999)
-
-$ServerSrcDir = Join-Path $ScriptDir "src"
-$ServerExe = Join-Path $ScriptDir "IntegrationServer.exe"
-
-# 1. Limpeza
-if (Test-Path $ServerExe) { Remove-Item -Path $ServerExe -Force }
-
-# 2. Configurações de compilação do IntegrationServer
-$SearchPath = '..\..\src;modules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src;modules\cors\src;modules\basic-auth\src'
-$CfgPath = Join-Path $ServerSrcDir "IntegrationServer.cfg"
-$CfgContent = @(
-    "-B",
-    "-Q",
-    "-E`"..`"",
-    "-NS`"System;Xml;Data;Datasnap;Web;Soap;Winapi`"",
-    "-I`"$SearchPath`"",
-    "-U`"$SearchPath`""
-)
-Set-Content -Path $CfgPath -Value ($CfgContent -join "`r`n") -Force
-
-# 3. Compilação do IntegrationServer
-Write-Host " -> Compilando Servidor de Integração Clássico..." -ForegroundColor Gray
-$BuildCommand = "call `"{0}`" && cd /d `"{1}`" && dcc32.exe IntegrationServer.dpr" -f $RsvarsPath, $ServerSrcDir
-$BuildOutput = cmd.exe /c $BuildCommand 2>&1
-$BuildExitCode = $LASTEXITCODE
-
-if (Test-Path $CfgPath) { Remove-Item -Path $CfgPath -Force }
-
-if ($BuildExitCode -eq 0 -and (Test-Path $ServerExe)) {
-    Write-Host " -> Compilação: SUCESSO" -ForegroundColor Green
-} else {
-    Write-Host " -> Compilação: ERRO" -ForegroundColor Red
-    Write-Host $BuildOutput -ForegroundColor DarkRed
-    exit 1
-}
-
-# 4. Executa o Servidor Clássico em background
-Write-Host " -> Executando servidor clássico em background..." -ForegroundColor Gray
-$ServerProcess = Start-Process -FilePath $ServerExe -NoNewWindow -PassThru
-
-# Aguarda inicialização física da porta
-$TimeoutSeconds = 10
-$Start = Get-Date
-$Ready = $false
-# Aguarda inicialização física da porta
-$TimeoutSeconds = 10
-$Start = Get-Date
-$Ready = $false
-while (((Get-Date) - $Start).TotalSeconds -lt $TimeoutSeconds) {
-    try {
-        $ResPing = Invoke-RestMethod -Uri "http://127.0.0.1:9999/ping" -Method Get
-        if ($ResPing.message -eq "pong") {
-            $Ready = $true
-            Break
-        }
-    } catch {
-        Sleep -Milliseconds 200
-    }
-}
-if (-not $Ready) {
-    throw "Servidor clássico não inicializou a tempo na porta 9999"
-}
-
+Assert-PortFree 9999
+$dependencies = @(
+    "$root/tests/src/modules/github_com_hashload_jhonson/src",
+    "$root/tests/src/modules/jhonson/src",
+    "$root/tests/src/modules/cors/src",
+    "$root/tests/src/modules/basic-auth/src",
+    "$MiddlewareRoot/horse-jhonson/src",
+    "$MiddlewareRoot/horse-cors/src",
+    "$MiddlewareRoot/horse-basic-auth/src"
+) | Where-Object { Test-Path $_ }
+Build-Server "$root/tests/src/IntegrationServer.dpr" ($dependencies -join ';')
+# IntegrationServer is a self-testing executable, not a persistent HTTP daemon.
+$process = Start-Process "$output/IntegrationServer.exe" -WindowStyle Hidden -PassThru -RedirectStandardOutput "$output/integration.log" -RedirectStandardError "$output/integration.err"
 try {
-    # 5. Faz chamadas HTTP E2E
-    Write-Host " -> Testando Requisições HTTP (Fachada Clássica):" -ForegroundColor Gray
-
-    # Teste 2.1: Rota pública /ping (GET)
-    $ResPing = Invoke-RestMethod -Uri "http://127.0.0.1:9999/ping" -Method Get
-    Write-Host "    [GET] http://127.0.0.1:9999/ping           -> Resposta: '$($ResPing.message)'" -ForegroundColor Green
-    if ($ResPing.message -ne "pong") { throw "Resposta do ping incorreta" }
-
-    # Teste 2.2: Rota privada sem Auth (GET - Esperado 401)
-    try {
-        Invoke-RestMethod -Uri "http://127.0.0.1:9999/secure/private" -Method Get -ErrorAction Stop
-        throw "Deveria ter retornado 401"
-    } catch {
-        if ($_.Exception.Response.StatusCode -eq 401) {
-            Write-Host "    [GET] http://127.0.0.1:9999/secure/private -> Resposta: 401 Unauthorized (Auth OK)" -ForegroundColor Green
-        } else {
-            throw "Erro inesperado: $_"
-        }
-    }
-
-    # Teste 2.3: Rota privada com Auth Correta (GET - admin:secret -> Authorization header)
-    $Headers = @{ Authorization = "Basic YWRtaW46c2VjcmV0" }
-    $ResPrivate = Invoke-RestMethod -Uri "http://127.0.0.1:9999/secure/private" -Method Get -Headers $Headers
-    Write-Host "    [GET] http://127.0.0.1:9999/secure/private -> Resposta: '$ResPrivate'" -ForegroundColor Green
-    if ($ResPrivate -ne "private-ok") { throw "Falha na rota segura com autenticação" }
-
+    if (-not $process.WaitForExit(30000)) { throw 'Middleware integration timed out.' }
+    if ($process.ExitCode -ne 0) { throw "Middleware integration failed; see $output/integration.log" }
+    $text = Get-Content "$output/integration.log" -Raw
+    if ($text -notmatch 'INTEGRATION TEST: SUCCESS') { throw 'Integration success marker missing.' }
+    Write-Host 'PASS: CORS/Jhonson, unauthenticated 401, authenticated GET and JSON POST.'
 } finally {
-    # 6. Encerra o processo do servidor
-    Write-Host " -> Encerrando servidor clássico..." -ForegroundColor Gray
-    Stop-Process -Id $ServerProcess.Id -Force -ErrorAction SilentlyContinue
-    Sleep 1
+    if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+    $process.Dispose()
 }
-
-Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "  TESTES FINAIS DE INTEGRAÇÃO E2E CONCLUÍDOS COM SUCESSO! " -ForegroundColor Green
-Write-Host "==========================================================" -ForegroundColor Green
-exit 0
+Write-Host "E2E integration passed. Reports: $output"

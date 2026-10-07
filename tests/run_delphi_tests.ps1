@@ -1,6 +1,12 @@
 # run_delphi_tests.ps1
 # Script para automação de testes do Horse em múltiplos compiladores Delphi locais usando dcc32 diretamente.
 
+param(
+    [string[]]$Versions = @(),
+    [string[]]$Providers = @(),
+    [string]$Run = ''
+)
+
 $ErrorActionPreference = "Stop"
 
 # 1. Encurta a variável de ambiente PATH para evitar qualquer problema de limite de CreateProcess no Windows
@@ -30,6 +36,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $OutputExe = Join-Path $ScriptDir "Console.exe"
 $IncPath = Join-Path $ScriptDir "src\HorseTestDefines.inc"
 $CfgPath = Join-Path $ScriptDir "src\Console.cfg"
+$ReportDir = Join-Path $ScriptDir ('..\benchmarks\results\delphi-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -ItemType Directory -Force $ReportDir | Out-Null
 
 # Mapeamento de nomes amigáveis para as versões do RAD Studio
 $FriendlyVersions = @{
@@ -62,7 +70,8 @@ if (-not (Test-Path $StudioPath)) {
 # Descobre todas as versões instaladas que possuem o rsvars.bat
 $Installations = Get-ChildItem -Path $StudioPath | Where-Object {
     $rsvars = Join-Path $_.FullName "bin\rsvars.bat"
-    $_.PsIsContainer -and (Test-Path $rsvars)
+    $_.PsIsContainer -and (Test-Path $rsvars) -and
+    (($Versions.Count -eq 0) -or ($_.Name -in $Versions))
 }
 
 if ($Installations.Count -eq 0) {
@@ -91,6 +100,7 @@ foreach ($Inst in $Installations) {
     
     foreach ($Def in $DefinesToTest) {
         $DefName = $Def.Name
+        if (($Providers.Count -gt 0) -and ($DefName -notin $Providers)) { continue }
         $DefFlags = $Def.Flags
         
         Write-Host "----------------------------------------------------------" -ForegroundColor Yellow
@@ -103,8 +113,15 @@ foreach ($Inst in $Installations) {
         $DcuWin32 = Join-Path $ScriptDir "src\Win32"
         $DcuWin64 = Join-Path $ScriptDir "src\Win64"
         
-        if (Test-Path $DcuWin32) { Remove-Item -Path $DcuWin32 -Recurse -Force }
-        if (Test-Path $DcuWin64) { Remove-Item -Path $DcuWin64 -Recurse -Force }
+        foreach ($DcuDir in @($DcuWin32, $DcuWin64)) {
+            if (Test-Path -LiteralPath $DcuDir) {
+                $ResolvedDcuDir = (Resolve-Path -LiteralPath $DcuDir).Path
+                if (-not $ResolvedDcuDir.StartsWith("$ScriptDir\src\", [StringComparison]::OrdinalIgnoreCase)) {
+                    throw "Unexpected build cleanup target: $ResolvedDcuDir"
+                }
+                Remove-Item -LiteralPath $ResolvedDcuDir -Recurse -Force
+            }
+        }
         if (Test-Path $OutputExe) { Remove-Item -Path $OutputExe -Force }
         
         # Limpa arquivos DRC e MAP para evitar poluição
@@ -135,6 +152,7 @@ foreach ($Inst in $Installations) {
         $BuildCommand = "call `"{0}`" && cd /d `"{1}\src`" && dcc32.exe -D{2} Console.dpr" -f $RsvarsPath, $ScriptDir, $Def.DccFlags
         $BuildOutput = cmd.exe /c $BuildCommand 2>&1
         $BuildExitCode = $LASTEXITCODE
+        $BuildOutput | Out-File -LiteralPath (Join-Path $ReportDir "$VerKey-$DefName-build.log") -Encoding utf8
         
         $CompileSuccess = $false
         if ($BuildExitCode -eq 0 -and (Test-Path $OutputExe)) {
@@ -162,9 +180,28 @@ foreach ($Inst in $Installations) {
             
             # Executa o executável DUnitX enviando uma entrada vazia via pipe para evitar qualquer Readln bloqueante
             $env:HORSE_TEST_SILENCE = "1"
-            $TestOutput = "" | & $OutputExe 2>&1
+            $XmlFile = Join-Path $ReportDir "$VerKey-$DefName.xml"
+            $LogFile = Join-Path $ReportDir "$VerKey-$DefName.log"
+            $TestArguments = @("--xml:$XmlFile", '--exitbehavior:Continue')
+            if ($Run) {
+                foreach ($Fixture in $Run.Split(',')) { $TestArguments += "--run:$Fixture" }
+            }
+            $TestOutput = "" | & $OutputExe @TestArguments 2>&1
             $TestExitCode = $LASTEXITCODE
+            $TestOutput | Out-File -LiteralPath $LogFile -Encoding utf8
             $env:HORSE_TEST_SILENCE = $null
+
+            if (Test-Path -LiteralPath $XmlFile) {
+                [xml]$XmlReport = Get-Content -LiteralPath $XmlFile
+                $XmlResults = $XmlReport.'test-results'
+                if (([int]$XmlResults.total -eq 0) -or
+                    ([int]$XmlResults.failures -gt 0) -or
+                    ([int]$XmlResults.errors -gt 0)) { $TestExitCode = 1 }
+                Write-Host " -> NUnit: total=$($XmlResults.total), failures=$($XmlResults.failures), errors=$($XmlResults.errors)"
+            } else {
+                $TestExitCode = 1
+            }
+            if (($TestOutput -join "`n") -match 'Unexpected Memory Leak') { $TestExitCode = 1 }
             
             if ($TestExitCode -eq 0) {
                 $TestsPassed = $true
@@ -196,6 +233,7 @@ Write-Host "====================================================================
 Write-Host "                                  RESUMO DOS TESTES                                   " -ForegroundColor Cyan
 Write-Host "======================================================================================" -ForegroundColor Cyan
 $HasFailure = $false
+if ($Results.Count -eq 0) { throw 'No provider configurations were selected.' }
 foreach ($Res in $Results) {
     $StatusColor = "Green"
     if ($Res.BuildStatus -eq "FALHA" -or $Res.TestStatus -eq "FALHOU") {

@@ -9,7 +9,8 @@ uses
   Horse.Provider.HttpSys;
 
 const
-  TEST_PORT = 9095;
+  // Keep this standalone regression independent of AdvancedRouting's 9095.
+  TEST_PORT = 19195;
 
 type
   TListenThread = class(TThread)

@@ -24,6 +24,8 @@ def read_response(sock: socket.socket, buffered: bytes) -> tuple[bytes, bytes]:
         buffered += chunk
 
     raw_headers, buffered = buffered.split(b"\r\n\r\n", 1)
+    if raw_headers.split(b"\r\n", 1)[0].split()[1] != b"200":
+        raise RuntimeError(f"unexpected response status: {raw_headers!r}")
     headers = {}
     for line in raw_headers.split(b"\r\n")[1:]:
         key, value = line.split(b":", 1)

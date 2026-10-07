@@ -2,7 +2,8 @@
 # Script para verificação estática de compilação de todas as combinações de Provedores e Roteadores no Horse.
 # Compatível com Delphi 10, 11, 12, 13 locais e Lazarus/FPC via Docker Linux.
 
-$ErrorActionPreference = "Continue"
+param([string]$DockerImage = 'horse-tests-lazarus')
+$ErrorActionPreference = "Stop"
 
 # 1. Otimiza o PATH para evitar limite de caracteres do Windows, preservando o Docker
 $CurrentPath = $env:PATH -split ";"
@@ -20,11 +21,9 @@ $env:PATH = ($CleanPathDirs | Select-Object -Unique) -join ";"
 $StudioPath = "C:\Program Files (x86)\Embarcadero\Studio"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $CompileTarget = Join-Path $ScriptDir "src\CompileCheck.dpr"
-
-function Limpar-ArquivosTemporarios {
-    Get-ChildItem -Path $ScriptDir -Recurse -Include *.dcu, *.ppu, *.o, *.dof, *.identcache, *.local -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-    Get-ChildItem -Path (Join-Path $ScriptDir "..\src") -Recurse -Include *.dcu, *.ppu, *.o -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-}
+$HorseRoot = (Resolve-Path (Join-Path $ScriptDir '..')).Path
+$ReportDir = Join-Path $HorseRoot ('benchmarks/results/compile-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+New-Item -ItemType Directory -Force $ReportDir | Out-Null
 
 # Mapeamento de versões
 $FriendlyVersions = @{
@@ -54,12 +53,9 @@ $DelphiScenarios = @(
     # ISAPI
     @{ Name = "ISAPI"; Defines = "CI;HORSE_PROVIDER_ISAPI;HORSE_ISAPI" },
     @{ Name = "ISAPI+Radix"; Defines = "CI;HORSE_PROVIDER_ISAPI;HORSE_ISAPI;HORSE_RADIX_ROUTER" },
-    # Daemon
-    @{ Name = "Daemon"; Defines = "CI;HORSE_PROVIDER_DAEMON" },
-    @{ Name = "Daemon+Radix"; Defines = "CI;HORSE_PROVIDER_DAEMON;HORSE_RADIX_ROUTER" },
     # VCL
-    @{ Name = "VCL"; Defines = "CI;HORSE_PROVIDER_VCL" },
-    @{ Name = "VCL+Radix"; Defines = "CI;HORSE_PROVIDER_VCL;HORSE_RADIX_ROUTER" }
+    @{ Name = "VCL"; Defines = "CI;HORSE_VCL" },
+    @{ Name = "VCL+Radix"; Defines = "CI;HORSE_VCL;HORSE_RADIX_ROUTER" }
 )
 
 # Combinações a testar no FPC / Lazarus Docker
@@ -72,8 +68,10 @@ $FpcScenarios = @(
     @{ Name = "Apache+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_APACHE;HORSE_APACHE;HORSE_RADIX_ROUTER" },
     @{ Name = "CGI"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI;HORSE_CGI" },
     @{ Name = "CGI+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_CGI;HORSE_CGI;HORSE_RADIX_ROUTER" },
-    @{ Name = "Daemon"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_DAEMON" },
-    @{ Name = "Daemon+Radix"; Defines = "HORSE_CONSOLE;HORSE_PROVIDER_DAEMON;HORSE_RADIX_ROUTER" }
+    @{ Name = "Daemon"; Defines = "HORSE_DAEMON" },
+    @{ Name = "Daemon+Radix"; Defines = "HORSE_DAEMON;HORSE_RADIX_ROUTER" },
+    @{ Name = "FastCGI"; Defines = "HORSE_FCGI" },
+    @{ Name = "FastCGI+Radix"; Defines = "HORSE_FCGI;HORSE_RADIX_ROUTER" }
 )
 
 $Results = @()
@@ -96,18 +94,21 @@ if (Test-Path $StudioPath) {
 
         foreach ($Scen in $DelphiScenarios) {
             $ScenName = $Scen.Name
-            $Defines = $Scen.Defines
+            $Defines = 'HORSE_MATRIX_ISOLATED;' + $Scen.Defines
 
             Write-Host " -> Compilando Provedor: $ScenName..." -ForegroundColor Gray
 
-            # Executa a limpeza dos DCUs antigos
-            Limpar-ArquivosTemporarios
+            $ScenarioOutput = Join-Path $ReportDir "$($Inst.Name)-$ScenName"
+            New-Item -ItemType Directory -Force $ScenarioOutput | Out-Null
 
             # Chama o dcc32 diretamente via array de argumentos para evitar interpretador do PowerShell no ponto e vírgula
             $DccArgs = @(
                 "-Q",
-                "-Isrc",
-                "-Usrc",
+                "-B",
+                "-I$HorseRoot\src",
+                "-U$HorseRoot\src;$($Inst.FullName)\lib\win32\release",
+                "-E$ScenarioOutput",
+                "-N0$ScenarioOutput",
                 "-NSSystem;Xml;Data;Datasnap;Web;Soap;Winapi",
                 "-Imodules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src",
                 "-Umodules;modules\github_com_hashload_jhonson\src;modules\github_com_viniciussanchez_restrequest4delphi\src",
@@ -116,9 +117,10 @@ if (Test-Path $StudioPath) {
             )
 
             $Output = & $Dcc32 $DccArgs 2>&1
-
+            $CompileExit = $LASTEXITCODE
+            $Output | Out-File -LiteralPath (Join-Path $ScenarioOutput 'build.log') -Encoding utf8
             $BuildStatus = "SUCESSO"
-            if ($LastExitCode -ne 0) {
+            if ($CompileExit -ne 0) {
                 $BuildStatus = "FALHA"
                 Write-Host "   [!] FALHA na compilacao!" -ForegroundColor Red
             } else {
@@ -146,9 +148,6 @@ if ($HasDocker) {
         $ScenName = $Scen.Name
         $Defines = $Scen.Defines
 
-        # Garante limpeza completa de arquivos binários compilados incompatíveis do Windows
-        Limpar-ArquivosTemporarios
-
         # Traduz defines do FPC (-dDEF1 -dDEF2)
         $FpcDefinesList = $Defines -split ";"
         $FpcFlags = ""
@@ -169,16 +168,19 @@ if ($HasDocker) {
 
         $DockerArgs = @(
             "run", "--rm",
-            "-v", "$ScriptDir\..\:/usr/src/app",
+            "--mount", "type=bind,source=$HorseRoot,target=/usr/src/app,readonly",
             "-w", "/usr/src/app/tests/src",
-            "horse-tests-lazarus",
-            "bash", "-c", $FpcCommand
+            "--entrypoint", "bash",
+            $DockerImage,
+            "-c", $FpcCommand
         )
 
         $BuildStatus = "SUCESSO"
         try {
-            $DockerOutput = & docker $DockerArgs
-            if ($LastExitCode -ne 0) {
+            $DockerOutput = & docker $DockerArgs 2>&1
+            $DockerExit = $LASTEXITCODE
+            $DockerOutput | Out-File -LiteralPath (Join-Path $ReportDir "fpc-$ScenName.log") -Encoding utf8
+            if ($DockerExit -ne 0) {
                 $BuildStatus = "FALHA"
                 Write-Host "   [!] FALHA na compilacao!" -ForegroundColor Red
             } else {
@@ -219,7 +221,9 @@ $Results | Format-Table -Property Compilador, Provedor, Plataforma, Status -Auto
 Write-Host "==========================================================================" -ForegroundColor Cyan
 
 # Retorna código de saída adequado se houver qualquer falha
-$FailedCount = ($Results | Where-Object { $_.Status -eq "FALHA" }).Count
+$Results | ConvertTo-Json -Depth 4 | Out-File -LiteralPath (Join-Path $ReportDir 'results.json') -Encoding utf8
+if ($Results.Count -eq 0) { throw 'No compiler configurations were exercised.' }
+$FailedCount = ($Results | Where-Object { $_.Status -ne "SUCESSO" }).Count
 if ($FailedCount -gt 0) {
     Write-Host " [!] Encontradas $FailedCount falhas de compilacao!" -ForegroundColor Red
     exit 1

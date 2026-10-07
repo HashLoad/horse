@@ -3666,6 +3666,7 @@ end;
 
 class procedure THorseProviderEpoll.ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'Epoll');
   SetPort(APort);
   InternalListen;
 end;

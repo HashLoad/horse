@@ -383,6 +383,7 @@ end;
 
 class procedure THorseProvider.ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'VCL');
   SetPort(APort);
   InternalListen;
 end;

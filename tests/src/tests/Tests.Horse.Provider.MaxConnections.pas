@@ -28,33 +28,152 @@ type
   public
     [Test]
     procedure TestZeroLiftsALimitAnEarlierListenApplied;
+    [Test]
+    procedure TestZeroAllowsConcurrentRequestsAbovePreviousLimit;
   end;
 
 implementation
 
 uses
-  System.SysUtils, System.Classes,
+  System.SysUtils, System.Classes, System.SyncObjs, System.Threading,
+  System.Net.HttpClient, System.Net.URLClient,
 {$IF NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND NOT DEFINED(HORSE_PROVIDER_IOCP)}
   Web.WebReq,
 {$ENDIF}
   Horse, Tests.CleanupHelper;
 
 const
+{$IFDEF HORSE_TEST_ISOLATED_LIFECYCLE}
+  TEST_PORT = 19131;
+{$ELSE}
   TEST_PORT = 9131;
+{$ENDIF}
 
 {$IF NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND NOT DEFINED(HORSE_PROVIDER_IOCP)}
 { Listen applies MaxConnections before it starts accepting, and on a console
   build Listen blocks, so it runs on its own thread like the other fixtures. }
-procedure ListenThenStop;
+procedure ListenThenStop(const AWhileListening: TProc = nil);
+var
+  LThread: TThread;
+  LReady: TEvent;
+  LError: string;
 begin
-  TThread.CreateAnonymousThread(
+  LReady := TEvent.Create(nil, True, False, '');
+  LError := '';
+  LThread := TThread.CreateAnonymousThread(
     procedure
     begin
-      THorse.Listen(TEST_PORT);
-    end).Start;
-  Sleep(500);
-  THorse.StopListen;
-  Sleep(200);
+      try
+        THorse.Listen(TEST_PORT, '127.0.0.1',
+          procedure
+          begin
+            LReady.SetEvent;
+          end);
+      except
+        on E: Exception do
+        begin
+          LError := E.ClassName + ': ' + E.Message;
+          LReady.SetEvent;
+        end;
+      end;
+    end);
+  LThread.FreeOnTerminate := False;
+  try
+    LThread.Start;
+    Assert.IsTrue(LReady.WaitFor(5000) = wrSignaled, 'Listener startup timed out');
+    Assert.AreEqual('', LError, 'Listener startup failed');
+    Assert.IsTrue(THorse.IsRunning, 'Listener must be running before stopping');
+    if Assigned(AWhileListening) then
+      AWhileListening;
+  finally
+    try
+      if THorse.IsRunning then
+        THorse.StopListen;
+    finally
+      // Join before releasing the captured event and strings.
+      LThread.WaitFor;
+      LThread.Free;
+      LReady.Free;
+    end;
+  end;
+end;
+{$ENDIF}
+
+procedure TTestHorseProviderMaxConnections.TestZeroAllowsConcurrentRequestsAbovePreviousLimit;
+{$IF NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND NOT DEFINED(HORSE_PROVIDER_IOCP)}
+var
+  LArrived: Integer;
+  LFailures: Integer;
+  LRelease: TEvent;
+  LTasks: array[0..2] of ITask;
+begin
+  ClearGlobalState;
+  LArrived := 0;
+  LFailures := 0;
+  LRelease := TEvent.Create(nil, True, False, '');
+  try
+    THorse.Get('/limit-reset',
+      procedure(Req: THorseRequest; Res: THorseResponse)
+      begin
+        if TInterlocked.Increment(LArrived) = Length(LTasks) then
+          LRelease.SetEvent;
+        LRelease.WaitFor(5000);
+        Res.Send('ok');
+      end);
+    THorse.MaxConnections := 1;
+    ListenThenStop;
+    THorse.MaxConnections := 0;
+    ListenThenStop(
+      procedure
+      var
+        I: Integer;
+      begin
+        for I := Low(LTasks) to High(LTasks) do
+          LTasks[I] := TTask.Run(
+            procedure
+            var
+              LClient: THTTPClient;
+              LResponse: IHTTPResponse;
+            begin
+              LClient := THTTPClient.Create;
+              try
+{$IF CompilerVersion >= 31.0}
+                LClient.ConnectionTimeout := 3000;
+                LClient.ResponseTimeout := 7000;
+{$IFEND}
+                try
+                  LResponse := LClient.Get(Format('http://127.0.0.1:%d/limit-reset', [TEST_PORT]));
+                  if (LResponse.StatusCode <> 200) or
+                    (LResponse.ContentAsString <> 'ok') then
+                    TInterlocked.Increment(LFailures);
+                except
+                  TInterlocked.Increment(LFailures);
+                end;
+              finally
+                LClient.Free;
+              end;
+            end);
+        try
+          Assert.IsTrue(TTask.WaitForAll(LTasks, 15000), 'Concurrent clients timed out');
+          Assert.AreEqual(3, LArrived, 'Both WebBroker and Indy must lift the old limit');
+          Assert.AreEqual(0, LFailures, 'All concurrent requests must succeed');
+        finally
+          LRelease.SetEvent;
+          TTask.WaitForAll(LTasks);
+          // Task closures and the route share this activation record. Release
+          // task interfaces explicitly to avoid a reference-counting cycle.
+          for I := Low(LTasks) to High(LTasks) do
+            LTasks[I] := nil;
+        end;
+      end);
+  finally
+    ClearGlobalState;
+    LRelease.Free;
+  end;
+end;
+{$ELSE}
+begin
+  Assert.Pass('Indy-only connection-limit regression');
 end;
 {$ENDIF}
 

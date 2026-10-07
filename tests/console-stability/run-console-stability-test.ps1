@@ -8,7 +8,7 @@ $rsvars = if ($env:RADSTUDIO_RSVARS) { $env:RADSTUDIO_RSVARS } else { 'C:\Progra
 New-Item -ItemType Directory -Path $outputDir | Out-Null
 try {
   $command = 'call "' + $rsvars + '" && dcc32.exe -B -Q ' +
-    '-E"' + $outputDir + '" -NS"System;Xml;Data;Datasnap;Web;Soap;Winapi" ' +
+    '-E"' + $outputDir + '" -N0"' + $outputDir + '" -NS"System;Xml;Data;Datasnap;Web;Soap;Winapi" ' +
     '-I"' + $horseRoot + '\src" -U"' + $horseRoot + '\src" ' +
     '"' + (Join-Path $testDir 'ConsoleStabilityCheck.dpr') + '"'
   & cmd.exe /d /c $command

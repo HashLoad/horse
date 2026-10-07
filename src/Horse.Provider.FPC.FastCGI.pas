@@ -160,6 +160,7 @@ end;
 class procedure THorseProvider.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'FPC.FastCGI');
   SetPort(APort);
   InternalListen;
 end;

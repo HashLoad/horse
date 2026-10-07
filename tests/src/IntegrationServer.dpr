@@ -4,6 +4,12 @@ program IntegrationServer;
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
+// The legacy fphttpapp provider has no StopListen override. Its integration
+// process owns the server lifetime; do not confuse that with graceful shutdown.
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_PROVIDER_EPOLL)}
+  {$DEFINE PROCESS_SCOPED_SERVER}
+{$IFEND}
+
 uses
   {$IFDEF FPC}
     {$IFDEF UNIX}
@@ -93,7 +99,11 @@ begin
   THorse.Post('/echo', PostEcho);
 
   LServerThread := TTestThread.Create(True);
+  {$IFDEF PROCESS_SCOPED_SERVER}
   LServerThread.FreeOnTerminate := True;
+  {$ELSE}
+  LServerThread.FreeOnTerminate := False;
+  {$ENDIF}
   LServerThread.Start;
 
   Writeln('Waiting for server to start...');
@@ -151,9 +161,12 @@ begin
       LRes := LClient.Get('http://127.0.0.1:9999/secure/private');
       LStatusCode := LClient.ResponseStatusCode;
       {$ELSE}
-      // Configurar no client Delphi se necessário, mas para simplificar no FPC local:
-      // No Delphi THTTPClient:
-      // O Delphi HTTPClient usa Request.Headers ou Credentials
+      LClient.CustomHeaders['Authorization'] := 'Basic YWRtaW46c2VjcmV0';
+      with LClient.Get('http://127.0.0.1:9999/secure/private') do
+      begin
+        LRes := ContentAsString;
+        LStatusCode := StatusCode;
+      end;
       {$ENDIF}
       Writeln('GET /private (With Auth) Response: ', LRes, ' [Status: ', LStatusCode, ']');
       if LStatusCode <> 200 then
@@ -170,7 +183,12 @@ begin
         LRes := LClient.Post('http://127.0.0.1:9999/echo');
         LStatusCode := LClient.ResponseStatusCode;
         {$ELSE}
-        // ...
+        LClient.CustomHeaders['Content-Type'] := 'application/json';
+        with LClient.Post('http://127.0.0.1:9999/echo', LPostData) do
+        begin
+          LRes := ContentAsString;
+          LStatusCode := StatusCode;
+        end;
         {$ENDIF}
         Writeln('POST /echo Response: ', LRes, ' [Status: ', LStatusCode, ']');
         if (LStatusCode <> 200) or (not LRes.Contains('hello')) then
@@ -189,10 +207,12 @@ begin
   end;
 
   Writeln('Stopping server...');
-  {$IFNDEF FPC}
-  THorse.StopListen;
+  {$IFNDEF PROCESS_SCOPED_SERVER}
+  if THorse.IsRunning then
+    THorse.StopListen;
+  LServerThread.WaitFor;
+  LServerThread.Free;
   {$ENDIF}
-  Sleep(500);
 
   if LSuccess then
   begin
