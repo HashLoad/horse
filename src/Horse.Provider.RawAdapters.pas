@@ -84,6 +84,7 @@ type
   TInterfacedWebRequest = class(TWebRequest)
   private
     FRawReq: IHorseRawRequest;
+    FInitializingQueryFields: Boolean;
   protected
     function  GetStringVariable(Index: Integer): TWebString; override;
     function  GetDateVariable(Index: Integer): TDateTime; override;
@@ -218,6 +219,8 @@ begin
 end;
 
 constructor TInterfacedWebRequest.Create(const ARawReq: IHorseRawRequest);
+var
+  LQueryFields: TStrings;
 begin
   { Assign FRawReq BEFORE inherited Create — TWebRequest.Create calls
     GetStringVariable internally during initialisation. }
@@ -228,7 +231,18 @@ begin
     getter to override). }
   if Assigned(FRawReq) then
   begin
-    FRawReq.PopulateQueryFields(QueryFields);
+    { QueryFields lazily invokes WebBroker's non-virtual query parser. Let it
+      allocate an empty list, then use the raw provider's parser exactly once.
+      Otherwise malformed percent escapes can raise before dispatch, and even
+      valid fields are unnecessarily parsed twice. Keep Query itself unchanged
+      outside this narrowly scoped initialization. }
+    FInitializingQueryFields := True;
+    try
+      LQueryFields := QueryFields;
+    finally
+      FInitializingQueryFields := False;
+    end;
+    FRawReq.PopulateQueryFields(LQueryFields);
 
     { [FIX-RAWFIELDS-1] Only touch ContentFields when the body really is form
       data. READING this property is not free: TWebRequest.GetContentFields
@@ -270,7 +284,11 @@ begin
     HRV_Method:           Result := FRawReq.GetMethod;
     HRV_ProtocolVersion:  Result := FRawReq.GetProtocolVersion;
     HRV_URL:              Result := FRawReq.GetURL;
-    HRV_Query:            Result := FRawReq.GetQueryString;
+    HRV_Query:
+      if FInitializingQueryFields then
+        Result := ''
+      else
+        Result := FRawReq.GetQueryString;
     HRV_PathInfo:         Result := FRawReq.GetPathInfo;
     HRV_PathTranslated:   Result := FRawReq.GetPathInfo;
     HRV_CacheControl:     Result := FRawReq.GetFieldByName('Cache-Control');
@@ -292,7 +310,15 @@ begin
     HRV_RemoteHost:       Result := FRawReq.GetRemoteAddr;
     HRV_ScriptName:       Result := '';
     HRV_ServerPort:       Result := IntToStr(FRawReq.GetServerPort);
-    HRV_Content:          Result := FRawReq.GetContent;
+    HRV_Content:
+{$IF CompilerVersion < 32.0}
+      // Legacy WebBroker decodes this byte string using Content-Type. Preserve
+      // that encoding instead of implicitly converting Unicode to ANSI first.
+      Result := StringOf(EncodingGetBytes(AnsiString(FRawReq.GetContentType),
+        FRawReq.GetContent));
+{$ELSE}
+      Result := FRawReq.GetContent;
+{$IFEND}
     HRV_Connection:       Result := FRawReq.GetFieldByName('Connection');
     HRV_Cookie:           Result := FRawReq.GetFieldByName('Cookie');
     HRV_Authorization:    Result := FRawReq.GetFieldByName('Authorization');

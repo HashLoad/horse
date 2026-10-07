@@ -37,6 +37,47 @@ versions, and example server ports are also unrelated to the Horse release.
    that the tag resolves to the intended commit. Synchronize the local checkout
    and maintainer fork with upstream.
 
+## Provider validation
+
+For provider changes, run these commands from the repository root:
+
+```powershell
+pwsh -File tests/run_compile_matrix.ps1 -DockerImage fpc-test:latest
+pwsh -File tests/run_delphi_tests.ps1
+pwsh -File tests/provider-lifecycle/run-provider-lifecycle.ps1
+pwsh -File tests/provider-config/run-query-decode.ps1
+pwsh -File tests/provider-lifecycle/run-daemon-lifecycle.ps1 -Version 23.0
+pwsh -File tests/provider-lifecycle/run-daemon-lifecycle.ps1 -Version 23.0 -Radix
+pwsh -File tests/run_e2e_integration_tests.ps1
+pwsh -File tests/httpsys-lifetime/run-httpsys-lifetime-test.ps1
+pwsh -File tests/console-stability/run-console-stability-test.ps1
+```
+
+Use an available Docker image containing FPC and the required Linux libraries;
+the image name above is local, not a published prerequisite. Run
+`tests/provider-config/run-provider-config.sh` inside that Linux environment.
+The static matrix checks compilation, not hosted Apache/CGI/ISAPI behavior.
+For actual hosted HTTP execution, follow
+[`tests/hosted-providers/README.md`](../tests/hosted-providers/README.md).
+Include `run-iis-hosted.ps1` (Delphi 10–13), `run-delphi-apache.ps1`
+(Delphi 12/13 Linux), Docker CGI/FastCGI and FPC 3.3.1 keep-alive.
+Failures reproduced by the Apache control without Horse are external
+limitations; record them separately and do not report an all-provider pass.
+The FPC default-provider E2E executable is process-scoped because legacy
+`HTTPApplication` has no `StopListen`; it does not prove graceful shutdown.
+
+Matrix, lifecycle, and E2E reports are stored under `benchmarks/results/`.
+Check nonzero test counts, errors, failures, and memory-leak output. Preserve
+failed reports and investigate before accepting a successful rerun. Do not run
+two full Delphi suites concurrently: they share build files and listener ports.
+The isolated lifecycle runner uses port 19131 and HTTP.sys lifetime uses 19195.
+
+Document the intentional compatibility change: built-in `ListenWithConfig`
+implementations reject unsupported non-default TLS settings before changing
+the port or starting a listener. Defaults remain accepted; other unsupported
+CrossSocket-specific settings are still unused. Configure TLS through the
+selected provider's supported API rather than disabling required security.
+
 ## Publishing multiline text with GitHub CLI
 
 Always write multiline PR descriptions, issue comments, and release notes to a

@@ -25,7 +25,11 @@ type
   [TestFixture]
   TTestIntegrationQueryDecode = class
   private
+{$IFDEF HORSE_TEST_ISOLATED_QUERY}
+    const TEST_PORT = 19126;
+{$ELSE}
     const TEST_PORT = 9126;
+{$ENDIF}
   public
     [SetupFixture]
     procedure SetupFixture;

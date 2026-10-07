@@ -2015,6 +2015,7 @@ end;
 
 class procedure THorseProviderIOCP.ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'IOCP');
   FPort := APort;
   THorseProviderIOCP.Listen(Horse.Proc.TProc(nil), Horse.Proc.TProc(nil));
 end;

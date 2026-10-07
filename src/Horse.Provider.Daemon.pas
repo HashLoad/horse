@@ -4,7 +4,7 @@ unit Horse.Provider.Daemon;
   THorseProviderAbstract.ListenWithConfig calls the no-arg Listen, entering
   InternalListen with FPort = 0 - DEFAULT_PORT (9000).  Fix: override
   ListenWithConfig here so it calls SetPort(APort) before InternalListen.
-  AConfig is intentionally ignored — Daemon/Indy has no use for CrossSocket config. }
+  Unsupported TLS options are rejected first; other CrossSocket options are unused. }
 
 interface
 
@@ -70,6 +70,7 @@ type
     class property KeepConnectionAlive: Boolean read GetKeepConnectionAlive write SetKeepConnectionAlive;
     class property IOHandleSSL: IHorseProviderIOHandleSSL read GetIOHandleSSL write SetIOHandleSSL;
     class function GetActivePort: Integer; override;
+    class function IsRunning: Boolean;
     class procedure StopListen; override;
     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class procedure Listen; overload; override;
@@ -112,6 +113,11 @@ uses
   System.Classes,
   Horse.Core;   { THorseCore.SetIsShuttingDown in the stop paths - Console and VCL
                   already list it; without it this unit does not compile }
+
+class function THorseProvider.IsRunning: Boolean;
+begin
+  Result := FRunning;
+end;
 
 procedure HandleSignals(SigNum: Integer); cdecl;
 begin
@@ -460,6 +466,7 @@ end;
 class procedure THorseProvider.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'Daemon');
   SetPort(APort);
   InternalListen;
 end;

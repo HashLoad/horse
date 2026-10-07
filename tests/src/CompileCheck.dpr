@@ -2,7 +2,9 @@ program CompileCheck;
 {$APPTYPE CONSOLE}
 
 {$IFNDEF FPC}
+  {$IFNDEF HORSE_MATRIX_ISOLATED}
   {$I HorseTestDefines.inc}
+  {$ENDIF}
 {$ENDIF}
 
 uses

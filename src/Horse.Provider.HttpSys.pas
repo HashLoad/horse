@@ -2255,6 +2255,7 @@ end;
 
 class procedure THorseProviderHttpSys.ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'HttpSys');
   SetPort(APort);
   InternalListen;
 end;

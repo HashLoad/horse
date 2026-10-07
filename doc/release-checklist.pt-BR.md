@@ -67,6 +67,47 @@ comentário pela API do GitHub. Essa verificação faz parte da publicação: um
 código de saída bem-sucedido do CLI confirma apenas que o GitHub aceitou o
 texto, não que ele foi formatado como esperado.
 
+## Validação dos providers
+
+Para alterações nos providers, execute a partir da raiz do repositório:
+
+```powershell
+pwsh -File tests/run_compile_matrix.ps1 -DockerImage fpc-test:latest
+pwsh -File tests/run_delphi_tests.ps1
+pwsh -File tests/provider-lifecycle/run-provider-lifecycle.ps1
+pwsh -File tests/provider-config/run-query-decode.ps1
+pwsh -File tests/provider-lifecycle/run-daemon-lifecycle.ps1 -Version 23.0
+pwsh -File tests/provider-lifecycle/run-daemon-lifecycle.ps1 -Version 23.0 -Radix
+pwsh -File tests/run_e2e_integration_tests.ps1
+pwsh -File tests/httpsys-lifetime/run-httpsys-lifetime-test.ps1
+pwsh -File tests/console-stability/run-console-stability-test.ps1
+```
+
+Use uma imagem Docker disponível com FPC e as bibliotecas Linux necessárias;
+o nome acima é local, não um pré-requisito publicado. Execute também
+`tests/provider-config/run-provider-config.sh` nesse ambiente Linux.
+A matriz estática valida compilação, não execução hospedada de Apache/CGI/ISAPI.
+Para execução HTTP real desses hosts e de FastCGI, siga
+[`tests/hosted-providers/README.md`](../tests/hosted-providers/README.md).
+Inclua `run-iis-hosted.ps1` (Delphi 10–13), `run-delphi-apache.ps1`
+(Delphi 12/13 Linux), CGI/FastCGI em Docker e o keep-alive no FPC 3.3.1.
+Falhas reproduzidas pelo controle Apache sem Horse são limitações externas;
+registre-as separadamente e não apresente a matriz inteira como aprovada.
+O E2E do provider padrão FPC encerra junto com o processo porque o
+`HTTPApplication` legado não possui `StopListen`; não comprova parada graciosa.
+
+Os relatórios da matriz, lifecycle e E2E ficam em `benchmarks/results/`.
+Confira contagens não nulas, erros, falhas e relatórios de vazamento. Preserve
+relatórios com falhas e investigue antes de aceitar uma repetição bem-sucedida.
+Não execute duas suítes Delphi completas simultaneamente: compartilham arquivos
+de compilação e portas. O lifecycle isolado usa 19131 e o lifetime HTTP.sys 19195.
+
+Documente a mudança intencional de compatibilidade: os `ListenWithConfig`
+internos rejeitam configurações TLS não padrão e não suportadas antes de alterar
+a porta ou iniciar o servidor. Os padrões continuam aceitos; outras opções
+específicas de CrossSocket não suportadas continuam sem efeito. Configure TLS
+pela API suportada pelo provider escolhido, sem desativar segurança necessária.
+
 ## Depois de publicar: atualizar o lockfile dos testes
 
 1. Em outra branch, execute `boss update` em `tests/src` com uma versão

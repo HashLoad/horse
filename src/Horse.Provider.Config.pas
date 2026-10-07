@@ -1,11 +1,8 @@
 ﻿unit Horse.Provider.Config;
 
 // =============================================================================
-//  Horse.Provider.Config  —  NEW FILE (Horse fork for CrossSocket provider)
+//  Horse.Provider.Config — shared provider configuration
 // =============================================================================
-//  Upstream: https://github.com/HashLoad/horse  (tag 3.1.9)
-//  Fork:     https://github.com/your-org/horse
-//
 //  Purpose
 //  -------
 //  Holds THorseCrossSocketConfig so it can be used by BOTH:
@@ -16,12 +13,11 @@
 //  creating a circular dependency the Delphi compiler cannot resolve.
 //
 //  This file has NO dependencies on either Horse.Provider.Abstract or
-//  Horse.Provider.CrossSocket — it is a pure data unit.
+//  Horse.Provider.CrossSocket. It also validates unsupported TLS settings for
+//  built-in providers before they change state or start listening.
 //
-//  The identical record is also declared in Horse.Provider.CrossSocket.Server
-//  in the provider repository, which re-exports it for backward compatibility.
-//  When both units are in the search path the compiler will find this canonical
-//  version first (provider places its src/ after horse/src/).
+//  External providers should use this canonical record rather than declaring
+//  a second, potentially incompatible copy.
 // =============================================================================
 
 {$IF DEFINED(FPC)}
@@ -181,9 +177,9 @@ type
     //
     // The "must refuse" rules above are the CONTRACT for a provider that
     // implements SSLCipherSuitesTLS13 / SSLMinVersion, not a guarantee from
-    // this record: Horse's built-in providers read only the port in
-    // ListenWithConfig, and providers released before these fields existed
-    // compile against them and ignore them. doc/providers.md lists which
+    // this record: Horse's built-in providers reject explicit TLS settings in
+    // ListenWithConfig. Older releases and external providers released before
+    // these fields existed may ignore them. doc/providers.md lists which
     // provider versions apply or refuse each value.
 
     // ── Server identity ───────────────────────────────────────────────────
@@ -196,7 +192,40 @@ type
     class function Default: THorseCrossSocketConfig; static;
   end;
 
+// Built-in providers do not consume TLS settings from this record. Reject an
+// explicit TLS request before opening a listener rather than serving weaker HTTP.
+procedure ValidateNoUnsupportedTls(const AConfig: THorseCrossSocketConfig;
+  const AProviderName: string);
+
 implementation
+
+uses
+{$IF DEFINED(FPC)}
+  SysUtils;
+{$ELSE}
+  System.SysUtils;
+{$ENDIF}
+
+procedure ValidateNoUnsupportedTls(const AConfig: THorseCrossSocketConfig;
+  const AProviderName: string);
+var
+  LField: string;
+begin
+  LField := '';
+  if AConfig.SSLEnabled then LField := 'SSLEnabled'
+  else if AConfig.SSLCertFile <> '' then LField := 'SSLCertFile'
+  else if AConfig.SSLKeyFile <> '' then LField := 'SSLKeyFile'
+  else if AConfig.SSLKeyPassword <> '' then LField := 'SSLKeyPassword'
+  else if AConfig.SSLCACertFile <> '' then LField := 'SSLCACertFile'
+  else if AConfig.SSLVerifyPeer then LField := 'SSLVerifyPeer'
+  else if AConfig.SSLCipherList <> '' then LField := 'SSLCipherList'
+  else if AConfig.SSLCipherSuitesTLS13 <> '' then LField := 'SSLCipherSuitesTLS13'
+  else if AConfig.SSLMinVersion <> htvDefault then LField := 'SSLMinVersion';
+  if LField <> '' then
+    raise Exception.CreateFmt('%s does not support %s in ListenWithConfig. ' +
+      'Use the provider-specific TLS configuration or a TLS-capable provider.',
+      [AProviderName, LField]);
+end;
 
 class function THorseCrossSocketConfig.Default: THorseCrossSocketConfig;
 begin

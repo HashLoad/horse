@@ -75,6 +75,16 @@ type
 
     [Test]
     procedure FormBodyStillDecodesContentFieldsExactlyOnce;
+    [Test]
+    [TestCase('JsonUtf8', 'application/json; charset=utf-8')]
+    [TestCase('JsonQuotedUtf8', 'application/json; charset="UTF-8"')]
+    [TestCase('TextUtf8', 'text/plain; charset=utf-8')]
+    procedure UnicodeContentRoundTrips(const AContentType: string);
+
+    [Test]
+    [TestCase('InvalidPercent', 'a+b%,a b%')]
+    [TestCase('EncodedPlusPercent', 'a%2B%2541,a+%41')]
+    procedure QueryFieldsUseRawParserOnce(const AEncoded, AExpected: string);
   end;
 
 {$IFEND}
@@ -106,6 +116,9 @@ type
     FContentType: string;
     FContent: string;
     FContentFieldsAsked: Boolean;
+    FQuery: string;
+    FDecodedQuery: string;
+    FQueryFieldsCalls: Integer;
   public
     constructor Create(const AContentType, AContent: string);
 
@@ -136,6 +149,9 @@ type
     function ReadBody(var Buffer; Count: Integer): Integer;
 
     property ContentFieldsAsked: Boolean read FContentFieldsAsked;
+    property EncodedQuery: string read FQuery write FQuery;
+    property DecodedQuery: string read FDecodedQuery write FDecodedQuery;
+    property QueryFieldsCalls: Integer read FQueryFieldsCalls;
   end;
 
 constructor TFakeRawRequest.Create(const AContentType, AContent: string);
@@ -150,7 +166,7 @@ function TFakeRawRequest.GetMethod: string;          begin Result := 'PUT'; end;
 function TFakeRawRequest.GetProtocolVersion: string; begin Result := 'HTTP/1.1'; end;
 function TFakeRawRequest.GetURL: string;             begin Result := '/invoice'; end;
 function TFakeRawRequest.GetPathInfo: string;        begin Result := '/invoice'; end;
-function TFakeRawRequest.GetQueryString: string;     begin Result := ''; end;
+function TFakeRawRequest.GetQueryString: string;     begin Result := FQuery; end;
 function TFakeRawRequest.GetHost: string;            begin Result := '127.0.0.1'; end;
 function TFakeRawRequest.GetRemoteAddr: string;      begin Result := '127.0.0.1'; end;
 function TFakeRawRequest.GetServerPort: Integer;     begin Result := 9000; end;
@@ -182,6 +198,9 @@ end;
 
 procedure TFakeRawRequest.PopulateQueryFields(ADest: TStrings);
 begin
+  Inc(FQueryFieldsCalls);
+  if FQuery <> '' then
+    ADest.Add('v=' + FDecodedQuery);
 end;
 
 procedure TFakeRawRequest.PopulateContentFields(ADest: TStrings);
@@ -294,6 +313,47 @@ begin
     end,
     Exception,
     'a charset parameter must not change which path the body takes');
+end;
+
+procedure TTestRawAdaptersContentFields.UnicodeContentRoundTrips(const AContentType: string);
+var
+  LRaw: IHorseRawRequest;
+  LReq: TInterfacedWebRequest;
+  LText: string;
+begin
+  LText := '{"text":"' + #$00E7#$00E3#$4E2D#$6587 + '"}';
+  LRaw := TFakeRawRequest.Create(AContentType, LText);
+  LReq := TInterfacedWebRequest.Create(LRaw);
+  try
+    Assert.AreEqual(LText, LReq.Content);
+    Assert.AreEqual(LText, LReq.Content, 'Repeated reads must not decode twice');
+  finally
+    LReq.Free;
+  end;
+end;
+
+procedure TTestRawAdaptersContentFields.QueryFieldsUseRawParserOnce(
+  const AEncoded, AExpected: string);
+var
+  LFake: TFakeRawRequest;
+  LRaw: IHorseRawRequest;
+  LReq: TInterfacedWebRequest;
+begin
+  LFake := TFakeRawRequest.Create('application/json', '{}');
+  LFake.EncodedQuery := 'v=' + AEncoded;
+  LFake.DecodedQuery := AExpected;
+  LRaw := LFake;
+  LReq := TInterfacedWebRequest.Create(LRaw);
+  try
+    Assert.AreEqual(1, LFake.QueryFieldsCalls);
+    Assert.AreEqual(1, LReq.QueryFields.Count, 'No duplicate RTL parsing');
+    Assert.AreEqual(AExpected, LReq.QueryFields.Values['v']);
+    Assert.AreEqual(AExpected, LReq.QueryFields.Values['v'], 'Repeated read');
+    Assert.AreEqual('v=' + AEncoded, string(LReq.Query), 'Raw query preserved');
+    Assert.AreEqual(1, LFake.QueryFieldsCalls, 'No repeat population');
+  finally
+    LReq.Free;
+  end;
 end;
 
 procedure TTestRawAdaptersContentFields.FormBodyStillDecodesContentFieldsExactlyOnce;

@@ -250,6 +250,7 @@ end;
 class procedure THorseProvider.ListenWithConfig(const APort: Integer;
   const AConfig: THorseCrossSocketConfig);
 begin
+  ValidateNoUnsupportedTls(AConfig, 'FPC.LCL');
   SetPort(APort);
   InternalListen;
 end;

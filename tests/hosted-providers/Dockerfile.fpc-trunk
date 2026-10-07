@@ -1,0 +1,18 @@
+FROM fpc-test:latest AS bootstrap
+
+# Keep the development compiler reproducible; never modify the host's Lazarus.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git ca-certificates apache2 apache2-dev curl python3 build-essential \
+    && rm -rf /var/lib/apt/lists/*
+FROM bootstrap AS trunk
+ARG FPC_REVISION=7a7ff6e7315db58f451c3a81a091a2fb6e0b0088
+RUN git init /opt/fpc-source && cd /opt/fpc-source \
+    && git remote add origin https://gitlab.com/freepascal.org/fpc/source.git \
+    && git fetch --depth 1 origin "$FPC_REVISION" && git checkout --detach FETCH_HEAD \
+    && make -j4 all PP=/usr/bin/ppcx64 OPT='-O2 -Cg' \
+    && make install INSTALL_PREFIX=/opt/fpc-trunk \
+    && /opt/fpc-trunk/bin/fpcmkcfg -d basepath=/opt/fpc-trunk/lib/fpc/3.3.1 -o /etc/fpc.cfg
+ENV PATH=/opt/fpc-trunk/bin:$PATH
+RUN ln -s /opt/fpc-trunk/lib/fpc/3.3.1/ppcx64 /opt/fpc-trunk/bin/ppcx64 \
+    && test "$(fpc -iV)" = '3.3.1'
+WORKDIR /work
