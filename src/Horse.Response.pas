@@ -1396,12 +1396,17 @@ initialization
   47: "200 / []"). CrossSocket registers its own factory from a unit
   initialization, so it is exposed to the same last-writer-wins race as nghttp2.
   A hybrid provider that registers no factory now makes SendStream raise
-  instead of sending nothing. }
+  instead of sending nothing.
+
+  The legacy names HORSE_CROSSSOCKET and HORSE_NGHTTP2 are tested as well. The
+  alias block that maps them to HORSE_PROVIDER_* lives in Horse.pas and only
+  applies inside that unit, so a project that still defines the legacy name
+  compiles THIS unit without the HORSE_PROVIDER_* symbol. }
 {$IF NOT DEFINED(HORSE_PROVIDER_IOCP) AND
      NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND
      NOT DEFINED(HORSE_PROVIDER_EPOLL) AND
-     NOT DEFINED(HORSE_PROVIDER_NGHTTP2) AND
-     NOT DEFINED(HORSE_PROVIDER_CROSSSOCKET) AND
+     NOT DEFINED(HORSE_PROVIDER_NGHTTP2) AND NOT DEFINED(HORSE_NGHTTP2) AND
+     NOT DEFINED(HORSE_PROVIDER_CROSSSOCKET) AND NOT DEFINED(HORSE_CROSSSOCKET) AND
      NOT DEFINED(HORSE_PROVIDER_MORMOT) AND
      NOT DEFINED(HORSE_PROVIDER_ICS)}
   THorseResponse.RegisterStreamWriterFactory(DefaultWebBrokerStreamWriterFactory);
