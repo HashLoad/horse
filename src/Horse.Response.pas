@@ -1242,13 +1242,17 @@ var
   LWriter: IHorseStreamWriter;
 begin
   Result := Self;
-  FIsStreaming := True;
-  FStreamMethod := ACallback;
 
   if not Assigned(FStreamWriterFactory) then
     raise Exception.Create('Nenhum provedor de streaming registrado.');
 
+  { The response becomes "streaming" only once a writer exists. A factory may
+    refuse by raising (a provider without a streaming engine), and providers
+    whose response bridge skips the normal flush when IsStreaming is True would
+    then drop the error response the pipeline builds from that exception. }
   LWriter := FStreamWriterFactory(Self);
+  FIsStreaming := True;
+  FStreamMethod := ACallback;
   try
     ACallback(LWriter);
   finally
@@ -1261,13 +1265,17 @@ var
   LWriter: IHorseStreamWriter;
 begin
   Result := Self;
-  FIsStreaming := True;
-  FStreamCallback := ACallback;
 
   if not Assigned(FStreamWriterFactory) then
     raise Exception.Create('Nenhum provedor de streaming registrado.');
 
+  { The response becomes "streaming" only once a writer exists. A factory may
+    refuse by raising (a provider without a streaming engine), and providers
+    whose response bridge skips the normal flush when IsStreaming is True would
+    then drop the error response the pipeline builds from that exception. }
   LWriter := FStreamWriterFactory(Self);
+  FIsStreaming := True;
+  FStreamCallback := ACallback;
   try
     ACallback(LWriter);
   finally
@@ -1379,11 +1387,23 @@ initialization
 
   Note that the three providers already listed were excluded for exactly this
   reason. Adding the fourth restores the intent; it does not change behaviour on
-  any build where the order already happened to favour the provider. }
+  any build where the order already happened to favour the provider.
+
+  The hybrid providers (CrossSocket, mORMot, ICS) are excluded too. This writer
+  cannot reach their sockets: their RawWebRequest is a TInterfacedWebRequest
+  adapter whose WriteClient is a no-op, so on Delphi Res.SendStream answered 200
+  with an EMPTY body and no error (measured on mORMot and ICS, integration test
+  47: "200 / []"). CrossSocket registers its own factory from a unit
+  initialization, so it is exposed to the same last-writer-wins race as nghttp2.
+  A hybrid provider that registers no factory now makes SendStream raise
+  instead of sending nothing. }
 {$IF NOT DEFINED(HORSE_PROVIDER_IOCP) AND
      NOT DEFINED(HORSE_PROVIDER_HTTPSYS) AND
      NOT DEFINED(HORSE_PROVIDER_EPOLL) AND
-     NOT DEFINED(HORSE_PROVIDER_NGHTTP2)}
+     NOT DEFINED(HORSE_PROVIDER_NGHTTP2) AND
+     NOT DEFINED(HORSE_PROVIDER_CROSSSOCKET) AND
+     NOT DEFINED(HORSE_PROVIDER_MORMOT) AND
+     NOT DEFINED(HORSE_PROVIDER_ICS)}
   THorseResponse.RegisterStreamWriterFactory(DefaultWebBrokerStreamWriterFactory);
 {$ENDIF}
 
