@@ -269,7 +269,7 @@ CrossSocket e mORMot aceitam tanto 1.1.x quanto 3.x — eles testam no startup. 
 Para deploys em containers mínimos ou ambientes air-gapped onde não dá pra contar com os pacotes da distro:
 - **CrossSocket:** entregue o `libssl.so` + `libcrypto.so` compatíveis junto do binário e declare na seção `[Service]` da unit systemd: `Environment="LD_LIBRARY_PATH=/opt/seuapp"`.
 - **mORMot2:** o pacote `mormot2static` inclui uma variante com link estático pra algumas plataformas (`mormot2static/static/x86_64-linux` no FPC) — veja o [samples/tests/README do horse-provider-mormot](https://github.com/freitasjca/horse-provider-mormot/blob/master/samples/tests/README.md) para o setup completo de Search-path.
-- **ICS:** somente Delphi (Windows + Linux64). Entregue o OpenSSL `.so` (Linux) / `.dll` (Windows) que acompanha a distribuição do ICS junto do binário.
+- **ICS:** somente Delphi no Windows (o ICS V9.x não compila para POSIX; o Linux exige o ICS V10). Com as configurações padrão do ICS, o OpenSSL fica embutido no `.exe` e é extraído para `C:\ProgramData\ICS-OpenSSL\<versão>\` no primeiro uso, então não há DLLs do OpenSSL para entregar; o processo precisa de permissão de escrita ali na primeira execução.
 
 > **TLS mútuo (mTLS).** Os três providers verificam certificados de cliente quando `Config.SSLVerifyPeer := True` e um arquivo de CA é definido (`SSLCACertFile` no CrossSocket/mORMot, `SSLCAFile` no ICS). O `tests/TLS-TESTS.md` de cada provider tem um teste de integração executável (unidirecional + mTLS). O mTLS no servidor CrossSocket também exige os patches `Net.CrossSslSocket.*` ou o release do fork (veja o README dele).
 
