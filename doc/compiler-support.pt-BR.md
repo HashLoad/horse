@@ -39,13 +39,13 @@ O conjunto de plataformas depende de qual Provider é selecionado e qual Tipo de
 
 ### Providers self-hosted × Plataforma
 
-O Provider que é dono do socket. Indy é só-Delphi; `fphttpserver` é só-FPC; CrossSocket e mORMot2 atendem ambos; ICS é só-Delphi (Windows + POSIX/Linux64); HttpSys é só Windows (Delphi + FPC), nativo do Horse.
+O Provider que é dono do socket. Indy é só-Delphi; `fphttpserver` é só-FPC; CrossSocket e mORMot2 atendem ambos; ICS é só-Delphi e só-Windows com o ICS V9.x; HttpSys é só Windows (Delphi + FPC), nativo do Horse.
 
 | Plataforma | Indy _(padrão Delphi)_ | `fphttpserver` _(padrão FPC)_ | CrossSocket _(`HORSE_PROVIDER_CROSSSOCKET`)_ | mORMot2 _(`HORSE_PROVIDER_MORMOT`)_ | ICS _(`HORSE_PROVIDER_ICS`)_ | HttpSys _(`HORSE_PROVIDER_HTTPSYS`)_ |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | Windows x86 / x64 | ✔ | ✔ | ✔ _(IOCP)_ | ✔ _(IOCP; também http.sys via `THttpApiServer`)_ | ✔ _(OpenSSL 3.x/4.x; TLS 1.3, mTLS)_ | ✔ _(http.sys, modo kernel; nativo)_ |
-| Linux x64 | ✔ | ✔ | ✔ _(epoll, alvo primário)_ | ✔ _(epoll)_ | ✔ _(POSIX do Delphi; pump `Ics.Posix.*`)_ | — |
-| macOS Intel / ARM64 | ✔ | ✔ | ✔ _(kqueue)_ | ✔ | ✔ _(POSIX do Delphi)_ | — |
+| Linux x64 | ✔ | ✔ | ✔ _(epoll, alvo primário)_ | ✔ _(epoll)_ | — _(o ICS V9.x não compila para POSIX; exige o ICS V10, ainda não suportado)_ | — |
+| macOS Intel / ARM64 | ✔ | ✔ | ✔ _(kqueue)_ | ✔ | — | — |
 | FreeBSD | — | ✔ | ✔ _(kqueue)_ | ✔ _(kqueue)_ | — | — |
 | Android / iOS | — | — | — | — | — | — |
 
@@ -98,10 +98,10 @@ Estes não usam um Provider self-hosted — o processo host é dono do socket. C
 - No Delphi o build também exige os **blobs `.obj` pré-compilados** do `mormot2static.7z` ([último release do mORMot2](https://github.com/synopse/mORMot2/releases/latest)) extraídos em `mORMot2\static\delphi\`. Sem eles o linker falha com `E1026 File not found: '..\..\static\delphi\zlibdeflate.obj'`. As variantes FPC usam arquivos `.o` em `mORMot2\static\<target>` configurados via os paths `-Fl` do projeto.
 - Veja [`horse-provider-mormot`](https://github.com/freitasjca/horse-provider-mormot#readme) para a matriz atual de teste por versão e o record de configuração (`THorseMormotConfig`).
 
-### ICS — opcional, Delphi (Windows + POSIX/Linux)
+### ICS — opcional, Delphi, Windows
 
-- Requer **Delphi 2009 ou posterior** (mínimo do OverbyteICS) — recomenda-se **10.4 Sydney+** para acompanhar o resto da stack. **Somente Delphi**: Windows mais **POSIX (Linux64 / macOS)** via o pump de mensagens próprio do ICS (`Ics.Posix.*`). Um port para **Lazarus/FPC não é viável** — a camada POSIX do ICS usa a RTL POSIX do *Delphi*, e o ICS desativa o OpenSSL no FPC.
-- Substitui o Indy pelo `THttpServer` / `TSslHttpServer` do [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download). Diferencial: **OpenSSL 3.x / 4.x moderno** (TLS 1.3, SNI, mTLS); as bibliotecas OpenSSL acompanham o ICS (DLLs no Windows, `.so` no Linux). No Linux, use `HORSE_APPTYPE_DAEMON` + `THorseICSLinuxDaemonApp.Run` para um daemon com tratamento de sinais.
+- Requer **Delphi 2009 ou posterior** (mínimo do OverbyteICS) — recomenda-se **10.4 Sydney+** para acompanhar o resto da stack. **Somente Delphi no Windows.** O ICS V9.x se recusa a compilar para POSIX: `OverbyteIcsTypes.pas` interrompe qualquer build POSIX com "ICS V9 does nbt build for Posix, use ICS V10". O Linux exige o ICS V10 (em beta), que o provider ainda não suporta. Um port para **Lazarus/FPC não é viável** — o ICS desativa o OpenSSL no FPC.
+- Substitui o Indy pelo `THttpServer` / `TSslHttpServer` do [OverbyteICS](https://wiki.overbyte.eu/wiki/index.php/ICS_Download). Diferencial: **OpenSSL 3.x / 4.x moderno** (TLS 1.3, SNI, mTLS); com as configurações padrão do ICS, as bibliotecas OpenSSL ficam embutidas no `.exe` e são extraídas no primeiro uso (veja o README do provider, *Which OpenSSL your server loads*).
 - **Instalação manual** (não via Boss): instale o OverbyteICS seguindo as **instruções oficiais do ICS** — baixe/clone o ICS (v9.x) e adicione a pasta `Source/` ao search path; depois adicione `horse-provider-ics/src`.
 - Limitações da v1: uploads precisam enviar `Content-Length` (corpos de requisição chunked são rejeitados pelo ICS); keep-alive está desativado. Veja *Limitações conhecidas* no README do provider.
 - Veja [`horse-provider-ics`](https://github.com/freitasjca/horse-provider-ics#readme) para configuração, a suíte de testes A–K e as notas específicas do ICS.
