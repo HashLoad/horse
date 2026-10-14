@@ -18,6 +18,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y fpc
 
+    - name: Run FPC exception propagation regression (Tree and Radix)
+      run: |
+        sh tests/fpc-exception-propagation/run-exception-propagation-test.sh
+        sh tests/fpc-exception-propagation/run-exception-propagation-test.sh -dHORSE_PROVIDER_EPOLL
+
     - name: Run FPC WebSocket EAGAIN regression
       run: tests/fpc-websocket/run-ws-eagain-test.sh
 
