@@ -93,6 +93,7 @@ uses
   System.SyncObjs,
   System.Diagnostics,
 {$ENDIF}
+  Horse.Exception,
   Horse.Core.RouterTree.NextCaller,
   Horse, Horse.Core;
 
@@ -177,8 +178,17 @@ begin
     except
       on E: Exception do
       begin
-        Result := False;
-        raise;
+        // The middleware chain has unwound; only unhandled errors reach this fallback.
+        if E is EHorseCallbackInterrupted then
+          raise
+        else if E is EHorseException then
+          FResponse.ContentType('application/json; charset=UTF-8')
+            .Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status)
+        else if THorse.HasOnError then
+          THorse.ExecuteOnError(FRequest, FResponse, E)
+        else if FResponse.Status < Integer(THTTPStatus.BadRequest) then
+          FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+        Result := True;
       end;
     end;
   finally
@@ -440,22 +450,20 @@ begin
     except
       on E: Exception do
       begin
-        if THorse.HasOnError then
+        // The middleware chain has unwound; only unhandled errors reach this fallback.
+        if E is EHorseCallbackInterrupted then
         begin
-          if E is EHorseCallbackInterrupted then
-          begin
-            Result := True;
-          end
-          else
-          begin
-            THorse.ExecuteOnError(ARequest, AResponse, E);
-            Result := True;
-          end;
+          if not THorse.HasOnError then
+            raise;
         end
-        else
-        begin
-          raise;
-        end;
+        else if E is EHorseException then
+          AResponse.ContentType('application/json; charset=UTF-8')
+            .Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status)
+        else if THorse.HasOnError then
+          THorse.ExecuteOnError(ARequest, AResponse, E)
+        else if AResponse.Status < Integer(THTTPStatus.BadRequest) then
+          AResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+        Result := True;
       end;
     end;
     AResponse.FlushCookiesToWebResponse;

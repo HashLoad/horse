@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
     - uses: actions/checkout@v4
@@ -17,6 +18,11 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y fpc
+
+    - name: Run FPC exception propagation regression (Tree and Radix)
+      run: |
+        sh tests/fpc-exception-propagation/run-exception-propagation-test.sh
+        sh tests/fpc-exception-propagation/run-exception-propagation-test.sh -dHORSE_PROVIDER_EPOLL
 
     - name: Run FPC WebSocket EAGAIN regression
       run: tests/fpc-websocket/run-ws-eagain-test.sh
@@ -27,26 +33,13 @@ jobs:
     - name: Run FPC URL decoding regression
       run: sh tests/fpc-url-decoding/run-url-decoding-test.sh
 
-    - name: Install Boss Dependency Manager
-      run: |
-        curl -L https://github.com/hashload/boss/releases/latest/download/boss-linux -o boss
-        chmod +x boss
-        sudo mv boss /usr/local/bin/boss
+    # Console.dpr uses Delphi/DUnitX; validate it with run_delphi_tests.ps1.
+    # The Linux job runs the standalone FPC suites instead.
+    - name: Run FPC stream factory regression
+      run: sh tests/stream-factory/run-stream-factory.sh
 
-    - name: Install Boss Dependencies
-      run: |
-        cd tests/src
-        boss install
-
-    - name: Compile Console Tests
-      run: |
-        cd tests/src
-        fpc -Mdelphi -Sh -O2 -FE.. -Fu"../../src:modules/github_com_hashload_jhonson/src:modules/github_com_viniciussanchez_restrequest4delphi/src:controllers:tests" "-dRR4D_INDY" "-dHORSE_CONSOLE" Console.dpr
-
-    - name: Run Console Tests
-      run: |
-        cd tests
-        ./Console -exit:Continue
+    - name: Run FPC provider configuration regressions
+      run: bash tests/provider-config/run-provider-config.sh
 
   fpc-trunk-keepalive:
     runs-on: ubuntu-latest

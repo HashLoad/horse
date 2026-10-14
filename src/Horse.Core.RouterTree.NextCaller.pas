@@ -96,31 +96,10 @@ var
   LNextCaller: TNextCaller;
 begin
   LNextCaller := TNextCaller(GCurrentNextCaller);
-  try
-    LNextCaller.FFound^ := True;
-    if LNextCaller.FCallBack.TryGetValue(LNextCaller.FHTTPType, LCallback) then
-    begin
-      THorseCallbackProc(LCallback.Items[LNextCaller.FIndexCallback])(LNextCaller.FRequest, LNextCaller.FResponse, LNextCaller.Next);
-    end;
-  except
-    on E: Exception do
-    begin
-      if E is EHorseCallbackInterrupted then
-        raise;
-      if E is EHorseException then
-      begin
-        LNextCaller.FResponse.ContentType('application/json; charset=UTF-8').Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
-        Exit;
-      end;
-      if THorse.HasOnError then
-      begin
-        THorse.ExecuteOnError(LNextCaller.FRequest, LNextCaller.FResponse, E);
-        Exit;
-      end;
-      if LNextCaller.FResponse.Status < Integer(THTTPStatus.BadRequest) then
-        LNextCaller.FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
-      Exit;
-    end;
+  LNextCaller.FFound^ := True;
+  if LNextCaller.FCallBack.TryGetValue(LNextCaller.FHTTPType, LCallback) then
+  begin
+    THorseCallbackProc(LCallback.Items[LNextCaller.FIndexCallback])(LNextCaller.FRequest, LNextCaller.FResponse, LNextCaller.Next);
   end;
   LNextCaller.Next;
 end;
@@ -242,66 +221,24 @@ begin
           THorse.ExecutePreValidation(FRequest, FResponse,
             procedure
             begin
-              try
-                FFound^ := True;
-                {$IF DEFINED(FPC)}
-                THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
-                {$ELSE}
-                LCallback[FIndexCallback](FRequest, FResponse, Next);
-                {$ENDIF}
-              except
-                on E: Exception do
-                begin
-                  if E is EHorseCallbackInterrupted then
-                    raise;
-                  if E is EHorseException then
-                  begin
-                    FResponse.ContentType('application/json; charset=UTF-8').Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
-                    Exit;
-                  end;
-                  if THorse.HasOnError then
-                  begin
-                    THorse.ExecuteOnError(FRequest, FResponse, E);
-                    Exit;
-                  end;
-                  if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-                    FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
-                  Exit;
-                end;
-              end;
+              FFound^ := True;
+              {$IF DEFINED(FPC)}
+              THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
+              {$ELSE}
+              LCallback[FIndexCallback](FRequest, FResponse, Next);
+              {$ENDIF}
               Next;
             end);
           {$ENDIF}
         end
         else
         begin
-          try
-            FFound^ := True;
-            {$IF DEFINED(FPC)}
-            THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
-            {$ELSE}
-            LCallback[FIndexCallback](FRequest, FResponse, Next);
-            {$ENDIF}
-          except
-            on E: Exception do
-            begin
-              if E is EHorseCallbackInterrupted then
-                raise;
-              if E is EHorseException then
-              begin
-                FResponse.ContentType('application/json; charset=UTF-8').Send(EHorseException(E).ToJSON).Status(EHorseException(E).Status);
-                Exit;
-              end;
-              if THorse.HasOnError then
-              begin
-                THorse.ExecuteOnError(FRequest, FResponse, E);
-                Exit;
-              end;
-              if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-                FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
-              Exit;
-            end;
-          end;
+          FFound^ := True;
+          {$IF DEFINED(FPC)}
+          THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
+          {$ELSE}
+          LCallback[FIndexCallback](FRequest, FResponse, Next);
+          {$ENDIF}
           Next;
         end;
       end;
