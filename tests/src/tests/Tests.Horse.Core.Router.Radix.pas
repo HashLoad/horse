@@ -4,7 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework, Horse.Core.Router.Radix, Horse.Request, Horse.Response,
-  System.SysUtils, System.Generics.Collections,
+  System.SysUtils, System.Generics.Collections, Horse, Horse.Exception, Horse.Exception.Interrupted, Horse.Provider.RawAdapters, Horse.Callback, Horse.Proc,
   {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons;
 
 type
@@ -15,6 +15,27 @@ type
     FRequest: THorseRequest;
     FResponse: THorseResponse;
   public
+    [TestCase('GenericMiddleware', '0,1,0')]
+    [TestCase('HorseMiddleware', '1,1,0')]
+    [TestCase('GenericFallback', '0,0,0')]
+    [TestCase('HorseFallback', '1,0,0')]
+    [TestCase('GenericOnError', '0,2,0')]
+    [TestCase('HorseBeforeOnError', '1,2,0')]
+    [TestCase('GenericRethrow', '0,3,0')]
+    [TestCase('HorseRethrow', '1,3,0')]
+    [TestCase('GenericSecondCallback', '0,1,1')]
+    [TestCase('HorseSecondCallback', '1,1,1')]
+    [TestCase('GenericInnerMiddleware', '0,1,2')]
+    [TestCase('HorseInnerMiddleware', '1,1,2')]
+    [TestCase('MiddlewareBeforeOnError', '0,4,0')]
+    [TestCase('HorseMiddlewareBeforeOnError', '1,4,0')]
+    [TestCase('PreserveErrorResponse', '0,5,0')]
+    procedure ExceptionPropagation(const AKind, AMode, ASource: Integer);
+    [TestCase('WithoutOnError', '0')]
+    [TestCase('WithOnError', '1')]
+    procedure InterruptedIsNotAnError(const AHook: Integer);
+    [Test]
+    procedure FallbackFlushesCookies;
     [Setup]
     procedure Setup;
     [TearDown]
@@ -55,6 +76,161 @@ type
   end;
 
 implementation
+
+var
+  LOnError: Boolean;
+
+procedure PropagationOnError(const Req: THorseRequest; const Res: THorseResponse; const E: Exception);
+begin
+  LOnError := True;
+  Res.Send('hook').Status(THTTPStatus.ServiceUnavailable);
+end;
+
+procedure TTestHorseCoreRouterRadix.ExceptionPropagation(const AKind, AMode, ASource: Integer);
+var
+  LCaught: Boolean;
+  LThrow: THorseCallback;
+begin
+  LCaught := False;
+  LOnError := False;
+  THorse.OnError(nil);
+  try
+    if (AMode = 2) or (AMode = 4) then
+      THorse.OnError(PropagationOnError);
+    if (AMode = 1) or (AMode = 3) or (AMode = 4) then
+      FRouter.RegisterMiddleware(
+        procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+        begin
+          try
+            Next;
+          except
+            on E: Exception do
+            begin
+              LCaught := True;
+              if AMode = 3 then
+                raise;
+              Res.ContentType('application/json').Send('{"handled":true}').Status(THTTPStatus.UnprocessableEntity);
+            end;
+          end;
+        end);
+    LThrow :=
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        if AMode = 5 then
+          Res.Send('existing error').Status(THTTPStatus.Conflict);
+        if AKind = 1 then
+          raise EHorseException.New.Error('route error').Status(THTTPStatus.BadRequest);
+        raise Exception.Create('route error');
+      end;
+    if ASource = 1 then
+      FRouter.RegisterRouteMiddleware(mtGet, '/error',
+        procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+        begin
+          Next;
+        end);
+    if ASource = 2 then
+      FRouter.RegisterMiddleware(LThrow);
+    FRouter.RegisterRoute(mtGet, '/error', LThrow);
+    FRequest.Populate('GET', mtGet, '/error', '', '');
+    Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+    Assert.AreEqual((AMode = 1) or (AMode = 3) or (AMode = 4), LCaught, 'Middleware must see the exception');
+    Assert.AreEqual((AMode = 2) and (AKind = 0), LOnError, 'OnError fallback precedence');
+    if (AMode = 1) or (AMode = 4) then
+    begin
+      Assert.AreEqual(422, FResponse.Status);
+      Assert.AreEqual('{"handled":true}', FResponse.BodyText);
+      Assert.AreEqual('application/json', FResponse.CSContentType);
+    end
+    else if AMode = 5 then
+    begin
+      Assert.AreEqual(409, FResponse.Status);
+      Assert.AreEqual('existing error', FResponse.BodyText);
+    end
+    else if AKind = 1 then
+    begin
+      Assert.AreEqual(400, FResponse.Status);
+      Assert.AreEqual('{"error":"route error"}', FResponse.BodyText);
+      Assert.AreEqual('application/json; charset=UTF-8', FResponse.CSContentType);
+    end
+    else if AMode = 2 then
+    begin
+      Assert.AreEqual(503, FResponse.Status);
+      Assert.AreEqual('hook', FResponse.BodyText);
+    end
+    else
+    begin
+      Assert.AreEqual(500, FResponse.Status);
+      Assert.AreEqual('Internal Application Error: route error', FResponse.BodyText);
+    end;
+  finally
+    THorse.OnError(nil);
+  end;
+end;
+
+
+procedure TTestHorseCoreRouterRadix.InterruptedIsNotAnError(const AHook: Integer);
+var
+  LInterrupted, LContinued: Boolean;
+begin
+  LOnError := False;
+  LInterrupted := False;
+  LContinued := False;
+  THorse.OnError(nil);
+  try
+    if AHook = 1 then
+      THorse.OnError(PropagationOnError);
+    FRouter.RegisterRouteMiddleware(mtGet, '/interrupt',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        Res.Send('stopped').Status(THTTPStatus.Accepted);
+        raise EHorseCallbackInterrupted.Create;
+      end);
+    FRouter.RegisterRoute(mtGet, '/interrupt',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        LContinued := True;
+      end);
+    FRequest.Populate('GET', mtGet, '/interrupt', '', '');
+    try
+      Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+    except
+      on EHorseCallbackInterrupted do
+        LInterrupted := True;
+    end;
+    Assert.AreEqual(AHook = 0, LInterrupted);
+    Assert.IsFalse(LOnError);
+    Assert.IsFalse(LContinued);
+    Assert.AreEqual(202, FResponse.Status);
+    Assert.AreEqual('stopped', FResponse.BodyText);
+  finally
+    THorse.OnError(nil);
+  end;
+end;
+
+procedure TTestHorseCoreRouterRadix.FallbackFlushesCookies;
+var
+  LRaw: TWebResponse;
+begin
+  LRaw := TInterfacedWebResponse.Create(nil);
+  try
+    FreeAndNil(FResponse);
+    FResponse := THorseResponse.Create(LRaw);
+    FRouter.RegisterRoute(mtGet, '/cookie-error',
+      procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+      begin
+        Res.Cookie('error-cookie', 'retained');
+        raise Exception.Create('cookie error');
+      end);
+    FRequest.Populate('GET', mtGet, '/cookie-error', '', '');
+    Assert.IsTrue(FRouter.Execute(FRequest, FResponse));
+    Assert.AreEqual('Internal Application Error: cookie error', string(LRaw.Content));
+    Assert.AreEqual(1, LRaw.Cookies.Count);
+    Assert.AreEqual('retained', string(LRaw.Cookies[0].Value));
+  finally
+    FreeAndNil(FResponse);
+    LRaw.Free;
+  end;
+end;
 
 { TTestHorseCoreRouterRadix }
 
