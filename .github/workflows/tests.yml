@@ -33,6 +33,11 @@ jobs:
     - name: Run FPC URL decoding regression
       run: sh tests/fpc-url-decoding/run-url-decoding-test.sh
 
+    - name: Run FPC header hash regression with range and overflow checks
+      run: |
+        sh tests/fpc-header-hash/run-header-hash-test.sh
+        sh tests/fpc-header-hash/run-header-hash-test.sh -dHORSE_PROVIDER_EPOLL
+
     # Console.dpr uses Delphi/DUnitX; validate it with run_delphi_tests.ps1.
     # The Linux job runs the standalone FPC suites instead.
     - name: Run FPC stream factory regression
@@ -69,6 +74,11 @@ jobs:
         sudo ln -sf "$compiler_path" /opt/fpc/bin/ppcx64
         sudo "$compiler_dir/samplecfg" "$compiler_dir" /etc
         echo "/opt/fpc/bin" >> "$GITHUB_PATH"
+
+    - name: Run FPC trunk header hash regression with range and overflow checks
+      run: |
+        sh tests/fpc-header-hash/run-header-hash-test.sh
+        sh tests/fpc-header-hash/run-header-hash-test.sh -dHORSE_PROVIDER_EPOLL
 
     - name: Compile keep-alive regression server
       run: |

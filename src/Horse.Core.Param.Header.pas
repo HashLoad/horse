@@ -90,7 +90,8 @@ begin
     LChar := Value[I];
     if LChar in ['A'..'Z'] then
       Inc(LChar, 32);
-    Result := ((Result shl 5) + Result) + Ord(LChar);
+    // DJB2 wraps modulo 2^32; keep the intermediate and conversion in range.
+    Result := DWord((QWord(Result) * 33 + Ord(LChar)) and QWord($FFFFFFFF));
   end;
 end;
 {$ENDIF}
