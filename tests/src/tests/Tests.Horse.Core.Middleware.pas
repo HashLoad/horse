@@ -6,6 +6,7 @@ interface
 
 uses
   DUnitX.TestFramework, Horse.Core.RouterTree, Horse.Request, Horse.Response,
+  Horse.Core.Router.Contract, Horse.Core.Router.Radix,
   System.SysUtils, System.Generics.Collections,
   Horse.Exception.Interrupted,
   {$IF DEFINED(FPC)} HTTPApp {$ELSE} Web.HTTPApp {$ENDIF}, Horse.Commons,
@@ -157,31 +158,55 @@ end;
 procedure TTestHorseCoreMiddleware.TestMiddlewareExceptionPropagation;
 var
   LCallback: THorseCallback;
-  LMethod: TProc;
+  LRouter: IHorseRouter;
+  LCaught: Boolean;
+  LErrorMessage: string;
+  LRouteExecuted: Boolean;
 begin
-  // Middleware lança exceção
+{$IF DEFINED(HORSE_RADIX_ROUTER)}
+  LRouter := THorseRadixRouter.Create;
+{$ELSE}
+  LRouter := THorseRouterTree.Create;
+{$ENDIF}
+  LCaught := False;
+  LRouteExecuted := False;
+
+  // A exceção deve chegar ao middleware externo antes do fallback do core.
+  LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
+    begin
+      try
+        Next();
+      except
+        on E: EOSError do
+        begin
+          LCaught := True;
+          LErrorMessage := E.Message;
+          raise;
+        end;
+      end;
+    end;
+  LRouter.RegisterMiddleware(LCallback);
+
   LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
       raise EOSError.Create('Database connection error');
     end;
-  FRouterTree.RegisterMiddleware(LCallback);
+  LRouter.RegisterMiddleware(LCallback);
 
   LCallback := procedure(Req: THorseRequest; Res: THorseResponse; Next: TNextProc)
     begin
-      // Rota final
+      LRouteExecuted := True;
     end;
-  FRouterTree.RegisterRoute(mtGet, '/test', LCallback);
+  LRouter.RegisterRoute(mtGet, '/test', LCallback);
 
   FRequest.Populate('GET', mtGet, '/test', '', '');
 
-  // A exceção deve propagar para fora do Execute
-  LMethod := procedure
-    var
-      LRet: Boolean;
-    begin
-      LRet := FRouterTree.Execute(FRequest, FResponse);
-    end;
-  Assert.WillRaise(LMethod, EOSError);
+  // O middleware relança; Execute aplica o fallback sem deixar escapar o erro.
+  Assert.IsTrue(LRouter.Execute(FRequest, FResponse));
+  Assert.IsTrue(LCaught, 'A exceção deve atravessar a cadeia de middleware');
+  Assert.AreEqual('Database connection error', LErrorMessage);
+  Assert.IsFalse(LRouteExecuted, 'A rota não deve executar após a exceção');
+  Assert.AreEqual(Integer(THTTPStatus.InternalServerError), FResponse.Status);
 end;
 
 procedure TTestHorseCoreMiddleware.TestMultipleMiddlewaresInRouterTree;
