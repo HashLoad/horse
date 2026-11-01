@@ -85,6 +85,7 @@ implementation
 uses
   Web.WebReq,
   Horse.WebModule,
+  Horse.Provider.Indy.Socket,
   IdCustomTCPServer;
 
 class function THorseProvider.IsRunning: Boolean;
@@ -132,7 +133,7 @@ end;
 class procedure THorseProvider.OnConnect(AContext: TIdContext);
 begin
   AContext.Binding.UseNagle := False;
-  AContext.Binding.SetKeepAliveValues(True, 60000, 1000);
+  THorseIndySocket.ConfigureKeepAlive(AContext.Binding);
   if THorseProviderAbstract.ReadTimeout > 0 then
     AContext.Connection.Socket.ReadTimeout := THorseProviderAbstract.ReadTimeout;
 end;
