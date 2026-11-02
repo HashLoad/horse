@@ -295,11 +295,16 @@ function THorseWebSocketSocketTransport.WaitReadable(const ASocket: TSocket;
     LSet: fd_set;
     LTimeout: timeval;
   begin
-    FD_ZERO(LSet);
-    FD_SET(ASocket, LSet);
+    { FIX-WS-POSIX-FDSET: Delphi-POSIX (incl. Delphi-Linux64) exposes the fd_set
+      helpers as __FD_ZERO/__FD_SET (plain FD_SET is the TYPE fd_set — case-
+      insensitive — so FD_SET(fd,set) parses as a typecast → E2029). select is
+      qualified to Posix.SysSelect to avoid any ambiguity. Matches Delphi's own
+      Indy POSIX stack (IdStackVCLPosix). FPC uses fpFD_* in the branch above. }
+    __FD_ZERO(LSet);
+    __FD_SET(ASocket, LSet);
     LTimeout.tv_sec := ATimeoutMS div 1000;
     LTimeout.tv_usec := (ATimeoutMS mod 1000) * 1000;
-    Result := select(ASocket + 1, @LSet, nil, nil, @LTimeout) > 0;
+    Result := Posix.SysSelect.select(ASocket + 1, @LSet, nil, nil, @LTimeout) > 0;
   end;
   {$ENDIF}
 {$ENDIF}
