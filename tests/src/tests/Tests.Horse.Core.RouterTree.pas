@@ -180,7 +180,8 @@ begin
     else
     begin
       Assert.AreEqual(500, FResponse.Status);
-      Assert.AreEqual('Internal Application Error: route error', FResponse.BodyText);
+      Assert.AreEqual('Internal Application Error', FResponse.BodyText);
+      Assert.IsFalse(FResponse.BodyText.Contains('route error'), 'no-OnError fallback must not leak E.Message (CWE-209)');
     end;
   finally
     THorse.OnError(nil);
@@ -243,7 +244,8 @@ begin
       end);
     FRequest.Populate('GET', mtGet, '/cookie-error', '', '');
     Assert.IsTrue(FRouterTree.Execute(FRequest, FResponse));
-    Assert.AreEqual('Internal Application Error: cookie error', string(LRaw.Content));
+    Assert.AreEqual('Internal Application Error', string(LRaw.Content));
+    Assert.IsFalse(string(LRaw.Content).Contains('cookie error'), 'no-OnError fallback must not leak E.Message (CWE-209)');
     Assert.AreEqual(1, LRaw.Cookies.Count);
     Assert.AreEqual('retained', string(LRaw.Cookies[0].Value));
   finally

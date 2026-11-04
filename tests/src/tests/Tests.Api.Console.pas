@@ -293,7 +293,8 @@ begin
     THorse.OnError(nil);
     LResponse := LClient.Get('http://localhost:9130/Api/Exception/Normal');
     Assert.AreEqual(500, LResponse.StatusCode);
-    Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error: Simulated Normal Error'));
+    Assert.AreEqual('Internal Application Error', LResponse.ContentAsString);
+    Assert.IsFalse(LResponse.ContentAsString.Contains('Simulated Normal Error'), 'no-OnError fallback must not leak E.Message (CWE-209)');
   finally
     LClient.Free;
   end;
@@ -336,7 +337,8 @@ begin
     THorse.OnError(CrashingErrorHandler);
     LResponse := LClient.Get('http://localhost:9130/Api/Exception/Normal');
     Assert.AreEqual(500, LResponse.StatusCode);
-    Assert.IsTrue(LResponse.ContentAsString.Contains('Internal Application Error in OnError: Crash in OnError'));
+    Assert.AreEqual('Internal Application Error in OnError', LResponse.ContentAsString);
+    Assert.IsFalse(LResponse.ContentAsString.Contains('Crash in OnError'), 'a crashing OnError handler must not leak E.Message (CWE-209)');
   finally
     THorse.OnError(nil);
     LClient.Free;
