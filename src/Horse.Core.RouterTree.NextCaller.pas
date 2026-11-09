@@ -4,6 +4,8 @@ unit Horse.Core.RouterTree.NextCaller;
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
+{$I Horse.FunctionReferences.inc}
+
 interface
 
 uses
@@ -18,6 +20,7 @@ uses
   Horse.Request,
   Horse.Response,
   Horse.Callback,
+  Horse.Proc,
   Horse.Commons;
 
 type
@@ -94,12 +97,23 @@ procedure NextCallerDoPreValidation;
 var
   LCallback: TList<THorseCallback>;
   LNextCaller: TNextCaller;
+  {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+  LNext: TNextProc;
+  {$ENDIF}
 begin
   LNextCaller := TNextCaller(GCurrentNextCaller);
   LNextCaller.FFound^ := True;
   if LNextCaller.FCallBack.TryGetValue(LNextCaller.FHTTPType, LCallback) then
   begin
+    {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+    LNext := procedure
+      begin
+        LNextCaller.Next;
+      end;
+    LCallback.Items[LNextCaller.FIndexCallback](LNextCaller.FRequest, LNextCaller.FResponse, LNext);
+    {$ELSE}
     THorseCallbackProc(LCallback.Items[LNextCaller.FIndexCallback])(LNextCaller.FRequest, LNextCaller.FResponse, LNextCaller.Next);
+    {$ENDIF}
   end;
   LNextCaller.Next;
 end;
@@ -194,7 +208,11 @@ begin
   begin
     FFound^ := True;
     {$IF DEFINED(FPC)}
+    {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+    Self.FMiddleware.Items[FIndex](FRequest, FResponse, Next);
+    {$ELSE}
     THorseCallbackProc(Self.FMiddleware.Items[FIndex])(FRequest, FResponse, Next);
+    {$ENDIF}
     LMiddlewareCount := FMiddleware.Count;
     {$ELSE}
     Self.FMiddleware[FIndex](FRequest, FResponse, Next);
@@ -234,8 +252,10 @@ begin
         else
         begin
           FFound^ := True;
-          {$IF DEFINED(FPC)}
+          {$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
           THorseCallbackProc(LCallback.Items[FIndexCallback])(FRequest, FResponse, Next);
+          {$ELSEIF DEFINED(FPC)}
+          LCallback.Items[FIndexCallback](FRequest, FResponse, Next);
           {$ELSE}
           LCallback[FIndexCallback](FRequest, FResponse, Next);
           {$ENDIF}

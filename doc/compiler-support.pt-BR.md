@@ -33,6 +33,26 @@ O CI roda no Delphi 11 e 12 contra a suíte `tests/` oficial. Qualquer coisa aba
 | FPC 3.2.0 + Lazarus 2.0 | Suportado |
 | FPC 3.3.1 (trunk) | Suportado com `{$MODE DELPHI}{$H+}` |
 
+### Function references opcionais no FPC
+
+No FPC 3.3.1, defina `HORSE_FPC_FUNCTIONREFERENCES` globalmente para usar
+procedures anônimas com captura nos callbacks de rotas, middlewares e nos hooks
+`onRequest`, `preParsing`, `preValidation` e `onResponse`. O Horse habilita os modeswitches necessários em suas
+units. Habilite `{$MODESWITCH FUNCTIONREFERENCES}` e
+`{$MODESWITCH ANONYMOUSFUNCTIONS}` nas units da aplicação que declaram esses
+callbacks.
+
+Sem o define, o FPC mantém sua API de callbacks procedurais existente. FPC
+3.2.x não suporta a sintaxe opt-in; habilitar o define produz erro explícito
+de compilação. Limpe ou recompile todas as units Horse ao mudar o define:
+callbacks procedurais e function references têm representações diferentes.
+Não converta callback capturado para `Pointer`. `TNextProc` é alias de `TProc`
+no modo opt-in e `Next` deve terminar dentro da requisição síncrona.
+
+Consulte as [regressões de callbacks](../tests/fpc-functionreferences/README.pt-BR.md)
+para os testes disponíveis e limites da validação. Revisões do trunk diferem;
+informe o build exato do compilador ao reportar um problema.
+
 ## Plataformas-alvo
 
 O conjunto de plataformas depende de qual Provider é selecionado e qual Tipo de aplicação está sendo construído. As duas tabelas abaixo correspondem ao [modelo de dois eixos](./providers.pt-BR.md).

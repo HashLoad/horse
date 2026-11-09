@@ -4,6 +4,8 @@
   {$MODE DELPHI}{$H+}
 {$ENDIF}
 
+{$I Horse.FunctionReferences.inc}
+
 interface
 
 uses
@@ -383,8 +385,10 @@ begin
   Inc(FIndex);
   if (FCallbacks <> nil) and (FIndex < FCallbacks.Count) then
   begin
-    {$IF DEFINED(FPC)}
+    {$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
     THorseCallbackProc(FCallbacks[FIndex])(FRequest, FResponse, Next);
+    {$ELSEIF DEFINED(FPC)}
+    FCallbacks.Items[FIndex](FRequest, FResponse, Next);
     {$ELSE}
     FCallbacks[FIndex](FRequest, FResponse, Next);
     {$ENDIF}
@@ -395,7 +399,9 @@ begin
   end;
 end;
 
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
 {$I Horse.Core.Wrappers.inc}
+{$ENDIF}
 
 class function THorseCore.GetCaseSensitive: Boolean;
 begin
@@ -809,8 +815,7 @@ end;
 
 class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequestResponse): THorseCallback;
 begin
-{$IFDEF FPC}
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
   if GCallbacks2Count < 64 then
   begin
     GCallbacks2[GCallbacks2Count] := ACallbackRequest;
@@ -819,7 +824,6 @@ begin
   end
   else
     Result := Pointer(@ACallbackRequest);
-  {$IFEND}
 {$ELSE}
   Result :=
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
@@ -842,8 +846,7 @@ end;
 
 class function THorseCore.GetCallback(const ACallbackRequest: THorseCallbackRequest): THorseCallback;
 begin
-{$IFDEF FPC}
-  {$IF DEFINED(FPC)}
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
   if GCallbacks1Count < 64 then
   begin
     GCallbacks1[GCallbacks1Count] := ACallbackRequest;
@@ -852,7 +855,6 @@ begin
   end
   else
     Result := Pointer(@ACallbackRequest);
-  {$IFEND}
 {$ELSE}
   Result :=
     procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
@@ -1709,7 +1711,7 @@ begin
       for LCallback in FOnResponse do
       begin
         try
-          {$IF DEFINED(FPC)}
+          {$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
           THorseCallbackProc(LCallback)(ARequest, AResponse, GetInstance.EmptyNext);
           {$ELSE}
           LCallback(ARequest, AResponse, procedure begin end);
