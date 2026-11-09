@@ -1521,6 +1521,11 @@ begin
         Inc(LHdrIdx);
       end;
     {$ELSE}
+    // FIX-HTTPSYS-CORS-NIL: the shadow CustomHeaders dict is nil when headers arrived only via
+    // RawWebResponse (e.g. Horse.CORS calls Res.RawWebResponse.SetCustomHeader, never AddHeader),
+    // yet the block is entered because LRawHeaderCount/LRepeatCount > 0 — so guard the for..in.
+    // (The FPC branch above is already guarded by LHeaderCount, which is 0 when the dict is nil.)
+    if LHeadersList <> nil then
     for LPair in LHeadersList do
       if not SameText(LPair.Key, 'Set-Cookie') then
       begin

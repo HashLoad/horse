@@ -406,6 +406,32 @@ begin
     end
   );
 
+  // ── FIX-HTTPSYS-CORS-NIL regression: header set ONLY via RawWebResponse ───
+  // Reproduces the http.sys AV: when a response header arrives only through
+  // Res.RawWebResponse.SetCustomHeader and AddHeader is NEVER called (exactly
+  // what Horse.CORS does), the shadow CustomHeaders dict stays nil while the
+  // raw header count is > 0 — so THttpSysRawResponse.SendResponse's for..in
+  // enumerated a nil dict and AV'd. Provider-agnostic: Indy/Epoll/IOCP always
+  // passed; this route is the guard for HttpSys.
+  THorse.Get('/raw/setheader-only',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    var
+      LRaw: TRawWebRes;
+    begin
+      LRaw := Res.RawWebResponse;
+      if not Assigned(LRaw) then
+      begin
+        Res.ContentType('application/json; charset=utf-8').Status(500)
+           .Send('{"error":"RawWebResponse is nil"}');
+        Exit;
+      end;
+      // Deliberately NO Res.AddHeader anywhere — the shadow header dict must
+      // remain nil so the HttpSys nil-enumeration path is exercised.
+      LRaw.SetCustomHeader('X-Raw-Only', 'raw-only-ok');
+      Res.Send('raw-only-ok');
+    end
+  );
+
   // ── PATCH-REQ-9: double-read idempotency ─────────────────────────────────
   THorse.Post('/echo/body-twice',
     procedure(Req: THorseRequest; Res: THorseResponse)

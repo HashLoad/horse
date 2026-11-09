@@ -99,3 +99,4 @@ benchmarks/results/
 
 # FPC test binaries (Linux builds have no extension, so *.exe misses them)
 tests/src/FPCHttpKeepAliveServer
+tests/src/FPCHttpKeepaliveTest

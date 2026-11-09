@@ -802,6 +802,20 @@ begin
       (R.StatusCode = 200) and (R.Body = 'pong'),
       Format('%d / %s', [R.StatusCode, R.Body]));
 
+    // ── 37 ─────────────────────────────────────────────────────────────────────
+    // FIX-HTTPSYS-CORS-NIL: a header set ONLY via RawWebResponse.SetCustomHeader
+    // (no AddHeader) must not AV the HttpSys provider. Pre-fix: http.sys
+    // SendResponse enumerated a nil shadow dict -> AV / dropped connection.
+    // Post-fix: 200 + header. Passes on every other provider too.
+    Section('37  GET /raw/setheader-only  (FIX-HTTPSYS-CORS-NIL - SetCustomHeader, no AddHeader)');
+    DoReq(LClient, 'GET', BASE_URL + '/raw/setheader-only', nil, nil, R);
+    Check('status 200',           R.StatusCode = 200, IntToStr(R.StatusCode));
+    Check('body = "raw-only-ok"', R.Body = 'raw-only-ok', R.Body);
+    if Assigned(R.Response) then
+      Check('X-Raw-Only: raw-only-ok',
+        R.Response.HeaderValue['X-Raw-Only'] = 'raw-only-ok',
+        R.Response.HeaderValue['X-Raw-Only']);
+
   finally
     LClient.Free;
   end;
