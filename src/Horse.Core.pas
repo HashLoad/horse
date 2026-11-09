@@ -1446,7 +1446,9 @@ begin
     except
       on E: Exception do
       begin
-        AResponse.Send('Internal Application Error in OnError: ' + E.Message).Status(THTTPStatus.InternalServerError);
+        // SEC: a crashing OnError handler must NOT leak its E.Message to the
+        // client (CWE-209); the generic 500 mirrors the router fallback.
+        AResponse.Send('Internal Application Error in OnError').Status(THTTPStatus.InternalServerError);
       end;
     end;
   end

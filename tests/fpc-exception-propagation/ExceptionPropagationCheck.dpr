@@ -165,7 +165,8 @@ begin
         else
         begin
           Check(Res.Status = 500, 'Default fallback status');
-          Check(Res.BodyText = 'Internal Application Error: route error', 'Default fallback body');
+          Check(Res.BodyText = 'Internal Application Error', 'Default fallback body');
+          Check(Pos('route error', Res.BodyText) = 0, 'no-OnError fallback must not leak E.Message (CWE-209)');
         end;
       end;
       Writeln('PASS ', LabelText);

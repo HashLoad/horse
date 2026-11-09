@@ -187,7 +187,9 @@ begin
         else if THorse.HasOnError then
           THorse.ExecuteOnError(FRequest, FResponse, E)
         else if FResponse.Status < Integer(THTTPStatus.BadRequest) then
-          FResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+          // SEC: the generic no-OnError fallback must NOT leak E.Message to the
+          // client (CWE-209). Register THorse.OnError to surface/log the detail.
+          FResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
         Result := True;
       end;
     end;
@@ -462,7 +464,9 @@ begin
         else if THorse.HasOnError then
           THorse.ExecuteOnError(ARequest, AResponse, E)
         else if AResponse.Status < Integer(THTTPStatus.BadRequest) then
-          AResponse.Send('Internal Application Error: ' + E.Message).Status(THTTPStatus.InternalServerError);
+          // SEC: the generic no-OnError fallback must NOT leak E.Message to the
+          // client (CWE-209). Register THorse.OnError to surface/log the detail.
+          AResponse.Send('Internal Application Error').Status(THTTPStatus.InternalServerError);
         Result := True;
       end;
     end;
