@@ -14,6 +14,19 @@ var
   Caught, HookCalled, Continued: Boolean;
   Total, Failures: Integer;
 
+{$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+function CallbackForTest(const Value: THorseCallback): THorseCallback;
+{$ELSE}
+function CallbackForTest(Value: THorseCallbackProc): THorseCallback;
+{$ENDIF}
+begin
+  {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+  Result := Value;
+  {$ELSE}
+  Result := Pointer(@Value);
+  {$ENDIF}
+end;
+
 procedure Check(Condition: Boolean; const MessageText: string);
 begin
   if not Condition then
@@ -101,18 +114,18 @@ begin
       if Mode in [2, 4, 7] then
         THorse.OnError(@ErrorHook);
       if Mode in [1, 3, 4] then
-        Router.RegisterMiddleware(Pointer(@CatchError));
+        Router.RegisterMiddleware(CallbackForTest(CatchError));
       if Source = 1 then
-        Router.RegisterRouteMiddleware(mtGet, '/error', Pointer(@PassThrough));
+        Router.RegisterRouteMiddleware(mtGet, '/error', CallbackForTest(PassThrough));
       if Source = 2 then
-        Router.RegisterMiddleware(Pointer(@ThrowError));
+        Router.RegisterMiddleware(CallbackForTest(ThrowError));
       if Mode in [6, 7] then
       begin
-        Router.RegisterRouteMiddleware(mtGet, '/error', Pointer(@Interrupt));
-        Router.RegisterRoute(mtGet, '/error', Pointer(@MustNotContinue));
+        Router.RegisterRouteMiddleware(mtGet, '/error', CallbackForTest(Interrupt));
+        Router.RegisterRoute(mtGet, '/error', CallbackForTest(MustNotContinue));
       end
       else
-        Router.RegisterRoute(mtGet, '/error', Pointer(@ThrowError));
+        Router.RegisterRoute(mtGet, '/error', CallbackForTest(ThrowError));
       Req.Populate('GET', mtGet, '/error', '', '');
       Interrupted := False;
       try

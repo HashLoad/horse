@@ -277,7 +277,11 @@ begin
       try
         LCallbacksList.AddRange(FRouter.FGlobalMiddlewares);
         
+        {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+        LCallbacksList.Add(RadixExecutorDoPreValidation);
+        {$ELSE}
         LCallbacksList.Add(Pointer(@RadixExecutorDoPreValidation));
+        {$ENDIF}
 
         LCallbacksList.AddRange(LMiddlewares);
         
@@ -301,10 +305,18 @@ begin
             end;
             if LAllow <> '' then
               FResponse.AddHeader('Allow', LAllow);
+            {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+            LCallbacksList.Add(RadixMethodNotAllowedFinalizer);
+            {$ELSE}
             LCallbacksList.Add(@RadixMethodNotAllowedFinalizer);
+            {$ENDIF}
           end
           else
+            {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+            LCallbacksList.Add(RadixNotFoundFinalizer);
+            {$ELSE}
             LCallbacksList.Add(@RadixNotFoundFinalizer);
+            {$ENDIF}
         end;
 
         LFlow := TRadixFlow.Create(LCallbacksList, FRequest, FResponse);
@@ -323,7 +335,11 @@ begin
       LCallbacksList := TList<THorseCallback>.Create;
       try
         LCallbacksList.AddRange(FRouter.FGlobalMiddlewares);
+        {$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
+        LCallbacksList.Add(RadixNotFoundFinalizer);
+        {$ELSE}
         LCallbacksList.Add(@RadixNotFoundFinalizer);
+        {$ENDIF}
 
         LFlow := TRadixFlow.Create(LCallbacksList, FRequest, FResponse);
         try
@@ -380,7 +396,7 @@ begin
     LIndex := FIndex;
     Inc(FIndex);
     try
-      {$IF DEFINED(FPC)}
+      {$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
       THorseCallbackProc(FCallbacks[LIndex])(FRequest, FResponse, Next);
       {$ELSE}
       FCallbacks[LIndex](FRequest, FResponse, Next);

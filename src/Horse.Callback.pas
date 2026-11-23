@@ -2,10 +2,8 @@ unit Horse.Callback;
 
 {$IF DEFINED(FPC)}
 {$MODE DELPHI}{$H+}
-{$IF DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
-{$MODESWITCH FUNCTIONREFERENCES+}
 {$ENDIF}
-{$ENDIF}
+{$I Horse.FunctionReferences.inc}
 
 interface
 
@@ -25,7 +23,7 @@ uses
 type
   THorseCallbackProc = procedure(AReq: THorseRequest; ARes: THorseResponse; ANext: TNextProc);
 
-{$IF DEFINED(FPC)}
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
   THorseCallbackRequest = procedure(AReq: THorseRequest);
   THorseCallbackResponse = procedure(ARes: THorseResponse);
   THorseCallbackRequestResponse = procedure(AReq: THorseRequest; ARes: THorseResponse);
@@ -52,7 +50,7 @@ type
 
 implementation
 
-{$IF DEFINED(FPC)}
+{$IF DEFINED(FPC) AND NOT DEFINED(HORSE_FPC_FUNCTIONREFERENCES)}
 class operator THorseCallback.Implicit(AValue: Pointer): THorseCallback;
 begin
   Result.FValue := AValue;
