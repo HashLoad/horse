@@ -61,6 +61,7 @@ The graceful shutdown protocol and drain loop are natively implemented in the fo
 * **Daemon Provider** (`Horse.Provider.Daemon`)
 * **Lazarus/LCL Provider** (`Horse.Provider.FPC.LCL`)
 * **Lazarus Daemon Provider** (`Horse.Provider.FPC.Daemon`)
+* **FPC HTTPApplication Provider** (`Horse.Provider.FPC.HTTPApplication`)
 * **IOCP Provider** (`Horse.Provider.IOCP`)
 * **HTTP.sys Provider** (`Horse.Provider.HttpSys`)
 
