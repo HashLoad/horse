@@ -132,9 +132,16 @@ begin
   Result := FInstance;
 end;
 
+{ GetExtType receives an extension ('.css', 'css') or a file
+  name ('style.css'). Running ExtractFileExt on an extension lost it: on FPC
+  ExtractFileExt('.css') is '' (a hidden file), and ExtractFileExt('css') is ''
+  on every compiler. A value with no dot after its first character is an
+  extension; anything else is a file name. }
 function THorseMimeTypesExt.NormalizeExt(const AFileExt: String): string;
 begin
-  Result := ExtractFileExt(AFileExt.Trim.ToLower);
+  Result := AFileExt.Trim.ToLower;
+  if Result.LastIndexOf('.') > 0 then
+    Result := ExtractFileExt(Result);
   if (Result <> EmptyStr) and (Result[Low(Result)] = '.') then
     Result := Result.Substring(1);
 end;
@@ -148,9 +155,11 @@ begin
     Result := 'application/octet-stream';
 end;
 
+{ A file name always goes through ExtractFileExt, so a hidden
+  file ('.css') or a name without extension ('pdf') keeps no extension. }
 function THorseMimeTypesExt.GetFileType(const AFileName: string): string;
 begin
-  Result := GetExtType(AFileName);
+  Result := GetExtType(ExtractFileExt(AFileName));
 end;
 
 procedure THorseMimeTypesExt.InitializeFileType;

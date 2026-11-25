@@ -33,6 +33,9 @@ jobs:
     - name: Run FPC URL decoding regression
       run: sh tests/fpc-url-decoding/run-url-decoding-test.sh
 
+    - name: Run FPC MIME type regression
+      run: sh tests/fpc-mime/run-mime-test.sh
+
     - name: Run FPC header hash regression with range and overflow checks
       run: |
         sh tests/fpc-header-hash/run-header-hash-test.sh
