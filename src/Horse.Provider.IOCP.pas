@@ -156,12 +156,22 @@ type
     function GetBody: TStream;
   end;
 
+  { The low-level sends of a response. Both return the number of
+    bytes the socket accepted, which may be fewer than offered, or SOCKET_ERROR.
+    Tests replace them to force partial sends and failures. }
+  TIocpSendFunction = function(ASocket: TSocket; const ABuffer; ALength: Integer): Integer;
+  TIocpGatherSendFunction = function(ASocket: TSocket; const AHeaderBytes, ABodyBytes: TBytes): Integer;
+
   { Adaptador de resposta que implementa IHorseRawResponse }
   TIocpRawResponse = class(TInterfacedObject, IHorseRawResponse)
   private
     FContext: TIocpConnectionContext;
     FHeaders: TDictionary<string, string>;
     FHeadersSent: Boolean;
+    { Set when the response can no longer be delivered whole: a
+      send failed, or bytes arrived after the response was already delimited.
+      The connection is then closed through the registry and never re-armed. }
+    FDeliveryFailed: Boolean;
     FIsKeepAlive: Boolean;
     FStatusCode: Integer;
     FStatusReason: string;
@@ -170,11 +180,18 @@ type
       nil unless SendResponse assigned it this request (fresh per request). }
     FRepeatHeaders: TStrings;
     function PrepareHeaders: TBytes;
+    function SendAll(const AData: TBytes; AOffset, ACount: Integer): Boolean;
     procedure WriteV(const AHeaderBytes, ABodyBytes: TBytes);
     procedure SendHeaders;
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+    function HasPendingBody(const ARes: THorseResponse): Boolean;
+    procedure CloseConnection;
+    procedure AbandonConnection;
     procedure FinalizeResponse;
   public
+    class var SendFunction: TIocpSendFunction;
+    class var GatherSendFunction: TIocpGatherSendFunction;
+
     constructor Create(AContext: TIocpConnectionContext; AIsKeepAlive: Boolean = True);
     destructor Destroy; override;
 
@@ -245,6 +262,7 @@ type
     function HasPendingIO: Boolean;
     procedure Close(AContext: TIocpConnectionContext);
     procedure CloseAll;
+    function Count: Integer;
     procedure CollectExpired(AExpired: TList<TIocpConnectionContext>; const ANow: Int64);
   end;
 
@@ -307,6 +325,9 @@ type
     class procedure StopListen; override;
     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
     class function IsRunning: Boolean;
+    { Connection contexts held by the registry, pending accepts
+      included. Lets tests check that closed connections leave it. }
+    class function ConnectionCount: Integer; static;
 
     class constructor CreateClass;
     class destructor DestroyClass;
@@ -983,7 +1004,15 @@ begin
   Result := TEncoding.UTF8.GetBytes(LHeaderStr);
 end;
 
-procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
+{ The socket is blocking, so send and WSASend usually take every
+  byte offered; the API still allows a partial count, so every caller loops
+  through SendAll. }
+function IocpWinsockSend(ASocket: TSocket; const ABuffer; ALength: Integer): Integer;
+begin
+  Result := send(ASocket, ABuffer, ALength, 0);
+end;
+
+function IocpWinsockGatherSend(ASocket: TSocket; const AHeaderBytes, ABodyBytes: TBytes): Integer;
 var
   LBufs: array[0..1] of {$IFDEF FPC}WSABUF{$ELSE}TWSABUF{$ENDIF};
   LBufCount: DWORD;
@@ -991,29 +1020,87 @@ var
   LFlags: DWORD;
 begin
   LBufCount := 0;
-  
+
   if Length(AHeaderBytes) > 0 then
   begin
     LBufs[LBufCount].buf := PAnsiChar(@AHeaderBytes[0]);
     LBufs[LBufCount].len := Length(AHeaderBytes);
     Inc(LBufCount);
   end;
-  
+
   if Length(ABodyBytes) > 0 then
   begin
     LBufs[LBufCount].buf := PAnsiChar(@ABodyBytes[0]);
     LBufs[LBufCount].len := Length(ABodyBytes);
     Inc(LBufCount);
   end;
-  
-  if LBufCount > 0 then
+
+  if LBufCount = 0 then
+    Exit(0);
+
+  LFlags := 0;
+  LBytesSent := 0;
+  if WSASend(ASocket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil) = SOCKET_ERROR then
+    Result := SOCKET_ERROR
+  else
+    Result := Integer(LBytesSent);
+end;
+
+{ Sends AData[AOffset..AOffset + ACount - 1] until every byte is
+  out. On a failure the connection is abandoned and the result is False. }
+function TIocpRawResponse.SendAll(const AData: TBytes; AOffset, ACount: Integer): Boolean;
+var
+  LSocket: TSocket;
+  LSent: Integer;
+begin
+  while (not FDeliveryFailed) and (ACount > 0) do
   begin
-    LFlags := 0;
-    LBytesSent := 0;
-    WSASend(FContext.Socket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil);
+    LSocket := FContext.Socket;
+    if LSocket = INVALID_SOCKET then
+      LSent := SOCKET_ERROR
+    else
+      LSent := SendFunction(LSocket, AData[AOffset], ACount);
+    if LSent <= 0 then
+      AbandonConnection
+    else
+    begin
+      Inc(AOffset, LSent);
+      Dec(ACount, LSent);
+    end;
+  end;
+  Result := not FDeliveryFailed;
+end;
+
+procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
+var
+  LSocket: TSocket;
+  LSent: Integer;
+  LHeaderLength: Integer;
+begin
+  FHeadersSent := True;
+  if FDeliveryFailed then
+    Exit;
+
+  LSocket := FContext.Socket;
+  if LSocket = INVALID_SOCKET then
+    LSent := SOCKET_ERROR
+  else
+    LSent := GatherSendFunction(LSocket, AHeaderBytes, ABodyBytes);
+  if LSent < 0 then
+  begin
+    AbandonConnection;
+    Exit;
   end;
 
-  FHeadersSent := True;
+  { A partial gather send leaves the rest of the header, the body or both. }
+  LHeaderLength := Length(AHeaderBytes);
+  if LSent < LHeaderLength then
+  begin
+    if SendAll(AHeaderBytes, LSent, LHeaderLength - LSent) then
+      SendAll(ABodyBytes, 0, Length(ABodyBytes));
+  end
+  else
+    SendAll(ABodyBytes, LSent - LHeaderLength, Length(ABodyBytes) - (LSent - LHeaderLength));
 end;
 
 procedure TIocpRawResponse.SendHeaders;
@@ -1023,9 +1110,8 @@ begin
   if FHeadersSent then
     Exit;
   LHeaderBytes := PrepareHeaders;
-  if Length(LHeaderBytes) > 0 then
-    send(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
   FHeadersSent := True;
+  SendAll(LHeaderBytes, 0, Length(LHeaderBytes));
 end;
 
 procedure TIocpRawResponse.SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
@@ -1058,13 +1144,40 @@ begin
     LReadCount := AStream.Read(LChunkBuf[0], Length(LChunkBuf));
     if LReadCount <= 0 then
       Break;
-    send(FContext.Socket, LChunkBuf[0], LReadCount, 0);
+    if not SendAll(LChunkBuf, 0, LReadCount) then
+      Break;
   end;
   FinalizeResponse;
 end;
 
+function TIocpRawResponse.HasPendingBody(const ARes: THorseResponse): Boolean;
+begin
+  { The same sources SendResponse reads; on FPC the router's Send fills the
+    adapter's ContentStream, which ARes.ContentStream does not return there. }
+  Result := (ARes.ContentStream <> nil) or (Length(ARes.BodyBytes) > 0) or (ARes.BodyText <> '') or
+    ((ARes.RawWebResponse <> nil) and
+     ((TInterfacedWebResponse(ARes.RawWebResponse).ContentStream <> nil) or
+      (TInterfacedWebResponse(ARes.RawWebResponse).Content <> '')));
+end;
+
+{ A connection is always closed through the registry: it removes
+  the context, closes the socket once and releases the registry's reference,
+  while the work item keeps its own until it ends. }
+procedure TIocpRawResponse.CloseConnection;
+begin
+  THorseProviderIOCP.FRegistry.Close(FContext);
+end;
+
+procedure TIocpRawResponse.AbandonConnection;
+begin
+  FDeliveryFailed := True;
+  CloseConnection;
+end;
+
 procedure TIocpRawResponse.FinalizeResponse;
 begin
+  if FDeliveryFailed then
+    Exit;
   if FIsKeepAlive then
   begin
     FContext.BytesReceived := 0;
@@ -1072,10 +1185,7 @@ begin
     THorseProviderIOCP.PostReadConnection(FContext);
   end
   else
-  begin
-    closesocket(FContext.Socket);
-    FContext.Socket := INVALID_SOCKET;
-  end;
+    CloseConnection;
 end;
 
 procedure TIocpRawResponse.SendResponse(const ARes: THorseResponse);
@@ -1091,6 +1201,19 @@ var
   LAdapterHeaders: TStrings;
   LAdapterIdx: Integer;
 begin
+  { SendStream already put the response on the wire. A body that
+    shows up afterwards (the error response the router builds when the handler
+    raises after streaming) would land after a delimited response on a reusable
+    connection, so the connection is closed instead. }
+  if FHeadersSent then
+  begin
+    if HasPendingBody(ARes) then
+      AbandonConnection
+    else
+      FinalizeResponse;
+    Exit;
+  end;
+
   FStatusCode := ARes.Status;
   { REPEATHDR-1 — borrow the ordered dup-preserving store for PrepareHeaders. }
   FRepeatHeaders := ARes.RepeatHeaders;
@@ -1169,16 +1292,8 @@ begin
   else
     FHeaders.AddOrSetValue('Content-Length', '0');
 
-  if not FHeadersSent then
-  begin
-    LHeaderBytes := PrepareHeaders;
-    WriteV(LHeaderBytes, LBodyBytes);
-  end
-  else if Length(LBodyBytes) > 0 then
-  begin
-    send(FContext.Socket, LBodyBytes[0], Length(LBodyBytes), 0);
-  end;
-    
+  LHeaderBytes := PrepareHeaders;
+  WriteV(LHeaderBytes, LBodyBytes);
   FinalizeResponse;
 end;
 
@@ -1332,6 +1447,16 @@ begin
   end;
 end;
 
+function TIocpConnectionRegistry.Count: Integer;
+begin
+  FSync.Enter;
+  try
+    Result := FConnections.Count;
+  finally
+    FSync.Leave;
+  end;
+end;
+
 procedure TIocpConnectionRegistry.CollectExpired(
   AExpired: TList<TIocpConnectionContext>; const ANow: Int64);
 var
@@ -1392,6 +1517,9 @@ begin
         begin
           LData.RawRes.SendResponse(LData.Res);
         end
+        else if LData.RawRes.FHeadersSent then
+          { A 500 cannot follow headers already sent. }
+          LData.RawRes.AbandonConnection
         else
         begin
           LData.Res.Status(500).Send(E.Message);
@@ -2046,6 +2174,11 @@ begin
   Result := FRunning;
 end;
 
+class function THorseProviderIOCP.ConnectionCount: Integer;
+begin
+  Result := FRegistry.Count;
+end;
+
 { TIocpStreamWriter }
 
 type
@@ -2072,27 +2205,13 @@ begin
 end;
 
 procedure TIocpStreamWriter.SendFully(const AData: TBytes; ALen: Integer);
-var
-  LTotal, LRet: Integer;
 begin
-  { IOCP-STREAM-SENDFULL-1 (2026-07-18) — a single blocking send() may return a
-    PARTIAL count (documented in this environment; the fork's [IOCP-STREAM-1] looped
-    for the same reason). Merged did one send() and ignored the result, so under
-    concurrent streaming load a truncated chunk corrupted the response, leaving the
-    just-streamed keep-alive connection unusable on reuse (test 36). Loop until every
-    byte is sent; stop on error/close (IsConnected then reports false). }
+  { IOCP-STREAM-SENDFULL-1 — a single blocking send() may return a
+    partial count (test 36). The response's SendAll loops until every byte is out;
+    on a failure it closes the connection and IsConnected reports False. }
   if not Assigned(FRawRes) then
     Exit;
-  LTotal := 0;
-  while LTotal < ALen do
-  begin
-    if FRawRes.FContext.Socket = INVALID_SOCKET then
-      Exit;
-    LRet := send(FRawRes.FContext.Socket, AData[LTotal], ALen - LTotal, 0);
-    if LRet <= 0 then
-      Exit;
-    Inc(LTotal, LRet);
-  end;
+  FRawRes.SendAll(AData, 0, ALen);
 end;
 
 procedure TIocpStreamWriter.SendRawHeaders;
@@ -2139,10 +2258,8 @@ begin
     FRawRes.FStatusReason := 'HTTP Response';
 
   LHeaderBytes := FRawRes.PrepareHeaders;
-  if Length(LHeaderBytes) > 0 then
-    SendFully(LHeaderBytes, Length(LHeaderBytes));
-    
   FRawRes.FHeadersSent := True;
+  SendFully(LHeaderBytes, Length(LHeaderBytes));
 end;
 
 procedure TIocpStreamWriter.WriteRawBytes(const ABytes: TBytes);
@@ -2154,7 +2271,8 @@ end;
 
 function TIocpStreamWriter.IsConnected: Boolean;
 begin
-  Result := Assigned(FRawRes) and (FRawRes.FContext.Socket <> INVALID_SOCKET);
+  Result := Assigned(FRawRes) and (not FRawRes.FDeliveryFailed) and
+    (FRawRes.FContext.Socket <> INVALID_SOCKET);
 end;
 
 function IocpStreamWriterFactory(const AResponse: THorseResponse): IHorseStreamWriter;
@@ -2163,6 +2281,8 @@ begin
 end;
 
 initialization
+  TIocpRawResponse.SendFunction := IocpWinsockSend;
+  TIocpRawResponse.GatherSendFunction := IocpWinsockGatherSend;
   THorseResponse.RegisterStreamWriterFactory(IocpStreamWriterFactory);
 {$ENDIF}
 
