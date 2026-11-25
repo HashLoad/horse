@@ -1,0 +1,164 @@
+--- a/src/Horse.Provider.IOCP.pas	2026-11-25 16:50:02.218126712 -0300
++++ b/src/Horse.Provider.IOCP.pas	2026-11-25 16:50:02.234939982 -0300
+@@ -156,6 +156,10 @@
+     function GetBody: TStream;
+   end;
+ 
++  { Negative control: the seam only. }
++  TIocpSendFunction = function(ASocket: TSocket; const ABuffer; ALength: Integer): Integer;
++  TIocpGatherSendFunction = function(ASocket: TSocket; const AHeaderBytes, ABodyBytes: TBytes): Integer;
++
+   { Adaptador de resposta que implementa IHorseRawResponse }
+   TIocpRawResponse = class(TInterfacedObject, IHorseRawResponse)
+   private
+@@ -175,6 +179,9 @@
+     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
+     procedure FinalizeResponse;
+   public
++    class var SendFunction: TIocpSendFunction;
++    class var GatherSendFunction: TIocpGatherSendFunction;
++
+     constructor Create(AContext: TIocpConnectionContext; AIsKeepAlive: Boolean = True);
+     destructor Destroy; override;
+ 
+@@ -245,6 +252,7 @@
+     function HasPendingIO: Boolean;
+     procedure Close(AContext: TIocpConnectionContext);
+     procedure CloseAll;
++    function Count: Integer;
+     procedure CollectExpired(AExpired: TList<TIocpConnectionContext>; const ANow: Int64);
+   end;
+ 
+@@ -307,6 +315,7 @@
+     class procedure StopListen; override;
+     class procedure StopListenGraceful(const ATimeoutMS: Integer = 5000); override;
+     class function IsRunning: Boolean;
++    class function ConnectionCount: Integer; static;
+ 
+     class constructor CreateClass;
+     class destructor DestroyClass;
+@@ -983,6 +992,41 @@
+   Result := TEncoding.UTF8.GetBytes(LHeaderStr);
+ end;
+ 
++function IocpWinsockSend(ASocket: TSocket; const ABuffer; ALength: Integer): Integer;
++begin
++  Result := send(ASocket, ABuffer, ALength, 0);
++end;
++
++function IocpWinsockGatherSend(ASocket: TSocket; const AHeaderBytes, ABodyBytes: TBytes): Integer;
++var
++  LBufs: array[0..1] of {$IFDEF FPC}WSABUF{$ELSE}TWSABUF{$ENDIF};
++  LBufCount: DWORD;
++  LBytesSent: DWORD;
++  LFlags: DWORD;
++begin
++  LBufCount := 0;
++  if Length(AHeaderBytes) > 0 then
++  begin
++    LBufs[LBufCount].buf := PAnsiChar(@AHeaderBytes[0]);
++    LBufs[LBufCount].len := Length(AHeaderBytes);
++    Inc(LBufCount);
++  end;
++  if Length(ABodyBytes) > 0 then
++  begin
++    LBufs[LBufCount].buf := PAnsiChar(@ABodyBytes[0]);
++    LBufs[LBufCount].len := Length(ABodyBytes);
++    Inc(LBufCount);
++  end;
++  if LBufCount = 0 then
++    Exit(0);
++  LFlags := 0;
++  LBytesSent := 0;
++  if WSASend(ASocket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil) = SOCKET_ERROR then
++    Result := SOCKET_ERROR
++  else
++    Result := Integer(LBytesSent);
++end;
++
+ procedure TIocpRawResponse.WriteV(const AHeaderBytes, ABodyBytes: TBytes);
+ var
+   LBufs: array[0..1] of {$IFDEF FPC}WSABUF{$ELSE}TWSABUF{$ENDIF};
+@@ -1010,7 +1054,7 @@
+   begin
+     LFlags := 0;
+     LBytesSent := 0;
+-    WSASend(FContext.Socket, @LBufs[0], LBufCount, LBytesSent, LFlags, nil, nil);
++    GatherSendFunction(FContext.Socket, AHeaderBytes, ABodyBytes);
+   end;
+ 
+   FHeadersSent := True;
+@@ -1024,7 +1068,7 @@
+     Exit;
+   LHeaderBytes := PrepareHeaders;
+   if Length(LHeaderBytes) > 0 then
+-    send(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes), 0);
++    SendFunction(FContext.Socket, LHeaderBytes[0], Length(LHeaderBytes));
+   FHeadersSent := True;
+ end;
+ 
+@@ -1058,7 +1102,7 @@
+     LReadCount := AStream.Read(LChunkBuf[0], Length(LChunkBuf));
+     if LReadCount <= 0 then
+       Break;
+-    send(FContext.Socket, LChunkBuf[0], LReadCount, 0);
++    SendFunction(FContext.Socket, LChunkBuf[0], LReadCount);
+   end;
+   FinalizeResponse;
+ end;
+@@ -1176,7 +1220,7 @@
+   end
+   else if Length(LBodyBytes) > 0 then
+   begin
+-    send(FContext.Socket, LBodyBytes[0], Length(LBodyBytes), 0);
++    SendFunction(FContext.Socket, LBodyBytes[0], Length(LBodyBytes));
+   end;
+     
+   FinalizeResponse;
+@@ -1332,6 +1376,16 @@
+   end;
+ end;
+ 
++function TIocpConnectionRegistry.Count: Integer;
++begin
++  FSync.Enter;
++  try
++    Result := FConnections.Count;
++  finally
++    FSync.Leave;
++  end;
++end;
++
+ procedure TIocpConnectionRegistry.CollectExpired(
+   AExpired: TList<TIocpConnectionContext>; const ANow: Int64);
+ var
+@@ -2046,6 +2100,11 @@
+   Result := FRunning;
+ end;
+ 
++class function THorseProviderIOCP.ConnectionCount: Integer;
++begin
++  Result := FRegistry.Count;
++end;
++
+ { TIocpStreamWriter }
+ 
+ type
+@@ -2088,7 +2147,7 @@
+   begin
+     if FRawRes.FContext.Socket = INVALID_SOCKET then
+       Exit;
+-    LRet := send(FRawRes.FContext.Socket, AData[LTotal], ALen - LTotal, 0);
++    LRet := TIocpRawResponse.SendFunction(FRawRes.FContext.Socket, AData[LTotal], ALen - LTotal);
+     if LRet <= 0 then
+       Exit;
+     Inc(LTotal, LRet);
+@@ -2163,6 +2222,8 @@
+ end;
+ 
+ initialization
++  TIocpRawResponse.SendFunction := IocpWinsockSend;
++  TIocpRawResponse.GatherSendFunction := IocpWinsockGatherSend;
+   THorseResponse.RegisterStreamWriterFactory(IocpStreamWriterFactory);
+ {$ENDIF}
+ 
