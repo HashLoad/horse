@@ -16,6 +16,7 @@ the registry.
 | CA2 failed send | When a send fails mid-response, the server closes the connection, the registry count comes back, and the stream writer reports `IsConnected = False`. The next request on a new connection is then served. |
 | CA3 `Connection: close` | 200 requests leave the registry count where it was. |
 | CA4 exception after `SendStream` | The client gets the streamed response, no byte after it, and the connection is closed. |
+| CA5 length | An empty stream answers with `Content-Length: 0` on a keep-alive connection, which then serves the next request. A 204 carries no `Content-Length`. |
 | CA6 load | 32 keep-alive clients, 50 rounds each of 8 MiB by `Send(string)` and 8 MiB by stream, arrive whole. This is a measure, not a negative control. |
 
 Before this fix:
@@ -24,7 +25,9 @@ Before this fix:
 - a response without keep-alive closed the socket outside the registry, so its
   context stayed there;
 - the error response built after `SendStream` was appended to a response that
-  was already delimited.
+  was already delimited;
+- an empty stream went out with neither `Content-Length` nor
+  `Transfer-Encoding`, and a 204 carried `Content-Length: 0`.
 
 ## Windows
 
@@ -50,6 +53,8 @@ git -C ../horse-before apply "$PWD/tests/iocp-http/seam-only.patch"
 `seam-only.patch` adds only the replaceable sends and the registry count, and
 changes no behaviour. Against that source, CA1 fails because the response is
 truncated. CA2 fails because the connection stays open. CA3 fails because the
-registry count grows. CA4 fails because bytes arrive after the response.
+registry count grows. CA4 fails because bytes arrive after the response. CA5
+fails because the empty stream is not delimited and the 204 carries
+`Content-Length`.
 
 These tests need a licensed Delphi, so the public FPC job does not run them.

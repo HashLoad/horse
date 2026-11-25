@@ -185,6 +185,9 @@ type
     procedure SendHeaders;
     procedure SendStreamResponse(AStream: TStream; AHeadersList: {$IFDEF FPC}TStrings{$ELSE}TDictionary<string, string>{$ENDIF});
     function HasPendingBody(const ARes: THorseResponse): Boolean;
+    function HasHeader(const AName: string): Boolean;
+    procedure RemoveHeader(const AName: string);
+    function StatusForbidsContentLength: Boolean;
     procedure CloseConnection;
     procedure AbandonConnection;
     procedure FinalizeResponse;
@@ -1132,8 +1135,13 @@ begin
     {$ENDIF}
   end;
 
+  { An empty stream still needs Content-Length: 0, or a keep-alive
+    client cannot tell where the response ends. A length or a transfer coding
+    the handler set is kept, and 204/304 carry no Content-Length (RFC 9110). }
   LStreamSize := AStream.Size - AStream.Position;
-  if LStreamSize > 0 then
+  if StatusForbidsContentLength then
+    RemoveHeader('Content-Length')
+  else if not (HasHeader('Content-Length') or HasHeader('Transfer-Encoding')) then
     FHeaders.AddOrSetValue('Content-Length', IntToStr(LStreamSize));
 
   SendHeaders;
@@ -1148,6 +1156,30 @@ begin
       Break;
   end;
   FinalizeResponse;
+end;
+
+function TIocpRawResponse.HasHeader(const AName: string): Boolean;
+var
+  LKey: string;
+begin
+  for LKey in FHeaders.Keys do
+    if SameText(LKey, AName) then
+      Exit(True);
+  Result := False;
+end;
+
+procedure TIocpRawResponse.RemoveHeader(const AName: string);
+var
+  LKey: string;
+begin
+  for LKey in FHeaders.Keys.ToArray do
+    if SameText(LKey, AName) then
+      FHeaders.Remove(LKey);
+end;
+
+function TIocpRawResponse.StatusForbidsContentLength: Boolean;
+begin
+  Result := (FStatusCode = 204) or (FStatusCode = 304);
 end;
 
 function TIocpRawResponse.HasPendingBody(const ARes: THorseResponse): Boolean;
@@ -1287,10 +1319,11 @@ begin
   else if (ARes.RawWebResponse <> nil) and (TInterfacedWebResponse(ARes.RawWebResponse).Content <> '') then
     LBodyBytes := TEncoding.UTF8.GetBytes(TInterfacedWebResponse(ARes.RawWebResponse).Content);
 
-  if Length(LBodyBytes) > 0 then
-    FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)))
-  else
-    FHeaders.AddOrSetValue('Content-Length', '0');
+  { The length is the body's, whatever the handler set, and
+    204/304 carry none (RFC 9110). }
+  RemoveHeader('Content-Length');
+  if not StatusForbidsContentLength then
+    FHeaders.AddOrSetValue('Content-Length', IntToStr(Length(LBodyBytes)));
 
   LHeaderBytes := PrepareHeaders;
   WriteV(LHeaderBytes, LBodyBytes);

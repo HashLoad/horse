@@ -18,6 +18,9 @@ program IocpHttpCheck;
   CA3  Connection: close: 200 requests leave the registry count where it was;
   CA4  exception after SendStream: the client gets the streamed response, no
        byte after it, and the connection is closed;
+  CA5  length: an empty stream answers with Content-Length: 0 on a keep-alive
+       connection that then serves the next request, and a 204 carries no
+       Content-Length;
   CA6  load (a measure, not a negative control): 32 keep-alive clients, 50
        rounds each of 8 MiB by Send(string) and 8 MiB by stream.
 
@@ -423,6 +426,16 @@ begin
         end);
       raise Exception.Create('falha depois do stream');
     end);
+  THorse.Get('/vazio',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send(TStream(TMemoryStream.Create));
+    end);
+  THorse.Get('/sem-conteudo',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Status(204);
+    end);
   THorse.Get('/carga/texto',
     procedure(Req: THorseRequest; Res: THorseResponse)
     begin
@@ -584,6 +597,43 @@ begin
   end;
 end;
 
+procedure CheckLength;
+var
+  LClient: TIdTCPClient;
+  LHead: THttpHead;
+begin
+  LClient := NewClient;
+  try
+    LClient.ReadTimeout := LimitedReadMs;
+    SendRequest(LClient, '/vazio');
+    LHead := ReadHead(LClient);
+    try
+      Check(Pos(' 200 ', LHead.StatusLine + ' ') > 0, '/vazio: expected HTTP 200, got ' + LHead.StatusLine);
+      Check(SameText(HeaderValue(LHead.Headers, 'Connection'), 'keep-alive'),
+        'precondition: expected Connection: keep-alive, got "' + HeaderValue(LHead.Headers, 'Connection') + '"');
+      Check(HeaderValue(LHead.Headers, 'Content-Length') = '0',
+        '/vazio: expected Content-Length: 0, got "' + HeaderValue(LHead.Headers, 'Content-Length') + '"');
+    finally
+      LHead.Headers.Free;
+    end;
+    GetAndCheck(LClient, '/comum', TEncoding.UTF8.GetBytes(CommonBody));
+
+    SendRequest(LClient, '/sem-conteudo');
+    LHead := ReadHead(LClient);
+    try
+      Check(Pos(' 204 ', LHead.StatusLine + ' ') > 0, '/sem-conteudo: expected HTTP 204, got ' + LHead.StatusLine);
+      Check(HeaderCount(LHead.Headers, 'Content-Length') = 0,
+        '/sem-conteudo: a 204 must not carry Content-Length (got "' +
+        HeaderValue(LHead.Headers, 'Content-Length') + '")');
+    finally
+      LHead.Headers.Free;
+    end;
+    GetAndCheck(LClient, '/comum', TEncoding.UTF8.GetBytes(CommonBody));
+  finally
+    LClient.Free;
+  end;
+end;
+
 procedure TLoadClient.Execute;
 var
   LClient: TIdTCPClient;
@@ -701,6 +751,7 @@ begin
       RunCheck('CA2 failed send', CheckFailedSend);
       RunCheck('CA3 Connection: close', CheckConnectionClose);
       RunCheck('CA4 exception after headers', CheckExceptionAfterHeaders);
+      RunCheck('CA5 length', CheckLength);
       RunCheck('CA6 load', CheckLoad);
     finally
       if THorseProviderIOCP.IsRunning then
