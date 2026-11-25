@@ -30,6 +30,9 @@ jobs:
     - name: Run FPC router lifetime regression
       run: sh tests/fpc-router-lifetime/run-router-lifetime-test.sh
 
+    - name: Run FPC HTTPApplication graceful shutdown regression
+      run: sh tests/fpc-graceful-shutdown/run-graceful-shutdown-test.sh
+
     - name: Run FPC URL decoding regression
       run: sh tests/fpc-url-decoding/run-url-decoding-test.sh
 
