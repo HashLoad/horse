@@ -58,6 +58,9 @@ type
     procedure SendHeaders;
   protected
     FResponse: THorseResponse;
+    { Decided once, in the constructor. The default frames the
+      body in chunks except over HTTP/2 and for text/event-stream. }
+    function UsesChunkedTransfer(const AProtocol, AContentType: string): Boolean; virtual;
     procedure SendRawHeaders; virtual; abstract;
     procedure WriteRawBytes(const ABytes: TBytes); virtual; abstract;
   public
@@ -71,6 +74,7 @@ type
 
   THorseWebBrokerStreamWriter = class(THorseStreamWriterBase)
   protected
+    function UsesChunkedTransfer(const AProtocol, AContentType: string): Boolean; override;
     procedure SendRawHeaders; override;
     procedure WriteRawBytes(const ABytes: TBytes); override;
   public
@@ -1174,8 +1178,13 @@ begin
       LProtocol := THorseRequest(FResponse.Request).RawWebRequest.ProtocolVersion;
   end;
 
-  FUseChunked := (not SameText(LProtocol, 'HTTP/2')) and
-                 (not SameText(LContentType, 'text/event-stream'));
+  FUseChunked := UsesChunkedTransfer(LProtocol, LContentType);
+end;
+
+function THorseStreamWriterBase.UsesChunkedTransfer(const AProtocol, AContentType: string): Boolean;
+begin
+  Result := (not SameText(AProtocol, 'HTTP/2')) and
+            (not SameText(AContentType, 'text/event-stream'));
 end;
 
 procedure THorseStreamWriterBase.SendHeaders;
@@ -1285,6 +1294,22 @@ end;
 
 { THorseWebBrokerStreamWriter }
 
+{ Indy always writes a Content-Length unless the response
+  declares a non-identity Transfer-Encoding: with ContentLength = -1 its
+  WriteHeader computes the length from ContentText or ContentStream, or sends
+  its default HTML page. A body of unknown length therefore has to be chunked
+  on Indy, text/event-stream included (EventSource accepts chunked SSE, and the
+  Indy server speaks HTTP/1.1). Other WebBroker hosts (ISAPI, CGI, Apache) keep
+  the default, so IIS or Apache do not frame the chunks twice. }
+function THorseWebBrokerStreamWriter.UsesChunkedTransfer(const AProtocol, AContentType: string): Boolean;
+begin
+  {$IF NOT DEFINED(FPC)}
+  if FResponse.RawWebResponse is TIdHTTPAppResponse then
+    Exit(True);
+  {$ENDIF}
+  Result := inherited UsesChunkedTransfer(AProtocol, AContentType);
+end;
+
 procedure THorseWebBrokerStreamWriter.SendRawHeaders;
 begin
   if FResponse.RawWebResponse <> nil then
@@ -1298,13 +1323,19 @@ begin
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ResponseNo := FResponse.Status;
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ResponseText := 'OK';
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ContentType := FResponse.RawWebResponse.ContentType;
-      
-      // Evita o HTML default de 39 bytes do Indy no final do request
-      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ContentStream := TMemoryStream.Create;
-      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.FreeContentStream := True;
-      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ContentLength := 0;
+
+      { A Content-Length of 0 here made the client end the
+        response at the header (and, chunked, sent both Content-Length and
+        Transfer-Encoding). Declaring chunked keeps WriteHeader from computing
+        a length or sending its default page. No ContentStream is set, so Indy
+        writes nothing after the final chunk. }
+      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.TransferEncoding := 'chunked';
+      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.ContentLength := -1;
 
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).MoveCookiesAndCustomHeaders;
+      { SendHeaders added Transfer-Encoding as a custom header; Indy appends
+        custom headers without removing duplicates. }
+      TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.CustomHeaders.Values['Transfer-Encoding'] := '';
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FResponseInfo.WriteHeader;
       TIdHTTPAppResponseFriend(FResponse.RawWebResponse).FSent := True;
       Exit;

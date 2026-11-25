@@ -288,3 +288,4 @@ begin
 *   **Avoid Inline Anonymous Methods in Lazarus/FPC**: Due to compiler limitations in Free Pascal, prefer declaring regular class methods/procedures instead of inline closures for route and stream callbacks.
 *   **Disconnect Detection**: Always check `AWriter.IsConnected` before writing to free resources immediately if the user closes the connection or stops the download.
 *   **Middleware Bypass**: Any global middleware (such as gzip/deflate compression or logging) that alters the HTTP response buffer dynamically is automatically bypassed when `Res.IsStreaming` is `True` to prevent chunk buffering and stream corruption.
+*   **Indy Providers (Console, VCL, Daemon on Delphi)**: Indy writes a `Content-Length` unless the response declares a chunked `Transfer-Encoding`, so on Indy every stream is sent chunked, SSE included. `EventSource` and HTTP/1.1 clients accept it; HTTP/1.0 clients are not supported for streaming.
