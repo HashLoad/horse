@@ -281,6 +281,25 @@ type
     class var FIocpHandle: THandle;
     class var FWorkers: TObjectList<THorseIocpWorker>;
     class var FRegistry: TIocpConnectionRegistry;
+    { Set by a successful WSAStartup, so that a failed or
+      repeated stop never calls WSACleanup without its matching startup. }
+    class var FWinsockStarted: Boolean;
+    { 1 from the moment a Listen is accepted until its thread
+      has run DoOnStopListen and returns, failure included. Taken atomically,
+      so that one Listen cycle runs at a time. }
+    class var FListenCycle: Integer;
+    { Set as the last step of releasing the listen resources;
+      the Listen thread waits on it, so that its cycle ends only after the
+      release is over. }
+    class var FStopSignal: TEvent;
+    { Serializes opening and releasing the listen resources,
+      so that a release never runs over the resources of the next cycle. The release waits for the workers
+      while it holds this lock, so nothing that runs on a worker may take it. }
+    class var FLifecycleLock: TCriticalSection;
+    { Guards only the port and host a cycle takes, and is never
+      held while waiting, so that a refused Listen fails at once even while a
+      stop is still releasing. }
+    class var FAddressLock: TCriticalSection;
 
     class procedure SetPort(const AValue: Integer); static;
     class procedure SetHost(const AValue: string); static;
@@ -291,8 +310,14 @@ type
 
     class procedure InternalListen;
     class procedure InternalStopListen;
+    class procedure OpenListenResources;
+    class procedure CloseListenResources;
+    class procedure ReleaseListenResources;
+    class procedure EnterListenCycle;
+    class procedure ReadAddress(out APort: Integer; out AHost: string);
+    class procedure LeaveListenCycle;
     class function CreateListenSocket(const APort: Integer; const AHost: string): TSocket; static;
-    class procedure InternalListenLoop(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc); static;
+    class procedure InternalListenLoop; static;
     class procedure PostReadConnection(AContext: TIocpConnectionContext); static;
   public
     class property Host: string read GetHost write SetHost;
@@ -346,6 +371,53 @@ implementation
 var
   fnAcceptEx: TAcceptEx = nil;
   fnGetAcceptExSockaddrs: TGetAcceptExSockaddrs = nil;
+
+const
+  { The value winsock2.h gives SO_EXCLUSIVEADDRUSE, declared
+    here so that the provider does not depend on the WinSock2 unit of each
+    compiler declaring it. On Windows, SO_REUSEADDR lets a second socket bind
+    a port that another one is already listening on. }
+  IOCP_SO_EXCLUSIVEADDRUSE = Integer(not SO_REUSEADDR);
+
+  LISTEN_PORT_IN_USE = 'Não foi possível escutar na porta %s: ela já está em uso por outro processo. ' +
+    'Encerre o outro processo ou configure outra porta. (código %s)';
+  LISTEN_PORT_DENIED = 'Não foi possível escutar na porta %s: o Windows não permite o uso dela, porque está ' +
+    'reservada pelo sistema ou em uso exclusivo por outro processo. Configure outra porta. (código %s)';
+  LISTEN_FAILED = 'Não foi possível escutar na porta %s. (código %s)';
+  LISTEN_SOCKET_FAILED = 'Não foi possível criar o socket de escuta da porta %s. (código %s)';
+  LISTEN_ALREADY_RUNNING = 'O servidor já está escutando na porta %s. Pare o servidor antes de escutar de novo.';
+
+{ <host>:<port>, or the port alone when every interface is
+  listened on. }
+function ListenAddress(const AHost: string; const APort: Integer): string;
+begin
+  if (AHost = '') or (AHost = '0.0.0.0') then
+    Result := IntToStr(APort)
+  else
+    Result := AHost + ':' + IntToStr(APort);
+end;
+
+function ListenErrorCode(const ACode: Integer): string;
+begin
+  Result := Format('%d: %s', [ACode, SysErrorMessage(ACode)]);
+end;
+
+function ListenError(const AMessage, AAddress: string; const ACode: Integer): Exception;
+begin
+  Result := Exception.Create(Format(AMessage, [AAddress, ListenErrorCode(ACode)]));
+end;
+
+function BindError(const AAddress: string; const ACode: Integer): Exception;
+begin
+  case ACode of
+    WSAEADDRINUSE:
+      Result := ListenError(LISTEN_PORT_IN_USE, AAddress, ACode);
+    WSAEACCES:
+      Result := ListenError(LISTEN_PORT_DENIED, AAddress, ACode);
+  else
+    Result := ListenError(LISTEN_FAILED, AAddress, ACode);
+  end;
+end;
 
 function GetWSAExtensionPointer(ASocket: TSocket; const AGUID: TGUID; out APointer: Pointer): Boolean;
 var
@@ -1791,15 +1863,35 @@ begin
   FWorkers := TObjectList<THorseIocpWorker>.Create(True);
   FRegistry := TIocpConnectionRegistry.Create;
   FRunning := False;
+  FListenSocket := INVALID_SOCKET;
+  FIocpHandle := 0;
+  FWinsockStarted := False;
+  FListenCycle := 0;
+  FStopSignal := TEvent.Create(nil, True, False, '');
+  FLifecycleLock := TCriticalSection.Create;
+  FAddressLock := TCriticalSection.Create;
 end;
 
 class destructor THorseProviderIOCP.DestroyClass;
+var
+  LDeadline: UInt64;
 begin
   if FRunning then
     InternalStopListen;
   FWorkers.Free;
   FRegistry.CloseAll;
   FRegistry.Free;
+  { A Listen thread still ending its cycle uses the signal and the lock; when
+    it does not end in time, they are left to the process exit. }
+  LDeadline := GetTickCount64 + 5000;
+  while (FListenCycle <> 0) and (GetTickCount64 < LDeadline) do
+    Sleep(10);
+  if FListenCycle = 0 then
+  begin
+    FStopSignal.Free;
+    FLifecycleLock.Free;
+    FAddressLock.Free;
+  end;
 end;
 
 class procedure THorseProviderIOCP.SetPort(const AValue: Integer);
@@ -1812,6 +1904,9 @@ begin
   FHost := AValue;
 end;
 
+{ Without the lifecycle lock: under FPC every request reads
+  the port on the worker, and under Delphi a request that asks for it reads it
+  on the thread pool; a release holds the lock while it waits for the workers. }
 class function THorseProviderIOCP.GetPort: Integer;
 begin
   Result := FPort;
@@ -1833,20 +1928,29 @@ begin
 end;
 
 class function THorseProviderIOCP.CreateListenSocket(const APort: Integer; const AHost: string): TSocket;
+{ The port is held exclusively, and every failure reads its
+  error code before closesocket can overwrite it. }
 var
   LAddr: TSockAddrIn;
-  wsaData: TWSAData;
+  LAddress: string;
+  LCode: Integer;
   LOpt: Integer;
 begin
-  WSAStartup(MakeWord(2, 2), wsaData);
+  LAddress := ListenAddress(AHost, APort);
 
   Result := WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, nil, 0, WSA_FLAG_OVERLAPPED);
   if Result = INVALID_SOCKET then
-    raise Exception.Create('Falha ao criar o socket de escuta (WSASocket).');
+    raise ListenError(LISTEN_SOCKET_FAILED, LAddress, WSAGetLastError);
 
   LOpt := 1;
-  setsockopt(Result, SOL_SOCKET, SO_REUSEADDR, PAnsiChar(@LOpt), SizeOf(LOpt));
+  if setsockopt(Result, SOL_SOCKET, IOCP_SO_EXCLUSIVEADDRUSE, PAnsiChar(@LOpt), SizeOf(LOpt)) = SOCKET_ERROR then
+  begin
+    LCode := WSAGetLastError;
+    closesocket(Result);
+    raise ListenError(LISTEN_SOCKET_FAILED, LAddress, LCode);
+  end;
 
+  FillChar(LAddr, SizeOf(LAddr), 0);
   LAddr.sin_family := AF_INET;
   LAddr.sin_port := htons(APort);
   if (AHost = '') or (AHost = '0.0.0.0') then
@@ -1856,8 +1960,9 @@ begin
 
   if bind(Result, PSockAddr(@LAddr)^, SizeOf(LAddr)) = SOCKET_ERROR then
   begin
+    LCode := WSAGetLastError;
     closesocket(Result);
-    raise Exception.Create('Falha ao associar a porta (bind).');
+    raise BindError(LAddress, LCode);
   end;
 
   {$IF DEFINED(FPC)}
@@ -1866,8 +1971,9 @@ begin
   if Winapi.WinSock2.listen(Result, SOMAXCONN) = SOCKET_ERROR then
   {$ENDIF}
   begin
+    LCode := WSAGetLastError;
     closesocket(Result);
-    raise Exception.Create('Falha ao escutar a porta (listen).');
+    raise ListenError(LISTEN_FAILED, LAddress, LCode);
   end;
 end;
 
@@ -1877,6 +1983,17 @@ begin
 end;
 
 class procedure THorseProviderIOCP.InternalListen;
+begin
+  TriggerBeforeListen;
+  FLifecycleLock.Enter;
+  try
+    OpenListenResources;
+  finally
+    FLifecycleLock.Leave;
+  end;
+end;
+
+class procedure THorseProviderIOCP.OpenListenResources;
 const
   GuidAcceptEx: TGUID = '{B5367DF1-CBAC-11CF-95CA-00805F48A192}';
   GuidGetAcceptExSockaddrs: TGUID = '{B5367DF2-CBAC-11CF-95CA-00805F48A192}';
@@ -1884,48 +2001,81 @@ var
   LCPUCount, I: Integer;
   LWorker: THorseIocpWorker;
   LPtr: Pointer;
+  LWsaData: TWSAData;
+  LCode: Integer;
 begin
-  TriggerBeforeListen;
-  FListenSocket := CreateListenSocket(FPort, FHost);
-  
-  // Obtém ponteiros das extensões do Winsock
-  if GetWSAExtensionPointer(FListenSocket, GuidAcceptEx, LPtr) then
-    fnAcceptEx := LPtr
-  else
-    raise Exception.Create('Falha ao obter funcao AcceptEx.');
-    
-  if GetWSAExtensionPointer(FListenSocket, GuidGetAcceptExSockaddrs, LPtr) then
-    fnGetAcceptExSockaddrs := LPtr
-  else
-    raise Exception.Create('Falha ao obter funcao GetAcceptExSockaddrs.');
+  FStopSignal.ResetEvent;
 
-  // Cria Completion Port associando o Listen Socket
-  FIocpHandle := CreateIoCompletionPort(FListenSocket, 0, 0, 0);
-  if FIocpHandle = 0 then
-    raise Exception.Create('Falha ao criar o Completion Port.');
+  LCode := WSAStartup(MakeWord(2, 2), LWsaData);
+  if LCode <> 0 then
+    raise ListenError(LISTEN_SOCKET_FAILED, ListenAddress(FHost, FPort), LCode);
+  FWinsockStarted := True;
 
-  FRunning := True;
-  LCPUCount := CPUCount;
-  
-  // Cria os workers
-  for I := 1 to LCPUCount do
-  begin
-    LWorker := THorseIocpWorker.Create(FListenSocket, FIocpHandle,
-      FRegistry, I = 1);
-    FWorkers.Add(LWorker);
-    
-    // Inicia os primeiros aceites assíncronos no worker
-    LWorker.PostAccept;
+  { A failure from here on releases what was opened and
+    balances WSAStartup, so that the next Listen finds the port free. }
+  try
+    FListenSocket := CreateListenSocket(FPort, FHost);
+
+    // Obtém ponteiros das extensões do Winsock
+    if GetWSAExtensionPointer(FListenSocket, GuidAcceptEx, LPtr) then
+      fnAcceptEx := LPtr
+    else
+      raise Exception.Create('Falha ao obter funcao AcceptEx.');
+
+    if GetWSAExtensionPointer(FListenSocket, GuidGetAcceptExSockaddrs, LPtr) then
+      fnGetAcceptExSockaddrs := LPtr
+    else
+      raise Exception.Create('Falha ao obter funcao GetAcceptExSockaddrs.');
+
+    // Cria Completion Port associando o Listen Socket
+    FIocpHandle := CreateIoCompletionPort(FListenSocket, 0, 0, 0);
+    if FIocpHandle = 0 then
+      raise Exception.Create('Falha ao criar o Completion Port.');
+
+    FRunning := True;
+    LCPUCount := CPUCount;
+
+    // Cria os workers
+    for I := 1 to LCPUCount do
+    begin
+      LWorker := THorseIocpWorker.Create(FListenSocket, FIocpHandle,
+        FRegistry, I = 1);
+      FWorkers.Add(LWorker);
+
+      // Inicia os primeiros aceites assíncronos no worker
+      LWorker.PostAccept;
+    end;
+  except
+    CloseListenResources;
+    raise;
   end;
 end;
 
 class procedure THorseProviderIOCP.InternalStopListen;
+begin
+  TriggerBeforeStop;
+  ReleaseListenResources;
+end;
+
+{ The release a stop, a failed start or a failed listen
+  callback runs, under the lock, signalling the Listen thread when it is over. }
+class procedure THorseProviderIOCP.ReleaseListenResources;
+begin
+  FLifecycleLock.Enter;
+  try
+    CloseListenResources;
+    FStopSignal.SetEvent;
+  finally
+    FLifecycleLock.Leave;
+  end;
+end;
+
+class procedure THorseProviderIOCP.CloseListenResources;
 var
   I: Integer;
 begin
-  TriggerBeforeStop;
   FRunning := False;
-  
+
   for I := 0 to FWorkers.Count - 1 do
     FWorkers[I].TerminateWorker;
 
@@ -1947,15 +2097,28 @@ begin
     FIocpHandle := 0;
   end;
 
-  WSACleanup;
+  if FWinsockStarted then
+  begin
+    FWinsockStarted := False;
+    WSACleanup;
+  end;
 end;
 
-class procedure THorseProviderIOCP.InternalListenLoop(const ACallbackListen, ACallbackStopListen: Horse.Proc.TProc);
+{ The callbacks are the ones set on OnListen and OnStopListen;
+  the Listen overloads that take callbacks set them first. A listen callback
+  that raises takes the server down with it, as a failed InternalListen does.
+  The wait ends when the release is over, so that the cycle the caller leaves
+  never has a server, or a release, still running behind it. }
+class procedure THorseProviderIOCP.InternalListenLoop;
 begin
   InternalListen;
-  DoOnListen;
-  while FRunning do
-    Sleep(100);
+  try
+    DoOnListen;
+  except
+    ReleaseListenResources;
+    raise;
+  end;
+  FStopSignal.WaitFor(INFINITE);
   DoOnStopListen;
 end;
 
@@ -1984,40 +2147,119 @@ begin
   end;
 end;
 
-class procedure THorseProviderIOCP.Listen;
+{ A Listen while another cycle is up, or still starting or
+  stopping, is refused before it changes the port, the host or the callbacks,
+  so that the server already listening keeps running untouched. }
+class procedure THorseProviderIOCP.EnterListenCycle;
+var
+  LAddress: string;
 begin
-  InternalListenLoop(nil, nil);
+  if InterlockedCompareExchange(FListenCycle, 1, 0) <> 0 then
+  begin
+    FAddressLock.Enter;
+    try
+      LAddress := ListenAddress(FHost, FPort);
+    finally
+      FAddressLock.Leave;
+    end;
+    raise Exception.Create(Format(LISTEN_ALREADY_RUNNING, [LAddress]));
+  end;
 end;
 
+{ The port and host under the address lock, for the Listen
+  overloads that keep one of them. }
+class procedure THorseProviderIOCP.ReadAddress(out APort: Integer; out AHost: string);
+begin
+  FAddressLock.Enter;
+  try
+    APort := FPort;
+    AHost := FHost;
+  finally
+    FAddressLock.Leave;
+  end;
+end;
+
+class procedure THorseProviderIOCP.LeaveListenCycle;
+begin
+  InterlockedExchange(FListenCycle, 0);
+end;
+
+class procedure THorseProviderIOCP.Listen;
+begin
+  EnterListenCycle;
+  try
+    InternalListenLoop;
+  finally
+    LeaveListenCycle;
+  end;
+end;
+
+{ The overloads that take callbacks always set them, nil
+  included, as HttpSys and Console do, so that a repeated Listen never runs the
+  callbacks of the previous one. }
 class procedure THorseProviderIOCP.Listen(const APort: Integer; const AHost: string; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
 begin
-  FPort := APort;
-  FHost := AHost;
-  InternalListenLoop(ACallbackListen, ACallbackStopListen);
+  EnterListenCycle;
+  try
+    FAddressLock.Enter;
+    try
+      FPort := APort;
+      FHost := AHost;
+    finally
+      FAddressLock.Leave;
+    end;
+    SetOnListen(ACallbackListen);
+    SetOnStopListen(ACallbackStopListen);
+    InternalListenLoop;
+  finally
+    LeaveListenCycle;
+  end;
 end;
 
 class procedure THorseProviderIOCP.Listen(const APort: Integer; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+var
+  LPort: Integer;
+  LHost: string;
 begin
-  FPort := APort;
-  InternalListenLoop(ACallbackListen, ACallbackStopListen);
+  ReadAddress(LPort, LHost);
+  Listen(APort, LHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProviderIOCP.Listen(const AHost: string; const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+var
+  LPort: Integer;
+  LHost: string;
 begin
-  FHost := AHost;
-  InternalListenLoop(ACallbackListen, ACallbackStopListen);
+  ReadAddress(LPort, LHost);
+  Listen(LPort, AHost, ACallbackListen, ACallbackStopListen);
 end;
 
 class procedure THorseProviderIOCP.Listen(const ACallbackListen: Horse.Proc.TProc; const ACallbackStopListen: Horse.Proc.TProc);
+var
+  LPort: Integer;
+  LHost: string;
 begin
-  InternalListenLoop(ACallbackListen, ACallbackStopListen);
+  ReadAddress(LPort, LHost);
+  Listen(LPort, LHost, ACallbackListen, ACallbackStopListen);
 end;
 
+{ Takes no callbacks, so it keeps OnListen and OnStopListen,
+  as HttpSys does. }
 class procedure THorseProviderIOCP.ListenWithConfig(const APort: Integer; const AConfig: THorseCrossSocketConfig);
 begin
   ValidateNoUnsupportedTls(AConfig, 'IOCP');
-  FPort := APort;
-  THorseProviderIOCP.Listen(Horse.Proc.TProc(nil), Horse.Proc.TProc(nil));
+  EnterListenCycle;
+  try
+    FAddressLock.Enter;
+    try
+      FPort := APort;
+    finally
+      FAddressLock.Leave;
+    end;
+    InternalListenLoop;
+  finally
+    LeaveListenCycle;
+  end;
 end;
 
 class procedure THorseProviderIOCP.StopListen;
